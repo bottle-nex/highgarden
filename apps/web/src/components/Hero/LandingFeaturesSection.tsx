@@ -1,4 +1,4 @@
-import SectionDivider from "../utility/SectionDivider";
+import SectionDivider from "@/components/utility/SectionDivider";
 
 export default function LandingFeaturesSection() {
   return (

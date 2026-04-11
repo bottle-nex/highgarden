@@ -1,5 +1,5 @@
-import { cn } from "../../../lib/utils";
-import { robotoCondensed } from "../Hero/LandingHeroSection";
+import { cn } from "@/lib/utils";
+import { robotoCondensed } from "@/components/hero/LandingHeroSection";
 
 function MarqueeItem() {
   return (

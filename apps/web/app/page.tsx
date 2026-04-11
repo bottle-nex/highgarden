@@ -1,13 +1,17 @@
-import LandingFeaturesSection from "@/components/Hero/LandingFeaturesSection";
-import LandingHeroSection from "@/components/Hero/LandingHeroSection";
-import LandingNavbar from "@/components/Navbar/LandingNavbar";
+import LandingFeatureCardsSection from "@/components/hero/LandingFeatureCardsSection";
+import LandingFeaturesSection from "@/components/hero/LandingFeaturesSection";
+import LandingHeroSection from "@/components/hero/LandingHeroSection";
+import LandingInteractiveSection from "@/components/hero/LandingInteractiveSection";
+import LandingNavbar from "@/components/navbar/LandingNavbar";
 
 export default function Home() {
   return (
-    <div className="min-h-screen w-screen overflow-y-auto bg-dark-alpha flex flex-col">
+    <div className="min-h-screen w-screen bg-dark-alpha flex flex-col">
       <LandingNavbar />
       <LandingHeroSection />
       <LandingFeaturesSection />
+      <LandingFeatureCardsSection />
+      <LandingInteractiveSection />
     </div>
   );
 }

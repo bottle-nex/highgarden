@@ -1,8 +1,8 @@
 "use client";
 import Image from "next/image";
 import { Roboto_Condensed } from "next/font/google";
-import { cn } from "../../../lib/utils";
-import { Button } from "../ui/button";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { IoIosArrowForward } from "react-icons/io";
 
 export const robotoCondensed = Roboto_Condensed({

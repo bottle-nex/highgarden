@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@base-ui/react";
-import { cn } from "../../../lib/utils";
+import { cn } from "@/lib/utils";
 // import { Exo_2 } from "next/font/google";
 
 // const exo2 = Exo_2({
