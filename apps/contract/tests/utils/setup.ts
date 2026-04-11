@@ -31,7 +31,10 @@ export function sha256(input: Buffer | string): Buffer {
   return createHash("sha256").update(data).digest();
 }
 
-export function deriveMarketPda(programId: PublicKey, polymarketIdHash: Buffer): [PublicKey, number] {
+export function deriveMarketPda(
+  programId: PublicKey,
+  polymarketIdHash: Buffer,
+): [PublicKey, number] {
   return PublicKey.findProgramAddressSync([MARKET_SEED, polymarketIdHash], programId);
 }
 
@@ -45,13 +48,7 @@ export async function createTestContext(): Promise<TestContext> {
   const oracleSigner = Keypair.generate();
   const quoteSigner = Keypair.generate();
 
-  const usdcMint = await createMint(
-    provider.connection,
-    admin,
-    admin.publicKey,
-    null,
-    6,
-  );
+  const usdcMint = await createMint(provider.connection, admin, admin.publicKey, null, 6);
 
   const [configPda] = PublicKey.findProgramAddressSync([CONFIG_SEED], program.programId);
   const [treasuryAuthorityPda] = PublicKey.findProgramAddressSync(

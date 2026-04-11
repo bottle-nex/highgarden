@@ -5,8 +5,7 @@ import { deriveMarketPda, sha256, TestContext } from "../utils/setup";
 
 export function createMarketTests(getCtx: () => TestContext): void {
   describe("create_market", () => {
-    const polymarketMarketId =
-      "0xabc1234567890def1234567890abcdef1234567890abcdef1234567890abcdef";
+    const polymarketMarketId = "0xabc1234567890def1234567890abcdef1234567890abcdef1234567890abcdef";
     const yesTokenId = "1234567890123456789012345";
     const noTokenId = "9876543210987654321098765";
     const tickSize = 100;
@@ -42,7 +41,9 @@ export function createMarketTests(getCtx: () => TestContext): void {
       const market = await ctx.program.account.market.fetch(marketPda);
 
       expect(market.polymarketMarketId).to.equal(polymarketMarketId);
-      expect(Buffer.from(market.polymarketMarketIdHash).equals(polymarketMarketIdHash)).to.equal(true);
+      expect(Buffer.from(market.polymarketMarketIdHash).equals(polymarketMarketIdHash)).to.equal(
+        true,
+      );
       expect(Buffer.from(market.questionHash).equals(questionHash)).to.equal(true);
       expect(market.endTime.toString()).to.equal(endTime.toString());
       expect(market.tickSize).to.equal(tickSize);

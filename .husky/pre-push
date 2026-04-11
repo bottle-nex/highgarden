@@ -1,2 +1,23 @@
-bun run lint
-bun run format
+GREEN="\033[0;32m"
+RED="\033[0;31m"
+MAGENTA="\033[1;35m"
+CYAN="\033[0;36m"
+RESET="\033[0m"
+
+echo "${MAGENTA}Running pre-push checks...${RESET}"
+
+# Lint checks
+echo "${CYAN}Running linter...${RESET}"
+turbo run lint --filter=!contract || {
+  echo "${RED}✖ Linting failed${RESET}"
+  exit 1
+}
+
+# Format checks
+echo "${CYAN}Running format check...${RESET}"
+bun run format:check || {
+  echo "${RED}✖ Format check failed${RESET}"
+  exit 1
+}
+
+echo "${GREEN}✔ All pre-push checks passed!${RESET}"
