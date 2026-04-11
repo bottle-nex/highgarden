@@ -1,8 +1,8 @@
 import { cn } from "../../../lib/utils";
 import { robotoCondensed } from "../Hero/LandingHeroSection";
 
-export default function SectionDivider() {
-  const MarqueeItem = () => (
+function MarqueeItem() {
+  return (
     <>
       <div className="text-2xl text-dark-base uppercase font-semibold whitespace-nowrap">
         SOLANA DEDICATED <span className="font-serif font-normal italic">PREDICTION MARKET</span>
@@ -10,7 +10,9 @@ export default function SectionDivider() {
       <div className="h-px w-20 bg-dark-base shrink-0" />
     </>
   );
+}
 
+export default function SectionDivider() {
   return (
     <div className="h-20 w-full bg-light-base overflow-hidden flex items-center border-y border-dark-base/10">
       <div

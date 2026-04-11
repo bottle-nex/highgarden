@@ -2,17 +2,20 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@base-ui/react";
 import { cn } from "../../../lib/utils";
-import { Exo_2 } from "next/font/google";
+// import { Exo_2 } from "next/font/google";
 
-const exo2 = Exo_2({
-  subsets: ["latin"],
-  weight: ["800"],
-  style: ["italic"],
-  display: "swap",
-});
+// const exo2 = Exo_2({
+//   subsets: ["latin"],
+//   weight: ["800"],
+//   style: ["italic"],
+//   display: "swap",
+// });
 
 export default function LandingNavbar() {
-  const [isScrolled, setIsScrolled] = useState<boolean>(false);
+  const [isScrolled, setIsScrolled] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.scrollY > 80;
+  });
 
   const handleScroll = useCallback(() => {
     if (window.scrollY > 80) {
@@ -23,8 +26,6 @@ export default function LandingNavbar() {
   }, []);
 
   useEffect(() => {
-    handleScroll();
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
