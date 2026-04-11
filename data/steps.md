@@ -9,6 +9,7 @@
 ## 0. What we are building (one paragraph)
 
 A Solana-native prediction market UI ("SolMarket") that looks liquid from day one by:
+
 1. Reading Polymarket's live CLOB and showing those quotes (plus a spread) to Solana users.
 2. Accepting Solana trades against a **signed quote** issued by our backend.
 3. Immediately hedging every filled Solana trade by placing the offsetting order on Polymarket via `@polymarket/clob-client`.
@@ -23,21 +24,22 @@ Profit = the spread. Risk = cross-chain execution latency. Safety valve = unhedg
 
 These map 1:1 to the "we build ourselves" table in [brainstorming.md](brainstorming.md) and the "must build" list at the bottom of [use-case.md](use-case.md).
 
-| # | Component | Tech | Owner track |
-|---|---|---|---|
-| C1 | Solana on-chain program | Anchor (Rust) | Track A |
-| C2 | Mirror service (pulls Polymarket book) | Bun/TS in `apps/server` | Track B |
-| C3 | Signed-quote endpoint | Bun/TS in `apps/server` | Track B |
-| C4 | Hedging bot (places offsetting orders on Polymarket) | Bun/TS in `apps/server` | Track B |
-| C5 | Unhedged-delta tracker + kill switch | Bun/TS in `apps/server` | Track B |
-| C6 | Resolution oracle signer | Bun/TS in `apps/server` | Track B |
-| C7 | Balance monitors + alerts | Bun/TS in `apps/server` | Track B |
-| C8 | Prisma schema for markets / fills / exposure / nonces | `packages/database` | Shared, Track B drives |
-| C9 | Next.js frontend (markets list, trade panel, claim, positions) | `apps/web` | Track C |
-| C10 | Wallet connect + Solana tx building on the client | `apps/web` | Track C |
-| C11 | Treasury + bridge ops (manual scripts for MVP) | scripts/ | Track B |
+| #   | Component                                                      | Tech                    | Owner track            |
+| --- | -------------------------------------------------------------- | ----------------------- | ---------------------- |
+| C1  | Solana on-chain program                                        | Anchor (Rust)           | Track A                |
+| C2  | Mirror service (pulls Polymarket book)                         | Bun/TS in `apps/server` | Track B                |
+| C3  | Signed-quote endpoint                                          | Bun/TS in `apps/server` | Track B                |
+| C4  | Hedging bot (places offsetting orders on Polymarket)           | Bun/TS in `apps/server` | Track B                |
+| C5  | Unhedged-delta tracker + kill switch                           | Bun/TS in `apps/server` | Track B                |
+| C6  | Resolution oracle signer                                       | Bun/TS in `apps/server` | Track B                |
+| C7  | Balance monitors + alerts                                      | Bun/TS in `apps/server` | Track B                |
+| C8  | Prisma schema for markets / fills / exposure / nonces          | `packages/database`     | Shared, Track B drives |
+| C9  | Next.js frontend (markets list, trade panel, claim, positions) | `apps/web`              | Track C                |
+| C10 | Wallet connect + Solana tx building on the client              | `apps/web`              | Track C                |
+| C11 | Treasury + bridge ops (manual scripts for MVP)                 | scripts/                | Track B                |
 
 Three tracks:
+
 - **Track A — Chain:** Anchor program end-to-end.
 - **Track B — Backend:** mirror + quote + hedger + oracle + DB + ops.
 - **Track C — Frontend:** Next.js UI, wallet flows, tx building.
@@ -49,6 +51,7 @@ Three tracks:
 These must land before the three tracks can move in parallel.
 
 ### 2.1. Lock the interfaces first (the contract between tracks)
+
 Write a single `packages/shared` (or `packages/contracts`) TS package that exports the **types** everyone depends on. This is the hinge of parallel work.
 
 - `SignedQuote` shape: `{ marketId, side: "BUY"|"SELL", outcome: "YES"|"NO", price: number, size: number, expiresAt: number, nonce: string, signature: string }`.
@@ -60,6 +63,7 @@ Write a single `packages/shared` (or `packages/contracts`) TS package that expor
 **Deliverable:** merged PR that adds `packages/shared` with all of the above as TS types and zod schemas.
 
 ### 2.2. Decide configuration constants (write them down in `packages/shared/config.ts`)
+
 - Spread: `1 cent` each side (0.01 USDC) — MVP constant.
 - Quote expiry: `5s`.
 - Unhedged-delta cap per market: `$500`.
@@ -69,6 +73,7 @@ Write a single `packages/shared` (or `packages/contracts`) TS package that expor
 - Treasury top-up alert thresholds: `$500` on each chain.
 
 ### 2.3. Prisma schema (C8)
+
 Add tables in [packages/database/prisma/schema.prisma](packages/database/prisma/schema.prisma):
 
 - `Market` — `id`, `polymarketMarketId`, `yesTokenId`, `noTokenId`, `question`, `endTime`, `tickSize`, `negRisk`, `solanaMarketPda`, `status`.
@@ -82,6 +87,7 @@ Add tables in [packages/database/prisma/schema.prisma](packages/database/prisma/
 Run `bun x prisma migrate dev` and commit the migration.
 
 ### 2.4. Environment variables — agree on names now, write to [.env.example](.env.example)
+
 ```
 # Solana
 SOLANA_RPC_URL=
@@ -108,12 +114,14 @@ NEXT_PUBLIC_PROGRAM_ID=
 ```
 
 ### 2.5. Fund wallets
+
 - Devnet SOL on the Solana signer keypairs.
 - Devnet USDC on Solana treasury PDA ($5k equivalent).
 - Real USDC on Polygon in the Polymarket funder wallet ($5k equivalent). (For hackathon demo, we can run against Polymarket mainnet with small size, or a Polymarket staging environment if one exists — **verify this before committing funds**.)
 - Generate Polymarket API creds via `createOrDeriveApiKey()` one-time script.
 
 ### 2.6. CI guardrails
+
 - `bun run typecheck` across the monorepo.
 - `cargo build` for the Anchor program.
 - Lint, prettier, tests all wired to GitHub Actions. (Optional for hackathon but saves pain.)
@@ -127,10 +135,12 @@ NEXT_PUBLIC_PROGRAM_ID=
 Owner: one engineer. Lives in `apps/program/` or `programs/solmarket/` (new). Uses Anchor.
 
 ### 3.1. Scaffold
+
 - `anchor init solmarket` inside `apps/program`.
 - Configure to build against devnet. Set `declare_id!` after first build.
 
 ### 3.2. Accounts
+
 - `Config` (PDA, seed `"config"`): stores `admin`, `oracle_signer_pubkey`, `quote_signer_pubkey`, `treasury_vault`.
 - `Market` (PDA, seed `"market" + polymarket_market_id_hash`): stores `polymarket_market_id`, `question_hash`, `end_time`, `tick_size`, `yes_token_id`, `no_token_id`, `status: Open|Resolved|Cancelled`, `winning_outcome?`, `total_yes`, `total_no`.
 - `UserPosition` (PDA, seed `"position" + user + market`): stores `yes_shares`, `no_shares`.
@@ -138,6 +148,7 @@ Owner: one engineer. Lives in `apps/program/` or `programs/solmarket/` (new). Us
 - `TreasuryVault`: single USDC token account owned by a treasury PDA (cross-market, as decided in use-case Case F).
 
 ### 3.3. Instructions
+
 1. **`initialize_config(admin, oracle_signer, quote_signer)`** — once.
 2. **`create_market(polymarket_market_id, question, end_time, tick_size, yes_token_id, no_token_id)`** — admin only.
 3. **`place_order(signed_quote, quote_sig)`** — the heart of the program:
@@ -155,6 +166,7 @@ Owner: one engineer. Lives in `apps/program/` or `programs/solmarket/` (new). Us
 6. **`admin_pause_market(market)`** / **`admin_unpause_market(market)`** — emergency kill switch.
 
 ### 3.4. Events
+
 ```rust
 #[event]
 pub struct OrderFilled {
@@ -168,9 +180,11 @@ pub struct OrderFilled {
     pub nonce: [u8; 16],
 }
 ```
+
 Must stay byte-identical to the TS decoder in Track B.
 
 ### 3.5. Tests (Anchor Mocha)
+
 - Happy path: create market → place BUY → position updated → event emitted.
 - Expired quote rejected.
 - Reused nonce rejected.
@@ -180,6 +194,7 @@ Must stay byte-identical to the TS decoder in Track B.
 - Non-oracle-signer cannot resolve.
 
 ### 3.6. Deploy to devnet
+
 - Record program ID in `.env` and `packages/shared/config.ts`.
 - Initialize `Config` account with keys generated in Phase 0.
 - Create at least one test market (BTC $150k) pointing at a real Polymarket market ID.
@@ -193,6 +208,7 @@ Must stay byte-identical to the TS decoder in Track B.
 Owner: one engineer. Uses Bun + a lightweight HTTP framework (Hono or Elysia — the repo already has Bun, pick one fast). All components live in `apps/server/src/`.
 
 Suggested layout:
+
 ```
 apps/server/src/
   index.ts                # HTTP entrypoint
@@ -223,6 +239,7 @@ apps/server/src/
 ```
 
 ### 4.1. Mirror service (C2)
+
 1. On boot, call Polymarket's **Gamma Markets API** (`/markets`) and filter to:
    - Only markets we've whitelisted in the DB, OR
    - Top-N by volume (MVP: manually whitelist 3–5 markets for the demo to keep scope tight — mentioned as an open question in the brainstorm, and "whitelist" is the right MVP answer).
@@ -232,7 +249,9 @@ apps/server/src/
 5. Expose `GET /markets/:id/book` that returns the current top-of-book with our spread applied.
 
 ### 4.2. Signed-quote endpoint (C3)
+
 `POST /quote { marketId, side, outcome, size }`:
+
 1. Look up the current top-of-book from the mirror's in-memory cache.
 2. Compute the quoted price: BUY YES = `bestYesAsk + spread`, SELL YES = `bestYesBid - spread`, etc.
 3. Call `ExposureTracker.canQuote(marketId, notional)` — if false, return `OUT_OF_CAPACITY` (HTTP 429).
@@ -244,6 +263,7 @@ apps/server/src/
 > **Replay protection:** the on-chain `UsedNonce` PDA is the source of truth. The DB `Quote` table is just an audit log / debugging aid.
 
 ### 4.3. Hedging bot (C4)
+
 1. Subscribe to `connection.onLogs(programId, ...)` for the deployed Solana program.
 2. Decode logs into `OrderFilled` events using the Anchor IDL.
 3. For each event:
@@ -260,6 +280,7 @@ apps/server/src/
 5. Subscribe to Polymarket's `user` WS channel to get authoritative fill confirmations and reconcile against DB state.
 
 ### 4.4. Unhedged-delta tracker + kill switch (C5)
+
 Single source of truth: the `Exposure` table, cached in memory for read speed.
 
 - `canQuote(marketId, notional)`: return true iff `unhedgedUsd + notional <= $500`.
@@ -268,12 +289,14 @@ Single source of truth: the `Exposure` table, cached in memory for read speed.
 - Global kill switch: an admin endpoint `POST /admin/pause` that disables all quoting.
 
 ### 4.5. Resolution oracle signer (C6)
+
 - Poll Polymarket's Gamma API (or watch the conditional tokens contract on Polygon) for resolution on each whitelisted market.
 - **Wait 48h past resolution** to let the UMA dispute window close (Case H).
 - Call `resolve_market(winning_outcome)` on the Solana program using the oracle signer keypair.
 - Mark the `Market` row status.
 
 ### 4.6. Treasury + balance monitors (C7, C11)
+
 - Every 30s, poll:
   - Solana treasury PDA USDC balance (via `getTokenAccountBalance`).
   - Polygon hedge wallet USDC balance (via Polygon RPC `balanceOf`).
@@ -282,6 +305,7 @@ Single source of truth: the `Exposure` table, cached in memory for read speed.
 - **MVP bridging is manual:** after Polymarket redemptions, the operator runs a script to bridge USDC back to Solana. A simple `scripts/bridge-usdc.ts` note in the README is enough.
 
 ### 4.7. API surface (all under `apps/server`)
+
 - `GET /markets` — list whitelisted markets with current quotes.
 - `GET /markets/:id/book` — current top-of-book with spread.
 - `POST /quote` — issue signed quote.
@@ -290,6 +314,7 @@ Single source of truth: the `Exposure` table, cached in memory for read speed.
 - `POST /admin/pause` / `POST /admin/unpause` — global kill switch (auth via simple shared secret for MVP).
 
 ### 4.8. Tests
+
 - Unit test the quote signer against a static keypair and verify the signature round-trips through the Solana program's `ed25519` check.
 - Unit test the exposure tracker edge cases (exactly at cap, concurrent increments).
 - Integration test: mock Polymarket WS → signed quote → Anchor `place_order` via `anchor test` → hedger dispatches mock Polymarket order.
@@ -301,6 +326,7 @@ Single source of truth: the `Exposure` table, cached in memory for read speed.
 Owner: one engineer. Next.js + Tailwind (already in repo). Uses the types from `packages/shared`.
 
 ### 5.1. Pages
+
 - `/` — market list. Cards for each whitelisted market, showing YES and NO mid prices from `GET /markets`.
 - `/market/[id]` — market detail with:
   - Question, end date.
@@ -311,9 +337,11 @@ Owner: one engineer. Next.js + Tailwind (already in repo). Uses the types from `
 - `/admin` (dev only) — exposure dashboard reading `GET /admin/status`.
 
 ### 5.2. Wallet connection
+
 - Solana wallet adapter: Phantom, Backpack, Solflare. Already standard — use `@solana/wallet-adapter-react`.
 
 ### 5.3. Trade flow (Step 2.1–2.3 in [use-case.md](use-case.md))
+
 1. User clicks Buy/Sell.
 2. Frontend calls `POST /quote` with `{ marketId, side, outcome, size }`.
 3. Frontend receives `SignedQuote`. Shows a **"Confirm within 5s"** countdown.
@@ -323,10 +351,12 @@ Owner: one engineer. Next.js + Tailwind (already in repo). Uses the types from `
 7. If `QuoteExpired`, auto-request a fresh quote and re-prompt.
 
 ### 5.4. Claim flow (Step 3.3)
+
 - On `/market/[id]`, if market is `Resolved` and the user has winning shares, show a **"Claim X USDC"** button.
 - Button builds and sends a `claim` tx.
 
 ### 5.5. Empty states and errors
+
 - Wallet not connected → CTA.
 - Mirror service offline (backend returns 503) → banner "Quotes temporarily unavailable".
 - Unhedged cap hit → banner "Market temporarily unavailable, try again in a moment" (this is the user-visible text from Case E).
@@ -355,20 +385,20 @@ Day 5 afternoon: Demo polish — seed 3-5 markets, record a fallback video.
 
 Every case must be demonstrable or, if not demonstrable, have the mitigation visibly in the code. None of these are "Phase 2":
 
-| Case | What | Mitigation lives in |
-|---|---|---|
-| A | Quote expires before confirm | Anchor `place_order` `QuoteExpired` check + frontend retry |
-| B | Polymarket moves between quote and fill | Spread + short expiry; loss logged, alert if beyond buffer |
-| C | Partial fill on Polymarket | Hedger `walkBook` with 2¢ slippage cap |
-| D | Polymarket hedge fails entirely | Hedger retry → failure → `pause_market` + alert |
-| E | Unhedged delta exceeds cap | Quote endpoint returns `OUT_OF_CAPACITY` pre-sign |
-| F | User sells before resolution | Supported directly by `place_order(side=SELL)` + cross-market treasury |
-| G | Late claim after resolve | Treasury never swept for 90 days; claim works any time |
-| H | Polymarket resolution disputed | Oracle signer waits 48h |
-| I | Polygon USDC runs out | Balance monitor + pause quotes affecting buys |
-| J | Solana USDC runs out | Balance monitor + bridge-back after redemptions |
-| K | Stale-quote replay | `UsedNonce` PDA |
-| L | Quote-signing key compromised | KMS storage, admin rotate via `Config` update |
+| Case | What                                    | Mitigation lives in                                                    |
+| ---- | --------------------------------------- | ---------------------------------------------------------------------- |
+| A    | Quote expires before confirm            | Anchor `place_order` `QuoteExpired` check + frontend retry             |
+| B    | Polymarket moves between quote and fill | Spread + short expiry; loss logged, alert if beyond buffer             |
+| C    | Partial fill on Polymarket              | Hedger `walkBook` with 2¢ slippage cap                                 |
+| D    | Polymarket hedge fails entirely         | Hedger retry → failure → `pause_market` + alert                        |
+| E    | Unhedged delta exceeds cap              | Quote endpoint returns `OUT_OF_CAPACITY` pre-sign                      |
+| F    | User sells before resolution            | Supported directly by `place_order(side=SELL)` + cross-market treasury |
+| G    | Late claim after resolve                | Treasury never swept for 90 days; claim works any time                 |
+| H    | Polymarket resolution disputed          | Oracle signer waits 48h                                                |
+| I    | Polygon USDC runs out                   | Balance monitor + pause quotes affecting buys                          |
+| J    | Solana USDC runs out                    | Balance monitor + bridge-back after redemptions                        |
+| K    | Stale-quote replay                      | `UsedNonce` PDA                                                        |
+| L    | Quote-signing key compromised           | KMS storage, admin rotate via `Config` update                          |
 
 ---
 
@@ -390,6 +420,7 @@ Every case must be demonstrable or, if not demonstrable, have the mitigation vis
 ## 9. Explicitly out of scope for MVP
 
 (From [brainstorming.md](brainstorming.md) — do not let these creep in.)
+
 - Atomic cross-chain execution. We accept the latency risk.
 - Fully on-chain matching with native market makers.
 - Onboarding external market makers.
