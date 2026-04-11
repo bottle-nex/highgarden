@@ -1,5 +1,4 @@
 [toolchain]
-package_manager = "bun"
 
 [features]
 resolution = true
