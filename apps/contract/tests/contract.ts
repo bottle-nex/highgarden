@@ -1,16 +1,14 @@
-import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
-import { Contract } from "../target/types/contract";
+import { initializeConfigTests } from "./instructions/initialize_config";
+import { createMarketTests } from "./instructions/create_market";
+import { createTestContext, TestContext } from "./utils/setup";
 
 describe("contract", () => {
-  // Configure the client to use the local cluster.
-  anchor.setProvider(anchor.AnchorProvider.env());
+  let ctx: TestContext;
 
-  const program = anchor.workspace.contract as Program<Contract>;
-
-  it("Is initialized!", async () => {
-    // Add your test here.
-    const tx = await program.methods.initialize().rpc();
-    console.log("Your transaction signature", tx);
+  before(async () => {
+    ctx = await createTestContext();
   });
+
+  initializeConfigTests(() => ctx);
+  createMarketTests(() => ctx);
 });
