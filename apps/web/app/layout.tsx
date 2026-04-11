@@ -70,14 +70,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={cn("h-full", "antialiased", poppins.variable, "font-sans")}
-    >
+    <html lang="en" className={cn("h-full", "antialiased", poppins.variable, "font-sans")}>
       <body className="min-h-full flex flex-col">
-        <LenisProvider>
-          {children}
-        </LenisProvider>
+        <LenisProvider>{children}</LenisProvider>
       </body>
     </html>
   );
