@@ -1,4 +1,5 @@
 
+import LandingCtaSection from '@/components/hero/LandingCtaSection';
 import LandingFeatureCardsSection from '@/components/hero/LandingFeatureCardsSection';
 import LandingFeaturesSection from '@/components/hero/LandingFeaturesSection';
 import LandingHeroSection from '@/components/hero/LandingHeroSection';
@@ -13,6 +14,10 @@ export default function Home() {
       <LandingFeaturesSection />
       <LandingFeatureCardsSection />
       <LandingInteractiveSection />
+      <LandingCtaSection />
+      <div className='h-screen w-screen'>
+    sdv
+      </div>
     </div>
   );
 }

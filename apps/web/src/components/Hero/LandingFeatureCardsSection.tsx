@@ -86,8 +86,7 @@ export default function LandingFeatureCardsSection(): JSX.Element {
                 </div>
                 <div className="col-span-1">
                     <p className="text-2xl">
-                        SolMarket fuses Polymarket-grade liquidity with sub-second Solana execution
-                        — so you can trade real-world outcomes without bridging, waiting, or paying
+                        SolMarket fuses Polymarket-grade liquidity with sub-second Solana execution, so you can trade real-world outcomes without bridging, waiting, or paying
                         Polygon gas.
                     </p>
                 </div>
