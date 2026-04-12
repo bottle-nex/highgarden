@@ -1,0 +1,79 @@
+import { BN, IdlAccounts, IdlTypes } from "@coral-xyz/anchor";
+import { Contract } from "./contract";
+import { PublicKey, TransactionInstruction, TransactionSignature } from "@solana/web3.js";
+
+export { IDL } from "./idl";
+export type { Contract } from "./contract";
+
+export const CONFIG_SEED = Buffer.from("config");
+export const MARKET_SEED = Buffer.from("market");
+export const POSITION_SEED = Buffer.from("position");
+export const NONCE_SEED = Buffer.from("nonce");
+export const TREASURY_AUTHORITY_SEED = Buffer.from("treasury_authority");
+export const TREASURY_VAULT_SEED = Buffer.from("treasury_vault");
+
+export type ConfigAccount = IdlAccounts<Contract>["config"];
+export type MarketAccount = IdlAccounts<Contract>["market"];
+export type UserPositionAccount = IdlAccounts<Contract>["userPosition"];
+export type UsedNonceAccount = IdlAccounts<Contract>["usedNonce"];
+export type SignedQuoteType = IdlTypes<Contract>["signedQuote"];
+
+export type OrderSide = 0 | 1;
+export type Outcome = 0 | 1;
+
+export interface QuoteInput {
+    market: PublicKey;
+    side: OrderSide;
+    outcome: Outcome;
+    price: number;
+    size: BN;
+    expiresAt: BN;
+    nonce: Buffer;
+}
+
+export interface InitializeConfigParams {
+    admin: PublicKey;
+    oracleSigner: PublicKey;
+    quoteSigner: PublicKey;
+    usdcMint: PublicKey;
+}
+
+export interface CreateMarketParams {
+    admin: PublicKey;
+    polymarketMarketId: string;
+    questionHash: Buffer | Uint8Array;
+    endTime: BN | number;
+    tickSize: number;
+    yesTokenId: string;
+    noTokenId: string;
+}
+
+export interface PlaceOrderParams {
+    user: PublicKey;
+    quote: QuoteInput;
+    userUsdc: PublicKey;
+    ed25519Ix: TransactionInstruction;
+}
+
+export interface ClaimParams {
+    user: PublicKey;
+    market: PublicKey;
+    userUsdc: PublicKey;
+}
+
+export interface ResolveMarketParams {
+    oracleSigner: PublicKey;
+    market: PublicKey;
+    winningOutcome: Outcome;
+}
+
+export interface AdminMarketParams {
+    admin: PublicKey;
+    market: PublicKey;
+}
+
+export interface CreateMarketResult {
+    signature: TransactionSignature;
+    marketPda: PublicKey;
+    polymarketMarketIdHash: Buffer;
+}
