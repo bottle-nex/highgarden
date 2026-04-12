@@ -45,7 +45,10 @@ function Button({
     return (
         <ButtonPrimitive
             data-slot="button"
-            className={cn(buttonVariants({ variant, size, className }), "cursor-pointer active:scale-98")}
+            className={cn(
+                buttonVariants({ variant, size, className }),
+                'cursor-pointer active:scale-98',
+            )}
             {...props}
         />
     );

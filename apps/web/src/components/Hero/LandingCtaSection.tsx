@@ -25,8 +25,7 @@ const slides: Slide[] = [
     {
         index: '01',
         stat: { value: '<400ms', label: 'AVG FILL TIME' },
-        quote:
-            'SolMarket finally brings prediction markets to Solana without the UX tax. No bridging, no wrapped assets — just one signature and you\'re in.',
+        quote: "SolMarket finally brings prediction markets to Solana without the UX tax. No bridging, no wrapped assets — just one signature and you're in.",
         author: 'ALEX KUMAR',
         role: 'Head of DeFi Research, Drift Protocol',
         context: 'DRIFT × MARINADE',
@@ -34,8 +33,7 @@ const slides: Slide[] = [
     {
         index: '02',
         stat: { value: '12K+', label: 'ACTIVE TRADERS' },
-        quote:
-            'The Polymarket-backed liquidity is a game changer. Day-one depth that took other platforms months to build, available instantly on Solana.',
+        quote: 'The Polymarket-backed liquidity is a game changer. Day-one depth that took other platforms months to build, available instantly on Solana.',
         author: 'SARAH CHEN',
         role: 'Portfolio Manager, Sino Global Capital',
         context: 'JUPITER × PHANTOM',
@@ -43,8 +41,7 @@ const slides: Slide[] = [
     {
         index: '03',
         stat: { value: '1:1', label: 'USDC SETTLEMENT' },
-        quote:
-            'We evaluated every prediction market on Solana. SolMarket is the only one where settlement is fully native — no bridges, no IOUs, just USDC in your wallet.',
+        quote: 'We evaluated every prediction market on Solana. SolMarket is the only one where settlement is fully native — no bridges, no IOUs, just USDC in your wallet.',
         author: 'MARCUS WRIGHT',
         role: 'CTO, Helius Labs',
         context: 'TENSOR × HELIUS',
@@ -107,7 +104,6 @@ export default function LandingCtaSection(): JSX.Element {
             <div className="absolute inset-0 bg-black/55" />
             <div className="absolute inset-0 bg-linear-to-t from-black via-black/20 to-black/40" />
 
-
             {/* Content */}
             <motion.main
                 className="relative z-10 h-full flex flex-col justify-between"
@@ -129,7 +125,12 @@ export default function LandingCtaSection(): JSX.Element {
                                 <div className="font-mono text-[10px] tracking-[0.25em] uppercase text-alpha/80 mb-4">
                                     {slide.context}
                                 </div>
-                                <div className={cn('text-6xl md:text-7xl lg:text-8xl tracking-tighter text-white leading-none', bitcountGridDouble.className)}>
+                                <div
+                                    className={cn(
+                                        'text-6xl md:text-7xl lg:text-8xl tracking-tighter text-white leading-none',
+                                        bitcountGridDouble.className,
+                                    )}
+                                >
                                     {slide.stat.value}
                                 </div>
                                 <div className="mt-2 font-mono text-[10px] md:text-xs tracking-[0.2em] uppercase text-white/35">
@@ -213,7 +214,9 @@ export default function LandingCtaSection(): JSX.Element {
                                 >
                                     <span>START TRADING</span>
                                     <span className="w-6 h-px bg-white/30 group-hover:bg-alpha group-hover:w-10 transition-all duration-300" />
-                                    <span className="text-white/30 group-hover:text-alpha transition-colors duration-300">&rarr;</span>
+                                    <span className="text-white/30 group-hover:text-alpha transition-colors duration-300">
+                                        &rarr;
+                                    </span>
                                 </button>
                                 <EdgeArrows borderColor="border-white/10" />
                             </div>
@@ -223,16 +226,18 @@ export default function LandingCtaSection(): JSX.Element {
                     {/* Progress bar */}
                     <div className="mt-8 flex items-center gap-x-3">
                         {slides.map((_, i) => (
-                            <div
-                                key={i}
-                                className="flex-1 h-px relative overflow-hidden"
-                            >
+                            <div key={i} className="flex-1 h-px relative overflow-hidden">
                                 <div className="absolute inset-0 bg-white/8" />
                                 <motion.div
                                     className="absolute inset-y-0 left-0 bg-white/40"
                                     initial={{ width: '0%' }}
                                     animate={{
-                                        width: i === activeSlide ? '100%' : i < activeSlide ? '100%' : '0%',
+                                        width:
+                                            i === activeSlide
+                                                ? '100%'
+                                                : i < activeSlide
+                                                  ? '100%'
+                                                  : '0%',
                                         opacity: i < activeSlide ? 0.2 : 1,
                                     }}
                                     transition={

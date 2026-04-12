@@ -1,5 +1,16 @@
 version: "3.8"
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: nocturn-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --notify-keyspace-events Ex
+    networks:
+      - redis-network
+
   postgres:
     image: postgres:16
     container_name: solmarket-postgres
@@ -14,3 +25,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
+
+networks:
+  redis-network:
