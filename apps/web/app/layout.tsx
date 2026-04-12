@@ -1,79 +1,79 @@
-import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
-import "./globals.css";
-import { cn } from "@/lib/utils";
-import LenisProvider from "@/providers/LenisProvider";
+import type { Metadata } from 'next';
+import { Poppins } from 'next/font/google';
+import './globals.css';
+import { cn } from '@/lib/utils';
+import LenisProvider from '@/providers/LenisProvider';
 
 const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-sans",
+    subsets: ['latin'],
+    weight: ['300', '400', '500', '600', '700'],
+    variable: '--font-sans',
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://solmarket.xyz"),
-  title: {
-    default: "SolMarket — The First Prediction Market Native to Solana",
-    template: "%s · SolMarket",
-  },
-  description:
-    "SolMarket is a Solana-native prediction market. Trade YES/NO outcomes on real-world events with deep day-one liquidity mirrored from Polymarket, settled in Solana USDC, with the speed and fees Solana traders expect.",
-  applicationName: "SolMarket",
-  keywords: [
-    "Solana prediction market",
-    "Polymarket on Solana",
-    "prediction markets",
-    "YES/NO markets",
-    "Solana DeFi",
-    "USDC prediction market",
-    "onchain betting",
-    "event trading",
-    "crypto prediction market",
-  ],
-  authors: [{ name: "SolMarket" }],
-  creator: "SolMarket",
-  openGraph: {
-    type: "website",
-    url: "https://solmarket.xyz",
-    siteName: "SolMarket",
-    title: "SolMarket — Polymarket on Solana",
+    metadataBase: new URL('https://solmarket.xyz'),
+    title: {
+        default: 'SolMarket — The First Prediction Market Native to Solana',
+        template: '%s · SolMarket',
+    },
     description:
-      "A Solana-native prediction market with day-one liquidity. Trade event outcomes in Solana USDC with tight spreads, instant settlement, and a Polymarket-deep order book.",
-    images: [
-      {
-        url: "/images/landing/hero.png",
-        width: 1200,
-        height: 630,
-        alt: "SolMarket — the first prediction market native to Solana",
-      },
+        'SolMarket is a Solana-native prediction market. Trade YES/NO outcomes on real-world events with deep day-one liquidity mirrored from Polymarket, settled in Solana USDC, with the speed and fees Solana traders expect.',
+    applicationName: 'SolMarket',
+    keywords: [
+        'Solana prediction market',
+        'Polymarket on Solana',
+        'prediction markets',
+        'YES/NO markets',
+        'Solana DeFi',
+        'USDC prediction market',
+        'onchain betting',
+        'event trading',
+        'crypto prediction market',
     ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "SolMarket — Polymarket on Solana",
-    description:
-      "The first prediction market native to Solana. Deep day-one liquidity, Solana-speed trading, USDC settlement.",
-    images: ["/images/landing/hero.png"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: { index: true, follow: true, "max-image-preview": "large" },
-  },
-  icons: { icon: "/favicon.ico" },
-  category: "finance",
+    authors: [{ name: 'SolMarket' }],
+    creator: 'SolMarket',
+    openGraph: {
+        type: 'website',
+        url: 'https://solmarket.xyz',
+        siteName: 'SolMarket',
+        title: 'SolMarket — Polymarket on Solana',
+        description:
+            'A Solana-native prediction market with day-one liquidity. Trade event outcomes in Solana USDC with tight spreads, instant settlement, and a Polymarket-deep order book.',
+        images: [
+            {
+                url: '/images/landing/hero.png',
+                width: 1200,
+                height: 630,
+                alt: 'SolMarket — the first prediction market native to Solana',
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'SolMarket — Polymarket on Solana',
+        description:
+            'The first prediction market native to Solana. Deep day-one liquidity, Solana-speed trading, USDC settlement.',
+        images: ['/images/landing/hero.png'],
+    },
+    robots: {
+        index: true,
+        follow: true,
+        googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
+    },
+    icons: { icon: '/favicon.ico' },
+    category: 'finance',
 };
 
 export default function RootLayout({
-  children,
+    children,
 }: Readonly<{
-  children: React.ReactNode;
+    children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en" className={cn("h-full", "antialiased", poppins.variable, "font-sans")}>
-      <body className="min-h-full flex flex-col">
-        <LenisProvider>{children}</LenisProvider>
-      </body>
-    </html>
-  );
+    return (
+        <html lang="en" className={cn('h-full', 'antialiased', poppins.variable, 'font-sans')}>
+            <body className="min-h-full flex flex-col">
+                <LenisProvider>{children}</LenisProvider>
+            </body>
+        </html>
+    );
 }
