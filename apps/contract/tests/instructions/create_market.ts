@@ -1,19 +1,22 @@
 import * as anchor from "@coral-xyz/anchor";
 import { expect } from "chai";
 
-import { deriveMarketPda, sha256, TestContext } from "../utils/setup";
+import {
+  deriveMarketPda,
+  sha256,
+  TestContext,
+  TEST_POLYMARKET_ID,
+  TEST_YES_TOKEN_ID,
+  TEST_NO_TOKEN_ID,
+  TEST_TICK_SIZE,
+} from "../utils/setup";
 
 export function createMarketTests(getCtx: () => TestContext): void {
   describe("create_market", () => {
-    const polymarketMarketId = "0xabc1234567890def1234567890abcdef1234567890abcdef1234567890abcdef";
-    const yesTokenId = "1234567890123456789012345";
-    const noTokenId = "9876543210987654321098765";
-    const tickSize = 100;
-
     it("creates a new market PDA", async () => {
       const ctx = getCtx();
 
-      const polymarketMarketIdHash = sha256(polymarketMarketId);
+      const polymarketMarketIdHash = sha256(TEST_POLYMARKET_ID);
       const questionHash = sha256("Will BTC hit 150k by EOY?");
       const endTime = new anchor.BN(Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30);
 
@@ -22,12 +25,12 @@ export function createMarketTests(getCtx: () => TestContext): void {
       await ctx.program.methods
         .createMarket(
           Array.from(polymarketMarketIdHash) as number[],
-          polymarketMarketId,
+          TEST_POLYMARKET_ID,
           Array.from(questionHash) as number[],
           endTime,
-          tickSize,
-          yesTokenId,
-          noTokenId,
+          TEST_TICK_SIZE,
+          TEST_YES_TOKEN_ID,
+          TEST_NO_TOKEN_ID,
         )
         .accountsStrict({
           admin: ctx.admin.publicKey,
@@ -40,15 +43,15 @@ export function createMarketTests(getCtx: () => TestContext): void {
 
       const market = await ctx.program.account.market.fetch(marketPda);
 
-      expect(market.polymarketMarketId).to.equal(polymarketMarketId);
+      expect(market.polymarketMarketId).to.equal(TEST_POLYMARKET_ID);
       expect(Buffer.from(market.polymarketMarketIdHash).equals(polymarketMarketIdHash)).to.equal(
         true,
       );
       expect(Buffer.from(market.questionHash).equals(questionHash)).to.equal(true);
       expect(market.endTime.toString()).to.equal(endTime.toString());
-      expect(market.tickSize).to.equal(tickSize);
-      expect(market.yesTokenId).to.equal(yesTokenId);
-      expect(market.noTokenId).to.equal(noTokenId);
+      expect(market.tickSize).to.equal(TEST_TICK_SIZE);
+      expect(market.yesTokenId).to.equal(TEST_YES_TOKEN_ID);
+      expect(market.noTokenId).to.equal(TEST_NO_TOKEN_ID);
       expect(market.totalYes.toNumber()).to.equal(0);
       expect(market.totalNo.toNumber()).to.equal(0);
       expect(market.paused).to.equal(false);
@@ -74,9 +77,9 @@ export function createMarketTests(getCtx: () => TestContext): void {
             realId,
             Array.from(questionHash) as number[],
             endTime,
-            tickSize,
-            yesTokenId,
-            noTokenId,
+            TEST_TICK_SIZE,
+            TEST_YES_TOKEN_ID,
+            TEST_NO_TOKEN_ID,
           )
           .accountsStrict({
             admin: ctx.admin.publicKey,
@@ -113,9 +116,9 @@ export function createMarketTests(getCtx: () => TestContext): void {
             id,
             Array.from(questionHash) as number[],
             endTime,
-            tickSize,
-            yesTokenId,
-            noTokenId,
+            TEST_TICK_SIZE,
+            TEST_YES_TOKEN_ID,
+            TEST_NO_TOKEN_ID,
           )
           .accountsStrict({
             admin: ctx.admin.publicKey,
