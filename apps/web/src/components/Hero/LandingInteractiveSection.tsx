@@ -150,7 +150,7 @@ export default function LandingInteractiveSection(): JSX.Element {
                                 >
                                     <span
                                         className={cn(
-                                            'flex h-6 w-6 items-center justify-center border tabular-nums text-xs transition-colors',
+                                            'flex h-6 w-6 items-center justify-center border tabular-nums text-xs transition-colors font-mono',
                                             isActive
                                                 ? 'border-white bg-white text-black'
                                                 : 'border-transparent text-white/70 group-hover:bg-alpha group-hover:text-dark-alpha',

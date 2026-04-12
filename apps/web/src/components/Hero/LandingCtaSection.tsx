@@ -2,11 +2,11 @@
 import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { Bitcount_Grid_Double } from 'next/font/google';
 import { cn } from '@/lib/utils';
-import { EdgeArrows } from '@/components/hero/LandingFeatureCardsSection';
 import { motion, AnimatePresence, useInView } from 'motion/react';
 import { Button } from '../ui/button';
+import { EdgeArrows } from './LandingFeatureCardsSection';
 
-const bitcountGridDouble = Bitcount_Grid_Double({
+export const bitcountGridDouble = Bitcount_Grid_Double({
     subsets: ['latin'],
     weight: ['400'],
     display: 'swap',
@@ -88,13 +88,13 @@ export default function LandingCtaSection(): JSX.Element {
     return (
         <section
             ref={sectionRef}
-            className="relative w-full h-screen overflow-hidden bg-black -mt-20"
+            className="relative w-full h-screen shrink-0 overflow-hidden bg-red-400"
         >
-            {/* Video background */}
+            {/* video background */}
             <video
                 ref={videoRef}
                 className="absolute inset-0 w-full h-full object-cover"
-                src="/videos/porsche.mp4"
+                src="/videos/share_market.mp4"
                 muted
                 loop
                 playsInline
@@ -104,7 +104,7 @@ export default function LandingCtaSection(): JSX.Element {
             <div className="absolute inset-0 bg-black/55" />
             <div className="absolute inset-0 bg-linear-to-t from-black via-black/20 to-black/40" />
 
-            {/* Content */}
+            {/* content */}
             <motion.main
                 className="relative z-10 h-full flex flex-col justify-between"
                 animate={{ opacity: isVisible ? 1 : 0 }}
@@ -204,13 +204,13 @@ export default function LandingCtaSection(): JSX.Element {
 
                         {/* CTA block */}
                         <div className="relative shrink-0">
-                            <div className="relative border border-white/10 bg-white/3 backdrop-blur-sm px-8 py-5">
+                            <div className="relative border border-white/10 hover:border-white/20 bg-white/3 backdrop-blur-sm px-8 py-5 cursor-pointer group">
                                 <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-white/30 mb-3">
                                     GET STARTED
                                 </div>
                                 <button
                                     type="button"
-                                    className="font-mono text-xs tracking-[0.2em] uppercase text-white hover:text-alpha transition-colors duration-300 flex items-center gap-x-3 group"
+                                    className="font-mono text-xs tracking-[0.2em] uppercase text-white group-hover:text-alpha transition-colors duration-300 flex items-center gap-x-3 group"
                                 >
                                     <span>START TRADING</span>
                                     <span className="w-6 h-px bg-white/30 group-hover:bg-alpha group-hover:w-10 transition-all duration-300" />
@@ -218,7 +218,7 @@ export default function LandingCtaSection(): JSX.Element {
                                         &rarr;
                                     </span>
                                 </button>
-                                <EdgeArrows borderColor="border-white/10" />
+                                <EdgeArrows borderColor="border-white/10 group-hover:border-white/20" />
                             </div>
                         </div>
                     </div>
