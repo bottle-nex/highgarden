@@ -10,6 +10,8 @@ import BN from "bn.js";
 
 import {
   TestContext,
+  sha256,
+  deriveMarketPda,
   getTestMarketPda,
   derivePositionPda,
   deriveNoncePda,
@@ -326,6 +328,282 @@ export function placeOrderTests(getCtx: () => TestContext): void {
       }
 
       expect(failed, "expected replayed nonce to fail").to.equal(true);
+    });
+
+    it("BUY NO: credits no_shares and updates market total", async () => {
+      const ctx = getCtx();
+
+      const quote = buildQuote(ctx, { outcome: 1, nonce: generateNonce() });
+      const message = serializeSignedQuote(quote);
+      const ed25519Ix = buildEd25519Ix(ctx.quoteSigner, message);
+
+      const [userPositionPda] = derivePositionPda(
+        ctx.program.programId,
+        ctx.admin.publicKey,
+        marketPda,
+      );
+      const [usedNoncePda] = deriveNoncePda(ctx.program.programId, quote.nonce);
+
+      const posBefore = await ctx.program.account.userPosition.fetch(userPositionPda);
+
+      const quoteArg = {
+        market: quote.market,
+        side: quote.side,
+        outcome: quote.outcome,
+        price: quote.price,
+        size: quote.size,
+        expiresAt: quote.expiresAt,
+        nonce: Array.from(quote.nonce),
+      };
+
+      await ctx.program.methods
+        .placeOrder(quoteArg)
+        .accountsStrict({
+          user: ctx.admin.publicKey,
+          config: ctx.configPda,
+          market: marketPda,
+          userPosition: userPositionPda,
+          usedNonce: usedNoncePda,
+          userUsdc,
+          treasuryVault: ctx.treasuryVaultPda,
+          treasuryAuthority: ctx.treasuryAuthorityPda,
+          instructionsSysvar: anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY,
+          tokenProgram: ctx.tokenProgram,
+          systemProgram: ctx.systemProgram,
+        })
+        .preInstructions([ed25519Ix])
+        .signers([ctx.admin])
+        .rpc();
+
+      const posAfter = await ctx.program.account.userPosition.fetch(userPositionPda);
+      expect(posAfter.noShares.toNumber()).to.equal(
+        posBefore.noShares.toNumber() + 10,
+      );
+
+      const market = await ctx.program.account.market.fetch(marketPda);
+      expect(market.totalNo.toNumber()).to.equal(10);
+    });
+
+    it("SELL YES: returns USDC and decrements shares", async () => {
+      const ctx = getCtx();
+
+      const sellSize = new BN(5);
+      const quote = buildQuote(ctx, {
+        side: 1,
+        outcome: 0,
+        size: sellSize,
+        nonce: generateNonce(),
+      });
+      const message = serializeSignedQuote(quote);
+      const ed25519Ix = buildEd25519Ix(ctx.quoteSigner, message);
+
+      const [userPositionPda] = derivePositionPda(
+        ctx.program.programId,
+        ctx.admin.publicKey,
+        marketPda,
+      );
+      const [usedNoncePda] = deriveNoncePda(ctx.program.programId, quote.nonce);
+
+      // Top up treasury so it can pay the seller
+      await mintTo(
+        ctx.provider.connection,
+        ctx.admin,
+        ctx.usdcMint,
+        ctx.treasuryVaultPda,
+        ctx.admin,
+        50_000_000,
+      );
+
+      const posBefore = await ctx.program.account.userPosition.fetch(userPositionPda);
+      const userBefore = await getAccount(ctx.provider.connection, userUsdc);
+      const vaultBefore = await getAccount(ctx.provider.connection, ctx.treasuryVaultPda);
+
+      const quoteArg = {
+        market: quote.market,
+        side: quote.side,
+        outcome: quote.outcome,
+        price: quote.price,
+        size: quote.size,
+        expiresAt: quote.expiresAt,
+        nonce: Array.from(quote.nonce),
+      };
+
+      await ctx.program.methods
+        .placeOrder(quoteArg)
+        .accountsStrict({
+          user: ctx.admin.publicKey,
+          config: ctx.configPda,
+          market: marketPda,
+          userPosition: userPositionPda,
+          usedNonce: usedNoncePda,
+          userUsdc,
+          treasuryVault: ctx.treasuryVaultPda,
+          treasuryAuthority: ctx.treasuryAuthorityPda,
+          instructionsSysvar: anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY,
+          tokenProgram: ctx.tokenProgram,
+          systemProgram: ctx.systemProgram,
+        })
+        .preInstructions([ed25519Ix])
+        .signers([ctx.admin])
+        .rpc();
+
+      // price=50, size=5 → 50 * 10_000 * 5 = 2_500_000
+      const expectedUsdc = BigInt(50 * 10_000 * 5);
+
+      const posAfter = await ctx.program.account.userPosition.fetch(userPositionPda);
+      expect(posAfter.yesShares.toNumber()).to.equal(
+        posBefore.yesShares.toNumber() - 5,
+      );
+
+      const userAfter = await getAccount(ctx.provider.connection, userUsdc);
+      const vaultAfter = await getAccount(ctx.provider.connection, ctx.treasuryVaultPda);
+      expect(userAfter.amount - userBefore.amount).to.equal(expectedUsdc);
+      expect(vaultBefore.amount - vaultAfter.amount).to.equal(expectedUsdc);
+    });
+
+    it("SELL fails with insufficient shares", async () => {
+      const ctx = getCtx();
+
+      const quote = buildQuote(ctx, {
+        side: 1,
+        outcome: 0,
+        size: new BN(9999),
+        nonce: generateNonce(),
+      });
+      const message = serializeSignedQuote(quote);
+      const ed25519Ix = buildEd25519Ix(ctx.quoteSigner, message);
+
+      const [userPositionPda] = derivePositionPda(
+        ctx.program.programId,
+        ctx.admin.publicKey,
+        marketPda,
+      );
+      const [usedNoncePda] = deriveNoncePda(ctx.program.programId, quote.nonce);
+
+      const quoteArg = {
+        market: quote.market,
+        side: quote.side,
+        outcome: quote.outcome,
+        price: quote.price,
+        size: quote.size,
+        expiresAt: quote.expiresAt,
+        nonce: Array.from(quote.nonce),
+      };
+
+      let failed = false;
+      try {
+        await ctx.program.methods
+          .placeOrder(quoteArg)
+          .accountsStrict({
+            user: ctx.admin.publicKey,
+            config: ctx.configPda,
+            market: marketPda,
+            userPosition: userPositionPda,
+            usedNonce: usedNoncePda,
+            userUsdc,
+            treasuryVault: ctx.treasuryVaultPda,
+            treasuryAuthority: ctx.treasuryAuthorityPda,
+            instructionsSysvar: anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY,
+            tokenProgram: ctx.tokenProgram,
+            systemProgram: ctx.systemProgram,
+          })
+          .preInstructions([ed25519Ix])
+          .signers([ctx.admin])
+          .rpc();
+      } catch (err: any) {
+        failed = true;
+        const code = err?.error?.errorCode?.code ?? err?.toString?.() ?? "";
+        expect(code).to.contain("InsufficientShares");
+      }
+
+      expect(failed, "expected insufficient shares to fail").to.equal(true);
+    });
+
+    it("rejects order on a paused market", async () => {
+      const ctx = getCtx();
+
+      // Create a dedicated market for this test so we don't interfere with the main flow
+      const id = "0xpausedordertest".padEnd(66, "0");
+      const idHash = sha256(id);
+      const [pausedMarket] = deriveMarketPda(ctx.program.programId, idHash);
+
+      await ctx.program.methods
+        .createMarket(
+          Array.from(idHash) as number[],
+          id,
+          Array.from(sha256("Paused order test")) as number[],
+          new anchor.BN(Math.floor(Date.now() / 1000) + 60 * 60 * 24),
+          100,
+          "yes-paused",
+          "no-paused",
+        )
+        .accountsStrict({
+          admin: ctx.admin.publicKey,
+          config: ctx.configPda,
+          market: pausedMarket,
+          systemProgram: ctx.systemProgram,
+        })
+        .signers([ctx.admin])
+        .rpc();
+
+      await ctx.program.methods
+        .adminPauseMarket()
+        .accountsStrict({
+          config: ctx.configPda,
+          admin: ctx.admin.publicKey,
+          market: pausedMarket,
+        })
+        .signers([ctx.admin])
+        .rpc();
+
+      const quote = buildQuote(ctx, { market: pausedMarket, nonce: generateNonce() });
+      const message = serializeSignedQuote(quote);
+      const ed25519Ix = buildEd25519Ix(ctx.quoteSigner, message);
+
+      const [userPositionPda] = derivePositionPda(
+        ctx.program.programId,
+        ctx.admin.publicKey,
+        pausedMarket,
+      );
+      const [usedNoncePda] = deriveNoncePda(ctx.program.programId, quote.nonce);
+
+      const quoteArg = {
+        market: quote.market,
+        side: quote.side,
+        outcome: quote.outcome,
+        price: quote.price,
+        size: quote.size,
+        expiresAt: quote.expiresAt,
+        nonce: Array.from(quote.nonce),
+      };
+
+      let failed = false;
+      try {
+        await ctx.program.methods
+          .placeOrder(quoteArg)
+          .accountsStrict({
+            user: ctx.admin.publicKey,
+            config: ctx.configPda,
+            market: pausedMarket,
+            userPosition: userPositionPda,
+            usedNonce: usedNoncePda,
+            userUsdc,
+            treasuryVault: ctx.treasuryVaultPda,
+            treasuryAuthority: ctx.treasuryAuthorityPda,
+            instructionsSysvar: anchor.web3.SYSVAR_INSTRUCTIONS_PUBKEY,
+            tokenProgram: ctx.tokenProgram,
+            systemProgram: ctx.systemProgram,
+          })
+          .preInstructions([ed25519Ix])
+          .signers([ctx.admin])
+          .rpc();
+      } catch (err: any) {
+        failed = true;
+        const code = err?.error?.errorCode?.code ?? err?.toString?.() ?? "";
+        expect(code).to.contain("MarketPaused");
+      }
+
+      expect(failed, "expected paused market to reject order").to.equal(true);
     });
   });
 }
