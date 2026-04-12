@@ -2,6 +2,7 @@ import { initializeConfigTests } from "./instructions/initialize_config";
 import { createMarketTests } from "./instructions/create_market";
 import { placeOrderTests } from "./instructions/place_order";
 import { resolveMarketTests } from "./instructions/resolve_market";
+import { claimTests } from "./instructions/claim";
 import { createTestContext, TestContext } from "./utils/setup";
 
 describe("contract", () => {
@@ -15,4 +16,5 @@ describe("contract", () => {
   createMarketTests(() => ctx);
   placeOrderTests(() => ctx);
   resolveMarketTests(() => ctx);
+  claimTests(() => ctx);
 });
