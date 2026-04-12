@@ -2,12 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Keypair } from "@solana/web3.js";
 import { expect } from "chai";
 
-import {
-  TestContext,
-  sha256,
-  deriveMarketPda,
-  MARKET_SEED,
-} from "../utils/setup";
+import { TestContext, sha256, deriveMarketPda, MARKET_SEED } from "../utils/setup";
 
 export function adminTests(getCtx: () => TestContext): void {
   describe("admin_pause / admin_unpause", () => {

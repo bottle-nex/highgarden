@@ -1,10 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Keypair, Ed25519Program } from "@solana/web3.js";
-import {
-  getOrCreateAssociatedTokenAccount,
-  mintTo,
-  getAccount,
-} from "@solana/spl-token";
+import { getOrCreateAssociatedTokenAccount, mintTo, getAccount } from "@solana/spl-token";
 import { expect } from "chai";
 import BN from "bn.js";
 
@@ -47,10 +43,7 @@ export function placeOrderTests(getCtx: () => TestContext): void {
       );
     });
 
-    function buildQuote(
-      ctx: TestContext,
-      overrides: Partial<QuoteFields> = {},
-    ): QuoteFields {
+    function buildQuote(ctx: TestContext, overrides: Partial<QuoteFields> = {}): QuoteFields {
       return {
         market: marketPda,
         side: 0,
@@ -376,9 +369,7 @@ export function placeOrderTests(getCtx: () => TestContext): void {
         .rpc();
 
       const posAfter = await ctx.program.account.userPosition.fetch(userPositionPda);
-      expect(posAfter.noShares.toNumber()).to.equal(
-        posBefore.noShares.toNumber() + 10,
-      );
+      expect(posAfter.noShares.toNumber()).to.equal(posBefore.noShares.toNumber() + 10);
 
       const market = await ctx.program.account.market.fetch(marketPda);
       expect(market.totalNo.toNumber()).to.equal(10);
@@ -451,9 +442,7 @@ export function placeOrderTests(getCtx: () => TestContext): void {
       const expectedUsdc = BigInt(50 * 10_000 * 5);
 
       const posAfter = await ctx.program.account.userPosition.fetch(userPositionPda);
-      expect(posAfter.yesShares.toNumber()).to.equal(
-        posBefore.yesShares.toNumber() - 5,
-      );
+      expect(posAfter.yesShares.toNumber()).to.equal(posBefore.yesShares.toNumber() - 5);
 
       const userAfter = await getAccount(ctx.provider.connection, userUsdc);
       const vaultAfter = await getAccount(ctx.provider.connection, ctx.treasuryVaultPda);

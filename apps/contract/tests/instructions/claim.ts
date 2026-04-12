@@ -1,17 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Keypair } from "@solana/web3.js";
-import {
-  getOrCreateAssociatedTokenAccount,
-  mintTo,
-  getAccount,
-} from "@solana/spl-token";
+import { getOrCreateAssociatedTokenAccount, mintTo, getAccount } from "@solana/spl-token";
 import { expect } from "chai";
 
-import {
-  TestContext,
-  getTestMarketPda,
-  derivePositionPda,
-} from "../utils/setup";
+import { TestContext, getTestMarketPda, derivePositionPda } from "../utils/setup";
 
 export function claimTests(getCtx: () => TestContext): void {
   describe("claim", () => {
@@ -22,11 +14,7 @@ export function claimTests(getCtx: () => TestContext): void {
     before(async () => {
       const ctx = getCtx();
       [marketPda] = getTestMarketPda(ctx.program.programId);
-      [userPositionPda] = derivePositionPda(
-        ctx.program.programId,
-        ctx.admin.publicKey,
-        marketPda,
-      );
+      [userPositionPda] = derivePositionPda(ctx.program.programId, ctx.admin.publicKey, marketPda);
 
       const ata = await getOrCreateAssociatedTokenAccount(
         ctx.provider.connection,
@@ -135,11 +123,7 @@ export function claimTests(getCtx: () => TestContext): void {
 
       // Derive the position PDA — it does not exist on-chain yet, so
       // the has_one check or deserialization will fail.
-      const [loserPosPda] = derivePositionPda(
-        ctx.program.programId,
-        loser.publicKey,
-        marketPda,
-      );
+      const [loserPosPda] = derivePositionPda(ctx.program.programId, loser.publicKey, marketPda);
 
       let failed = false;
       try {
