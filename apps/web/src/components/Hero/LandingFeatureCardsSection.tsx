@@ -3,6 +3,7 @@
 import { JSX, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { IoIosArrowRoundForward } from 'react-icons/io';
 
 type CardId = 'marketing' | 'sanity' | 'pricing';
 
@@ -77,8 +78,8 @@ export default function LandingFeatureCardsSection(): JSX.Element {
     const [activeId, setActiveId] = useState<CardId>('sanity');
 
     return (
-        <section className="w-full bg-dark-alpha py-20">
-            <section className="max-w-7xl mx-auto w-full grid grid-cols-2">
+        <section className="w-full py-20">
+            <section className="max-w-340 mx-auto w-full grid grid-cols-2">
                 <div className="col-span-1">
                     <h1 className="text-5xl">
                         One prediction market. Every edge Solana gives you.
@@ -129,7 +130,7 @@ function InactiveCard({ label }: { label: string }): JSX.Element {
             <div className="relative mt-2 flex flex-1 items-center justify-center bg-black p-3">
                 <span className="text-sm text-neutral-500">{label}</span>
                 <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-neutral-600">
-                    [ CLICK TO CHAT ]
+                    [ CLICK TO SEE ]
                 </span>
                 {isHovered && <EdgeArrows borderColor="border-white/70" />}
             </div>
@@ -141,7 +142,7 @@ function InactiveCard({ label }: { label: string }): JSX.Element {
 function ActiveCard({ card }: { card: CardConfig }): JSX.Element {
     return (
         <div className="flex h-full w-full flex-col p-20 relative">
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-[10px]">
                 <span>AGENT CONTEXT</span>
                 <span className="flex items-center gap-1">
                     <span>CURRENT CONTEXT:</span>
@@ -178,12 +179,14 @@ function ActiveCard({ card }: { card: CardConfig }): JSX.Element {
                 <EdgeArrows />
             </div>
 
-            <div className="mt-2 flex items-center justify-between text-xs">
+            <div className="mt-2 flex items-center justify-between text-[10px]">
                 <span className="flex items-center gap-1">
                     <span>STATUS:</span>
                     <span className={`bg-black px-1 py-0.5 ${card.accentText}`}>ENABLED</span>
                 </span>
-                <span>LEARN MORE →</span>
+                <span className="cursor-pointer hover:underline underline-offset-2 flex items-center gap-x-px">
+                    LEARN MORE <IoIosArrowRoundForward className="size-4" />
+                </span>
             </div>
         </div>
     );
