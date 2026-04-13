@@ -7,7 +7,7 @@
     "dev": "bun --hot index.ts",
     "start": "bun index.ts",
     "build": "bun build index.ts --outdir dist --target bun",
-    "typecheck": "tsc --noEmit",
+    "check-types": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0"
   },
   "devDependencies": {
@@ -16,16 +16,16 @@
     "@solmarket/database": "*",
     "@solmarket/types": "*",
     "@types/bun": "latest",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/uuid": "^11.0.0",
     "eslint": "^8.57.0"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/uuid": "^11.0.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "express": "^5.2.1",

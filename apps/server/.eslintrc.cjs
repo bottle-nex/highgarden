@@ -7,4 +7,9 @@ module.exports = {
     project: true,
     tsconfigRootDir: __dirname,
   },
+  rules: {
+    "no-unused-vars": "off",
+    "turbo/no-undeclared-env-vars": "off",
+    indent: ["error", 4, { SwitchCase: 1 }],
+  },
 };
