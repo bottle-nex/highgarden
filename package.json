@@ -30,7 +30,8 @@
     "prettier": "^3.2.5",
     "prisma": "latest",
     "tsx": "4.21.0",
-    "turbo": "^2.9.6"
+    "turbo": "^2.9.6",
+    "@types/bun": "latest"
   },
   "engines": {
     "node": ">=18"
@@ -44,5 +45,10 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "module": "index.ts",
+  "type": "module",
+  "peerDependencies": {
+    "typescript": "^5"
+  }
 }

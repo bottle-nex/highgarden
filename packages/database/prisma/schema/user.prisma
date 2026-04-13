@@ -1,9 +1,10 @@
 model User {
-    id            String  @id @default(cuid())
-    name          String
-    email         String  @unique
+    id            String    @id @default(cuid())
+    name          String?
+    email         String    @unique
     image         String?
+    emailVerified DateTime?
     walletAddress String?
 
-    fills         Fill[]
+    fills Fill[]
 }

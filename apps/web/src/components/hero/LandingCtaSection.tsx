@@ -88,21 +88,21 @@ export default function LandingCtaSection(): JSX.Element {
     return (
         <section
             ref={sectionRef}
-            className="relative w-full h-screen shrink-0 overflow-hidden bg-red-400"
+            className="relative w-full h-screen shrink-0 overflow-hidden bg-black"
         >
             {/* video background */}
             <video
                 ref={videoRef}
-                className="absolute inset-0 w-full h-full object-cover"
-                src="/videos/share_market.mp4"
+                className="absolute inset-0 w-full h-full object-cover scale-[1.323]"
+                src="/videos/porsche.mp4"
                 muted
                 loop
                 playsInline
                 preload="auto"
             />
 
-            <div className="absolute inset-0 bg-black/55" />
-            <div className="absolute inset-0 bg-linear-to-t from-black via-black/20 to-black/40" />
+            {/* <div className="absolute inset-0 bg-black/55" /> */}
+            {/* <div className="absolute inset-0 bg-linear-to-t from-black via-black/20 to-black/40" /> */}
 
             {/* content */}
             <motion.main

@@ -1,9 +1,14 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { Button } from '@base-ui/react';
 import { cn } from '@/lib/utils';
+import { Button } from '../ui/button';
+import { useUserSessionStore } from '@/store/user/useUserSessionStore';
+import { useRouter } from 'next/navigation';
+
 
 export default function LandingNavbar() {
+    const router = useRouter();
+    const { session } = useUserSessionStore();
     const [isScrolled, setIsScrolled] = useState<boolean>(() => {
         if (typeof window === 'undefined') return false;
         return window.scrollY > 80;
@@ -12,6 +17,14 @@ export default function LandingNavbar() {
     const handleScroll = useCallback(() => {
         setIsScrolled(window.scrollY > 80);
     }, []);
+
+    function handleGetStarted() {
+        if (session?.user?.token && session?.user?.email) {
+            router.push('/dashboard');
+        } else {
+            router.push('/signin');
+        }
+    }
 
     useEffect(() => {
         window.addEventListener('scroll', handleScroll, { passive: true });
@@ -22,7 +35,7 @@ export default function LandingNavbar() {
         <nav
             className={cn(
                 'fixed top-0 left-0 w-full z-50 flex items-center px-6 lg:px-10 transition-all duration-300',
-                isScrolled ? 'h-16 bg-black' : 'h-20 bg-transparent',
+                isScrolled ? 'h-16 bg-black' : 'h-20 bg-black',
             )}
         >
             <div className="flex-1 flex justify-start">
@@ -43,16 +56,8 @@ export default function LandingNavbar() {
             </div>
 
             <div className="flex-1 flex items-center justify-end gap-x-6">
-                <button className="text-[13px] font-medium text-white/90 hover:text-white transition-colors">
-                    LOG IN
-                </button>
-
                 <div className="flex items-center gap-x-3">
-                    <Button className="hidden lg:block border border-white/40 text-white px-5 py-2 rounded-full text-[13px] font-medium hover:border-white transition-all">
-                        CONTACT SALES
-                    </Button>
-
-                    <Button className="bg-[#FF5100] text-white px-5 py-2 rounded-full text-[13px] font-bold hover:bg-[#e64900] transition-all">
+                    <Button onClick={handleGetStarted} className="bg-[#FF5100] text-white px-5 py-4 rounded-full text-[13px] font-bold hover:bg-[#e64900] transition-all">
                         GET STARTED
                     </Button>
                 </div>
