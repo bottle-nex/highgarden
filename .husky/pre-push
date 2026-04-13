@@ -13,10 +13,17 @@ turbo run lint --filter=!contract || {
   exit 1
 }
 
-# Format checks
-echo "${CYAN}Running format check...${RESET}"
-bun run format:check || {
-  echo "${RED}✖ Format check failed${RESET}"
+# type checks
+echo "${CYAN}Running type checks...${RESET}"
+bun check-types || {
+  echo "${RED}✖ Type checking failed${RESET}"
+  exit 1
+}
+
+# Build check
+echo "${CYAN}Running build...${RESET}"
+bun run build || {
+  echo "${RED}✖ Build failed${RESET}"
   exit 1
 }
 
