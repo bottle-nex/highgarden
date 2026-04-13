@@ -1,0 +1,29 @@
+
+enum Side {
+    BUY
+    SELL
+}
+
+enum Outcome {
+    YES
+    NO
+}
+
+enum MarketStatus {
+    OPEN
+    PAUSED
+    RESOLVED
+    CANCELLED
+}
+
+enum HedgeStatus {
+    PENDING
+    FILLED
+    PARTIAL
+    FAILED
+}
+
+enum Chain {
+    SOLANA
+    POLYGON
+}

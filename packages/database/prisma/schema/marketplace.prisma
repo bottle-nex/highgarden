@@ -1,0 +1,103 @@
+model Market {
+    id          String  @id @default(cuid())
+    name        String
+    description String
+
+    solanaMarketPda String? @unique
+
+    polyMarketId String     @unique
+    polymarket   PolyMarket @relation(fields: [polyMarketId], references: [id])
+
+    status          MarketStatus @default(OPEN)
+    winningOutcome  Outcome?
+
+    createdAt DateTime @default(now())
+    endAt     DateTime
+    resolvedAt DateTime?
+
+    quotes   Quote[]
+    fills    Fill[]
+    exposure Exposure?
+
+    @@unique([id, polyMarketId])
+    @@unique([id, solanaMarketPda])
+}
+
+model PolyMarket {
+    id         String  @id
+    yesTokenId String
+    noTokenId  String
+    tickSize   String
+    negRisk    Boolean
+
+    market Market?
+}
+
+model Quote {
+    nonce     String   @id
+    marketId  String
+    market    Market   @relation(fields: [marketId], references: [id])
+    side      Side
+    outcome   Outcome
+    price     Int
+    size      Int
+    expiresAt DateTime
+    signature String
+    consumed  Boolean  @default(false)
+    createdAt DateTime @default(now())
+
+    fill Fill?
+}
+
+model Fill {
+    id       String @id @default(cuid())
+    userId   String
+    user     User   @relation(fields: [userId], references: [id])
+    marketId String
+    market   Market @relation(fields: [marketId], references: [id])
+
+    side    Side
+    outcome Outcome
+    price   Int
+    size    Int
+
+    solanaTxSig String  @unique
+    nonce       String? @unique
+    quote       Quote?  @relation(fields: [nonce], references: [nonce])
+
+    createdAt DateTime @default(now())
+
+    hedge Hedge?
+}
+
+model Hedge {
+    id     String @id @default(cuid())
+    fillId String @unique
+    fill   Fill   @relation(fields: [fillId], references: [id])
+
+    polymarketOrderId String?
+    status            HedgeStatus @default(PENDING)
+    filledSize        Int         @default(0)
+    avgPrice          Int?
+    attempts          Int         @default(0)
+    lastError         String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Exposure {
+    marketId    String @id
+    market      Market @relation(fields: [marketId], references: [id])
+    unhedgedUsd Int    @default(0)
+    updatedAt   DateTime @updatedAt
+}
+
+model TreasuryBalance {
+    chain     Chain
+    token     String
+    amount    BigInt
+    updatedAt DateTime @updatedAt
+
+    @@id([chain, token])
+}
