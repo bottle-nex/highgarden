@@ -17,8 +17,8 @@ export default function LandingBentoSection(): JSX.Element {
                     <PredictionEntrySection />
                 </div>
                 <div className="grid w-full grid-cols-1 md:grid-cols-2 gap-2">
-                    <LiquidityCard />
                     <StackedCards />
+                    <LiquidityCard />
                 </div>
             </div>
         </section>
