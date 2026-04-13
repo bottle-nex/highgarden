@@ -15,7 +15,7 @@ declare module "next-auth" {
         expires: ISODateString;
     }
 
-    interface User extends UserType {}
+    type User = UserType;
 }
 
 declare module "next-auth/jwt" {
