@@ -1,3 +1,5 @@
+'use client';
+import Image from 'next/image';
 import CardHeader from './CardHeader';
 
 export default function PredictionEntrySection() {
@@ -16,18 +18,56 @@ export default function PredictionEntrySection() {
             </div>
 
             <div className="relative mt-25 flex flex-col gap-y-4 flex-1 items-center justify-center text-[17px] tracking-wide">
-                <div className="h-13 w-105 bg-linear-to-b from-[#16161A] via-[#16161A] to-[#16161A] rounded-sm inset-shadow-xs inset-shadow-white/5 flex justify-center items-center shadow-xl shadow-black">
+                <div className="h-13 w-105 bg-linear-to-b from-[#16161A] via-[#16161A] to-[#16161A] rounded-sm inset-shadow-xs inset-shadow-white/5 flex justify-center items-center gap-x-1 shadow-xl shadow-black">
+                    <div className="h-8 w-8 relative overflow-hidden">
+                        <Image
+                            src={'/images/assets/coins.png'}
+                            alt=""
+                            className="object-cover"
+                            fill
+                            unoptimized
+                        />
+                    </div>
                     Start Predicting
                 </div>
-                <div className="h-13 w-105 bg-linear-to-b from-[#16161A] via-[#16161A] to-[#16161A] rounded-sm inset-shadow-xs inset-shadow-white/5 flex justify-center items-center">
+                <div className="h-13 w-105 bg-linear-to-b from-[#16161A] via-[#16161A] to-[#16161A] rounded-sm inset-shadow-xs inset-shadow-white/5 flex justify-center items-center gap-x-1">
+                    <div className="h-8 w-8 relative overflow-hidden">
+                        <Image
+                            src={'/images/assets/globe.png'}
+                            alt=""
+                            className="object-cover"
+                            fill
+                            unoptimized
+                        />
+                    </div>
                     Explore Markets
                 </div>
-                <div className="h-13 w-105 bg-linear-to-b from-[#16161A] via-[#16161A] to-[#16161A] rounded-sm inset-shadow-xs inset-shadow-white/5 flex justify-center items-center">
+                <div className="h-13 w-105 bg-linear-to-b from-[#16161A] via-[#16161A] to-[#16161A] rounded-sm inset-shadow-xs inset-shadow-white/5 flex justify-center items-center gap-x-1">
+                    <div className="h-8 w-8 relative overflow-hidden">
+                        <Image
+                            src={'/images/assets/gold.png'}
+                            alt=""
+                            className="object-cover"
+                            fill
+                            unoptimized
+                        />
+                    </div>
                     Launch a Market
                 </div>
 
-                <div className="h-30 w-105 bg-linear-to-b from-[#16161A] via-[#16161A] to-transparent rounded-sm inset-shadow-xs inset-shadow-white/5 flex justify-center items-start py-3 text-blue-50/30">
-                    view live markets
+                <div className="h-30 w-105 bg-linear-to-b from-[#16161A] via-[#16161A] to-transparent rounded-sm inset-shadow-xs inset-shadow-white/5 flex justify-center items-start gap-x-1 py-3">
+                    <div className="flex items-center gap-x-1">
+                        <div className="h-8 w-8 relative overflow-hidden">
+                            <Image
+                                src={'/images/assets/building.png'}
+                                alt=""
+                                className="object-cover"
+                                fill
+                                unoptimized
+                            />
+                        </div>
+                        View Live Markets
+                    </div>
                 </div>
             </div>
         </div>
