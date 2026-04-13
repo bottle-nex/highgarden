@@ -1,6 +1,7 @@
 'use client';
 import { JSX, useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface InteractiveSectionType {
     id: number;
@@ -9,6 +10,7 @@ interface InteractiveSectionType {
     description: string;
     bullets: string[];
     cta: string;
+    image: string;
 }
 
 const sections: InteractiveSectionType[] = [
@@ -25,6 +27,7 @@ const sections: InteractiveSectionType[] = [
             'Search and filter by category, volume or close date',
         ],
         cta: 'EXPLORE MARKETS',
+        image: '/images/landing/landing.png',
     },
     {
         id: 2,
@@ -39,6 +42,7 @@ const sections: InteractiveSectionType[] = [
             'Transparent fees, baked into the price',
         ],
         cta: 'SEE A QUOTE',
+        image: '/images/landing/landing.png',
     },
     {
         id: 3,
@@ -53,6 +57,7 @@ const sections: InteractiveSectionType[] = [
             'No bridges, no wrapped assets, no detours',
         ],
         cta: 'CONNECT WALLET',
+        image: '/images/landing/landing.png',
     },
     {
         id: 4,
@@ -67,6 +72,7 @@ const sections: InteractiveSectionType[] = [
             'Hedge telemetry auditable on-chain',
         ],
         cta: 'HEDGING DETAILS',
+        image: '/images/landing/landing.png',
     },
     {
         id: 5,
@@ -81,6 +87,7 @@ const sections: InteractiveSectionType[] = [
             'Settlement fully on Solana — no bridging back',
         ],
         cta: 'CLAIM FLOW',
+        image: '/images/landing/landing.png',
     },
 ];
 
@@ -209,7 +216,22 @@ export default function LandingInteractiveSection(): JSX.Element {
                 </div>
 
                 <div className="w-full sticky top-10 h-screen flex items-center justify-center p-8">
-                    <div className="relative w-full h-full"></div>
+                    <div className="relative w-full h-full">
+                        {sections.map((section, i) => (
+                            <Image
+                                key={section.id}
+                                src={section.image}
+                                alt=""
+                                className={cn(
+                                    'object-cover transition-opacity duration-500 ease-out',
+                                    i === activeSection ? 'opacity-100' : 'opacity-0',
+                                )}
+                                fill
+                                unoptimized
+                                priority={i === 0}
+                            />
+                        ))}
+                    </div>
                 </div>
             </main>
         </section>

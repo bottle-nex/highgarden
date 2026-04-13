@@ -3,7 +3,7 @@ import CardHeader from './CardHeader';
 
 export default function StackedCards() {
     return (
-        <div className="group relative flex h-150 flex-col overflow-hidden bg-black p-10 transition-transform duration-300 ease-out hover:-translate-y-0.5">
+        <div className="group relative flex h-150 flex-col overflow-hidden bg-black p-10 transition-transform duration-300 ease-out">
             <CardHeader label="Live Markets" context="On-Chain Predictions" />
 
             <div className="mt-5">
@@ -19,7 +19,7 @@ export default function StackedCards() {
             </div>
 
             <div className="relative mt-25 flex flex-1 items-end justify-center">
-                <div className="absolute left-20 -top-5 h-100 w-70 bg-linear-to-b from-[#16161A] via-[#16161A] to-black rounded-sm p-4 flex flex-col gap-y-4 z-1">
+                <div className="absolute left-20 -top-5 h-110 w-70 bg-linear-to-b from-[#16161A] via-[#16161A] to-black rounded-sm p-4 flex flex-col gap-y-4 z-1">
                     <h4 className="text-sm text-neutral-300">Markets</h4>
 
                     {[
