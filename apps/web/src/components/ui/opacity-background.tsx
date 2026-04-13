@@ -1,7 +1,11 @@
 import { cn } from '@/lib/utils';
 import { createPortal } from 'react-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { motion } from 'motion/react';
+
+const subscribe = () => () => { };
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 interface OpacityBackgroundProps {
     children: React.ReactNode;
@@ -16,12 +20,7 @@ export default function OpacityBackground({
     onBackgroundClick,
     escapeClosing = false,
 }: OpacityBackgroundProps) {
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-        return () => setMounted(false);
-    }, []);
+    const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
     useEffect(() => {
         if (!escapeClosing) return;
