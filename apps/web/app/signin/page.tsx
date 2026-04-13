@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { Suspense, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -20,6 +20,14 @@ import { requestOtp } from '../actions/auth';
 type Step = 'email' | 'code';
 
 export default function SignInPage() {
+    return (
+        <Suspense fallback={null}>
+            <SignInInner />
+        </Suspense>
+    );
+}
+
+function SignInInner() {
     const router = useRouter();
     const params = useSearchParams();
     const callbackUrl = params.get('callbackUrl') ?? '/';
