@@ -34,12 +34,12 @@ export default function LandingNavbar() {
     return (
         <nav
             className={cn(
-                'fixed top-0 left-0 w-full z-50 flex items-center px-6 lg:px-10 transition-all duration-300',
-                isScrolled ? 'h-16 bg-black' : 'h-20 bg-black',
+                'fixed top-0 left-0 w-full z-50 flex items-center px-6 transition-all duration-300',
+                isScrolled ? 'h-16 bg-black' : 'h-20 bg-transparent',
             )}
         >
             <div className="flex-1 flex justify-start">
-                <span className={cn('text-white text-2xl font-bold tracking-tight cursor-pointer')}>
+                <span className={cn('text-white text-base tracking-tight cursor-pointer')}>
                     Solmarket
                 </span>
             </div>
@@ -48,7 +48,7 @@ export default function LandingNavbar() {
                 {['SOLUTIONS', 'RESOURCES', 'DOCS', 'ENTERPRISE'].map((item) => (
                     <span
                         key={item}
-                        className="text-[13px] font-medium tracking-wide text-white/90 hover:text-white cursor-pointer transition-colors whitespace-nowrap"
+                        className="text-[12px] font-medium tracking-wide text-white/90 hover:text-white cursor-pointer transition-colors whitespace-nowrap"
                     >
                         {item}
                     </span>
