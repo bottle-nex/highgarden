@@ -15,7 +15,8 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "generate": "turbo run generate",
     "lint": "turbo run lint",
-    "prepare": "husky"
+    "prepare": "husky",
+    "check-types": "turbo run check-types"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.1.0",
