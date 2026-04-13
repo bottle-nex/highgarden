@@ -22,58 +22,58 @@ export type OrderSide = 0 | 1;
 export type Outcome = 0 | 1;
 
 export interface QuoteInput {
-    market: PublicKey;
-    side: OrderSide;
-    outcome: Outcome;
-    price: number;
-    size: BN;
-    expiresAt: BN;
-    nonce: Buffer;
+  market: PublicKey;
+  side: OrderSide;
+  outcome: Outcome;
+  price: number;
+  size: BN;
+  expiresAt: BN;
+  nonce: Buffer;
 }
 
 export interface InitializeConfigParams {
-    admin: PublicKey;
-    oracleSigner: PublicKey;
-    quoteSigner: PublicKey;
-    usdcMint: PublicKey;
+  admin: PublicKey;
+  oracleSigner: PublicKey;
+  quoteSigner: PublicKey;
+  usdcMint: PublicKey;
 }
 
 export interface CreateMarketParams {
-    admin: PublicKey;
-    polymarketMarketId: string;
-    questionHash: Buffer | Uint8Array;
-    endTime: BN | number;
-    tickSize: number;
-    yesTokenId: string;
-    noTokenId: string;
+  admin: PublicKey;
+  polymarketMarketId: string;
+  questionHash: Buffer | Uint8Array;
+  endTime: BN | number;
+  tickSize: number;
+  yesTokenId: string;
+  noTokenId: string;
 }
 
 export interface PlaceOrderParams {
-    user: PublicKey;
-    quote: QuoteInput;
-    userUsdc: PublicKey;
-    ed25519Ix: TransactionInstruction;
+  user: PublicKey;
+  quote: QuoteInput;
+  userUsdc: PublicKey;
+  ed25519Ix: TransactionInstruction;
 }
 
 export interface ClaimParams {
-    user: PublicKey;
-    market: PublicKey;
-    userUsdc: PublicKey;
+  user: PublicKey;
+  market: PublicKey;
+  userUsdc: PublicKey;
 }
 
 export interface ResolveMarketParams {
-    oracleSigner: PublicKey;
-    market: PublicKey;
-    winningOutcome: Outcome;
+  oracleSigner: PublicKey;
+  market: PublicKey;
+  winningOutcome: Outcome;
 }
 
 export interface AdminMarketParams {
-    admin: PublicKey;
-    market: PublicKey;
+  admin: PublicKey;
+  market: PublicKey;
 }
 
 export interface CreateMarketResult {
-    signature: TransactionSignature;
-    marketPda: PublicKey;
-    polymarketMarketIdHash: Buffer;
+  signature: TransactionSignature;
+  marketPda: PublicKey;
+  polymarketMarketIdHash: Buffer;
 }

@@ -101,7 +101,7 @@ This is not a compromise we're embarrassed about; it's the same hybrid shape Pol
 
 #### 13. Frontend (Next.js), market metadata display, portfolio views
 
-**Why off-chain:** Obviously — it's a web UI. Worth stating explicitly only because the UI is *not* the source of truth for anything. Positions are read from on-chain PDAs, quotes come from the backend, market status comes from the chain. The frontend is a view layer; if it crashes, nothing about the user's funds or positions changes.
+**Why off-chain:** Obviously — it's a web UI. Worth stating explicitly only because the UI is _not_ the source of truth for anything. Positions are read from on-chain PDAs, quotes come from the backend, market status comes from the chain. The frontend is a view layer; if it crashes, nothing about the user's funds or positions changes.
 
 **Tradeoff accepted:** None — this is where centralisation is free.
 
@@ -109,21 +109,21 @@ This is not a compromise we're embarrassed about; it's the same hybrid shape Pol
 
 ## The dividing line, stated plainly
 
-| Concern                                     | On-chain (Solana)                | Off-chain (our backend)      |
-| ------------------------------------------- | -------------------------------- | ---------------------------- |
-| User USDC custody                           | ✅ treasury vault PDA            |                              |
-| User positions (shares)                     | ✅ `UserPosition` PDA            |                              |
-| Trade execution atomicity                   | ✅ `place_order`                 |                              |
-| Quote validity (signature, expiry, nonce)   | ✅ program verifies              | Signed by backend            |
-| Market pause / kill switch enforcement      | ✅ `market.status` gate          | Triggered by admin endpoint  |
-| Resolution enforcement + claim payouts      | ✅ `resolve_market` + `claim`    |                              |
-| Reading Polymarket order book               |                                  | ✅ mirror service            |
-| Quote pricing (with spread + capacity)      |                                  | ✅ signed-quote endpoint     |
-| Hedging trades on Polymarket                |                                  | ✅ hedging bot               |
-| Unhedged-delta tracking                     |                                  | ✅ exposure tracker          |
-| Oracle: reporting Polymarket outcome        |                                  | ✅ oracle signer (Phase 2: attestation service) |
-| Treasury rebalancing across chains          |                                  | ✅ manual script             |
-| UI, market list, portfolio                  |                                  | ✅ Next.js                   |
+| Concern                                   | On-chain (Solana)             | Off-chain (our backend)                         |
+| ----------------------------------------- | ----------------------------- | ----------------------------------------------- |
+| User USDC custody                         | ✅ treasury vault PDA         |                                                 |
+| User positions (shares)                   | ✅ `UserPosition` PDA         |                                                 |
+| Trade execution atomicity                 | ✅ `place_order`              |                                                 |
+| Quote validity (signature, expiry, nonce) | ✅ program verifies           | Signed by backend                               |
+| Market pause / kill switch enforcement    | ✅ `market.status` gate       | Triggered by admin endpoint                     |
+| Resolution enforcement + claim payouts    | ✅ `resolve_market` + `claim` |                                                 |
+| Reading Polymarket order book             |                               | ✅ mirror service                               |
+| Quote pricing (with spread + capacity)    |                               | ✅ signed-quote endpoint                        |
+| Hedging trades on Polymarket              |                               | ✅ hedging bot                                  |
+| Unhedged-delta tracking                   |                               | ✅ exposure tracker                             |
+| Oracle: reporting Polymarket outcome      |                               | ✅ oracle signer (Phase 2: attestation service) |
+| Treasury rebalancing across chains        |                               | ✅ manual script                                |
+| UI, market list, portfolio                |                               | ✅ Next.js                                      |
 
 The short version: **the chain holds the money and the rules; the server holds the prices and the plumbing**.
 
@@ -140,6 +140,7 @@ The short version: **the chain holds the money and the rules; the server holds t
 5. **Both.** Eventually the market resolves. The **centralised** oracle signer watches UMA on Polygon, waits 48h past finalisation, then calls the **decentralised** `resolve_market(YES)` instruction. Our Polymarket YES tokens redeem for $100 on Polygon (centralised — the bot calls `redeem`). Alice — whenever she wants, even if our backend is dead — calls the **decentralised** `claim` instruction and the program transfers $100 from the treasury vault PDA to her wallet and burns her shares.
 
 At every step, the **rule being enforced** determines the side of the line:
+
 - Quote pricing? Centralised — needs live off-chain data.
 - "This quote is really ours, hasn't been replayed, and hasn't expired"? Decentralised — the chain enforces it.
 - Hedging on Polymarket? Centralised — different chain, no other option.

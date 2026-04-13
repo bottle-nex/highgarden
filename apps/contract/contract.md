@@ -14,29 +14,30 @@ One-time bootstrap that creates the global `Config` PDA and the program's shared
 
 ### Parameters
 
-| Name | Type | Description |
-|------|------|-------------|
-| `oracle_signer` | `Pubkey` | Public key authorized to resolve markets. Stored in Config so `resolve_market` can verify the caller. |
-| `quote_signer` | `Pubkey` | Public key whose ed25519 signature is required on every `place_order` quote. This is the backend's signing key. |
+| Name            | Type     | Description                                                                                                     |
+| --------------- | -------- | --------------------------------------------------------------------------------------------------------------- |
+| `oracle_signer` | `Pubkey` | Public key authorized to resolve markets. Stored in Config so `resolve_market` can verify the caller.           |
+| `quote_signer`  | `Pubkey` | Public key whose ed25519 signature is required on every `place_order` quote. This is the backend's signing key. |
 
 ### Accounts
 
-| Account | Type | Mutable | Signer | Why |
-|---------|------|---------|--------|-----|
-| `admin` | `Signer` | yes | yes | Pays for account creation rent. Stored as `config.admin` — only this key can create markets and pause/unpause. |
-| `config` | `Config` (PDA) | yes | no | The global config account being created. Seeds: `["config"]`. Stores admin, oracle_signer, quote_signer, treasury addresses, and bumps. |
-| `treasury_authority` | `UncheckedAccount` (PDA) | no | no | PDA that owns the treasury vault token account. Seeds: `["treasury_authority"]`. The program uses this PDA to sign CPI transfers out of the vault (for sells and claims). Not writable because it holds no data — it's purely a signing authority. |
-| `treasury_vault` | `TokenAccount` (PDA) | yes | no | The USDC token account being created. Seeds: `["treasury_vault"]`. Holds all USDC deposited by buyers. Authority is set to `treasury_authority` so the program can transfer out via PDA signing. |
-| `usdc_mint` | `Mint` | no | no | The SPL token mint for USDC. Stored in Config so subsequent instructions can verify users pass the correct mint. |
-| `token_program` | `Program<Token>` | no | no | SPL Token program — needed to create the treasury vault token account. |
-| `system_program` | `Program<System>` | no | no | Needed to create the Config and treasury vault PDAs. |
-| `rent` | `Sysvar<Rent>` | no | no | Needed for token account initialization rent calculation. |
+| Account              | Type                     | Mutable | Signer | Why                                                                                                                                                                                                                                                |
+| -------------------- | ------------------------ | ------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `admin`              | `Signer`                 | yes     | yes    | Pays for account creation rent. Stored as `config.admin` — only this key can create markets and pause/unpause.                                                                                                                                     |
+| `config`             | `Config` (PDA)           | yes     | no     | The global config account being created. Seeds: `["config"]`. Stores admin, oracle_signer, quote_signer, treasury addresses, and bumps.                                                                                                            |
+| `treasury_authority` | `UncheckedAccount` (PDA) | no      | no     | PDA that owns the treasury vault token account. Seeds: `["treasury_authority"]`. The program uses this PDA to sign CPI transfers out of the vault (for sells and claims). Not writable because it holds no data — it's purely a signing authority. |
+| `treasury_vault`     | `TokenAccount` (PDA)     | yes     | no     | The USDC token account being created. Seeds: `["treasury_vault"]`. Holds all USDC deposited by buyers. Authority is set to `treasury_authority` so the program can transfer out via PDA signing.                                                   |
+| `usdc_mint`          | `Mint`                   | no      | no     | The SPL token mint for USDC. Stored in Config so subsequent instructions can verify users pass the correct mint.                                                                                                                                   |
+| `token_program`      | `Program<Token>`         | no      | no     | SPL Token program — needed to create the treasury vault token account.                                                                                                                                                                             |
+| `system_program`     | `Program<System>`        | no      | no     | Needed to create the Config and treasury vault PDAs.                                                                                                                                                                                               |
+| `rent`               | `Sysvar<Rent>`           | no      | no     | Needed for token account initialization rent calculation.                                                                                                                                                                                          |
 
 ### Procedure
 
 > Source: `instructions/initialize_config.rs` — `handler()` starts at line 45
 
 Before the handler runs, Anchor has already:
+
 - Created the `Config` PDA at seeds `["config"]`, paid by `admin` (line 12–18)
 - Created the `treasury_vault` token account PDA at seeds `["treasury_vault"]` with `mint = usdc_mint` and `authority = treasury_authority` (line 28–36)
 - Derived the `treasury_authority` PDA at seeds `["treasury_authority"]` (line 22–26)
@@ -66,8 +67,8 @@ None.
 
 ### Errors
 
-| Error | When |
-|-------|------|
+| Error                        | When                                                       |
+| ---------------------------- | ---------------------------------------------------------- |
 | Anchor `AccountAlreadyInUse` | Config PDA already exists (second initialization attempt). |
 
 ---
@@ -80,30 +81,31 @@ Creates a new prediction market linked to a Polymarket market. Admin-only. Each 
 
 ### Parameters
 
-| Name | Type | Description |
-|------|------|-------------|
+| Name                        | Type       | Description                                                                                                                             |
+| --------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `polymarket_market_id_hash` | `[u8; 32]` | SHA-256 hash of `polymarket_market_id`. Used as the PDA seed. The program recomputes the hash on-chain and rejects if it doesn't match. |
-| `polymarket_market_id` | `String` | The full Polymarket condition ID string (max 128 bytes). Stored in the Market account for event emission and backend lookups. |
-| `question_hash` | `[u8; 32]` | SHA-256 hash of the market question text. Stored for frontend/indexer reference. |
-| `end_time` | `i64` | Unix timestamp after which the market stops accepting orders. Must be in the future. |
-| `tick_size` | `u16` | Minimum price increment (in cents). Must be > 0. Stored for the backend's quote engine. |
-| `yes_token_id` | `String` | Polymarket's conditional token ID for the YES outcome (max 128 bytes). |
-| `no_token_id` | `String` | Polymarket's conditional token ID for the NO outcome (max 128 bytes). |
+| `polymarket_market_id`      | `String`   | The full Polymarket condition ID string (max 128 bytes). Stored in the Market account for event emission and backend lookups.           |
+| `question_hash`             | `[u8; 32]` | SHA-256 hash of the market question text. Stored for frontend/indexer reference.                                                        |
+| `end_time`                  | `i64`      | Unix timestamp after which the market stops accepting orders. Must be in the future.                                                    |
+| `tick_size`                 | `u16`      | Minimum price increment (in cents). Must be > 0. Stored for the backend's quote engine.                                                 |
+| `yes_token_id`              | `String`   | Polymarket's conditional token ID for the YES outcome (max 128 bytes).                                                                  |
+| `no_token_id`               | `String`   | Polymarket's conditional token ID for the NO outcome (max 128 bytes).                                                                   |
 
 ### Accounts
 
-| Account | Type | Mutable | Signer | Why |
-|---------|------|---------|--------|-----|
-| `admin` | `Signer` | yes | yes | Must match `config.admin`. Pays rent for the new Market PDA. |
-| `config` | `Config` (PDA) | no | no | Read to verify `has_one = admin`. Seeds: `["config"]`. |
-| `market` | `Market` (PDA) | yes | no | The market account being created. Seeds: `["market", polymarket_market_id_hash]`. |
-| `system_program` | `Program<System>` | no | no | Needed to create the Market PDA. |
+| Account          | Type              | Mutable | Signer | Why                                                                               |
+| ---------------- | ----------------- | ------- | ------ | --------------------------------------------------------------------------------- |
+| `admin`          | `Signer`          | yes     | yes    | Must match `config.admin`. Pays rent for the new Market PDA.                      |
+| `config`         | `Config` (PDA)    | no      | no     | Read to verify `has_one = admin`. Seeds: `["config"]`.                            |
+| `market`         | `Market` (PDA)    | yes     | no     | The market account being created. Seeds: `["market", polymarket_market_id_hash]`. |
+| `system_program` | `Program<System>` | no      | no     | Needed to create the Market PDA.                                                  |
 
 ### Procedure
 
 > Source: `instructions/create_market.rs` — `handler()` starts at line 33
 
 Before the handler runs, Anchor has already:
+
 - Verified `config.admin == admin.key()` via `has_one` (line 17) → `Unauthorized` if mismatch
 - Created the `Market` PDA at seeds `["market", polymarket_market_id_hash]` (line 21–28)
 
@@ -156,13 +158,13 @@ None.
 
 ### Errors
 
-| Error | When |
-|-------|------|
-| `Unauthorized` | `admin` does not match `config.admin`. |
-| `InvalidMarketId` | `polymarket_market_id` exceeds 128 bytes, token IDs exceed 128 bytes, or the provided hash doesn't match `sha256(polymarket_market_id)`. |
-| `MarketEnded` | `end_time` is not in the future. |
-| `InvalidPrice` | `tick_size` is 0. |
-| Anchor `AccountAlreadyInUse` | A market with this `polymarket_market_id_hash` PDA already exists. |
+| Error                        | When                                                                                                                                     |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `Unauthorized`               | `admin` does not match `config.admin`.                                                                                                   |
+| `InvalidMarketId`            | `polymarket_market_id` exceeds 128 bytes, token IDs exceed 128 bytes, or the provided hash doesn't match `sha256(polymarket_market_id)`. |
+| `MarketEnded`                | `end_time` is not in the future.                                                                                                         |
+| `InvalidPrice`               | `tick_size` is 0.                                                                                                                        |
+| Anchor `AccountAlreadyInUse` | A market with this `polymarket_market_id_hash` PDA already exists.                                                                       |
 
 ---
 
@@ -179,37 +181,37 @@ Every quote must be signed by the `config.quote_signer` key using ed25519. The s
 
 ### Parameters
 
-| Name | Type | Description |
-|------|------|-------------|
+| Name    | Type          | Description                                                       |
+| ------- | ------------- | ----------------------------------------------------------------- |
 | `quote` | `SignedQuote` | The signed quote struct containing all trade details (see below). |
 
 **SignedQuote fields:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `market` | `Pubkey` | The Market PDA this quote applies to. Must match the `market` account passed in. |
-| `side` | `u8` | `0` = BUY, `1` = SELL. |
-| `outcome` | `u8` | `0` = YES, `1` = NO. |
-| `price` | `u16` | Price in cents (1–99). A price of 50 means $0.50 per share. |
-| `size` | `u64` | Number of shares. Must be > 0. |
-| `expires_at` | `i64` | Unix timestamp after which the quote is invalid. Typically `now + 5 seconds`. |
-| `nonce` | `[u8; 16]` | 16-byte random value for replay protection. Each nonce can only be used once across all time. |
+| Field        | Type       | Description                                                                                   |
+| ------------ | ---------- | --------------------------------------------------------------------------------------------- |
+| `market`     | `Pubkey`   | The Market PDA this quote applies to. Must match the `market` account passed in.              |
+| `side`       | `u8`       | `0` = BUY, `1` = SELL.                                                                        |
+| `outcome`    | `u8`       | `0` = YES, `1` = NO.                                                                          |
+| `price`      | `u16`      | Price in cents (1–99). A price of 50 means $0.50 per share.                                   |
+| `size`       | `u64`      | Number of shares. Must be > 0.                                                                |
+| `expires_at` | `i64`      | Unix timestamp after which the quote is invalid. Typically `now + 5 seconds`.                 |
+| `nonce`      | `[u8; 16]` | 16-byte random value for replay protection. Each nonce can only be used once across all time. |
 
 ### Accounts
 
-| Account | Type | Mutable | Signer | Why |
-|---------|------|---------|--------|-----|
-| `user` | `Signer` | yes | yes | The trader. Pays rent for `UsedNonce` and `UserPosition` (if first trade). Signs the transaction to authorize USDC transfer (for BUY). |
-| `config` | `Config` (PDA) | no | no | Read to get `quote_signer` (for signature verification), `treasury_vault` address, `usdc_mint`, and `treasury_authority_bump`. Seeds: `["config"]`. |
-| `market` | `Market` | yes | no | The market being traded on. Writable because `total_yes`/`total_no` are updated. Ownership checked by Anchor (must be owned by this program). |
-| `user_position` | `UserPosition` (PDA) | yes | no | Tracks the user's YES and NO share balances for this market. Created on first trade via `init_if_needed`. Seeds: `["position", user, market]`. |
-| `used_nonce` | `UsedNonce` (PDA) | yes | no | Created with `init` — if this PDA already exists, the transaction fails (replay protection). Seeds: `["nonce", quote.nonce]`. |
-| `user_usdc` | `TokenAccount` | yes | no | The user's USDC token account. Constrained to `owner == user` and `mint == config.usdc_mint`. Source for BUY transfers, destination for SELL transfers. |
-| `treasury_vault` | `TokenAccount` | yes | no | The program's USDC vault. Constrained to `address == config.treasury_vault`. Destination for BUY transfers, source for SELL transfers. |
-| `treasury_authority` | `UncheckedAccount` (PDA) | no | no | PDA authority over the treasury vault. Used as signer for CPI transfers on SELL. Seeds: `["treasury_authority"]`. Bump verified against `config.treasury_authority_bump`. |
-| `instructions_sysvar` | `UncheckedAccount` | no | no | The instructions sysvar (`SysvarInstructions1111111111111111111111111`). Used to read the previous Ed25519 instruction for signature verification. Address-checked. |
-| `token_program` | `Program<Token>` | no | no | SPL Token program for USDC CPI transfers. |
-| `system_program` | `Program<System>` | no | no | Needed to create `UsedNonce` and `UserPosition` PDAs. |
+| Account               | Type                     | Mutable | Signer | Why                                                                                                                                                                       |
+| --------------------- | ------------------------ | ------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `user`                | `Signer`                 | yes     | yes    | The trader. Pays rent for `UsedNonce` and `UserPosition` (if first trade). Signs the transaction to authorize USDC transfer (for BUY).                                    |
+| `config`              | `Config` (PDA)           | no      | no     | Read to get `quote_signer` (for signature verification), `treasury_vault` address, `usdc_mint`, and `treasury_authority_bump`. Seeds: `["config"]`.                       |
+| `market`              | `Market`                 | yes     | no     | The market being traded on. Writable because `total_yes`/`total_no` are updated. Ownership checked by Anchor (must be owned by this program).                             |
+| `user_position`       | `UserPosition` (PDA)     | yes     | no     | Tracks the user's YES and NO share balances for this market. Created on first trade via `init_if_needed`. Seeds: `["position", user, market]`.                            |
+| `used_nonce`          | `UsedNonce` (PDA)        | yes     | no     | Created with `init` — if this PDA already exists, the transaction fails (replay protection). Seeds: `["nonce", quote.nonce]`.                                             |
+| `user_usdc`           | `TokenAccount`           | yes     | no     | The user's USDC token account. Constrained to `owner == user` and `mint == config.usdc_mint`. Source for BUY transfers, destination for SELL transfers.                   |
+| `treasury_vault`      | `TokenAccount`           | yes     | no     | The program's USDC vault. Constrained to `address == config.treasury_vault`. Destination for BUY transfers, source for SELL transfers.                                    |
+| `treasury_authority`  | `UncheckedAccount` (PDA) | no      | no     | PDA authority over the treasury vault. Used as signer for CPI transfers on SELL. Seeds: `["treasury_authority"]`. Bump verified against `config.treasury_authority_bump`. |
+| `instructions_sysvar` | `UncheckedAccount`       | no      | no     | The instructions sysvar (`SysvarInstructions1111111111111111111111111`). Used to read the previous Ed25519 instruction for signature verification. Address-checked.       |
+| `token_program`       | `Program<Token>`         | no      | no     | SPL Token program for USDC CPI transfers.                                                                                                                                 |
+| `system_program`      | `Program<System>`        | no      | no     | Needed to create `UsedNonce` and `UserPosition` PDAs.                                                                                                                     |
 
 ### Procedure
 
@@ -217,6 +219,7 @@ Every quote must be signed by the `config.quote_signer` key using ed25519. The s
 > Ed25519 verification sub-routine: `utils/ed25519.rs` — `verify_signed_quote()` starts at line 19
 
 Before the handler runs, Anchor has already:
+
 - Loaded and deserialized `config` from seeds `["config"]` (line 20–24)
 - Loaded and deserialized `market` (line 26–27)
 - Created or loaded `user_position` via `init_if_needed` at seeds `["position", user, market]` (line 29–36)
@@ -374,28 +377,28 @@ line 141│ Return Ok(())
 
 ### Events
 
-| Event | When |
-|-------|------|
+| Event                                                                                   | When                                                                                                                                     |
+| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `OrderFilled { user, market, polymarket_market_id, side, outcome, size, price, nonce }` | Emitted after every successful BUY or SELL. The backend's hedging bot subscribes to this event to place offsetting orders on Polymarket. |
 
 ### Errors
 
-| Error | When |
-|-------|------|
-| `MissingSignature` | No instruction exists before `place_order`, or it couldn't be loaded from the sysvar. |
-| `InvalidSignature` | The previous instruction is not the Ed25519 program, has wrong number of signatures, wrong public key (not `config.quote_signer`), wrong message (doesn't match Borsh-serialized quote), or instruction indices are not `u16::MAX`. |
-| `QuoteExpired` | `quote.expires_at <= clock.unix_timestamp`. |
-| `MarketMismatch` | `quote.market != market.key()`. |
-| `MarketClosed` | `market.status` is not `Open` (already resolved or cancelled). |
-| `MarketPaused` | `market.paused` is true (admin activated kill switch). |
-| `MarketEnded` | Current time is past `market.end_time`. |
-| `InvalidOutcome` | `quote.outcome` is not 0 or 1. |
-| `InvalidSide` | `quote.side` is not 0 or 1. |
-| `InvalidPrice` | `quote.price` is 0 or >= 100. |
-| `InvalidSize` | `quote.size` is 0. |
-| `MathOverflow` | Arithmetic overflow in USDC calculation or share increment/decrement. |
-| `InsufficientShares` | SELL attempted with more shares than the user holds. |
-| Anchor `AccountAlreadyInUse` | The nonce has already been used (replay attempt). |
+| Error                        | When                                                                                                                                                                                                                                |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MissingSignature`           | No instruction exists before `place_order`, or it couldn't be loaded from the sysvar.                                                                                                                                               |
+| `InvalidSignature`           | The previous instruction is not the Ed25519 program, has wrong number of signatures, wrong public key (not `config.quote_signer`), wrong message (doesn't match Borsh-serialized quote), or instruction indices are not `u16::MAX`. |
+| `QuoteExpired`               | `quote.expires_at <= clock.unix_timestamp`.                                                                                                                                                                                         |
+| `MarketMismatch`             | `quote.market != market.key()`.                                                                                                                                                                                                     |
+| `MarketClosed`               | `market.status` is not `Open` (already resolved or cancelled).                                                                                                                                                                      |
+| `MarketPaused`               | `market.paused` is true (admin activated kill switch).                                                                                                                                                                              |
+| `MarketEnded`                | Current time is past `market.end_time`.                                                                                                                                                                                             |
+| `InvalidOutcome`             | `quote.outcome` is not 0 or 1.                                                                                                                                                                                                      |
+| `InvalidSide`                | `quote.side` is not 0 or 1.                                                                                                                                                                                                         |
+| `InvalidPrice`               | `quote.price` is 0 or >= 100.                                                                                                                                                                                                       |
+| `InvalidSize`                | `quote.size` is 0.                                                                                                                                                                                                                  |
+| `MathOverflow`               | Arithmetic overflow in USDC calculation or share increment/decrement.                                                                                                                                                               |
+| `InsufficientShares`         | SELL attempted with more shares than the user holds.                                                                                                                                                                                |
+| Anchor `AccountAlreadyInUse` | The nonce has already been used (replay attempt).                                                                                                                                                                                   |
 
 ---
 
@@ -409,23 +412,24 @@ In production, the backend calls this after Polymarket resolves the correspondin
 
 ### Parameters
 
-| Name | Type | Description |
-|------|------|-------------|
+| Name              | Type | Description                    |
+| ----------------- | ---- | ------------------------------ |
 | `winning_outcome` | `u8` | `0` = YES wins, `1` = NO wins. |
 
 ### Accounts
 
-| Account | Type | Mutable | Signer | Why |
-|---------|------|---------|--------|-----|
-| `config` | `Config` (PDA) | no | no | Read to verify `has_one = oracle_signer`. Seeds: `["config"]`. |
-| `oracle_signer` | `Signer` | no | yes | Must match `config.oracle_signer`. This is the trusted resolution authority. |
-| `market` | `Market` (PDA) | yes | no | The market being resolved. Seeds: `["market", market.polymarket_market_id_hash]`. Writable because `status` and `winning_outcome` are updated. |
+| Account         | Type           | Mutable | Signer | Why                                                                                                                                            |
+| --------------- | -------------- | ------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `config`        | `Config` (PDA) | no      | no     | Read to verify `has_one = oracle_signer`. Seeds: `["config"]`.                                                                                 |
+| `oracle_signer` | `Signer`       | no      | yes    | Must match `config.oracle_signer`. This is the trusted resolution authority.                                                                   |
+| `market`        | `Market` (PDA) | yes     | no     | The market being resolved. Seeds: `["market", market.polymarket_market_id_hash]`. Writable because `status` and `winning_outcome` are updated. |
 
 ### Procedure
 
 > Source: `instructions/resolve_market.rs` — `handler()` starts at line 27
 
 Before the handler runs, Anchor has already:
+
 - Verified `config.oracle_signer == oracle_signer.key()` via `has_one` (line 13) → `Unauthorized` if mismatch
 - Verified the market PDA seeds `["market", market.polymarket_market_id_hash]` and bump (line 19–23)
 
@@ -456,17 +460,17 @@ line 20 │ Return Ok(())
 
 ### Events
 
-| Event | When |
-|-------|------|
+| Event                                        | When                                               |
+| -------------------------------------------- | -------------------------------------------------- |
 | `MarketResolved { market, winning_outcome }` | Emitted after the market is successfully resolved. |
 
 ### Errors
 
-| Error | When |
-|-------|------|
-| `Unauthorized` | `oracle_signer` does not match `config.oracle_signer`. |
-| `InvalidOutcome` | `winning_outcome` is not 0 or 1. |
-| `MarketClosed` | Market is already resolved or cancelled. |
+| Error            | When                                                   |
+| ---------------- | ------------------------------------------------------ |
+| `Unauthorized`   | `oracle_signer` does not match `config.oracle_signer`. |
+| `InvalidOutcome` | `winning_outcome` is not 0 or 1.                       |
+| `MarketClosed`   | Market is already resolved or cancelled.               |
 
 ---
 
@@ -482,22 +486,23 @@ None. All information is derived from the accounts.
 
 ### Accounts
 
-| Account | Type | Mutable | Signer | Why |
-|---------|------|---------|--------|-----|
-| `user` | `Signer` | yes | yes | The claiming user. Must match `user_position.user`. |
-| `config` | `Config` (PDA) | no | no | Read to get `treasury_vault` address, `usdc_mint`, and `treasury_authority_bump`. Seeds: `["config"]`. |
-| `market` | `Market` | no | no | Read to check `status == Resolved` and get `winning_outcome`. Not writable since totals aren't updated on claim. |
-| `user_position` | `UserPosition` (PDA) | yes | no | The user's share balances. Seeds: `["position", user, market]`. Winning shares are zeroed out. Constrained with `has_one = user` and `has_one = market` to prevent claiming someone else's position. |
-| `user_usdc` | `TokenAccount` | yes | no | The user's USDC token account. Receives the payout. Constrained to `owner == user` and `mint == config.usdc_mint`. |
-| `treasury_vault` | `TokenAccount` | yes | no | The program's USDC vault. Source of the payout. Constrained to `address == config.treasury_vault`. |
-| `treasury_authority` | `UncheckedAccount` (PDA) | no | no | PDA authority over the treasury vault. Signs the CPI transfer. Seeds: `["treasury_authority"]`. Bump verified against `config.treasury_authority_bump`. |
-| `token_program` | `Program<Token>` | no | no | SPL Token program for the USDC CPI transfer. |
+| Account              | Type                     | Mutable | Signer | Why                                                                                                                                                                                                  |
+| -------------------- | ------------------------ | ------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `user`               | `Signer`                 | yes     | yes    | The claiming user. Must match `user_position.user`.                                                                                                                                                  |
+| `config`             | `Config` (PDA)           | no      | no     | Read to get `treasury_vault` address, `usdc_mint`, and `treasury_authority_bump`. Seeds: `["config"]`.                                                                                               |
+| `market`             | `Market`                 | no      | no     | Read to check `status == Resolved` and get `winning_outcome`. Not writable since totals aren't updated on claim.                                                                                     |
+| `user_position`      | `UserPosition` (PDA)     | yes     | no     | The user's share balances. Seeds: `["position", user, market]`. Winning shares are zeroed out. Constrained with `has_one = user` and `has_one = market` to prevent claiming someone else's position. |
+| `user_usdc`          | `TokenAccount`           | yes     | no     | The user's USDC token account. Receives the payout. Constrained to `owner == user` and `mint == config.usdc_mint`.                                                                                   |
+| `treasury_vault`     | `TokenAccount`           | yes     | no     | The program's USDC vault. Source of the payout. Constrained to `address == config.treasury_vault`.                                                                                                   |
+| `treasury_authority` | `UncheckedAccount` (PDA) | no      | no     | PDA authority over the treasury vault. Signs the CPI transfer. Seeds: `["treasury_authority"]`. Bump verified against `config.treasury_authority_bump`.                                              |
+| `token_program`      | `Program<Token>`         | no      | no     | SPL Token program for the USDC CPI transfer.                                                                                                                                                         |
 
 ### Procedure
 
 > Source: `instructions/claim.rs` — `handler()` starts at line 57
 
 Before the handler runs, Anchor has already:
+
 - Verified `user_position.user == user.key()` via `has_one` (line 29)
 - Verified `user_position.market == market.key()` via `has_one` (line 30)
 - Verified `user_usdc.owner == user` and `user_usdc.mint == config.usdc_mint` (line 35–38)
@@ -564,19 +569,19 @@ line 53 │ Return Ok(())
 
 ### Events
 
-| Event | When |
-|-------|------|
+| Event                                               | When                                                                           |
+| --------------------------------------------------- | ------------------------------------------------------------------------------ |
 | `Claimed { user, market, outcome, shares, payout }` | Emitted after a successful claim. `payout` is in USDC base units (6 decimals). |
 
 ### Errors
 
-| Error | When |
-|-------|------|
-| `MarketNotResolved` | Market status is not `Resolved`, or `winning_outcome` is `None`. |
-| `NoWinningShares` | User has 0 winning shares (never bought them, or already claimed). |
-| `MathOverflow` | Payout calculation overflows (extremely large share count). |
-| `Unauthorized` | `user_position.user != user.key()` or `user_usdc.owner != user.key()`. |
-| `MarketMismatch` | `user_position.market != market.key()`. |
+| Error               | When                                                                   |
+| ------------------- | ---------------------------------------------------------------------- |
+| `MarketNotResolved` | Market status is not `Resolved`, or `winning_outcome` is `None`.       |
+| `NoWinningShares`   | User has 0 winning shares (never bought them, or already claimed).     |
+| `MathOverflow`      | Payout calculation overflows (extremely large share count).            |
+| `Unauthorized`      | `user_position.user != user.key()` or `user_usdc.owner != user.key()`. |
+| `MarketMismatch`    | `user_position.market != market.key()`.                                |
 
 ---
 
@@ -594,17 +599,18 @@ None.
 
 ### Accounts
 
-| Account | Type | Mutable | Signer | Why |
-|---------|------|---------|--------|-----|
-| `config` | `Config` (PDA) | no | no | Read to verify `has_one = admin`. Seeds: `["config"]`. |
-| `admin` | `Signer` | no | yes | Must match `config.admin`. Only the admin can pause. |
-| `market` | `Market` (PDA) | yes | no | The market being paused. Seeds: `["market", market.polymarket_market_id_hash]`. Writable because `paused` is updated. |
+| Account  | Type           | Mutable | Signer | Why                                                                                                                   |
+| -------- | -------------- | ------- | ------ | --------------------------------------------------------------------------------------------------------------------- |
+| `config` | `Config` (PDA) | no      | no     | Read to verify `has_one = admin`. Seeds: `["config"]`.                                                                |
+| `admin`  | `Signer`       | no      | yes    | Must match `config.admin`. Only the admin can pause.                                                                  |
+| `market` | `Market` (PDA) | yes     | no     | The market being paused. Seeds: `["market", market.polymarket_market_id_hash]`. Writable because `paused` is updated. |
 
 ### Procedure
 
 > Source: `instructions/admin.rs` — `pause_handler()` starts at line 26
 
 Before the handler runs, Anchor has already:
+
 - Verified `config.admin == admin.key()` via `has_one` (line 12) → `Unauthorized` if mismatch
 - Verified market PDA seeds `["market", market.polymarket_market_id_hash]` and bump (line 19–22)
 
@@ -626,8 +632,8 @@ None.
 
 ### Errors
 
-| Error | When |
-|-------|------|
+| Error          | When                                   |
+| -------------- | -------------------------------------- |
 | `Unauthorized` | `admin` does not match `config.admin`. |
 
 ---
@@ -668,6 +674,6 @@ None.
 
 ### Errors
 
-| Error | When |
-|-------|------|
+| Error          | When                                   |
+| -------------- | -------------------------------------- |
 | `Unauthorized` | `admin` does not match `config.admin`. |

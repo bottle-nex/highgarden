@@ -118,9 +118,10 @@ function TransformingItem({
             }}
             className={`
                 shrink-0 w-16 h-16 rounded-full flex items-center justify-center text-[14px] font-bold border-2 transition-all duration-500 ease-out
-                ${isTransformed
-                    ? 'border-[#26d367] text-[#26d367] bg-[#001006] shadow-[0_0_20px_rgba(38,211,103,0.15)]'
-                    : 'border-white/10 text-white/30 bg-dark-alpha'
+                ${
+                    isTransformed
+                        ? 'border-[#26d367] text-[#26d367] bg-[#001006] shadow-[0_0_20px_rgba(38,211,103,0.15)]'
+                        : 'border-white/10 text-white/30 bg-dark-alpha'
                 }
             `}
         >
