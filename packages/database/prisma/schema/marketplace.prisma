@@ -1,5 +1,5 @@
 model Market {
-    id          String  @id @default(cuid())
+    id          String @id @default(cuid())
     name        String
     description String
 
@@ -8,19 +8,34 @@ model Market {
     polyMarketId String     @unique
     polymarket   PolyMarket @relation(fields: [polyMarketId], references: [id])
 
-    status          MarketStatus @default(OPEN)
-    winningOutcome  Outcome?
+    status         MarketStatus @default(OPEN)
+    winningOutcome Outcome?
 
-    createdAt DateTime @default(now())
-    endAt     DateTime
+    createdAt  DateTime  @default(now())
+    endAt      DateTime
     resolvedAt DateTime?
 
     quotes   Quote[]
     fills    Fill[]
     exposure Exposure?
+    listing  Listing?
 
     @@unique([id, polyMarketId])
     @@unique([id, solanaMarketPda])
+}
+
+model Listing {
+    marketId     String        @id
+    market       Market        @relation(fields: [marketId], references: [id])
+    status       ListingStatus @default(PENDING)
+    volume24hUsd Float?
+    liquidityUsd Float?
+    lastSyncedAt DateTime?
+    discoveredAt    DateTime  @default(now())
+    approvedAt      DateTime?
+    approvedBy      String?
+    rejectedAt      DateTime?
+    rejectionReason String?
 }
 
 model PolyMarket {
@@ -87,9 +102,9 @@ model Hedge {
 }
 
 model Exposure {
-    marketId    String @id
-    market      Market @relation(fields: [marketId], references: [id])
-    unhedgedUsd Int    @default(0)
+    marketId    String   @id
+    market      Market   @relation(fields: [marketId], references: [id])
+    unhedgedUsd Int      @default(0)
     updatedAt   DateTime @updatedAt
 }
 
