@@ -37,3 +37,4 @@ apps/web/.env
 
 # contract
 target/
+packages/contract/dist/

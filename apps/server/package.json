@@ -11,9 +11,10 @@
     "lint": "eslint . --max-warnings 0"
   },
   "devDependencies": {
-    "@repo/eslint-config": "*",
-    "@repo/typescript-config": "*",
-    "@repo/database": "*",
+    "@solmarket/eslint-config": "*",
+    "@solmarket/typescript-config": "*",
+    "@solmarket/database": "*",
+    "@solmarket/types": "*",
     "@types/bun": "latest",
     "eslint": "^8.57.0"
   },
