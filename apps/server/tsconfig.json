@@ -1,13 +1,9 @@
 {
   "compilerOptions": {
     // Environment setup & latest features
-    "lib": [
-      "ESNext"
-    ],
+    "lib": ["ESNext"],
     "forceConsistentCasingInFileNames": true,
-    "types": [
-      "bun"
-    ],
+    "types": ["bun"],
     "target": "ESNext",
     "module": "ESNext",
     "moduleDetection": "force",
@@ -29,8 +25,5 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "include": [
-    "**/*.ts",
-    "types/**/*.d.ts"
-  ]
+  "include": ["**/*.ts", "types/**/*.d.ts"]
 }

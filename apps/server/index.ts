@@ -13,10 +13,10 @@ services.boot();
 
 const app = express();
 app.use(
-    cors({
-        origin: ENV.SERVER_WEB_ORIGIN,
-        credentials: true,
-    }),
+  cors({
+    origin: ENV.SERVER_WEB_ORIGIN,
+    credentials: true,
+  }),
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -28,5 +28,5 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 app.listen(ENV.SERVER_PORT, () => {
-    console.log(`server up on :${ENV.SERVER_PORT}`);
+  console.log(`server up on :${ENV.SERVER_PORT}`);
 });

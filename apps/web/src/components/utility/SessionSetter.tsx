@@ -13,7 +13,7 @@ export default function SessionSetter() {
         } else if (session.status === 'unauthenticated') {
             setSession(null);
         }
-    }, [session.status, session.data, setSession])
+    }, [session.status, session.data, setSession]);
 
     return null;
 }

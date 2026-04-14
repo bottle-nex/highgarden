@@ -1,9 +1,9 @@
-import type { NextAuthOptions, Account, ISODateString } from "next-auth";
-import type { JWT } from "next-auth/jwt";
-import GoogleProvider from "next-auth/providers/google";
-import CredentialsProvider from "next-auth/providers/credentials";
-import axios from "axios";
-import { SIGNIN_URL, VERIFY_OTP_URL } from "@/routes/routes.api";
+import type { NextAuthOptions, Account, ISODateString } from 'next-auth';
+import type { JWT } from 'next-auth/jwt';
+import GoogleProvider from 'next-auth/providers/google';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import axios from 'axios';
+import { SIGNIN_URL, VERIFY_OTP_URL } from '@/routes/routes.api';
 
 export interface UserType {
     id?: string | null;
@@ -20,14 +20,14 @@ export interface CustomSession {
 }
 
 export const authOption: NextAuthOptions = {
-    session: { strategy: "jwt" },
+    session: { strategy: 'jwt' },
     pages: {
-        signIn: "/signin",
+        signIn: '/signin',
     },
     callbacks: {
         async signIn({ user, account }: { user: UserType; account: Account | null }) {
             try {
-                if (account?.provider === "google") {
+                if (account?.provider === 'google') {
                     const response = await axios.post(SIGNIN_URL, {
                         user,
                         account,
@@ -38,19 +38,19 @@ export const authOption: NextAuthOptions = {
                     if (result?.success) {
                         user.id = result.data.user.id.toString();
                         user.token = result.data.token;
-                        user.provider = "google";
+                        user.provider = 'google';
                         return true;
                     }
                     return false;
                 }
 
-                if (account?.provider === "email-otp") {
+                if (account?.provider === 'email-otp') {
                     return !!user;
                 }
 
                 return false;
             } catch (err) {
-                console.error("[next-auth signIn]", err);
+                console.error('[next-auth signIn]', err);
                 return false;
             }
         },
@@ -67,22 +67,22 @@ export const authOption: NextAuthOptions = {
     },
     providers: [
         GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID || "",
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+            clientId: process.env.GOOGLE_CLIENT_ID || '',
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
             authorization: {
                 params: {
-                    prompt: "consent",
-                    access_type: "offline",
-                    response_type: "code",
+                    prompt: 'consent',
+                    access_type: 'offline',
+                    response_type: 'code',
                 },
             },
         }),
         CredentialsProvider({
-            id: "email-otp",
-            name: "Email OTP",
+            id: 'email-otp',
+            name: 'Email OTP',
             credentials: {
-                email: { label: "Email", type: "email" },
-                code: { label: "Code", type: "text" },
+                email: { label: 'Email', type: 'email' },
+                code: { label: 'Code', type: 'text' },
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.code) return null;
@@ -102,7 +102,7 @@ export const authOption: NextAuthOptions = {
                             name: user.name ?? null,
                             email: user.email,
                             image: user.image ?? null,
-                            provider: "email-otp",
+                            provider: 'email-otp',
                             token,
                         };
                     }

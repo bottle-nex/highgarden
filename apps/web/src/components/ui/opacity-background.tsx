@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useEffect, useSyncExternalStore } from 'react';
 import { motion } from 'motion/react';
 
-const subscribe = () => () => { };
+const subscribe = () => () => {};
 const getSnapshot = () => true;
 const getServerSnapshot = () => false;
 
