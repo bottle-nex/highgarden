@@ -15,12 +15,12 @@ const env_schema = z.object({
 export let ENV: z.infer<typeof env_schema>;
 
 export default class EnvService {
-  public static parse_env() {
-    const result = env_schema.safeParse(process.env);
-    if (!result.success) {
-      console.error("[env] failed to parse server environment:", result.error.issues);
-      process.exit(1);
+    public static parse_env() {
+        const result = env_schema.safeParse(process.env);
+        if (!result.success) {
+            console.error("[env] failed to parse server environment:", result.error.issues);
+            process.exit(1);
+        }
+        ENV = result.data;
     }
-    ENV = result.data;
-  }
 }
