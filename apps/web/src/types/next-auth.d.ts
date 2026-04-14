@@ -1,4 +1,4 @@
-import type { ISODateString } from "next-auth";
+import type { ISODateString } from 'next-auth';
 
 export interface UserType {
     id?: string | null;
@@ -9,7 +9,7 @@ export interface UserType {
     token?: string | null;
 }
 
-declare module "next-auth" {
+declare module 'next-auth' {
     interface Session {
         user?: UserType;
         expires: ISODateString;
@@ -18,7 +18,7 @@ declare module "next-auth" {
     type User = UserType;
 }
 
-declare module "next-auth/jwt" {
+declare module 'next-auth/jwt' {
     interface JWT {
         user?: UserType;
     }

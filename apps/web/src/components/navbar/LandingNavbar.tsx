@@ -5,7 +5,6 @@ import { Button } from '../ui/button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { useRouter } from 'next/navigation';
 
-
 export default function LandingNavbar() {
     const router = useRouter();
     const { session } = useUserSessionStore();
@@ -57,7 +56,10 @@ export default function LandingNavbar() {
 
             <div className="flex-1 flex items-center justify-end gap-x-6">
                 <div className="flex items-center gap-x-3">
-                    <Button onClick={handleGetStarted} className="bg-[#FF5100] text-white px-5 py-4 rounded-full text-[13px] font-bold hover:bg-[#e64900] transition-all">
+                    <Button
+                        onClick={handleGetStarted}
+                        className="bg-[#FF5100] text-white px-5 py-4 rounded-full text-[13px] font-bold hover:bg-[#e64900] transition-all"
+                    >
                         GET STARTED
                     </Button>
                 </div>

@@ -8,11 +8,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-    InputOTP,
-    InputOTPGroup,
-    InputOTPSlot,
-} from '@/components/ui/input-otp';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import OpacityBackground from '@/components/ui/opacity-background';
 import UtilityCard from '@/components/ui/utility-card';
 import { requestOtp } from '../actions/auth';
@@ -79,11 +75,7 @@ function SignInInner() {
     }
 
     return (
-        <OpacityBackground
-            onBackgroundClick={handleClose}
-            escapeClosing
-            className="bg-black/70"
-        >
+        <OpacityBackground onBackgroundClick={handleClose} escapeClosing className="bg-black/70">
             <UtilityCard
                 onClose={handleClose}
                 className="w-full max-w-88 rounded-none border-white/10 bg-black/90 px-0 py-0 backdrop-blur-md"
@@ -104,9 +96,7 @@ function SignInInner() {
                         {step === 'email' ? 'Sign in' : 'Enter code'}
                     </h1>
                     <p className="mt-1.5 font-mono text-[10px] tracking-[0.12em] uppercase text-white/35">
-                        {step === 'email'
-                            ? 'Continue with Google or email'
-                            : `Sent to ${email}`}
+                        {step === 'email' ? 'Continue with Google or email' : `Sent to ${email}`}
                     </p>
 
                     <div className="mt-6">
@@ -124,7 +114,7 @@ function SignInInner() {
                                         type="button"
                                         variant="outline"
                                         size="lg"
-                                        className="w-full rounded-none border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
+                                        className="w-full h-10 rounded-none border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white flex gap-x-2 items-center"
                                         onClick={handleGoogle}
                                         disabled={pending}
                                     >
@@ -136,10 +126,7 @@ function SignInInner() {
 
                                     <Divider />
 
-                                    <form
-                                        onSubmit={handleRequestOtp}
-                                        className="space-y-3"
-                                    >
+                                    <form onSubmit={handleRequestOtp} className="space-y-3">
                                         <label className="block font-mono text-[9px] tracking-[0.2em] uppercase text-white/40">
                                             Email
                                         </label>
