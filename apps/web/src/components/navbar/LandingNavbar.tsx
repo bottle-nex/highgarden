@@ -1,11 +1,13 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, JSX } from 'react';
 import { cn } from '@/lib/utils';
-import { Button } from '../ui/button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { useRouter } from 'next/navigation';
+import { Button } from '../ui/button';
 
-export default function LandingNavbar() {
+const NAV_ITEMS = ['SOLUTIONS', 'RESOURCES', 'DOCS', 'ENTERPRISE'] as const;
+
+export default function LandingNavbar(): JSX.Element {
     const router = useRouter();
     const { session } = useUserSessionStore();
     const [isScrolled, setIsScrolled] = useState<boolean>(() => {
@@ -33,37 +35,74 @@ export default function LandingNavbar() {
     return (
         <nav
             className={cn(
-                'fixed top-0 left-0 w-full z-50 flex items-center px-6 transition-all duration-300',
-                isScrolled ? 'h-16 bg-black' : 'h-20 bg-transparent',
+                'fixed top-0 left-0 w-full z-50 transition-all duration-300',
+                isScrolled
+                    ? 'bg-black border-b border-white/10'
+                    : 'bg-transparent border-b border-transparent',
             )}
         >
-            <div className="flex-1 flex justify-start">
-                <span className={cn('text-white text-base tracking-tight cursor-pointer')}>
-                    Solmarket
-                </span>
-            </div>
-
-            <div className="hidden md:flex gap-x-8 items-center justify-center">
-                {['SOLUTIONS', 'RESOURCES', 'DOCS', 'ENTERPRISE'].map((item) => (
-                    <span
-                        key={item}
-                        className="text-[12px] font-medium tracking-wide text-white/90 hover:text-white cursor-pointer transition-colors whitespace-nowrap"
-                    >
-                        {item}
+            <div
+                className={cn(
+                    'mx-auto w-full flex items-center transition-all duration-300 px-6',
+                    isScrolled ? 'h-14' : 'h-20',
+                )}
+            >
+                <div className="flex-1 flex items-center">
+                    <span className="text-white text-sm font-medium tracking-tight cursor-pointer">
+                        SOLMARKET
                     </span>
-                ))}
-            </div>
+                </div>
 
-            <div className="flex-1 flex items-center justify-end gap-x-6">
-                <div className="flex items-center gap-x-3">
-                    <Button
-                        onClick={handleGetStarted}
-                        className="bg-[#FF5100] text-white px-5 py-4 rounded-full text-[13px] font-bold hover:bg-[#e64900] transition-all"
-                    >
-                        GET STARTED
-                    </Button>
+                <div className="hidden md:flex items-center">
+                    {NAV_ITEMS.map((item, i) => (
+                        <a
+                            key={item}
+                            href="#"
+                            className="group/nav relative px-5 py-2 font-mono text-[10px] tracking-[0.2em] uppercase text-white transition-colors duration-300"
+                        >
+                            <span className="text-white/50 mr-1.5">
+                                {String(i + 1).padStart(2, '0')}
+                            </span>
+                            {item}
+                            <span className="absolute left-5 right-5 bottom-1 h-px bg-alpha origin-left scale-x-0 group-hover/nav:scale-x-100 transition-transform duration-300" />
+                        </a>
+                    ))}
+                </div>
+
+                <div className="flex-1 flex items-center justify-end">
+                    <GetStartedButton onClick={handleGetStarted} />
                 </div>
             </div>
         </nav>
+    );
+}
+
+function GetStartedButton({ onClick }: { onClick: () => void }): JSX.Element {
+    return (
+        <Button
+            type="button"
+            onClick={onClick}
+            className="relative group/cta inline-flex items-center gap-x-3 bg-alpha hover:bg-alpha rounded-none h-10 px-4 cursor-pointer transition-colors duration-300"
+        >
+            <span className="font-mono text-[11px] tracking-[0.2em] uppercase text-white font-semibold">
+                GET STARTED
+            </span>
+            <span className="font-mono text-white/80 text-xs -translate-y-px group-hover/cta:translate-x-0.5 transition-transform duration-300">
+                &rarr;
+            </span>
+            <ButtonCorners />
+        </Button>
+    );
+}
+
+function ButtonCorners(): JSX.Element {
+    const base = 'absolute w-2 h-2 border-white';
+    return (
+        <>
+            <span className={cn(base, '-top-px -left-px border-t border-l')} />
+            <span className={cn(base, '-top-px -right-px border-t border-r')} />
+            <span className={cn(base, '-bottom-px -left-px border-b border-l')} />
+            <span className={cn(base, '-bottom-px -right-px border-b border-r')} />
+        </>
     );
 }

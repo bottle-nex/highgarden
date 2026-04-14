@@ -51,12 +51,15 @@ export default function LandingFooter(): JSX.Element {
                 <div className="mt-10 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-12">
                     <Block
                         className={cn(
-                            'md:col-span-7 md:row-span-2 min-h-80 flex flex-col justify-between p-10',
+                            'md:col-span-7 md:row-span-2 min-h-80 flex flex-col justify-between p-8',
                             DOT_GRID,
                         )}
                         index="00"
                         label="EST. 2026"
                     >
+                        <div className="mt-6 font-mono text-2xl md:text-4xl tracking-wide text-alpha font-semibold">
+                            SOLMARKET
+                        </div>
                         <div className="mt-auto">
                             <h2 className="text-4xl md:text-5xl leading-[1.05] max-w-xl font-medium tracking-tight text-white">
                                 Engineered to make future outcomes{' '}
