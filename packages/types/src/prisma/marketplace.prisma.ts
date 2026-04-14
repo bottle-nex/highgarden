@@ -1,4 +1,11 @@
-import type { Chain, HedgeStatus, MarketStatus, Outcome, Side } from "./enums.prisma";
+import type {
+  Chain,
+  HedgeStatus,
+  ListingStatus,
+  MarketStatus,
+  Outcome,
+  Side,
+} from "./enums.prisma";
 import type { User } from "./user.prisma";
 
 export interface Market {
@@ -21,6 +28,21 @@ export interface Market {
   quotes?: Quote[];
   fills?: Fill[];
   exposure?: Exposure | null;
+  listing?: Listing | null;
+}
+
+export interface Listing {
+  marketId: string;
+  market?: Market;
+  status: ListingStatus;
+  volume24hUsd: number | null;
+  liquidityUsd: number | null;
+  lastSyncedAt: Date | null;
+  discoveredAt: Date;
+  approvedAt: Date | null;
+  approvedBy: string | null;
+  rejectedAt: Date | null;
+  rejectionReason: string | null;
 }
 
 export interface PolyMarket {

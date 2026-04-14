@@ -1,38 +1,37 @@
 {
-  "name": "server",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "dev": "bun --hot index.ts",
-    "start": "bun index.ts",
-    "build": "bun build index.ts --outdir dist --target bun",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint . --max-warnings 0"
-  },
-  "devDependencies": {
-    "@solmarket/eslint-config": "*",
-    "@solmarket/typescript-config": "*",
-    "@solmarket/database": "*",
-    "@solmarket/types": "*",
-    "@types/bun": "latest",
-    "eslint": "^8.57.0"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/uuid": "^11.0.0",
-    "bcryptjs": "^3.0.2",
-    "cors": "^2.8.5",
-    "express": "^5.2.1",
-    "ioredis": "^5.10.1",
-    "jsonwebtoken": "^9.0.3",
-    "resend": "^6.1.2",
-    "uuid": "^13.0.0",
-    "zod": "^4.3.6"
-  }
+    "name": "server",
+    "module": "index.ts",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "dev": "bun --hot index.ts",
+        "start": "bun index.ts",
+        "build": "bun build index.ts --outdir dist --target bun",
+        "lint": "eslint . --max-warnings 0"
+    },
+    "devDependencies": {
+        "@solmarket/eslint-config": "*",
+        "@solmarket/typescript-config": "*",
+        "@solmarket/database": "*",
+        "@solmarket/types": "*",
+        "@types/bun": "latest",
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/uuid": "^11.0.0",
+        "eslint": "^8.57.0"
+    },
+    "peerDependencies": {
+        "typescript": "^5"
+    },
+    "dependencies": {
+        "bcryptjs": "^3.0.2",
+        "cors": "^2.8.5",
+        "express": "^5.2.1",
+        "ioredis": "^5.10.1",
+        "jsonwebtoken": "^9.0.3",
+        "resend": "^6.1.2",
+        "uuid": "^13.0.0",
+        "zod": "^4.3.6"
+    }
 }

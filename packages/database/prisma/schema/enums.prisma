@@ -27,3 +27,9 @@ enum Chain {
     SOLANA
     POLYGON
 }
+
+enum ListingStatus {
+    PENDING
+    APPROVED
+    REJECTED
+}

@@ -26,3 +26,9 @@ export enum Chain {
   SOLANA = "SOLANA",
   POLYGON = "POLYGON",
 }
+
+export enum ListingStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+}
