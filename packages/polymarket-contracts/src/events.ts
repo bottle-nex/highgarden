@@ -1,7 +1,4 @@
-export enum SIDE {
-  BUY = "BUY",
-  SELL = "SELL",
-}
+export type SIDE = "BUY" | "SELL";
 
 export type MarketEvent =
   | {
