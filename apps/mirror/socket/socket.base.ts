@@ -12,13 +12,17 @@ export abstract class SocketBase {
     private send_queue: string[] = [];
     private stopped: boolean = false;
 
-    constructor(
-        protected readonly name: "market" | "user",
-        protected readonly publisher: PolymarketPublisher,
-    ) { }
+    protected readonly name: "market" | "user";
+    protected readonly publisher: PolymarketPublisher;
+
+    constructor(name: "market" | "user", publisher: PolymarketPublisher) {
+        this.name = name;
+        this.publisher = publisher;
+    }
 
     protected abstract get_url(): string;
     protected abstract get_subscribe_frame(): object | null;
+    // eslint-disable-next-line no-unused-vars
     protected abstract handle_message(msg: unknown): void;
 
     public async connect(): Promise<void> {

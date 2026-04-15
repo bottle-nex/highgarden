@@ -9,12 +9,11 @@ export type UserMarketsProvider = () => Promise<string[]>;
 
 export default class UserSocket extends SocketBase {
     private markets: string[] = [];
+    private readonly load_markets: UserMarketsProvider;
 
-    constructor(
-        publisher: PolymarketPublisher,
-        private readonly load_markets: UserMarketsProvider,
-    ) {
+    constructor(publisher: PolymarketPublisher, load_markets: UserMarketsProvider) {
         super("user", publisher);
+        this.load_markets = load_markets;
     }
 
     protected get_url(): string {

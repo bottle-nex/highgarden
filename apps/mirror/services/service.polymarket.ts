@@ -10,11 +10,11 @@ export default class PolymarketService {
     private market!: MarketSocket;
     private user?: UserSocket;
     private control!: PolymarketControlListener;
+    private readonly load_user_markets: UserMarketsProvider;
     public redis = services.redis;
 
-    constructor(
-        private readonly load_user_markets: UserMarketsProvider,
-    ) {
+    constructor(load_user_markets: UserMarketsProvider) {
+        this.load_user_markets = load_user_markets;
         this.publisher = new PolymarketPublisher(this.redis);
     }
 
