@@ -9,8 +9,6 @@ const env_schema = z.object({
     SERVER_OTP_COOLDOWN_SECONDS: z.coerce.number().default(60),
     SERVER_OTP_MAX_ATTEMPTS: z.coerce.number().default(5),
     SERVER_WEB_ORIGIN: z.url(),
-    POLYMARKET_API_BASE: z.string().default("http://localhost:4000"),
-    AUTO_LISTER_INTERVAL_MS: z.coerce.number().default(60_000),
 });
 export let ENV: z.infer<typeof env_schema>;
 

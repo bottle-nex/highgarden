@@ -7,7 +7,5 @@ export default class Services {
 
     public boot() {
         this.redis = new Redis(ENV.SERVER_REDIS_URL);
-        autoLister.start();
-        console.log("[services] auto-lister started");
     }
 }
