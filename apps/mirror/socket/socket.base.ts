@@ -15,7 +15,7 @@ export abstract class SocketBase {
     constructor(
         protected readonly name: "market" | "user",
         protected readonly publisher: PolymarketPublisher,
-    ) {}
+    ) { }
 
     protected abstract get_url(): string;
     protected abstract get_subscribe_frame(): object | null;
@@ -49,7 +49,7 @@ export abstract class SocketBase {
         try {
             this.ws?.close(1000, "shutdown");
             //eslint-disable-next-line no-empty
-        } catch {}
+        } catch { }
         this.ws = null;
         this.set_state("closed");
     }
@@ -80,7 +80,7 @@ export abstract class SocketBase {
             try {
                 this.ws?.send("PING");
                 //eslint-disable-next-line no-empty
-            } catch {}
+            } catch { }
         }, POLY_WS.heartbeat_ms);
     }
 

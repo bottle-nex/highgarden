@@ -5,8 +5,11 @@ import type MarketSocket from "../socket/socket.market";
 
 export default class PolymarketControlListener {
     private sub: Redis | null = null;
+    private readonly market: MarketSocket
 
-    constructor(private readonly market: MarketSocket) {}
+    constructor(market: MarketSocket) {
+        this.market = market;
+    }
 
     public async start(): Promise<void> {
         // ioredis requires a dedicated client for SUBSCRIBE mode — don't reuse

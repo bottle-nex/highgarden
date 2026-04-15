@@ -8,7 +8,7 @@ export default class Services {
 
     public boot() {
         this.redis = new Redis(ENV.SERVER_REDIS_URL);
-        this.polymarket = new PolymarketService(this.redis, async () => {
+        this.polymarket = new PolymarketService(async () => {
             // TODO: query prisma for active polymarket condition ids once the
             // hedging bot needs them.
             return [];

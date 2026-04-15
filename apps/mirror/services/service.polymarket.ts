@@ -1,21 +1,21 @@
-import type Redis from "ioredis";
 import PolymarketPublisher from "./service.polymarket.publisher";
 import PolymarketControlListener from "./service.polymarket.control";
 import MarketSocket from "../socket/socket.market";
 import UserSocket, { type UserMarketsProvider } from "../socket/socket.user";
 import { has_polymarket_creds } from "./service.polymarket.auth";
+import { services } from "..";
 
 export default class PolymarketService {
     private publisher: PolymarketPublisher;
     private market!: MarketSocket;
     private user?: UserSocket;
     private control!: PolymarketControlListener;
+    public redis = services.redis;
 
     constructor(
-        redis: Redis,
         private readonly load_user_markets: UserMarketsProvider,
     ) {
-        this.publisher = new PolymarketPublisher(redis);
+        this.publisher = new PolymarketPublisher(this.redis);
     }
 
     public async start(): Promise<void> {
