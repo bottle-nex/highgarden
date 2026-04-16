@@ -60,7 +60,7 @@ export default function LandingBentoSection(): JSX.Element {
             ref={sectionRef}
             onMouseMove={handleSectionMouseMove}
             onMouseLeave={handleSectionMouseLeave}
-            className="relative min-h-screen w-full bg-black px-6 pt-40 pb-24"
+            className="relative min-h-screen w-screen bg-black px-6 pt-40 pb-24"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: '-80px' }}
@@ -71,7 +71,7 @@ export default function LandingBentoSection(): JSX.Element {
                 style={{ background: sectionGlow }}
             />
 
-            <div className="relative z-10 mx-auto flex max-w-6xl flex-col items-center">
+            <div className="relative z-10 mx-auto flex max-w-[90vw] flex-col items-center">
                 <motion.span
                     className="mb-4 block text-[11px] font-medium uppercase tracking-[0.2em] text-alpha"
                     variants={fadeUp}
@@ -96,7 +96,7 @@ export default function LandingBentoSection(): JSX.Element {
             </div>
 
             <motion.div
-                className="relative z-10 mx-auto mt-16 flex w-full max-w-6xl flex-col gap-3 md:flex-row"
+                className="relative z-10 mx-auto mt-16 flex w-full max-w-[90vw] flex-col gap-3 md:flex-row"
                 variants={bodyVariants}
             >
                 <FeatureNav active={active} onSelect={setActive} />
