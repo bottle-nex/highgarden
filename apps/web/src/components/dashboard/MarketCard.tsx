@@ -8,7 +8,9 @@ export default function MarketCard({ market }: { market: Market }): JSX.Element 
     return (
         <div className="group relative bg-neutral-950 border border-white/10 rounded-[6px] p-5 hover:border-white/20 hover:bg-neutral-900/70 transition-colors cursor-pointer">
             <div className="flex items-center justify-between font-mono text-[9px] tracking-[0.22em] uppercase">
-                <span className="text-white/55">{"//"} {market.category}</span>
+                <span className="text-white/55">
+                    {'//'} {market.category}
+                </span>
                 <span className="text-white/45">ENDS IN {market.endsIn}</span>
             </div>
 

@@ -1,8 +1,10 @@
 import cors from "cors";
 import express from "express";
+import { createServer } from "http";
 import v1_router from "./routers/v1/router.v1";
 import Env, { ENV } from "./config/config.env";
 import Services from "./services/service.singleton";
+import SocketServer from "./socket/socket.server";
 import { errorHandler } from "./middleware/error-handler";
 import { requestLogger } from "./middleware/request-logger";
 import { notFoundHandler } from "./middleware/not-found";
@@ -27,6 +29,9 @@ app.use("/api/v1", v1_router);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(ENV.SERVER_PORT, () => {
+const server = createServer(app);
+new SocketServer(server, ENV.SERVER_REDIS_URL);
+
+server.listen(ENV.SERVER_PORT, () => {
     console.log(`server up on :${ENV.SERVER_PORT}`);
 });
