@@ -15,7 +15,9 @@ export default function FeaturedMarketCard({ market }: { market: FeaturedMarket 
             <div className="flex items-center justify-between px-8 py-4 border-b border-white/10 font-mono text-[9px] tracking-[0.22em] uppercase">
                 <div className="flex items-center gap-4">
                     <span className="text-white/45">FEATURED</span>
-                    <span className="text-white/75">{"//"} {market.category}</span>
+                    <span className="text-white/75">
+                        {'//'} {market.category}
+                    </span>
                 </div>
                 <div className="hidden md:flex items-center gap-3 text-white/45">
                     <span>OPENS {market.openDate}</span>

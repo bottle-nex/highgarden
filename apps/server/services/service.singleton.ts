@@ -7,6 +7,6 @@ export default class Services {
 
     public boot() {
         this.redis = new Redis(ENV.SERVER_REDIS_URL);
-        errorHandler
+        errorHandler;
     }
 }

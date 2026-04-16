@@ -45,8 +45,8 @@ export default function NotFound() {
                         <div className="relative border-l border-white/10 pl-6">
                             <p className="text-sm md:text-[15px] leading-[1.7] text-white/70 font-light">
                                 &ldquo;The page you&rsquo;re looking for has either been settled,
-                                resolved, or never existed on this market. Every route on
-                                SolMarket is verifiable &mdash; this one isn&rsquo;t.&rdquo;
+                                resolved, or never existed on this market. Every route on SolMarket
+                                is verifiable &mdash; this one isn&rsquo;t.&rdquo;
                             </p>
                             <div className="mt-5 flex items-center gap-x-4">
                                 <div className="w-5 h-px bg-white/20" />

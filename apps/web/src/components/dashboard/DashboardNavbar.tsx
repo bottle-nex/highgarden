@@ -53,7 +53,6 @@ export default function DashboardNavbar(): JSX.Element {
                                 className="rounded-full"
                             />
                         )}
-
                     </span>
                 </div>
             </div>

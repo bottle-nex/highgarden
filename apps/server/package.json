@@ -16,6 +16,7 @@
         "@solmarket/eslint-config": "*",
         "@solmarket/typescript-config": "*",
         "@solmarket/database": "*",
+        "@solmarket/polymarket-contracts": "*",
         "@solmarket/types": "*",
         "@types/bun": "latest",
         "eslint": "^8.57.0",
@@ -29,6 +30,7 @@
         "@types/express": "^5.0.6",
         "@types/jsonwebtoken": "^9.0.10",
         "@types/uuid": "^11.0.0",
+        "@types/ws": "^8.18.1",
         "bcryptjs": "^3.0.2",
         "cors": "^2.8.5",
         "express": "^5.2.1",
@@ -36,6 +38,7 @@
         "jsonwebtoken": "^9.0.3",
         "resend": "^6.1.2",
         "uuid": "^13.0.0",
+        "ws": "^8.20.0",
         "zod": "^4.3.6"
     }
 }

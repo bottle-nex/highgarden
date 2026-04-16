@@ -35,6 +35,8 @@ apps/web/.env
 # turbo
 .turbo
 
+# build output
+dist/
+
 # contract
 target/
-packages/contract/dist/

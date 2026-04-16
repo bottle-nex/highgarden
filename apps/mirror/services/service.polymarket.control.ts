@@ -5,7 +5,7 @@ import type MarketSocket from "../socket/socket.market";
 
 export default class PolymarketControlListener {
     private sub: Redis | null = null;
-    private readonly market: MarketSocket
+    private readonly market: MarketSocket;
 
     constructor(market: MarketSocket) {
         this.market = market;
