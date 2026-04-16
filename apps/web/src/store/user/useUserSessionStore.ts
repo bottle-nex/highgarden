@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import { CustomSession } from '../../../app/api/auth/[...nextauth]/options';
 
 interface UserSessionStoreType {
@@ -16,26 +15,16 @@ interface UserSessionStoreType {
 }
 
 export const useUserSessionStore = create<UserSessionStoreType>()(
-    persist(
-        (set) => ({
-            session: null,
-            openSigninModal: false,
-            openLogoutModal: false,
-            tutorialComplete: null,
+    (set) => ({
+        session: null,
+        openSigninModal: false,
+        openLogoutModal: false,
+        tutorialComplete: null,
 
-            setSession: (data: CustomSession | null) => set({ session: data }),
-            setOpenSigninModal: (open: boolean) => set({ openSigninModal: open }),
-            setOpenLogoutModal: (open: boolean) => set({ openLogoutModal: open }),
+        setSession: (data: CustomSession | null) => set({ session: data }),
+        setOpenSigninModal: (open: boolean) => set({ openSigninModal: open }),
+        setOpenLogoutModal: (open: boolean) => set({ openLogoutModal: open }),
 
-            setTutorialComplete: (val: boolean) => set({ tutorialComplete: val }),
-        }),
-        {
-            name: 'user-session',
-            storage: createJSONStorage(() => sessionStorage),
-            partialize: (state) => ({
-                session: state.session,
-                tutorialComplete: state.tutorialComplete,
-            }),
-        },
-    ),
+        setTutorialComplete: (val: boolean) => set({ tutorialComplete: val }),
+    })
 );

@@ -27,7 +27,7 @@ export default function DashboardNavbar(): JSX.Element {
                     <Button
                         type="button"
                         className={cn(
-                            'h-9 px-4 rounded-md bg-transparent border border-white/12 hover:bg-white/5 font-mono text-[10px] tracking-[0.2em] uppercase text-white/75',
+                            'h-9 px-4 rounded-none bg-transparent border border-white/12 hover:bg-white/5 font-mono text-[10px] tracking-[0.2em] uppercase text-white/75',
                         )}
                     >
                         PORTFOLIO
@@ -35,7 +35,7 @@ export default function DashboardNavbar(): JSX.Element {
                     <Button
                         type="button"
                         className={cn(
-                            'h-9 px-4 rounded-md bg-white/80 hover:bg-white/95 font-mono text-[10px] tracking-[0.2em] uppercase text-black font-semibold',
+                            'h-9 px-4 rounded-none bg-white/80 hover:bg-white/95 font-mono text-[10px] tracking-[0.2em] uppercase text-black font-semibold',
                         )}
                     >
                         CONNECT WALLET
@@ -48,10 +48,10 @@ export default function DashboardNavbar(): JSX.Element {
 
 function LiveIndicator(): JSX.Element {
     return (
-        <div className="hidden lg:flex items-center gap-2 h-9 px-4 rounded-md border border-white/10 font-mono text-[9px] tracking-[0.2em] text-white/60">
+        <div className="hidden lg:flex items-center gap-2 h-9 px-4 rounded-none border border-white/10 font-mono text-[9px] tracking-[0.2em] text-white/60">
             <span className="relative flex size-1.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 animate-ping opacity-60" />
-                <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
+                <span className="absolute inline-flex h-full w-full rounded-none bg-emerald-400 animate-ping opacity-60" />
+                <span className="relative inline-flex size-1.5 rounded-none bg-emerald-400" />
             </span>
             LIVE · 2,148 TRADERS
         </div>
