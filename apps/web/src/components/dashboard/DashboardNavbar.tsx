@@ -3,8 +3,11 @@ import { JSX } from 'react';
 import { cn } from '@/lib/utils';
 import SearchBar from './SearchBar';
 import { Button } from '../ui/button';
+import { useUserSessionStore } from '@/store/user/useUserSessionStore';
+import Image from 'next/image';
 
 export default function DashboardNavbar(): JSX.Element {
+    const { session } = useUserSessionStore();
     return (
         <header className="sticky top-0 z-40 w-full bg-black/95 backdrop-blur-sm border-b border-white/8">
             <div className="mx-auto w-full max-w-360 h-18 px-6 lg:px-8 flex items-center gap-8">
@@ -27,7 +30,7 @@ export default function DashboardNavbar(): JSX.Element {
                     <Button
                         type="button"
                         className={cn(
-                            'h-9 px-4 rounded-md bg-transparent border border-white/12 hover:bg-white/5 font-mono text-[10px] tracking-[0.2em] uppercase text-white/75',
+                            'h-9 px-4 rounded-none bg-transparent border border-white/12 hover:bg-white/5 font-mono text-[10px] tracking-[0.2em] uppercase text-white/75',
                         )}
                     >
                         PORTFOLIO
@@ -35,11 +38,23 @@ export default function DashboardNavbar(): JSX.Element {
                     <Button
                         type="button"
                         className={cn(
-                            'h-9 px-4 rounded-md bg-white/80 hover:bg-white/95 font-mono text-[10px] tracking-[0.2em] uppercase text-black font-semibold',
+                            'h-9 px-4 rounded-none bg-white/80 hover:bg-white/95 font-mono text-[10px] tracking-[0.2em] uppercase text-black font-semibold',
                         )}
                     >
                         CONNECT WALLET
                     </Button>
+                    <span>
+                        {session?.user?.image && (
+                            <Image
+                                src={session?.user?.image}
+                                alt="User Avatar"
+                                width={32}
+                                height={32}
+                                className="rounded-full"
+                            />
+                        )}
+
+                    </span>
                 </div>
             </div>
         </header>
@@ -48,10 +63,10 @@ export default function DashboardNavbar(): JSX.Element {
 
 function LiveIndicator(): JSX.Element {
     return (
-        <div className="hidden lg:flex items-center gap-2 h-9 px-4 rounded-md border border-white/10 font-mono text-[9px] tracking-[0.2em] text-white/60">
+        <div className="hidden lg:flex items-center gap-2 h-9 px-4 rounded-none border border-white/10 font-mono text-[9px] tracking-[0.2em] text-white/60">
             <span className="relative flex size-1.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 animate-ping opacity-60" />
-                <span className="relative inline-flex size-1.5 rounded-full bg-emerald-400" />
+                <span className="absolute inline-flex h-full w-full rounded-none bg-emerald-400 animate-ping opacity-60" />
+                <span className="relative inline-flex size-1.5 rounded-none bg-emerald-400" />
             </span>
             LIVE · 2,148 TRADERS
         </div>

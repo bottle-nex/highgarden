@@ -20,6 +20,7 @@ export default function LandingNavbar(): JSX.Element {
     }, []);
 
     function handleGetStarted() {
+        
         if (session?.user?.token && session?.user?.email) {
             router.push('/dashboard');
         } else {
