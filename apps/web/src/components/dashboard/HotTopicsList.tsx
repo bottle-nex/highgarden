@@ -10,9 +10,9 @@ export default function HotTopicsList({ topics }: { topics: HotTopic[] }): JSX.E
                 {topics.map((topic) => (
                     <div
                         key={topic.id}
-                        className="flex items-center gap-4 p-5 border-b border-white/8 last:border-b-0 hover:bg-white/3 transition-colors cursor-pointer group"
+                        className="flex items-center gap-4 p-5 border-b border-white/8 last:border-b-0 hover:bg-white/3 transition-colors cursor-pointer group border-l-2 border-l-transparent hover:border-l-indigo-500/40"
                     >
-                        <span className="font-mono text-[16px] text-white/25 tabular-nums w-6 group-hover:text-white/60 transition-colors">
+                        <span className="font-mono text-[16px] text-indigo-400/30 tabular-nums w-6 group-hover:text-indigo-400/60 transition-colors">
                             {String(topic.rank).padStart(2, '0')}
                         </span>
                         <div className="flex-1 min-w-0">

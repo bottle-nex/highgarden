@@ -36,7 +36,10 @@ export default function BreakingNewsList({ items }: { items: BreakingNewsItem[] 
                             <div className="mt-4 flex items-center gap-3">
                                 <div className="flex-1 h-1 bg-white/8 relative rounded-full overflow-hidden">
                                     <div
-                                        className="absolute inset-y-0 left-0 bg-white/30 rounded-full"
+                                        className={cn(
+                                            'absolute inset-y-0 left-0 rounded-full',
+                                            isUp ? 'bg-emerald-500/40' : 'bg-rose-500/40',
+                                        )}
                                         style={{ width: `${item.probability}%` }}
                                     />
                                 </div>
