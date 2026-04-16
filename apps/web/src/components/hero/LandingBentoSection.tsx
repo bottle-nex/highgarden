@@ -1,26 +1,107 @@
-import { JSX } from 'react';
-import SlidingMoneyCard from './bento_cards/ProfitSlidingMoneyCard';
-import LiquidityCard from './bento_cards/LiquidityCard';
-import PredictionEntrySection from './bento_cards/PredictionEntrySection';
-import StackedCards from './bento_cards/StackedCards';
+'use client';
+
+import { useState, useRef, useCallback, type JSX, type MouseEvent as ReactMouseEvent } from 'react';
+import { motion, useMotionValue, useMotionTemplate } from 'framer-motion';
+import { FEATURES, ease } from './spotlight/data';
+import SpotlightPanel from './spotlight/SpotlightPanel';
+import FeatureNav from './spotlight/FeatureNav';
+
+const sectionVariants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.1 } },
+};
+
+const fadeUp = {
+    hidden: { opacity: 0, y: 20, filter: 'blur(8px)' },
+    visible: {
+        opacity: 1,
+        y: 0,
+        filter: 'blur(0px)',
+        transition: { duration: 0.7, ease },
+    },
+};
+
+const bodyVariants = {
+    hidden: { opacity: 0, y: 30, filter: 'blur(10px)' },
+    visible: {
+        opacity: 1,
+        y: 0,
+        filter: 'blur(0px)',
+        transition: { duration: 0.8, ease },
+    },
+};
 
 export default function LandingBentoSection(): JSX.Element {
-    return (
-        <section className="min-h-screen w-full bg-black flex flex-col items-center pt-40 px-6">
-            <h2 className="max-w-2xl text-center text-[2.7rem] leading-none font-medium">
-                Unlock a Whole New Era of Prediction Markets
-            </h2>
+    const [active, setActive] = useState(0);
+    const sectionRef = useRef<HTMLElement>(null);
 
-            <div className="mt-12 w-full max-w-340 bg-dark-alpha p-2 flex flex-col gap-2">
-                <div className="grid w-full grid-cols-1 md:grid-cols-2 gap-2">
-                    <SlidingMoneyCard />
-                    <PredictionEntrySection />
-                </div>
-                <div className="grid w-full grid-cols-1 md:grid-cols-2 gap-2">
-                    <StackedCards />
-                    <LiquidityCard />
-                </div>
+    const glowX = useMotionValue(-1000);
+    const glowY = useMotionValue(-1000);
+
+    const handleSectionMouseMove = useCallback(
+        (e: ReactMouseEvent) => {
+            const rect = sectionRef.current?.getBoundingClientRect();
+            if (!rect) return;
+            glowX.set(e.clientX - rect.left);
+            glowY.set(e.clientY - rect.top);
+        },
+        [glowX, glowY],
+    );
+
+    const handleSectionMouseLeave = useCallback(() => {
+        glowX.set(-1000);
+        glowY.set(-1000);
+    }, [glowX, glowY]);
+
+    const sectionGlow = useMotionTemplate`radial-gradient(900px circle at ${glowX}px ${glowY}px, rgba(255,65,0,0.02), transparent 60%)`;
+
+    return (
+        <motion.section
+            ref={sectionRef}
+            onMouseMove={handleSectionMouseMove}
+            onMouseLeave={handleSectionMouseLeave}
+            className="relative min-h-screen w-full bg-black px-6 pt-40 pb-24"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-80px' }}
+            variants={sectionVariants}
+        >
+            <motion.div
+                className="pointer-events-none absolute inset-0 z-0"
+                style={{ background: sectionGlow }}
+            />
+
+            <div className="relative z-10 mx-auto flex max-w-6xl flex-col items-center">
+                <motion.span
+                    className="mb-4 block text-[11px] font-medium uppercase tracking-[0.2em] text-alpha"
+                    variants={fadeUp}
+                >
+                    Why SolMarket
+                </motion.span>
+
+                <motion.h2
+                    className="max-w-2xl text-center text-[2.7rem] leading-none font-medium"
+                    variants={fadeUp}
+                >
+                    Unlock a Whole New Era of Prediction Markets
+                </motion.h2>
+
+                <motion.p
+                    className="mt-4 max-w-lg text-center text-base text-neutral-600"
+                    variants={fadeUp}
+                >
+                    Built on Solana for speed, transparency, and scale - everything prediction
+                    markets should be.
+                </motion.p>
             </div>
-        </section>
+
+            <motion.div
+                className="relative z-10 mx-auto mt-16 flex w-full max-w-6xl flex-col gap-3 md:flex-row"
+                variants={bodyVariants}
+            >
+                <FeatureNav active={active} onSelect={setActive} />
+                <SpotlightPanel feature={FEATURES[active]!} index={active} />
+            </motion.div>
+        </motion.section>
     );
 }
