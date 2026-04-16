@@ -27,7 +27,7 @@ export default function CategoryTabs(): JSX.Element {
                                 {tab}
                                 <span
                                     className={cn(
-                                        'absolute left-0 right-0 bottom-0 h-px bg-white/55 origin-left transition-transform duration-300',
+                                        'absolute left-0 right-0 bottom-0 h-px bg-indigo-400/60 origin-center transition-transform duration-300',
                                         isActive
                                             ? 'scale-x-100'
                                             : 'scale-x-0 group-hover:scale-x-100',

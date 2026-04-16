@@ -27,7 +27,7 @@ export default function MarketGrid({ markets }: { markets: Market[] }): JSX.Elem
         <section>
             <SectionHeading title="ACTIVE MARKETS" subtitle={`${markets.length} LIVE`} />
 
-            <div className="mb-5 flex items-center gap-1 border border-white/8 bg-neutral-950 p-1 rounded-md w-fit">
+            <div className="mb-5 flex items-center gap-1 border border-white/8 bg-neutral-950 p-1 rounded-sm w-fit">
                 {SORTS.map((key) => {
                     const isActive = sort === key;
                     return (
@@ -36,7 +36,7 @@ export default function MarketGrid({ markets }: { markets: Market[] }): JSX.Elem
                             type="button"
                             onClick={() => setSort(key)}
                             className={cn(
-                                'px-3 py-1.5 rounded-md font-mono text-[9px] tracking-[0.22em] uppercase transition-colors cursor-pointer',
+                                'px-3 py-1.5 rounded-xs font-mono text-[9px] tracking-[0.22em] uppercase transition-colors cursor-pointer',
                                 isActive
                                     ? 'bg-white/10 text-white/80'
                                     : 'text-white/40 hover:text-white/65',

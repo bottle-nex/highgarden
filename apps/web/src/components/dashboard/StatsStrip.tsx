@@ -40,7 +40,6 @@ function StatCell({ stat }: { stat: DashboardStat }): JSX.Element {
                     {stat.delta}
                 </span>
             </div>
-            <span className="absolute left-0 top-0 h-px w-8 bg-white/20 group-hover:w-full transition-all duration-500" />
         </div>
     );
 }

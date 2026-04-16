@@ -15,9 +15,7 @@ export default function FeaturedMarketCard({ market }: { market: FeaturedMarket 
             <div className="flex items-center justify-between px-8 py-4 border-b border-white/10 font-mono text-[9px] tracking-[0.22em] uppercase">
                 <div className="flex items-center gap-4">
                     <span className="text-white/45">FEATURED</span>
-                    <span className="text-white/75">
-                        {'//'} {market.category}
-                    </span>
+                    <span className="text-white/75">{market.category}</span>
                 </div>
                 <div className="hidden md:flex items-center gap-3 text-white/45">
                     <span>OPENS {market.openDate}</span>
@@ -75,21 +73,21 @@ export default function FeaturedMarketCard({ market }: { market: FeaturedMarket 
                 <div className="mt-8 flex items-center gap-3">
                     <Button
                         className={cn(
-                            'flex-1 h-11 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 font-mono text-[11px] tracking-[0.2em] uppercase text-emerald-400/70 font-semibold',
+                            'flex-1 h-11 rounded-sm bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 font-mono text-[11px] tracking-[0.2em] uppercase text-emerald-400/70 font-semibold',
                         )}
                     >
                         BUY YES · 47¢
                     </Button>
                     <Button
                         className={cn(
-                            'flex-1 h-11 rounded-md bg-rose-500/8 hover:bg-rose-500/18 border border-rose-500/20 font-mono text-[11px] tracking-[0.2em] uppercase text-rose-400/70',
+                            'flex-1 h-11 rounded-sm bg-rose-500/8 hover:bg-rose-500/18 border border-rose-500/20 font-mono text-[11px] tracking-[0.2em] uppercase text-rose-400/70',
                         )}
                     >
                         BUY NO · 53¢
                     </Button>
                     <Button
                         className={cn(
-                            'h-11 w-11 px-0 rounded-md bg-transparent border border-white/12 hover:bg-white/5 text-white/65 cursor-pointer',
+                            'h-11 w-11 px-0 rounded-sm bg-transparent border border-white/12 hover:bg-white/5 text-white/65 cursor-pointer',
                         )}
                     >
                         <IoIosArrowRoundForward className="size-5" />
