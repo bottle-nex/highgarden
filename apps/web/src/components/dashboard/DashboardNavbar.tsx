@@ -3,8 +3,11 @@ import { JSX } from 'react';
 import { cn } from '@/lib/utils';
 import SearchBar from './SearchBar';
 import { Button } from '../ui/button';
+import { useUserSessionStore } from '@/store/user/useUserSessionStore';
+import Image from 'next/image';
 
 export default function DashboardNavbar(): JSX.Element {
+    const { session } = useUserSessionStore();
     return (
         <header className="sticky top-0 z-40 w-full bg-black/95 backdrop-blur-sm border-b border-white/8">
             <div className="mx-auto w-full max-w-360 h-18 px-6 lg:px-8 flex items-center gap-8">
@@ -40,6 +43,18 @@ export default function DashboardNavbar(): JSX.Element {
                     >
                         CONNECT WALLET
                     </Button>
+                    <span>
+                        {session?.user?.image && (
+                            <Image
+                                src={session?.user?.image}
+                                alt="User Avatar"
+                                width={32}
+                                height={32}
+                                className="rounded-full"
+                            />
+                        )}
+
+                    </span>
                 </div>
             </div>
         </header>
