@@ -7,7 +7,16 @@ import HotTopicsList from '@/components/dashboard/HotTopicsList';
 import SectionHeading from '@/components/dashboard/SectionHeading';
 import StatsStrip from '@/components/dashboard/StatsStrip';
 import MarketTicker from '@/components/dashboard/MarketTicker';
-import { breakingNews, featuredMarket, hotTopics, marketList } from '@/utils/constants';
+import StakingSection from '@/components/dashboard/StakingSection';
+import {
+    breakingNews,
+    featuredMarket,
+    hotTopics,
+    marketList,
+    yesNoMarkets,
+    multiCandidateMarkets,
+    multiOptionMarkets,
+} from '@/utils/constants';
 
 export default function DashboardPage(): JSX.Element {
     return (
@@ -30,6 +39,12 @@ export default function DashboardPage(): JSX.Element {
                         <HotTopicsList topics={hotTopics} />
                     </aside>
                 </div>
+
+                <StakingSection
+                    yesNoMarkets={yesNoMarkets}
+                    multiCandidateMarkets={multiCandidateMarkets}
+                    multiOptionMarkets={multiOptionMarkets}
+                />
 
                 <MarketGrid markets={marketList} />
 

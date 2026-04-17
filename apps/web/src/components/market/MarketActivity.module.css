@@ -1,0 +1,89 @@
+.wrapper {
+    padding: 22px;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+}
+
+.trade {
+    display: grid;
+    grid-template-columns: 50px 1fr auto auto auto;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.trade:last-child {
+    border-bottom: none;
+}
+
+.sideTag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-family: var(--m-font-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.sideBuy {
+    background: rgba(46, 196, 135, 0.06);
+    color: var(--m-green);
+}
+
+.sideSell {
+    background: rgba(229, 86, 106, 0.05);
+    color: var(--m-red);
+}
+
+.outcome {
+    font-size: 12px;
+    color: var(--m-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.price {
+    font-family: var(--m-font-mono);
+    font-size: 12px;
+    color: var(--m-text-secondary);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    min-width: 36px;
+}
+
+.amount {
+    font-family: var(--m-font-mono);
+    font-size: 11px;
+    color: var(--m-text-muted);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    min-width: 50px;
+}
+
+.time {
+    font-family: var(--m-font-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: rgba(255, 255, 255, 0.2);
+    text-transform: uppercase;
+    text-align: right;
+    min-width: 60px;
+}
+
+@media (max-width: 640px) {
+    .trade {
+        grid-template-columns: 44px 1fr auto auto;
+    }
+    .time {
+        display: none;
+    }
+}

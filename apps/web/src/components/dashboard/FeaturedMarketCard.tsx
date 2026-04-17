@@ -1,17 +1,24 @@
 'use client';
 import { JSX } from 'react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 import { IoIosArrowRoundForward } from 'react-icons/io';
 import { HiArrowTrendingUp, HiArrowTrendingDown } from 'react-icons/hi2';
 import type { FeaturedMarket } from '@/utils/constants';
+import { getMarketById } from '@/utils/constants';
 import ProbabilityChart from './ProbabilityChart';
 import { Button } from '../ui/button';
 
 export default function FeaturedMarketCard({ market }: { market: FeaturedMarket }): JSX.Element {
     const TrendIcon = market.trend === 'down' ? HiArrowTrendingDown : HiArrowTrendingUp;
+    const detail = getMarketById(market.id);
+    const href = detail ? `/market/${detail.slug}` : '#';
 
     return (
-        <section className="relative bg-neutral-950 border border-white/10 rounded-[6px] overflow-hidden group hover:border-white/20 transition-colors">
+        <Link
+            href={href}
+            className="relative bg-neutral-950 border border-white/10 rounded-[6px] overflow-hidden group hover:border-white/20 transition-colors block no-underline"
+        >
             <div className="flex items-center justify-between px-8 py-4 border-b border-white/10 font-mono text-[9px] tracking-[0.22em] uppercase">
                 <div className="flex items-center gap-4">
                     <span className="text-white/45">FEATURED</span>
@@ -94,7 +101,7 @@ export default function FeaturedMarketCard({ market }: { market: FeaturedMarket 
                     </Button>
                 </div>
             </div>
-        </section>
+        </Link>
     );
 }
 
