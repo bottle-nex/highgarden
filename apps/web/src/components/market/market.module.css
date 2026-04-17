@@ -1,0 +1,205 @@
+/* ── Shared design tokens ───────────────────────────── */
+:root {
+    --m-bg: #060608;
+    --m-surface: #0c0c0e;
+    --m-surface-hover: #121214;
+    --m-border: rgba(255, 255, 255, 0.06);
+    --m-border-hover: rgba(255, 255, 255, 0.1);
+    --m-text-primary: rgba(255, 255, 255, 0.82);
+    --m-text-secondary: rgba(255, 255, 255, 0.48);
+    --m-text-muted: rgba(255, 255, 255, 0.28);
+    --m-accent: #e03a00;
+    --m-green: #2ec487;
+    --m-green-dim: rgba(46, 196, 135, 0.08);
+    --m-green-border: rgba(46, 196, 135, 0.14);
+    --m-red: #e5566a;
+    --m-red-dim: rgba(229, 86, 106, 0.07);
+    --m-red-border: rgba(229, 86, 106, 0.12);
+    --m-blue: #6e7ae0;
+    --m-blue-dim: rgba(110, 122, 224, 0.07);
+    --m-radius: 8px;
+    --m-radius-sm: 5px;
+    --m-font-mono: ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, monospace;
+    --m-glass: rgba(255, 255, 255, 0.02);
+    --m-shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.35);
+    --m-shadow-lg: 0 4px 24px rgba(0, 0, 0, 0.5), 0 12px 48px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Page layout ────────────────────────────────────── */
+.page {
+    min-height: 100vh;
+    background: var(--m-bg);
+    padding-bottom: 80px;
+}
+
+.container {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 20px 0 28px;
+    font-family: var(--m-font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.breadcrumbLink {
+    color: var(--m-text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+    cursor: pointer;
+}
+
+.breadcrumbLink:hover {
+    color: var(--m-text-secondary);
+}
+
+.breadcrumbSep {
+    color: rgba(255, 255, 255, 0.15);
+}
+
+.breadcrumbCurrent {
+    color: var(--m-text-secondary);
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 32px;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.mainCol {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+/* ── Shared card ────────────────────────────────────── */
+.card {
+    background: var(--m-surface);
+    border: 1px solid var(--m-border);
+    border-radius: var(--m-radius);
+    overflow: hidden;
+    transition: border-color 0.25s ease;
+}
+
+.card:hover {
+    border-color: var(--m-border-hover);
+}
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--m-border);
+    font-family: var(--m-font-mono);
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--m-text-muted);
+}
+
+.cardBody {
+    padding: 22px;
+}
+
+.sectionLabel {
+    font-family: var(--m-font-mono);
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--m-text-muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sectionDot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--m-blue);
+}
+
+/* ── Skeleton ───────────────────────────────────────── */
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.04) 25%,
+        rgba(255, 255, 255, 0.08) 50%,
+        rgba(255, 255, 255, 0.04) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+    border-radius: var(--m-radius-sm);
+}
+
+.skeletonPage {
+    padding-top: 80px;
+}
+
+.skeletonHeader {
+    height: 200px;
+    margin-bottom: 28px;
+}
+
+.skeletonRow {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 32px;
+}
+
+.skeletonMain {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.skeletonChart {
+    height: 320px;
+}
+
+.skeletonOutcomes {
+    height: 240px;
+}
+
+.skeletonRules {
+    height: 180px;
+}
+
+.skeletonActivity {
+    height: 300px;
+}
+
+.skeletonSidebar {
+    height: 520px;
+    position: sticky;
+    top: 100px;
+}
+
+@media (max-width: 1024px) {
+    .skeletonRow {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,12 +1,19 @@
 'use client';
 import { JSX } from 'react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import type { Market } from '@/utils/constants';
+import { getMarketById } from '@/utils/constants';
 
 export default function MarketCard({ market }: { market: Market }): JSX.Element {
     const isUp = market.change24h >= 0;
+    const detail = getMarketById(market.id);
+    const href = detail ? `/market/${detail.slug}` : '#';
     return (
-        <div className="group relative bg-neutral-950 border border-white/10 rounded-[6px] p-5 hover:border-indigo-500/15 hover:bg-neutral-900/70 transition-colors cursor-pointer">
+        <Link
+            href={href}
+            className="group relative bg-neutral-950 border border-white/10 rounded-[6px] p-5 hover:border-indigo-500/15 hover:bg-neutral-900/70 transition-colors cursor-pointer block no-underline"
+        >
             <div className="flex items-center justify-between font-mono text-[9px] tracking-[0.22em] uppercase">
                 <span className="text-white/55">{market.category}</span>
                 <span className="text-white/45">ENDS IN {market.endsIn}</span>
@@ -33,7 +40,7 @@ export default function MarketCard({ market }: { market: Market }): JSX.Element 
                     {market.change24h.toFixed(1)}%
                 </span>
             </div>
-        </div>
+        </Link>
     );
 }
 

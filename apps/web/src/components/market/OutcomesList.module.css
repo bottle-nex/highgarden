@@ -1,0 +1,134 @@
+.wrapper {
+    padding: 22px;
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    border-radius: var(--m-radius-sm);
+    border: 1px solid var(--m-border);
+    background: var(--m-glass);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.row:hover {
+    border-color: var(--m-border-hover);
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.labelCol {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--m-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.barTrack {
+    height: 3px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.barFill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--m-accent);
+    opacity: 0.7;
+    transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.prob {
+    font-family: var(--m-font-mono);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--m-text-primary);
+    font-variant-numeric: tabular-nums;
+    min-width: 44px;
+    text-align: right;
+}
+
+.volume {
+    font-family: var(--m-font-mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--m-text-muted);
+    min-width: 55px;
+    text-align: right;
+}
+
+.change {
+    font-family: var(--m-font-mono);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    min-width: 48px;
+    text-align: right;
+}
+
+.changeUp {
+    color: var(--m-green);
+}
+
+.changeDown {
+    color: var(--m-red);
+}
+
+.buyBtn {
+    padding: 5px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--m-border);
+    background: var(--m-glass);
+    color: var(--m-text-secondary);
+    font-family: var(--m-font-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    opacity: 0;
+}
+
+.row:hover .buyBtn {
+    opacity: 1;
+}
+
+.buyBtn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--m-text-primary);
+    border-color: var(--m-border-hover);
+}
+
+.buyBtn:active {
+    transform: scale(0.95);
+}
+
+@media (max-width: 640px) {
+    .row {
+        grid-template-columns: 1fr auto auto;
+    }
+    .volume {
+        display: none;
+    }
+    .buyBtn {
+        opacity: 1;
+    }
+}
