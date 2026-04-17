@@ -1,21 +1,11 @@
 import {
-    MESSAGE_TYPES,
+    SERVER_MESSAGE_TYPE,
+    CLIENT_MESSAGE_TYPE,
     SERVER_CLOSE_CODES,
     isIntentionalClosure,
-    type AnyMessagePayload,
-    type MessageHandler,
-    type MessagePayload,
-    type ParsedMessage,
-} from '@solmarket/types';
-
-export {
-    MESSAGE_TYPES,
-    SERVER_CLOSE_CODES,
-    type AnyMessagePayload,
-    type MessageHandler,
-    type MessagePayload,
-    type MessagePayloadMap,
-    type ParsedMessage,
+    type ServerMessage,
+    type ClientMessage,
+    type ServerMessageHandler,
 } from '@solmarket/types';
 
 export default class WebSocketClient {
@@ -28,8 +18,9 @@ export default class WebSocketClient {
     private reconnect_delay: number = 1000;
     private max_reconnect_delay: number = 30000;
     private persistent_reconnect_delay: number = 5000;
-    private message_queue: AnyMessagePayload[] = [];
-    private handlers: Map<string, MessageHandler[]> = new Map();
+    private message_queue: ClientMessage[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private handlers: Map<SERVER_MESSAGE_TYPE, ((msg: any) => void)[]> = new Map();
     private is_manually_closed: boolean = false;
 
     constructor(url: string) {
@@ -52,10 +43,10 @@ export default class WebSocketClient {
 
         this.ws.onmessage = (event: MessageEvent<string>) => {
             try {
-                const parsed_data: ParsedMessage = JSON.parse(event.data);
-                this.handle_incoming_message(parsed_data);
+                const msg: ServerMessage = JSON.parse(event.data);
+                this.handle_incoming_message(msg);
             } catch (error) {
-                console.error('Failed to parse incoming WebSocket message:', event.data, error);
+                console.error('[ws:client] failed to parse message:', event.data, error);
             }
         };
 
@@ -75,77 +66,71 @@ export default class WebSocketClient {
         };
 
         this.ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
+            console.error('[ws:client] error:', error);
         };
     }
 
-    private handle_close_code(code: number) {
+    private handle_close_code(code: number): void {
         switch (code) {
             case SERVER_CLOSE_CODES.AUTH_REQUIRED:
-                console.warn('WebSocket: authentication required — re-authenticate and reconnect.');
+                console.warn('[ws:client] authentication required — re-authenticate and reconnect.');
                 this.is_manually_closed = true;
                 break;
             case SERVER_CLOSE_CODES.SESSION_EXPIRED:
-                console.warn('WebSocket: session expired — refresh your session.');
+                console.warn('[ws:client] session expired — refresh your session.');
                 this.is_manually_closed = true;
                 break;
             case SERVER_CLOSE_CODES.SERVER_SHUTDOWN:
-                console.warn('WebSocket: server shutting down — will attempt reconnect.');
+                console.warn('[ws:client] server shutting down — will attempt reconnect.');
                 break;
             default:
                 break;
         }
     }
 
-    private handle_incoming_message(parsed_data: ParsedMessage) {
-        const { type, payload } = parsed_data;
-        const handlers = this.handlers.get(type);
+    private handle_incoming_message(msg: ServerMessage): void {
+        const handlers = this.handlers.get(msg.type);
         if (handlers) {
-            handlers.forEach((handler) => handler(payload as never));
+            handlers.forEach((h) => h(msg as never));
         }
     }
 
-    public subscribe<T extends MESSAGE_TYPES>(type: T, handler: MessageHandler<T>) {
+    public on<T extends SERVER_MESSAGE_TYPE>(type: T, handler: ServerMessageHandler<T>): void {
         if (!this.handlers.has(type)) {
             this.handlers.set(type, []);
         }
-        this.handlers.get(type)!.push(handler as MessageHandler);
+        this.handlers.get(type)!.push(handler);
     }
 
-    public unsubscribe<T extends MESSAGE_TYPES>(type: T, handler: MessageHandler<T>) {
-        const handler_list = this.handlers.get(type);
-        if (!handler_list) return;
-
-        const index = handler_list.indexOf(handler as MessageHandler);
-        if (index !== -1) handler_list.splice(index, 1);
-        if (handler_list.length === 0) this.handlers.delete(type);
+    public off<T extends SERVER_MESSAGE_TYPE>(type: T, handler: ServerMessageHandler<T>): void {
+        const list = this.handlers.get(type);
+        if (!list) return;
+        const index = list.indexOf(handler);
+        if (index !== -1) list.splice(index, 1);
+        if (list.length === 0) this.handlers.delete(type);
     }
 
-    public send_message<T extends MESSAGE_TYPES>(message: MessagePayload<T>) {
+    public send(msg: ClientMessage): void {
         if (this.is_connected && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify(message));
+            this.ws.send(JSON.stringify(msg));
         } else {
-            this.message_queue.push(message as AnyMessagePayload);
+            this.message_queue.push(msg);
         }
     }
 
-    /** Subscribe to real-time updates for a specific market */
-    public subscribe_market(marketId: string) {
-        this.send_message<MESSAGE_TYPES.SUBSCRIBE_MARKET>({
-            type: MESSAGE_TYPES.SUBSCRIBE_MARKET,
-            payload: { tokenId: marketId },
-        });
+    public subscribe_market(token_id: string): void {
+        this.send({ type: CLIENT_MESSAGE_TYPE.SUBSCRIBE, token_id });
     }
 
-    /** Unsubscribe from real-time updates for a specific market */
-    public unsubscribe_market(marketId: string) {
-        this.send_message<MESSAGE_TYPES.UNSUBSCRIBE_MARKET>({
-            type: MESSAGE_TYPES.UNSUBSCRIBE_MARKET,
-            payload: { tokenId: marketId },
-        });
+    public unsubscribe_market(token_id: string): void {
+        this.send({ type: CLIENT_MESSAGE_TYPE.UNSUBSCRIBE, token_id });
     }
 
-    private attempt_reconnect() {
+    public ping(): void {
+        this.send({ type: CLIENT_MESSAGE_TYPE.PING });
+    }
+
+    private attempt_reconnect(): void {
         if (this.is_manually_closed) return;
 
         this.reconnect_attempts++;
@@ -157,7 +142,7 @@ export default class WebSocketClient {
             this.reconnect_delay = Math.min(this.reconnect_delay * 2, this.max_reconnect_delay);
         } else {
             console.warn(
-                `Max reconnection attempts (${this.max_reconnect_attempts}) reached. Switching to persistent reconnection mode.`,
+                `[ws:client] max reconnection attempts (${this.max_reconnect_attempts}) reached — switching to persistent mode.`,
             );
             delay = this.persistent_reconnect_delay;
             this.reconnect_delay = 1000;
@@ -168,14 +153,14 @@ export default class WebSocketClient {
         }, delay);
     }
 
-    private flush_message_queue() {
+    private flush_message_queue(): void {
         while (this.message_queue.length > 0) {
-            const message = this.message_queue.shift();
-            if (message) this.send_message(message as MessagePayload<MESSAGE_TYPES>);
+            const msg = this.message_queue.shift();
+            if (msg) this.send(msg);
         }
     }
 
-    public close(code: number = 1000, reason: string = 'Client disconnect') {
+    public close(code: number = 1000, reason: string = 'Client disconnect'): void {
         this.is_manually_closed = true;
 
         if (this.reconnect_timeout) {
