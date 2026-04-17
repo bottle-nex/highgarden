@@ -57,7 +57,7 @@ export default function LandingFooter(): JSX.Element {
                         index="00"
                         label="EST. 2026"
                     >
-                        <div className="mt-6 font-mono text-2xl md:text-5xl tracking-wide text-alpha font-semibold">
+                        <div className="mt-6 font-mono text-2xl md:text-8xl tracking-wide text-alpha font-semibold">
                             SOLMARKET
                         </div>
                         <div className="mt-auto">
