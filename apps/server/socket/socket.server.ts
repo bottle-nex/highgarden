@@ -3,7 +3,8 @@ import type { Server, IncomingMessage } from "http";
 import type { Duplex } from "stream";
 import { verifySessionJwt } from "../services/service.jwt";
 import RedisSubscriber from "./socket.subscriber";
-import type { ClientMessage, ServerMessage } from "./socket.types";
+import { SERVER_MESSAGE_TYPE, CLIENT_MESSAGE_TYPE } from "@solmarket/types";
+import type { ServerMessage, ClientMessage } from "@solmarket/types";
 
 export default class SocketServer {
     private wss: WebSocketServer;
@@ -59,20 +60,20 @@ export default class SocketServer {
     private on_client_message(ws: WebSocket, raw: string): void {
         const msg = this.parse_client_message(raw);
         if (!msg) {
-            this.send(ws, { type: "error", message: "invalid message format" });
+            this.send(ws, { type: SERVER_MESSAGE_TYPE.ERROR, message: "invalid message format" });
             return;
         }
 
         switch (msg.type) {
-            case "ping":
-                this.send(ws, { type: "pong" });
+            case CLIENT_MESSAGE_TYPE.PING:
+                this.send(ws, { type: SERVER_MESSAGE_TYPE.PONG });
                 return;
 
-            case "subscribe":
+            case CLIENT_MESSAGE_TYPE.SUBSCRIBE:
                 this.handle_subscribe(ws, msg.token_id);
                 return;
 
-            case "unsubscribe":
+            case CLIENT_MESSAGE_TYPE.UNSUBSCRIBE:
                 this.handle_unsubscribe(ws, msg.token_id);
                 return;
         }
@@ -83,7 +84,7 @@ export default class SocketServer {
         if (!subs) return;
 
         if (subs.has(token_id)) {
-            this.send(ws, { type: "error", message: `already subscribed to ${token_id}` });
+            this.send(ws, { type: SERVER_MESSAGE_TYPE.ERROR, message: `already subscribed to ${token_id}` });
             return;
         }
 
@@ -97,13 +98,13 @@ export default class SocketServer {
         clients.add(ws);
 
         this.subscriber.subscribe(token_id);
-        this.send(ws, { type: "subscribed", token_id });
+        this.send(ws, { type: SERVER_MESSAGE_TYPE.SUBSCRIBED, token_id });
     }
 
     private handle_unsubscribe(ws: WebSocket, token_id: string): void {
         const subs = this.client_subs.get(ws);
         if (!subs || !subs.has(token_id)) {
-            this.send(ws, { type: "error", message: `not subscribed to ${token_id}` });
+            this.send(ws, { type: SERVER_MESSAGE_TYPE.ERROR, message: `not subscribed to ${token_id}` });
             return;
         }
 
@@ -117,7 +118,7 @@ export default class SocketServer {
         }
 
         this.subscriber.unsubscribe(token_id);
-        this.send(ws, { type: "unsubscribed", token_id });
+        this.send(ws, { type: SERVER_MESSAGE_TYPE.UNSUBSCRIBED, token_id });
     }
 
     private on_client_close(ws: WebSocket): void {
@@ -148,7 +149,7 @@ export default class SocketServer {
             return;
         }
 
-        const payload = JSON.stringify({ type: "market", event });
+        const payload = JSON.stringify({ type: SERVER_MESSAGE_TYPE.MARKET, event });
 
         for (const ws of clients) {
             if (ws.readyState === ws.OPEN) {
@@ -180,10 +181,10 @@ export default class SocketServer {
             const obj = JSON.parse(raw);
             if (typeof obj !== "object" || obj === null) return null;
 
-            if (obj.type === "ping") return { type: "ping" };
+            if (obj.type === CLIENT_MESSAGE_TYPE.PING) return { type: CLIENT_MESSAGE_TYPE.PING };
 
             if (
-                (obj.type === "subscribe" || obj.type === "unsubscribe") &&
+                (obj.type === CLIENT_MESSAGE_TYPE.SUBSCRIBE || obj.type === CLIENT_MESSAGE_TYPE.UNSUBSCRIBE) &&
                 typeof obj.token_id === "string" &&
                 obj.token_id.length > 0
             ) {
