@@ -133,7 +133,7 @@ export default class WebSocketClient {
     public subscribe_market(marketId: string) {
         this.send_message<MESSAGE_TYPES.SUBSCRIBE_MARKET>({
             type: MESSAGE_TYPES.SUBSCRIBE_MARKET,
-            payload: { marketId },
+            payload: { tokenId: marketId },
         });
     }
 
@@ -141,7 +141,7 @@ export default class WebSocketClient {
     public unsubscribe_market(marketId: string) {
         this.send_message<MESSAGE_TYPES.UNSUBSCRIBE_MARKET>({
             type: MESSAGE_TYPES.UNSUBSCRIBE_MARKET,
-            payload: { marketId },
+            payload: { tokenId: marketId },
         });
     }
 

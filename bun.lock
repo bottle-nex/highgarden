@@ -226,6 +226,9 @@
     "packages/types": {
       "name": "@solmarket/types",
       "version": "1.0.0",
+      "dependencies": {
+        "@solmarket/polymarket-contracts": "*",
+      },
       "devDependencies": {
         "@solmarket/eslint-config": "*",
         "@solmarket/typescript-config": "*",
