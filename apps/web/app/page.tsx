@@ -4,13 +4,14 @@ import LandingFeatureCardsSection from '@/components/hero/LandingFeatureCardsSec
 import LandingFooter from '@/components/hero/LandingFooter';
 import LandingInteractiveSection from '@/components/hero/LandingInteractiveSection';
 import LandingNavbar from '@/components/navbar/LandingNavbar';
+import DepositDialogTrigger from '@/components/ui/deposit-dialog-trigger';
 
 export default function Home() {
     return (
         <div className="min-h-screen w-screen bg-black flex flex-col">
             <LandingNavbar />
+            <DepositDialogTrigger />
             <LandingCtaSection />
-            {/* <LandingHeroSection /> */}
             <LandingFeatureCardsSection />
             <LandingInteractiveSection />
             <LandingBentoSection />

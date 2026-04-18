@@ -27,7 +27,7 @@ export default function UtilityCard({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
             className={cn(
-                'relative border border-neutral-300 dark:border-neutral-700 bg-light-alpha dark:bg-dark-alpha text-dark-alpha dark:text-light-alpha shadow-lg px-4 py-2.5',
+                'relative bg-dark-alpha text-light-alpha shadow-lg px-4 py-2.5',
                 className,
             )}
             style={style}

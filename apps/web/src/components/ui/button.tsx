@@ -47,7 +47,7 @@ function Button({
             data-slot="button"
             className={cn(
                 buttonVariants({ variant, size, className }),
-                'cursor-pointer active:scale-98',
+                'cursor-pointer active:scale-99',
             )}
             {...props}
         />

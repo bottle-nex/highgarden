@@ -5,6 +5,7 @@ import SearchBar from './SearchBar';
 import { Button } from '../ui/button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function DashboardNavbar(): JSX.Element {
     const { session } = useUserSessionStore();
@@ -26,22 +27,23 @@ export default function DashboardNavbar(): JSX.Element {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <LiveIndicator />
+                    <Link href={"/portfolio"}>
+                        <Button
+                            type="button"
+                            className={cn(
+                                'h-9 px-4 rounded-none bg-transparent border border-white/12 hover:bg-white/5 font-mono text-[10px] tracking-[0.2em] uppercase text-white/75',
+                            )}
+                        >
+                            PORTFOLIO
+                        </Button>
+                    </Link>
                     <Button
                         type="button"
                         className={cn(
-                            'h-9 px-4 rounded-none bg-transparent border border-white/12 hover:bg-white/5 font-mono text-[10px] tracking-[0.2em] uppercase text-white/75',
+                            'h-9 px-4 rounded-none font-mono text-[10px] tracking-[0.2em] uppercase font-semibold',
                         )}
                     >
-                        PORTFOLIO
-                    </Button>
-                    <Button
-                        type="button"
-                        className={cn(
-                            'h-9 px-4 rounded-none bg-white/80 hover:bg-white/95 font-mono text-[10px] tracking-[0.2em] uppercase text-black font-semibold',
-                        )}
-                    >
-                        CONNECT WALLET
+                        DEPOSIT
                     </Button>
                     <span>
                         {session?.user?.image && (
