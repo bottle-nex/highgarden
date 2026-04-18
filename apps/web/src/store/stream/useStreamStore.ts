@@ -89,7 +89,11 @@ export const useStreamStore = create<StreamState>()(
                 ),
 
             reset: () =>
-                set({ status: 'idle', refCounts: {}, staleMarkets: new Set() }, false, 'stream/reset'),
+                set(
+                    { status: 'idle', refCounts: {}, staleMarkets: new Set() },
+                    false,
+                    'stream/reset',
+                ),
         })),
         { name: 'StreamStore' },
     ),

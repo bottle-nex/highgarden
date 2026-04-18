@@ -14,12 +14,12 @@ export default function MarketCard({ market }: { market: Market }): JSX.Element 
             href={href}
             className="group relative bg-neutral-950 border border-white/10 rounded-[6px] p-5 hover:border-indigo-500/15 hover:bg-neutral-900/70 transition-colors cursor-pointer block no-underline"
         >
-            <div className="flex items-center justify-between font-mono text-[9px] tracking-[0.22em] uppercase">
+            <div className="flex items-center justify-between font-mono text-[11px] tracking-[0.22em] uppercase">
                 <span className="text-white/55">{market.category}</span>
                 <span className="text-white/45">ENDS IN {market.endsIn}</span>
             </div>
 
-            <h3 className="mt-5 text-[13px] text-white/75 font-medium leading-snug min-h-10 line-clamp-2">
+            <h3 className="mt-5 text-[15px] text-white/75 font-medium leading-snug min-h-12 line-clamp-2">
                 {market.title}
             </h3>
 
@@ -28,7 +28,7 @@ export default function MarketCard({ market }: { market: Market }): JSX.Element 
                 <ProbBar label="NO" value={market.noPrice} color="bg-rose-500/22" />
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between font-mono text-[9px] tracking-[0.18em] uppercase">
+            <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between font-mono text-[11px] tracking-[0.18em] uppercase">
                 <span className="text-white/55">VOL {market.volume}</span>
                 <span
                     className={cn(
@@ -55,7 +55,7 @@ function ProbBar({
 }): JSX.Element {
     return (
         <div className="flex items-center gap-2">
-            <span className="font-mono text-[9px] tracking-[0.15em] text-white/55 w-6">
+            <span className="font-mono text-[11px] tracking-[0.15em] text-white/55 w-7">
                 {label}
             </span>
             <div className="relative flex-1 h-1.5 bg-white/8 rounded-full overflow-hidden">
@@ -64,7 +64,7 @@ function ProbBar({
                     style={{ width: `${value}%` }}
                 />
             </div>
-            <span className="font-mono text-[10px] text-white/70 tabular-nums w-7 text-right">
+            <span className="font-mono text-[12px] text-white/70 tabular-nums w-8 text-right">
                 {value}¢
             </span>
         </div>

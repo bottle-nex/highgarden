@@ -32,7 +32,12 @@ export const useWalletStore = create<WalletState>()(
 
                 disconnect: () =>
                     set(
-                        { address: null, usdcBalance: null, solBalance: null, balanceLoading: false },
+                        {
+                            address: null,
+                            usdcBalance: null,
+                            solBalance: null,
+                            balanceLoading: false,
+                        },
                         false,
                         'wallet/disconnect',
                     ),

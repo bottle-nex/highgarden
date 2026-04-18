@@ -26,7 +26,13 @@ export const useFillsStore = create<FillsState>()(
 
             hydrate: (fills) =>
                 set(
-                    { fills: [...fills].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)), loading: false, error: null },
+                    {
+                        fills: [...fills].sort(
+                            (a, b) => +new Date(b.createdAt) - +new Date(a.createdAt),
+                        ),
+                        loading: false,
+                        error: null,
+                    },
                     false,
                     'fills/hydrate',
                 ),

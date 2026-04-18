@@ -4,11 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { RxCross2, RxChevronDown } from 'react-icons/rx';
 import { SiSolana } from 'react-icons/si';
 import { HugeiconsIcon } from '@hugeicons/react';
-import {
-    InformationCircleIcon,
-    Copy01Icon,
-    DollarCircleIcon,
-} from '@hugeicons/core-free-icons';
+import { InformationCircleIcon, Copy01Icon, DollarCircleIcon } from '@hugeicons/core-free-icons';
 import { toast } from 'sonner';
 import OpacityBackground from './opacity-background';
 import UtilityCard from './utility-card';
@@ -142,11 +138,7 @@ export default function DepositDialog({ onClose }: DepositDialogProps): JSX.Elem
                         aria-label="Copy address"
                         className="shrink-0 flex items-center gap-1.5 rounded bg-dark-faded/60 hover:bg-dark-faded px-2.5 py-1.5 text-xs font-medium cursor-pointer transition-colors"
                     >
-                        <HugeiconsIcon
-                            icon={Copy01Icon}
-                            className="size-3.5"
-                            strokeWidth={2}
-                        />
+                        <HugeiconsIcon icon={Copy01Icon} className="size-3.5" strokeWidth={2} />
                         Copy
                     </button>
                 </div>

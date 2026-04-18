@@ -15,15 +15,11 @@ export default function PortfolioCard(): JSX.Element {
                 </div>
                 <div className="text-white/70 text-right">
                     <p className="text-xs">Available to trade</p>
-                    <p className="text-2xl font-semibold text-white">
-                        {hidden ? '••••' : '$1.10'}
-                    </p>
+                    <p className="text-2xl font-semibold text-white">{hidden ? '••••' : '$1.10'}</p>
                 </div>
             </div>
             <div className="flex items-center gap-x-2 mt-1">
-                <span className="text-4xl font-semibold">
-                    {hidden ? '••••' : '$3,567.23'}
-                </span>
+                <span className="text-4xl font-semibold">{hidden ? '••••' : '$3,567.23'}</span>
                 <button
                     type="button"
                     onClick={() => setHidden((prev) => !prev)}

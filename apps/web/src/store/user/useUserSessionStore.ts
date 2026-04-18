@@ -19,5 +19,4 @@ export const useUserSessionStore = create<UserSessionStoreType>()((set) => ({
     setSession: (data: CustomSession | null) => set({ session: data }),
     setOpenSigninModal: (open: boolean) => set({ openSigninModal: open }),
     setOpenLogoutModal: (open: boolean) => set({ openLogoutModal: open }),
-
 }));

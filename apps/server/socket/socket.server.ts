@@ -84,7 +84,10 @@ export default class SocketServer {
         if (!subs) return;
 
         if (subs.has(token_id)) {
-            this.send(ws, { type: SERVER_MESSAGE_TYPE.ERROR, message: `already subscribed to ${token_id}` });
+            this.send(ws, {
+                type: SERVER_MESSAGE_TYPE.ERROR,
+                message: `already subscribed to ${token_id}`,
+            });
             return;
         }
 
@@ -104,7 +107,10 @@ export default class SocketServer {
     private handle_unsubscribe(ws: WebSocket, token_id: string): void {
         const subs = this.client_subs.get(ws);
         if (!subs || !subs.has(token_id)) {
-            this.send(ws, { type: SERVER_MESSAGE_TYPE.ERROR, message: `not subscribed to ${token_id}` });
+            this.send(ws, {
+                type: SERVER_MESSAGE_TYPE.ERROR,
+                message: `not subscribed to ${token_id}`,
+            });
             return;
         }
 
@@ -184,7 +190,8 @@ export default class SocketServer {
             if (obj.type === CLIENT_MESSAGE_TYPE.PING) return { type: CLIENT_MESSAGE_TYPE.PING };
 
             if (
-                (obj.type === CLIENT_MESSAGE_TYPE.SUBSCRIBE || obj.type === CLIENT_MESSAGE_TYPE.UNSUBSCRIBE) &&
+                (obj.type === CLIENT_MESSAGE_TYPE.SUBSCRIBE ||
+                    obj.type === CLIENT_MESSAGE_TYPE.UNSUBSCRIBE) &&
                 typeof obj.token_id === "string" &&
                 obj.token_id.length > 0
             ) {

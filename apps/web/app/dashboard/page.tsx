@@ -30,7 +30,6 @@ export default function DashboardPage(): JSX.Element {
                         </section>
 
                         <MarketTicker />
-
                         <StatsStrip />
                     </div>
 

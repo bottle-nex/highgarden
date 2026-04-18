@@ -6,12 +6,12 @@ import type { MultiCandidateMarket } from '@/utils/constants';
 import { getMarketById } from '@/utils/constants';
 
 const BAR_COLORS = [
-    'bg-indigo-500/50',
-    'bg-sky-500/45',
-    'bg-violet-500/40',
-    'bg-amber-500/40',
-    'bg-teal-500/40',
-    'bg-pink-500/35',
+    'bg-indigo-500/75',
+    'bg-sky-400/70',
+    'bg-violet-500/70',
+    'bg-amber-400/70',
+    'bg-teal-400/70',
+    'bg-pink-400/65',
 ];
 
 export default function MultiCandidateStakeCard({
@@ -28,7 +28,7 @@ export default function MultiCandidateStakeCard({
             href={href}
             className="group bg-neutral-950 border border-white/10 rounded-[6px] overflow-hidden hover:border-white/20 transition-colors block no-underline"
         >
-            <div className="flex items-center justify-between px-6 py-3.5 border-b border-white/8 font-mono text-[9px] tracking-[0.22em] uppercase">
+            <div className="flex items-center justify-between px-6 py-3.5 border-b border-white/8 font-mono text-[11px] tracking-[0.22em] uppercase">
                 <div className="flex items-center gap-3">
                     <span className="inline-block size-1.5 rounded-full bg-indigo-500/70" />
                     <span className="text-white/55">{market.category}</span>
@@ -37,7 +37,7 @@ export default function MultiCandidateStakeCard({
             </div>
 
             <div className="p-6">
-                <h3 className="text-[14px] text-white/80 font-medium leading-snug">
+                <h3 className="text-[16px] text-white/80 font-medium leading-snug">
                     {market.title}
                 </h3>
 
@@ -49,7 +49,7 @@ export default function MultiCandidateStakeCard({
                                 key={candidate.name}
                                 className="flex items-center gap-3 group/row cursor-pointer hover:bg-white/3 -mx-2 px-2 py-1.5 rounded-[4px] transition-colors"
                             >
-                                <span className="font-mono text-[10px] text-white/70 w-28 truncate">
+                                <span className="font-mono text-[12px] text-white/70 w-32 truncate">
                                     {candidate.name}
                                 </span>
                                 <div className="flex-1 h-2 bg-white/6 rounded-full overflow-hidden">
@@ -63,12 +63,12 @@ export default function MultiCandidateStakeCard({
                                         }}
                                     />
                                 </div>
-                                <span className="font-mono text-[11px] text-white/75 tabular-nums w-9 text-right">
+                                <span className="font-mono text-[13px] text-white/75 tabular-nums w-10 text-right">
                                     {candidate.probability}%
                                 </span>
                                 <span
                                     className={cn(
-                                        'font-mono text-[9px] tabular-nums w-10 text-right',
+                                        'font-mono text-[11px] tabular-nums w-12 text-right',
                                         isUp ? 'text-emerald-500/60' : 'text-rose-500/60',
                                     )}
                                 >
@@ -80,7 +80,7 @@ export default function MultiCandidateStakeCard({
                     })}
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-white/8 flex items-center justify-between font-mono text-[9px] tracking-[0.18em] uppercase text-white/45">
+                <div className="mt-5 pt-4 border-t border-white/8 flex items-center justify-between font-mono text-[11px] tracking-[0.18em] uppercase text-white/45">
                     <div className="flex items-center gap-4">
                         <span>VOL {market.volume}</span>
                         <span className="text-white/25">·</span>
