@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 export default function PortfolioCard(): JSX.Element {
     const [hidden, setHidden] = useState<boolean>(false);
     return (
-        <div className="border border-neutral-900 col-span-1 p-5 bg-dark-alpha">
+        <div className="border border-neutral-900 col-span-1 p-5 bg-dark-faded rounded-lg">
             <div className="w-full flex items-start justify-between">
                 <div className="flex items-center gap-x-2 text-white/70">
                     <p>Portfolio</p>

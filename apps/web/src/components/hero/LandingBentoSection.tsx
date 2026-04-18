@@ -60,7 +60,7 @@ export default function LandingBentoSection(): JSX.Element {
             ref={sectionRef}
             onMouseMove={handleSectionMouseMove}
             onMouseLeave={handleSectionMouseLeave}
-            className="relative min-h-screen w-screen bg-black px-6 pt-40 pb-24"
+            className="relative min-h-screen w-screen bg-neutral-950 px-6 pt-40 pb-24"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: '-80px' }}

@@ -7,7 +7,7 @@ export default function CategoryTabs(): JSX.Element {
     const [active, setActive] = useState<string>(CATEGORY_TABS[0]);
 
     return (
-        <div className="w-full border-b border-white/8 bg-black">
+        <div className="w-full border-b border-white/8 bg-dark-alpha">
             <div className="mx-auto w-full max-w-360 px-6 lg:px-8">
                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
                     {CATEGORY_TABS.map((tab) => {

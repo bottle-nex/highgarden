@@ -7,7 +7,7 @@ export default function MarketTicker(): JSX.Element {
 
     return (
         <div className="relative border border-white/10 bg-neutral-950 overflow-hidden rounded-[6px]">
-            <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center gap-2 bg-black border-r border-white/10 pl-5 pr-4 rounded-l-[6px]">
+            <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center gap-2 bg-neutral-950 border-r border-white/10 pl-5 pr-4 rounded-l-[6px]">
                 <span className="relative flex size-1.5">
                     <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500/60 animate-ping opacity-60" />
                     <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500/80" />

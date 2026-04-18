@@ -4,7 +4,7 @@ import CardHeader from './CardHeader';
 
 export default function SlidingMoneyCard(): JSX.Element {
     return (
-        <div className="group relative flex h-150 flex-col overflow-hidden bg-black p-10">
+        <div className="group relative flex h-150 flex-col overflow-hidden bg-neutral-950 p-10">
             <CardHeader label="Markets & Effects" context="Solana Context" />
 
             <div className="mt-5">

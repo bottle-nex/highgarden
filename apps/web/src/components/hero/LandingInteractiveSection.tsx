@@ -143,7 +143,7 @@ export default function LandingInteractiveSection(): JSX.Element {
     }
 
     return (
-        <section ref={sectionRef} className="w-full relative h-[500vh] bg-black text-white">
+        <section ref={sectionRef} className="w-full relative h-[500vh] bg-neutral-950 text-white">
             <main className="relative grid grid-cols-[16.5%_33.5%_50%] items-start w-full h-full">
                 <div className="w-full sticky top-10 h-screen flex flex-col gap-y-4 p-4">
                     <ul className="flex flex-col font-mono text-white gap-y-2 mt-8">

@@ -8,7 +8,7 @@ import DepositDialogTrigger from '@/components/ui/deposit-dialog-trigger';
 
 export default function Home() {
     return (
-        <div className="min-h-screen w-screen bg-black flex flex-col">
+        <div className="min-h-screen w-screen bg-neutral-950 flex flex-col">
             <LandingNavbar />
             <DepositDialogTrigger />
             <LandingCtaSection />

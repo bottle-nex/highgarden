@@ -21,7 +21,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | n
     if (!active || !payload || !payload.length) return null;
     const point = payload[0].payload as ProbabilityPoint;
     return (
-        <div className="bg-black border border-white/20 rounded px-2 py-1.5 font-mono text-[9px] tracking-[0.15em] uppercase">
+        <div className="bg-neutral-950 border border-white/20 rounded px-2 py-1.5 font-mono text-[9px] tracking-[0.15em] uppercase">
             <div className="text-white/45">{point.date}</div>
             <div style={{ color: '#FFCC00' }}>{point.value}% YES</div>
         </div>

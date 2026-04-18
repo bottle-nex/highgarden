@@ -9,7 +9,7 @@ export default function ProfitLossCard(): JSX.Element {
     const [activeRange, setActiveRange] = useState<ProfitTimeRange>('1D');
 
     return (
-        <div className="border border-neutral-900 col-span-1 p-5 bg-dark-alpha flex flex-col">
+        <div className="border border-neutral-900 col-span-1 p-5 bg-dark-faded rounded-lg flex flex-col">
             <div className="w-full flex items-start justify-between">
                 <div className="flex items-center gap-x-2 text-white/70">
                     <span className="size-2 rounded-full bg-white/40" />

@@ -88,7 +88,7 @@ export default function LandingCtaSection(): JSX.Element {
     return (
         <section
             ref={sectionRef}
-            className="relative w-full h-screen shrink-0 overflow-hidden bg-black"
+            className="relative w-full h-screen shrink-0 overflow-hidden bg-neutral-950"
         >
             {/* video background */}
             <video
@@ -101,7 +101,7 @@ export default function LandingCtaSection(): JSX.Element {
                 preload="auto"
             />
 
-            {/* <div className="absolute inset-0 bg-black/55" /> */}
+            {/* <div className="absolute inset-0 bg-neutral-950/55" /> */}
             {/* <div className="absolute inset-0 bg-linear-to-t from-black via-black/20 to-black/40" /> */}
 
             {/* content */}

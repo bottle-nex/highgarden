@@ -46,7 +46,7 @@ const SOCIAL_TILES = [
 
 export default function LandingFooter(): JSX.Element {
     return (
-        <footer className="relative w-full bg-black pt-32 pb-10 px-6 md:px-10 mt-20">
+        <footer className="relative w-full bg-neutral-950 pt-32 pb-10 px-6 md:px-10 mt-20">
             <div className="max-w-340 mx-auto w-full">
                 <div className="mt-10 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-12">
                     <Block
@@ -119,7 +119,7 @@ function Block({ className, children, index, label }: BlockProps): JSX.Element {
     return (
         <div
             className={cn(
-                'relative bg-black border border-white/10 group/block',
+                'relative bg-neutral-950 border border-white/10 group/block',
                 'transition-colors duration-500 hover:border-white/20',
                 className,
             )}
@@ -180,7 +180,7 @@ function SocialTile({
     return (
         <a
             href={href}
-            className="relative bg-black hover:bg-dark-alpha p-5 flex flex-col justify-between gap-y-6 min-h-28 transition-colors duration-300 group/tile overflow-hidden"
+            className="relative bg-neutral-950 hover:bg-dark-alpha p-5 flex flex-col justify-between gap-y-6 min-h-28 transition-colors duration-300 group/tile overflow-hidden"
         >
             <div className="flex items-start justify-between">
                 <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-white/40 group-hover/tile:text-alpha transition-colors duration-300">

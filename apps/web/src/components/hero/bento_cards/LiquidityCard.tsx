@@ -3,7 +3,7 @@ import CardHeader from './CardHeader';
 
 export default function LiquidityCard(): JSX.Element {
     return (
-        <div className="group relative flex h-150 flex-col overflow-hidden bg-black p-10 transition-transform duration-300 ease-out">
+        <div className="group relative flex h-150 flex-col overflow-hidden bg-neutral-950 p-10 transition-transform duration-300 ease-out">
             <CardHeader label="Liquidity & Interaction" context="Solana Context" />
 
             <div className="mt-5">

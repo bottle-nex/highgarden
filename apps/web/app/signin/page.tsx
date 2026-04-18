@@ -75,7 +75,7 @@ function SignInInner() {
     }
 
     return (
-        <OpacityBackground onBackgroundClick={handleClose} escapeClosing className="bg-black">
+        <OpacityBackground onBackgroundClick={handleClose} escapeClosing className="bg-neutral-950">
             <UtilityCard
                 onClose={handleClose}
                 className="w-full max-w-88 rounded-none border-white/10 px-0 py-0 backdrop-blur-md"

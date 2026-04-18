@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 export default function NotFound() {
     return (
-        <main className="min-h-screen w-screen bg-black flex flex-col relative overflow-hidden">
+        <main className="min-h-screen w-screen bg-neutral-950 flex flex-col relative overflow-hidden">
             <LandingNavbar />
 
             <section className="relative z-10 flex-1 flex flex-col justify-between px-8 md:px-12 lg:px-16 pt-32 pb-10">

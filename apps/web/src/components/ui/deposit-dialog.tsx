@@ -29,7 +29,7 @@ export default function DepositDialog({ onClose }: DepositDialogProps): JSX.Elem
     };
 
     return (
-        <OpacityBackground onBackgroundClick={() => {}} escapeClosing>
+        <OpacityBackground className='bg-white/5 backdrop-blur-2xl' onBackgroundClick={() => {}} escapeClosing>
             <UtilityCard className="max-w-md w-full rounded-lg px-6 py-5">
                 <div className="relative flex flex-col items-center pb-4">
                     <h2 className="text-lg font-semibold">Transfer Crypto</h2>

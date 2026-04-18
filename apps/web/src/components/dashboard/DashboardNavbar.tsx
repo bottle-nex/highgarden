@@ -10,7 +10,7 @@ import Link from 'next/link';
 export default function DashboardNavbar(): JSX.Element {
     const { session } = useUserSessionStore();
     return (
-        <header className="sticky top-0 z-40 w-full bg-black/95 backdrop-blur-sm border-b border-white/8">
+        <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm border-b border-white/8">
             <div className="mx-auto w-full max-w-360 h-18 px-6 lg:px-8 flex items-center gap-8">
                 <div className="flex items-center gap-2">
                     <span className="size-2 rounded-full bg-alpha" />
@@ -35,7 +35,7 @@ export default function DashboardNavbar(): JSX.Element {
                     <Button
                         type="button"
                         className={cn(
-                            'h-9 px-4 rounded-[4px]! bg-[#ffcc00] hover:bg-[#ffcc00]  text-[10px] tracking-widest uppercase text-black/90 font-semibold',
+                            'h-9 px-4 rounded-[4px]! text-[10px] tracking-widest uppercase font-semibold',
                         )}
                     >
                         DEPOSIT

@@ -4,7 +4,7 @@ import CardHeader from './CardHeader';
 
 export default function PredictionEntrySection() {
     return (
-        <div className="group relative flex h-150 flex-col overflow-hidden bg-black p-10 transition-transform duration-300 ease-out hover:-translate-y-0.5">
+        <div className="group relative flex h-150 flex-col overflow-hidden bg-neutral-950 p-10 transition-transform duration-300 ease-out hover:-translate-y-0.5">
             <CardHeader label="Ultra-fast prediction engine" context="Solana Context" />
             <div className="mt-5">
                 <h3 className="text-[1.75rem] font-semibold leading-tight text-white">

@@ -38,6 +38,22 @@ const CARDS: CardConfig[] = [
         questionHover: 'hover:bg-[#ffff00] hover:text-black',
     },
     {
+        id: 'pricing',
+        label: 'FEES & SETTLEMENT',
+        context: 'FEES, PAYOUTS',
+        questions: [
+            'WHAT FEES DO I PAY TO TRADE A MARKET?',
+            'HOW FAST DO WINNINGS SETTLE TO MY WALLET?',
+            'WHAT HAPPENS IF A MARKET IS DISPUTED?',
+        ],
+        activeBg: 'bg-alpha',
+        activeInk: 'text-white',
+        accentText: 'text-alpha',
+        arrowBg: 'bg-alpha',
+        arrowInk: 'text-white',
+        questionHover: 'hover:bg-alpha hover:text-white',
+    },
+    {
         id: 'sanity',
         label: 'HOW IT WORKS',
         context: 'PROTOCOL, DOCS',
@@ -53,29 +69,13 @@ const CARDS: CardConfig[] = [
         arrowInk: 'text-black',
         questionHover: 'hover:bg-[#ff4000] hover:text-black',
     },
-    {
-        id: 'pricing',
-        label: 'FEES & SETTLEMENT',
-        context: 'FEES, PAYOUTS',
-        questions: [
-            'WHAT FEES DO I PAY TO TRADE A MARKET?',
-            'HOW FAST DO WINNINGS SETTLE TO MY WALLET?',
-            'WHAT HAPPENS IF A MARKET IS DISPUTED?',
-        ],
-        activeBg: 'bg-[#1F5BFF]',
-        activeInk: 'text-white',
-        accentText: 'text-[#1F5BFF]',
-        arrowBg: 'bg-[#1F5BFF]',
-        arrowInk: 'text-white',
-        questionHover: 'hover:bg-[#1F5BFF] hover:text-white',
-    },
 ];
 
 const INACTIVE_BG =
-    'bg-black bg-[radial-gradient(rgba(255,255,255,0.592)_1px,transparent_1px)] [background-size:9px_9px]';
+    'bg-neutral-950 bg-[radial-gradient(rgba(255,255,255,0.592)_1px,transparent_1px)] [background-size:9px_9px]';
 
 export default function LandingFeatureCardsSection(): JSX.Element {
-    const [activeId, setActiveId] = useState<CardId>('sanity');
+    const [activeId, setActiveId] = useState<CardId>('pricing');
 
     return (
         <section className="w-full py-20">
@@ -127,7 +127,7 @@ function InactiveCard({ label }: { label: string }): JSX.Element {
             className="flex h-full w-full flex-col p-20"
         >
             <div className="h-2.25" aria-hidden />
-            <div className="relative mt-2 flex flex-1 items-center justify-center bg-black p-3">
+            <div className="relative mt-2 flex flex-1 items-center justify-center bg-neutral-950 p-3">
                 <span className="text-sm text-neutral-500">{label}</span>
                 <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-neutral-600">
                     [ CLICK TO SEE ]
@@ -146,13 +146,13 @@ function ActiveCard({ card }: { card: CardConfig }): JSX.Element {
                 <span>AGENT CONTEXT</span>
                 <span className="flex items-center gap-1">
                     <span>CURRENT CONTEXT:</span>
-                    <span className={`bg-black px-1 py-0.5 ${card.accentText}`}>
+                    <span className={`bg-neutral-950 px-1 py-0.5 ${card.accentText}`}>
                         {card.context}
                     </span>
                 </span>
             </div>
 
-            <div className="mt-3 flex flex-1 flex-col justify-end gap-2 bg-black p-4 relative">
+            <div className="mt-3 flex flex-1 flex-col justify-end gap-2 bg-neutral-950 p-4 relative">
                 {card.questions.map((q) => (
                     <div
                         key={q}
@@ -182,7 +182,7 @@ function ActiveCard({ card }: { card: CardConfig }): JSX.Element {
             <div className="mt-2 flex items-center justify-between text-[10px]">
                 <span className="flex items-center gap-1">
                     <span>STATUS:</span>
-                    <span className={`bg-black px-1 py-0.5 ${card.accentText}`}>ENABLED</span>
+                    <span className={`bg-neutral-950 px-1 py-0.5 ${card.accentText}`}>ENABLED</span>
                 </span>
                 <span className="cursor-pointer hover:underline underline-offset-2 flex items-center gap-x-px">
                     LEARN MORE <IoIosArrowRoundForward className="size-4" />
