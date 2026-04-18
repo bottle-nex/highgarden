@@ -11,7 +11,10 @@ export interface QuoteRequest {
 }
 
 // The signed quote as returned from POST /quote
-export interface SignedQuote extends Pick<Quote, 'nonce' | 'side' | 'outcome' | 'price' | 'size' | 'signature'> {
+export interface SignedQuote extends Pick<
+    Quote,
+    'nonce' | 'side' | 'outcome' | 'price' | 'size' | 'signature'
+> {
     marketId: string;
     expiresAt: number; // epoch ms
 }
@@ -37,8 +40,14 @@ let expiryTimer: ReturnType<typeof setTimeout> | null = null;
 let countdownInterval: ReturnType<typeof setInterval> | null = null;
 
 function clearTimers() {
-    if (expiryTimer) { clearTimeout(expiryTimer); expiryTimer = null; }
-    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    if (expiryTimer) {
+        clearTimeout(expiryTimer);
+        expiryTimer = null;
+    }
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
 }
 
 export const useQuoteStore = create<QuoteState>()(
@@ -55,11 +64,19 @@ export const useQuoteStore = create<QuoteState>()(
                 const msLeft = quote.expiresAt - now;
                 if (msLeft <= 0) {
                     // Already expired before we could set it — shouldn't happen in practice
-                    set({ current: null, status: 'expired', msRemaining: 0 }, false, 'quote/expired-on-set');
+                    set(
+                        { current: null, status: 'expired', msRemaining: 0 },
+                        false,
+                        'quote/expired-on-set',
+                    );
                     return;
                 }
 
-                set({ current: quote, status: 'ready', error: null, msRemaining: msLeft }, false, 'quote/set');
+                set(
+                    { current: quote, status: 'ready', error: null, msRemaining: msLeft },
+                    false,
+                    'quote/set',
+                );
 
                 // Countdown ticker (updates every 250ms for smooth UI)
                 countdownInterval = setInterval(() => {
@@ -74,7 +91,11 @@ export const useQuoteStore = create<QuoteState>()(
                 // Hard expiry
                 expiryTimer = setTimeout(() => {
                     clearTimers();
-                    set({ current: null, status: 'expired', msRemaining: 0 }, false, 'quote/expire');
+                    set(
+                        { current: null, status: 'expired', msRemaining: 0 },
+                        false,
+                        'quote/expire',
+                    );
                 }, msLeft);
             },
 
@@ -88,7 +109,11 @@ export const useQuoteStore = create<QuoteState>()(
 
             clear: () => {
                 clearTimers();
-                set({ current: null, status: 'idle', error: null, msRemaining: 0 }, false, 'quote/clear');
+                set(
+                    { current: null, status: 'idle', error: null, msRemaining: 0 },
+                    false,
+                    'quote/clear',
+                );
             },
         })),
         { name: 'QuoteStore' },

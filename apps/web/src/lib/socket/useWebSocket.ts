@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
-import { CLIENT_MESSAGE_TYPE, SERVER_MESSAGE_TYPE, type ServerMessageHandler } from '@solmarket/types';
+import {
+    CLIENT_MESSAGE_TYPE,
+    SERVER_MESSAGE_TYPE,
+    type ServerMessageHandler,
+} from '@solmarket/types';
 
 import WebSocketClient from './socket.client';
 import { useStreamStore } from '@/store/stream/useStreamStore';
@@ -56,8 +60,10 @@ export function useWebSocket() {
         const is_first = useStreamStore.getState().addSubscriber(marketId);
         if (!is_first) return;
 
-        if (market.yesTokenId) ws.send({ type: CLIENT_MESSAGE_TYPE.SUBSCRIBE, token_id: market.yesTokenId });
-        if (market.noTokenId) ws.send({ type: CLIENT_MESSAGE_TYPE.SUBSCRIBE, token_id: market.noTokenId });
+        if (market.yesTokenId)
+            ws.send({ type: CLIENT_MESSAGE_TYPE.SUBSCRIBE, token_id: market.yesTokenId });
+        if (market.noTokenId)
+            ws.send({ type: CLIENT_MESSAGE_TYPE.SUBSCRIBE, token_id: market.noTokenId });
     }, []);
 
     const unsubscribe_market = useCallback((marketId: string) => {
@@ -70,23 +76,25 @@ export function useWebSocket() {
         const is_last = useStreamStore.getState().removeSubscriber(marketId);
         if (!is_last) return;
 
-        if (market.yesTokenId) ws.send({ type: CLIENT_MESSAGE_TYPE.UNSUBSCRIBE, token_id: market.yesTokenId });
-        if (market.noTokenId) ws.send({ type: CLIENT_MESSAGE_TYPE.UNSUBSCRIBE, token_id: market.noTokenId });
+        if (market.yesTokenId)
+            ws.send({ type: CLIENT_MESSAGE_TYPE.UNSUBSCRIBE, token_id: market.yesTokenId });
+        if (market.noTokenId)
+            ws.send({ type: CLIENT_MESSAGE_TYPE.UNSUBSCRIBE, token_id: market.noTokenId });
     }, []);
 
-    const on = useCallback(<T extends SERVER_MESSAGE_TYPE>(
-        type: T,
-        handler: ServerMessageHandler<T>,
-    ) => {
-        socket.current?.on(type, handler);
-    }, []);
+    const on = useCallback(
+        <T extends SERVER_MESSAGE_TYPE>(type: T, handler: ServerMessageHandler<T>) => {
+            socket.current?.on(type, handler);
+        },
+        [],
+    );
 
-    const off = useCallback(<T extends SERVER_MESSAGE_TYPE>(
-        type: T,
-        handler: ServerMessageHandler<T>,
-    ) => {
-        socket.current?.off(type, handler);
-    }, []);
+    const off = useCallback(
+        <T extends SERVER_MESSAGE_TYPE>(type: T, handler: ServerMessageHandler<T>) => {
+            socket.current?.off(type, handler);
+        },
+        [],
+    );
 
     const ping = useCallback(() => {
         socket.current?.ping();

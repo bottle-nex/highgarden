@@ -51,11 +51,9 @@ export const useUIStore = create<UIState>()(
                 setSelectedMarket: (selectedMarketId) =>
                     set({ selectedMarketId }, false, 'ui/setSelectedMarket'),
 
-                openTradePanel: (tradePanel) =>
-                    set({ tradePanel }, false, 'ui/openTradePanel'),
+                openTradePanel: (tradePanel) => set({ tradePanel }, false, 'ui/openTradePanel'),
 
-                closeTradePanel: () =>
-                    set({ tradePanel: null }, false, 'ui/closeTradePanel'),
+                closeTradePanel: () => set({ tradePanel: null }, false, 'ui/closeTradePanel'),
 
                 toast: (message, variant = 'info', durationMs = 4000) =>
                     set(
@@ -76,8 +74,7 @@ export const useUIStore = create<UIState>()(
                         'ui/dismissToast',
                     ),
 
-                setSidebarOpen: (sidebarOpen) =>
-                    set({ sidebarOpen }, false, 'ui/setSidebarOpen'),
+                setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }, false, 'ui/setSidebarOpen'),
 
                 toggleSidebar: () =>
                     set((s) => ({ sidebarOpen: !s.sidebarOpen }), false, 'ui/toggleSidebar'),

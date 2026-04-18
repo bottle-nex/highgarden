@@ -1,7 +1,6 @@
 import WebSocketClient from './socket.client';
 
 export default class SingletonSocket {
-
     private static client: WebSocketClient | null = null;
 
     private static get_ws_url(token: string): string {
@@ -27,5 +26,4 @@ export default class SingletonSocket {
     public static get_current_client(): WebSocketClient | null {
         return this.client;
     }
-
 }

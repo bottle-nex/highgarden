@@ -31,7 +31,12 @@ interface PositionsState {
     reset: () => void;
 }
 
-function updateAvgCost(prevAvg: number, prevShares: number, newPrice: number, newShares: number): number {
+function updateAvgCost(
+    prevAvg: number,
+    prevShares: number,
+    newPrice: number,
+    newShares: number,
+): number {
     const total = prevShares + newShares;
     if (total === 0) return 0;
     return (prevAvg * prevShares + newPrice * newShares) / total;
@@ -69,10 +74,20 @@ export const usePositionsStore = create<PositionsState>()(
 
                         if (fill.side === Side.BUY) {
                             if (fill.outcome === Outcome.YES) {
-                                avgCostYes = updateAvgCost(avgCostYes, yesShares, fill.price, fill.size);
+                                avgCostYes = updateAvgCost(
+                                    avgCostYes,
+                                    yesShares,
+                                    fill.price,
+                                    fill.size,
+                                );
                                 yesShares += fill.size;
                             } else {
-                                avgCostNo = updateAvgCost(avgCostNo, noShares, fill.price, fill.size);
+                                avgCostNo = updateAvgCost(
+                                    avgCostNo,
+                                    noShares,
+                                    fill.price,
+                                    fill.size,
+                                );
                                 noShares += fill.size;
                             }
                         } else {
@@ -112,8 +127,14 @@ export const usePositionsStore = create<PositionsState>()(
                                 ...s.byMarket,
                                 [marketId]: {
                                     ...prev,
-                                    yesShares: outcome === Outcome.YES ? Math.max(0, prev.yesShares - shares) : prev.yesShares,
-                                    noShares: outcome === Outcome.NO ? Math.max(0, prev.noShares - shares) : prev.noShares,
+                                    yesShares:
+                                        outcome === Outcome.YES
+                                            ? Math.max(0, prev.yesShares - shares)
+                                            : prev.yesShares,
+                                    noShares:
+                                        outcome === Outcome.NO
+                                            ? Math.max(0, prev.noShares - shares)
+                                            : prev.noShares,
                                     lastUpdatedAt: Date.now(),
                                 },
                             },
@@ -123,7 +144,8 @@ export const usePositionsStore = create<PositionsState>()(
                     'positions/applyClaim',
                 ),
 
-            reset: () => set({ byMarket: {}, loading: false, error: null }, false, 'positions/reset'),
+            reset: () =>
+                set({ byMarket: {}, loading: false, error: null }, false, 'positions/reset'),
         }),
         { name: 'PositionsStore' },
     ),

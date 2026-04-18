@@ -19,7 +19,7 @@ export default function FeaturedMarketCard({ market }: { market: FeaturedMarket 
             href={href}
             className="relative bg-neutral-950 border border-white/10 rounded-[6px] overflow-hidden group hover:border-white/20 transition-colors block no-underline"
         >
-            <div className="flex items-center justify-between px-8 py-4 border-b border-white/10 font-mono text-[9px] tracking-[0.22em] uppercase">
+            <div className="flex items-center justify-between px-8 py-4 border-b border-white/10 font-mono text-[11px] tracking-[0.22em] uppercase">
                 <div className="flex items-center gap-4">
                     <span className="text-white/45">FEATURED</span>
                     <span className="text-white/75">{market.category}</span>
@@ -34,16 +34,16 @@ export default function FeaturedMarketCard({ market }: { market: FeaturedMarket 
             <div className="p-8 lg:p-10">
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-10 items-start">
                     <div>
-                        <h2 className="text-xl md:text-2xl text-white/75 font-medium leading-snug tracking-tight max-w-xl">
+                        <h2 className="text-2xl md:text-3xl text-white/75 font-medium leading-snug tracking-tight max-w-xl">
                             {market.title}
                         </h2>
-                        <p className="mt-4 text-[13px] text-white/50 max-w-xl leading-relaxed">
+                        <p className="mt-4 text-[15px] text-white/50 max-w-xl leading-relaxed">
                             {market.description}
                         </p>
                     </div>
 
                     <div className="flex flex-col items-start lg:items-end gap-3">
-                        <span className="font-mono text-[9px] tracking-[0.22em] text-white/45 uppercase">
+                        <span className="font-mono text-[11px] tracking-[0.22em] text-white/45 uppercase">
                             CURRENT YES
                         </span>
                         <div className="flex items-baseline gap-1.5">
@@ -54,10 +54,8 @@ export default function FeaturedMarketCard({ market }: { market: FeaturedMarket 
                         </div>
                         <div
                             className={cn(
-                                'flex items-center gap-1.5 font-mono text-[10px] tracking-[0.18em]',
-                                market.trend === 'down'
-                                    ? 'text-rose-500/75'
-                                    : 'text-emerald-500/75',
+                                'flex items-center gap-1.5 font-mono text-[12px] tracking-[0.18em]',
+                                market.trend === 'down' ? 'text-red-600/60' : 'text-green-600/80',
                             )}
                         >
                             <TrendIcon className="size-3" />
@@ -80,14 +78,14 @@ export default function FeaturedMarketCard({ market }: { market: FeaturedMarket 
                 <div className="mt-8 flex items-center gap-3">
                     <Button
                         className={cn(
-                            'flex-1 h-11 rounded-sm bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 font-mono text-[11px] tracking-[0.2em] uppercase text-emerald-400/70 font-semibold',
+                            'flex-1 h-11 rounded-sm bg-green-500/10 hover:bg-green-500/15 border border-green-500/25 text-[11px] tracking-[0.2em] uppercase text-green-400/60 font-semibold',
                         )}
                     >
                         BUY YES · 47¢
                     </Button>
                     <Button
                         className={cn(
-                            'flex-1 h-11 rounded-sm bg-rose-500/8 hover:bg-rose-500/18 border border-rose-500/20 font-mono text-[11px] tracking-[0.2em] uppercase text-rose-400/70',
+                            'flex-1 h-11 rounded-sm bg-red-500/8 hover:bg-red-500/15 border border-red-500/20 text-[11px] tracking-[0.2em] uppercase text-red-400/60',
                         )}
                     >
                         BUY NO · 53¢
@@ -116,12 +114,12 @@ function Stat({
 }): JSX.Element {
     return (
         <div className="bg-neutral-950 px-5 py-5">
-            <div className="font-mono text-[9px] tracking-[0.22em] text-white/45 uppercase">
+            <div className="font-mono text-[11px] tracking-[0.22em] text-white/45 uppercase">
                 {label}
             </div>
             <div
                 className={cn(
-                    'mt-2 text-base tabular-nums',
+                    'mt-2 text-lg tabular-nums',
                     accent ? 'text-emerald-400/65' : 'text-white/75',
                 )}
             >

@@ -18,7 +18,7 @@ export default function CategoryTabs(): JSX.Element {
                                 type="button"
                                 onClick={() => setActive(tab)}
                                 className={cn(
-                                    'group relative flex items-center px-5 py-5 font-mono text-[10px] tracking-[0.22em] uppercase transition-colors duration-200 whitespace-nowrap cursor-pointer',
+                                    'group relative flex items-center px-5 py-5 text-[11px] tracking-widest uppercase transition-colors duration-200 whitespace-nowrap cursor-pointer',
                                     isActive
                                         ? 'text-white/80'
                                         : 'text-white/45 hover:text-white/70',
@@ -27,7 +27,7 @@ export default function CategoryTabs(): JSX.Element {
                                 {tab}
                                 <span
                                     className={cn(
-                                        'absolute left-0 right-0 bottom-0 h-px bg-indigo-400/60 origin-center transition-transform duration-300',
+                                        'absolute left-0 right-0 bottom-0 h-px bg-[#ffcc00] origin-center transition-transform duration-300',
                                         isActive
                                             ? 'scale-x-100'
                                             : 'scale-x-0 group-hover:scale-x-100',

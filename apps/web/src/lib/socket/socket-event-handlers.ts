@@ -1,4 +1,11 @@
-import { SERVER_MESSAGE_TYPE, Outcome, ServerMessage, MarketEvent, Fill, PriceUpdatePayload } from '@solmarket/types';
+import {
+    SERVER_MESSAGE_TYPE,
+    Outcome,
+    ServerMessage,
+    MarketEvent,
+    Fill,
+    PriceUpdatePayload,
+} from '@solmarket/types';
 
 import { useMarketsStore } from '@/store/markets/useMarketsStore';
 import { useStreamStore } from '@/store/stream/useStreamStore';
@@ -17,7 +24,6 @@ interface BookLevel {
 type TokenMapping = { marketId: string; outcome: Outcome };
 
 export class SocketEventHandlers {
-
     private static readonly book_cache = new Map<
         string,
         { bids: BookLevel[]; asks: BookLevel[] }
@@ -82,7 +88,12 @@ export class SocketEventHandlers {
 
         SocketEventHandlers.book_cache.set(event.asset_id, { bids, asks });
 
-        const payload = SocketEventHandlers.build_price_payload(mapping, bids, asks, event.timestamp);
+        const payload = SocketEventHandlers.build_price_payload(
+            mapping,
+            bids,
+            asks,
+            event.timestamp,
+        );
         enqueueBookUpdate(payload);
         useLastTradeStore.getState().apply(payload);
         useStreamStore.getState().markFresh(mapping.marketId);

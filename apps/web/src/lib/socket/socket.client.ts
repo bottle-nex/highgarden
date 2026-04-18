@@ -73,7 +73,9 @@ export default class WebSocketClient {
     private handle_close_code(code: number): void {
         switch (code) {
             case SERVER_CLOSE_CODES.AUTH_REQUIRED:
-                console.warn('[ws:client] authentication required — re-authenticate and reconnect.');
+                console.warn(
+                    '[ws:client] authentication required — re-authenticate and reconnect.',
+                );
                 this.is_manually_closed = true;
                 break;
             case SERVER_CLOSE_CODES.SESSION_EXPIRED:

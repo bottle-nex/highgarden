@@ -24,7 +24,9 @@ export interface MarketEntry {
     liquidityUsd: number | null;
 }
 
-function toMarketEntry(m: Market & { polymarket?: PolyMarket; listing?: Listing | null }): MarketEntry {
+function toMarketEntry(
+    m: Market & { polymarket?: PolyMarket; listing?: Listing | null },
+): MarketEntry {
     return {
         id: m.id,
         name: m.name,

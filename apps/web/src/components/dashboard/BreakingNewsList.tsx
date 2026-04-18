@@ -15,35 +15,35 @@ export default function BreakingNewsList({ items }: { items: BreakingNewsItem[] 
                     return (
                         <div
                             key={item.id}
-                            className="p-5 hover:bg-white/3 transition-colors cursor-pointer group"
+                            className="px-5 py-3 hover:bg-white/3 transition-colors cursor-pointer group"
                         >
-                            <div className="flex items-center justify-between font-mono text-[8px] tracking-[0.22em] text-white/45 uppercase mb-3">
+                            <div className="flex items-center justify-between text-[10px] tracking-[0.22em] text-white/45 uppercase mb-2">
                                 <span>{item.time}</span>
                                 <div
                                     className={cn(
                                         'flex items-center gap-1',
-                                        isUp ? 'text-emerald-500/70' : 'text-rose-500/70',
+                                        isUp ? 'text-green-600/80' : 'text-red-600/80',
                                     )}
                                 >
-                                    <Icon className="size-2.5" />
+                                    <Icon className="size-3" />
                                     {isUp ? '+' : ''}
                                     {item.delta}%
                                 </div>
                             </div>
-                            <p className="text-[12px] text-white/70 leading-relaxed group-hover:text-white/80 transition-colors">
+                            <p className="text-[14px] text-white/70 leading-snug group-hover:text-white/80 transition-colors">
                                 {item.title}
                             </p>
-                            <div className="mt-4 flex items-center gap-3">
+                            <div className="mt-2.5 flex items-center gap-3">
                                 <div className="flex-1 h-1 bg-white/8 relative rounded-full overflow-hidden">
                                     <div
                                         className={cn(
                                             'absolute inset-y-0 left-0 rounded-full',
-                                            isUp ? 'bg-emerald-500/40' : 'bg-rose-500/40',
+                                            isUp ? 'bg-green-600/60' : 'bg-red-600/60',
                                         )}
                                         style={{ width: `${item.probability}%` }}
                                     />
                                 </div>
-                                <span className="font-mono text-[9px] text-white/55 tabular-nums w-8 text-right">
+                                <span className="font-mono text-[11px] text-white/55 tabular-nums w-9 text-right">
                                     {item.probability}%
                                 </span>
                             </div>
