@@ -7,9 +7,20 @@ import { Button } from '@/components/ui/button';
 import type { Position } from './types';
 import Image from 'next/image';
 
-export function MarketIcon({ children, className }: { children: ReactNode; className?: string }): JSX.Element {
+export function MarketIcon({
+    children,
+    className,
+}: {
+    children: ReactNode;
+    className?: string;
+}): JSX.Element {
     return (
-        <div className={cn('flex items-center justify-center shrink-0 border-[1.5px] border-white rounded-sm overflow-hidden', className)}>
+        <div
+            className={cn(
+                'flex items-center justify-center shrink-0 border-[1.5px] border-white rounded-sm overflow-hidden',
+                className,
+            )}
+        >
             {children}
         </div>
     );
@@ -21,13 +32,8 @@ export default function PositionRow({ position }: { position: Position }): JSX.E
     return (
         <div className="grid grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] gap-x-4 items-center px-2 py-4 border-t border-neutral-900">
             <div className="flex items-center gap-x-3 min-w-0">
-                <MarketIcon className='bg-yellow-500'>
-                    <Image
-                        src={"/images/icons/btc.webp"}
-                        alt="Bitcoin"
-                        width={40}
-                        height={40}
-                    />
+                <MarketIcon className="bg-yellow-500">
+                    <Image src={'/images/icons/btc.webp'} alt="Bitcoin" width={40} height={40} />
                 </MarketIcon>
                 <div className="min-w-0">
                     <p className="text-sm text-white truncate">{position.title}</p>
@@ -54,7 +60,9 @@ export default function PositionRow({ position }: { position: Position }): JSX.E
                     <FaCheckCircle className="size-3.5" />
                     {position.status}
                 </div>
-                <div className="text-green-500 text-sm font-medium">${position.value.toFixed(2)}</div>
+                <div className="text-green-500 text-sm font-medium">
+                    ${position.value.toFixed(2)}
+                </div>
             </div>
             <div className="flex items-center gap-x-2">
                 <Button
