@@ -75,10 +75,10 @@ function SignInInner() {
     }
 
     return (
-        <OpacityBackground onBackgroundClick={handleClose} escapeClosing className="bg-black/70">
+        <OpacityBackground onBackgroundClick={handleClose} escapeClosing className="bg-black">
             <UtilityCard
                 onClose={handleClose}
-                className="w-full max-w-88 rounded-none border-white/10 bg-black/90 px-0 py-0 backdrop-blur-md"
+                className="w-full max-w-88 rounded-none border-white/10 px-0 py-0 backdrop-blur-md"
             >
                 <EdgeTicks />
 

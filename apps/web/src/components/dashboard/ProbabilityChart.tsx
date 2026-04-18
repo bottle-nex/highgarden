@@ -52,12 +52,12 @@ export default function ProbabilityChart({ data, height = 240 }: Props): JSX.Ele
                 preserveAspectRatio="none"
                 onMouseLeave={() => setHoverIdx(null)}
             >
-                <defs>
+                {/* <defs>
                     <linearGradient id="prob-area" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#ff4100" stopOpacity="0.22" />
-                        <stop offset="100%" stopColor="#ff4100" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#FFCC00" stopOpacity="0.22" />
+                        <stop offset="100%" stopColor="#FFCC00" stopOpacity="0" />
                     </linearGradient>
-                </defs>
+                </defs> */}
 
                 {yTicks.map((t) => (
                     <g key={t.value}>
@@ -85,7 +85,7 @@ export default function ProbabilityChart({ data, height = 240 }: Props): JSX.Ele
                 <path
                     d={linePath}
                     fill="none"
-                    stroke="#ff4100"
+                    stroke="#FFCC00"
                     strokeWidth="2"
                     strokeLinejoin="round"
                     strokeLinecap="round"

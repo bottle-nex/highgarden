@@ -20,7 +20,7 @@ export default function MultiOptionStakeCard({
         >
             <div className="flex items-center justify-between px-6 py-3.5 border-b border-white/8 font-mono text-[9px] tracking-[0.22em] uppercase">
                 <div className="flex items-center gap-3">
-                    <span className="inline-block size-1.5 rounded-full bg-amber-500/60" />
+                    <span className="inline-block size-1.5 rounded-full bg-alpha" />
                     <span className="text-white/55">{market.category}</span>
                 </div>
                 <span className="text-white/40">ENDS IN {market.endsIn}</span>
@@ -55,9 +55,9 @@ export default function MultiOptionStakeCard({
                                 <div className="mt-2 text-lg font-light text-white/80 tabular-nums">
                                     {option.probability}%
                                 </div>
-                                <div className="mt-2 h-1 bg-white/6 rounded-full overflow-hidden">
+                                <div className="mt-2 h-1 bg-white/6 overflow-hidden">
                                     <div
-                                        className="h-full rounded-full bg-amber-500/40"
+                                        className="h-full bg-alpha"
                                         style={{ width: `${option.probability}%` }}
                                     />
                                 </div>

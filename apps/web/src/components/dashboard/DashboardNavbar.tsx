@@ -5,6 +5,7 @@ import SearchBar from './SearchBar';
 import { Button } from '../ui/button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function DashboardNavbar(): JSX.Element {
     const { session } = useUserSessionStore();
@@ -26,22 +27,23 @@ export default function DashboardNavbar(): JSX.Element {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <LiveIndicator />
+                    <Link href={"/portfolio"}>
+                        <Button
+                            type="button"
+                            className={cn(
+                                'h-9 px-4 rounded-none bg-transparent border border-white/12 hover:bg-white/5 font-mono text-[10px] tracking-[0.2em] uppercase text-white/75',
+                            )}
+                        >
+                            PORTFOLIO
+                        </Button>
+                    </Link>
                     <Button
                         type="button"
                         className={cn(
-                            'h-9 px-4 rounded-[4px]! bg-transparent border border-white/12 hover:bg-white/5 font-mono text-[10px] tracking-[0.2em] uppercase text-white/75',
+                            'h-9 px-4 rounded-none font-mono text-[10px] tracking-[0.2em] uppercase font-semibold',
                         )}
                     >
-                        PORTFOLIO
-                    </Button>
-                    <Button
-                        type="button"
-                        className={cn(
-                            'h-9 px-4 rounded-[4px]! bg-white/80 hover:bg-white/95 font-mono text-[10px] tracking-[0.2em] uppercase text-black font-semibold',
-                        )}
-                    >
-                        CONNECT WALLET
+                        DEPOSIT
                     </Button>
                     <span>
                         {session?.user?.image && (
@@ -62,7 +64,7 @@ export default function DashboardNavbar(): JSX.Element {
 
 function LiveIndicator(): JSX.Element {
     return (
-        <div className="hidden lg:flex items-center gap-2 h-9 px-4 rounded-[4px]! border border-white/10 font-mono text-[9px] tracking-[0.2em] text-white/60">
+        <div className="hidden lg:flex items-center gap-2 h-9 px-4 rounded-none border border-white/10 font-mono text-[9px] tracking-[0.2em] text-white/60">
             <span className="relative flex size-1.5">
                 <span className="absolute inline-flex h-full w-full rounded-none bg-emerald-400 animate-ping opacity-60" />
                 <span className="relative inline-flex size-1.5 rounded-none bg-emerald-400" />
