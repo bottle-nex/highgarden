@@ -38,7 +38,8 @@ export class GammaClient {
         if (!res.ok) {
             throw new Error(`gamma fetch failed: ${res.status} ${res.statusText}`);
         }
-        return (await res.json()) as GammaMarket[];
+        const data = await res.json();
+        return data as GammaMarket[];
     }
 
     static pickYesNoTokenIds(market: GammaMarket): { yesTokenId: string; noTokenId: string } {
