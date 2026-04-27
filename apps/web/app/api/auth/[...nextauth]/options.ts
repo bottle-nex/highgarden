@@ -4,6 +4,7 @@ import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import axios from 'axios';
 import { SIGNIN_URL, VERIFY_OTP_URL } from '@/routes/routes.api';
+import { isAdminEmail } from '@/lib/auth/admin';
 
 export interface UserType {
     id?: string | null;
@@ -12,6 +13,7 @@ export interface UserType {
     image?: string | null;
     provider?: string | null;
     token?: string | null;
+    isAdmin?: boolean;
 }
 
 export interface CustomSession {
@@ -61,7 +63,11 @@ export const authOption: NextAuthOptions = {
             return token;
         },
         async session({ session, token }: { session: CustomSession; token: JWT }) {
-            session.user = token.user as UserType;
+            const user = token.user as UserType;
+            session.user = {
+                ...user,
+                isAdmin: isAdminEmail(user?.email),
+            };
             return session;
         },
     },

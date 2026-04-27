@@ -1,18 +1,13 @@
 import { JSX } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import FeaturedMarketCard from '@/components/dashboard/FeaturedMarketCard';
-import MarketGrid from '@/components/dashboard/MarketGrid';
+import LiveFeaturedMarket from '@/components/dashboard/LiveFeaturedMarket';
+import LiveMarketGrid from '@/components/dashboard/LiveMarketGrid';
 import BreakingNewsList from '@/components/dashboard/BreakingNewsList';
 import HotTopicsList from '@/components/dashboard/HotTopicsList';
-import SectionHeading from '@/components/dashboard/SectionHeading';
-import StatsStrip from '@/components/dashboard/StatsStrip';
-import MarketTicker from '@/components/dashboard/MarketTicker';
 import StakingSection from '@/components/dashboard/StakingSection';
 import {
     breakingNews,
-    featuredMarket,
     hotTopics,
-    marketList,
     yesNoMarkets,
     multiCandidateMarkets,
     multiOptionMarkets,
@@ -24,13 +19,7 @@ export default function DashboardPage(): JSX.Element {
             <div className="space-y-14">
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-12 xl:gap-16">
                     <div className="min-w-0 space-y-10">
-                        <section>
-                            <SectionHeading title="FEATURED MARKET" subtitle="HIGHEST VOLUME" />
-                            <FeaturedMarketCard market={featuredMarket} />
-                        </section>
-
-                        <MarketTicker />
-                        <StatsStrip />
+                        <LiveFeaturedMarket />
                     </div>
 
                     <aside className="space-y-14">
@@ -45,7 +34,7 @@ export default function DashboardPage(): JSX.Element {
                     multiOptionMarkets={multiOptionMarkets}
                 />
 
-                <MarketGrid markets={marketList} />
+                <LiveMarketGrid />
 
                 <div className="flex items-center justify-center pt-6">
                     <button

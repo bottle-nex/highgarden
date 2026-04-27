@@ -1,4 +1,4 @@
-# SolMarket — What's Centralised, What's Decentralised, and Why
+# SolMarket | What's Centralised, What's Decentralised, and Why
 
 > Companion to [brainstorming.md](brainstorming.md), [use-case.md](use-case.md), and [steps.md](steps.md).
 > This doc is the **architectural rationale**: for every moving piece, does it live on-chain (decentralised, trust-minimised, verifiable) or off-chain (centralised, operator-controlled, fast and cheap)? And **why** that side of the fence?

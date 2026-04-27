@@ -28,7 +28,7 @@ export default function FeatureNav({
                         {isActive && (
                             <motion.div
                                 layoutId="featureIndicator"
-                                className="absolute bottom-2 left-2 right-2 h-[2px] rounded-full bg-alpha shadow-[0_0_12px_rgba(255,65,0,0.4)] md:bottom-auto md:left-0 md:right-auto md:top-3 md:h-[calc(100%-24px)] md:w-[2px]"
+                                className="absolute bottom-2 left-2 right-2 h-[2px] rounded-full bg-alpha shadow-[0_0_12px_rgba(0,64,255,0.4)] md:bottom-auto md:left-0 md:right-auto md:top-3 md:h-[calc(100%-24px)] md:w-[2px]"
                                 transition={{
                                     type: 'spring',
                                     bounce: 0.15,

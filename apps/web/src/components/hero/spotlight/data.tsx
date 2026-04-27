@@ -11,7 +11,7 @@ export const FEATURES: Feature[] = [
             { value: '65K', label: 'TPS Capacity' },
             { value: '280+', label: 'Trades / min' },
         ],
-        accent: 'rgba(255, 65, 0, 0.5)',
+        accent: 'rgba(0, 47, 255, 0.5)',
         accentGlow: 'rgba(255, 65, 0, 0.07)',
         icon: (
             <svg

@@ -1,6 +1,6 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
-  "globalEnv": ["POLYMARKET_API_BASE", "AUTO_LISTER_INTERVAL_MS"],
+  "globalEnv": ["SERVER_POLYMARKET_GAMMA_URL", "AUTO_LISTER_INTERVAL_MS"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

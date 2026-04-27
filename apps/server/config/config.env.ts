@@ -9,6 +9,7 @@ const env_schema = z.object({
     SERVER_OTP_COOLDOWN_SECONDS: z.coerce.number().default(60),
     SERVER_OTP_MAX_ATTEMPTS: z.coerce.number().default(5),
     SERVER_WEB_ORIGIN: z.url(),
+    SERVER_POLYMARKET_GAMMA_URL: z.url().default("https://gamma-api.polymarket.com"),
 });
 export let ENV: z.infer<typeof env_schema>;
 

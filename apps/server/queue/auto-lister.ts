@@ -30,7 +30,7 @@ export class AutoLister {
     }
 
     async runOnce(): Promise<AutoListerResult> {
-        const markets = await this.gamma.fetchMarkets({
+        const markets = await this.gamma.fetch_markets({
             limit: this.batchLimit,
             order: "volume_24hr",
             ascending: false,
@@ -85,27 +85,31 @@ export class AutoLister {
     }
 
     private async upsertOne(market: GammaMarket): Promise<"discovered" | "skipped"> {
+        // Skip negative-risk markets — they're multi-outcome composites that
+        // don't fit our binary YES/NO model for MVP.
+        if (market.neg_risk) return "skipped";
+
         const existing = await this.db.market.findFirst({
             where: { polyMarketId: market.id },
             select: { id: true },
         });
         if (existing) return "skipped";
 
-        const { yesTokenId, noTokenId } = GammaClient.pickYesNoTokenIds(market);
+        const { yes_token_id, no_token_id } = GammaClient.pick_yes_no_token_ids(market);
 
         await this.db.$transaction(async (tx) => {
             await tx.polyMarket.upsert({
                 where: { id: market.id },
                 create: {
                     id: market.id,
-                    yesTokenId,
-                    noTokenId,
+                    yesTokenId: yes_token_id,
+                    noTokenId: no_token_id,
                     tickSize: market.minimum_tick_size,
                     negRisk: market.neg_risk,
                 },
                 update: {
-                    yesTokenId,
-                    noTokenId,
+                    yesTokenId: yes_token_id,
+                    noTokenId: no_token_id,
                     tickSize: market.minimum_tick_size,
                     negRisk: market.neg_risk,
                 },

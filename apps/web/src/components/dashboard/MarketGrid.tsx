@@ -9,7 +9,13 @@ type SortKey = 'VOLUME' | '24H Δ' | 'ENDING SOON';
 
 const SORTS: SortKey[] = ['VOLUME', '24H Δ', 'ENDING SOON'];
 
-export default function MarketGrid({ markets }: { markets: Market[] }): JSX.Element {
+export default function MarketGrid({
+    markets,
+    get_href,
+}: {
+    markets: Market[];
+    get_href?: (m: Market) => string;
+}): JSX.Element {
     const [sort, setSort] = useState<SortKey>('VOLUME');
 
     const sorted = useMemo(() => {
@@ -50,7 +56,7 @@ export default function MarketGrid({ markets }: { markets: Market[] }): JSX.Elem
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-7">
                 {sorted.map((m) => (
-                    <MarketCard key={m.id} market={m} />
+                    <MarketCard key={m.id} market={m} href={get_href?.(m)} />
                 ))}
             </div>
         </section>

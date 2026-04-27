@@ -16,7 +16,7 @@ const poppins = Poppins({
 export const metadata: Metadata = {
     metadataBase: new URL('https://solmarket.xyz'),
     title: {
-        default: 'SolMarket — The First Prediction Market Native to Solana',
+        default: 'SolMarket | The First Prediction Market Native to Solana',
         template: '%s · SolMarket',
     },
     description:
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
         type: 'website',
         url: 'https://solmarket.xyz',
         siteName: 'SolMarket',
-        title: 'SolMarket — Polymarket on Solana',
+        title: 'SolMarket | Polymarket on Solana',
         description:
             'A Solana-native prediction market with day-one liquidity. Trade event outcomes in Solana USDC with tight spreads, instant settlement, and a Polymarket-deep order book.',
         images: [
@@ -47,13 +47,13 @@ export const metadata: Metadata = {
                 url: '/images/landing/hero.png',
                 width: 1200,
                 height: 630,
-                alt: 'SolMarket — the first prediction market native to Solana',
+                alt: 'SolMarket | the first prediction market native to Solana',
             },
         ],
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'SolMarket — Polymarket on Solana',
+        title: 'SolMarket | Polymarket on Solana',
         description:
             'The first prediction market native to Solana. Deep day-one liquidity, Solana-speed trading, USDC settlement.',
         images: ['/images/landing/hero.png'],

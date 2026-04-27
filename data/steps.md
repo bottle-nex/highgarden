@@ -1,4 +1,4 @@
-# SolMarket — Step-by-Step Build Plan
+# SolMarket | Step-by-Step Build Plan
 
 > Source material: [brainstorming.md](brainstorming.md), [use-case.md](use-case.md), [noob.md](noob.md).
 > Goal: Ship a hackathon MVP of a Solana prediction market that mirrors Polymarket's order book and hedges every user trade back to Polymarket at a spread.

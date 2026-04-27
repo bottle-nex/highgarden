@@ -53,7 +53,7 @@ export default function LandingBentoSection(): JSX.Element {
         glowY.set(-1000);
     }, [glowX, glowY]);
 
-    const sectionGlow = useMotionTemplate`radial-gradient(900px circle at ${glowX}px ${glowY}px, rgba(255,65,0,0.02), transparent 60%)`;
+    const sectionGlow = useMotionTemplate`radial-gradient(900px circle at ${glowX}px ${glowY}px, rgba(0, 26, 255, 0.02), transparent 60%)`;
 
     return (
         <motion.section

@@ -5,13 +5,19 @@ import { cn } from '@/lib/utils';
 import type { Market } from '@/utils/constants';
 import { getMarketById } from '@/utils/constants';
 
-export default function MarketCard({ market }: { market: Market }): JSX.Element {
+export default function MarketCard({
+    market,
+    href,
+}: {
+    market: Market;
+    href?: string;
+}): JSX.Element {
     const isUp = market.change24h >= 0;
     const detail = getMarketById(market.id);
-    const href = detail ? `/market/${detail.slug}` : '#';
+    const resolved_href = href ?? (detail ? `/market/${detail.slug}` : '#');
     return (
         <Link
-            href={href}
+            href={resolved_href}
             className="group relative border border-white/10 rounded-[6px] p-5 hover:border-indigo-500/15 bg-neutral-900/70 transition-colors cursor-pointer block no-underline"
         >
             <div className="flex items-center justify-between font-mono text-[11px] tracking-[0.22em] uppercase">

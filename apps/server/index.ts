@@ -12,6 +12,7 @@ import { notFoundHandler } from "./middleware/not-found";
 Env.parse_env();
 export const services = new Services();
 services.boot();
+await services.hydrate();
 
 const app = express();
 app.use(

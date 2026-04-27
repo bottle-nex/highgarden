@@ -9,14 +9,20 @@ import { getMarketById } from '@/utils/constants';
 import ProbabilityChart from './ProbabilityChart';
 import { Button } from '../ui/button';
 
-export default function FeaturedMarketCard({ market }: { market: FeaturedMarket }): JSX.Element {
+export default function FeaturedMarketCard({
+    market,
+    href,
+}: {
+    market: FeaturedMarket;
+    href?: string;
+}): JSX.Element {
     const TrendIcon = market.trend === 'down' ? HiArrowTrendingDown : HiArrowTrendingUp;
     const detail = getMarketById(market.id);
-    const href = detail ? `/market/${detail.slug}` : '#';
+    const resolved_href = href ?? (detail ? `/market/${detail.slug}` : '#');
 
     return (
         <Link
-            href={href}
+            href={resolved_href}
             className="relative bg-neutral-950 border border-white/10 rounded-[6px] overflow-hidden group hover:border-white/20 transition-colors block no-underline"
         >
             <div className="flex items-center justify-between px-8 py-4 border-b border-white/10 font-mono text-[11px] tracking-[0.22em] uppercase">
