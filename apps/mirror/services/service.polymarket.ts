@@ -18,7 +18,7 @@ export default class PolymarketService {
     constructor(load_user_markets: UserMarketsProvider) {
         this.load_user_markets = load_user_markets;
         this.token_index = new TokenIndex(this.redis);
-        this.publisher = new PolymarketPublisher(this.redis, this.token_index);
+        this.publisher = new PolymarketPublisher(this.redis);
     }
 
     public async start(): Promise<void> {

@@ -35,14 +35,14 @@ export default function PortfolioCard(): JSX.Element {
             <div className="w-full grid gap-x-4 mt-5 grid-cols-2">
                 <Button
                     className="col-span-1 w-full h-10 text-sm"
-                    onClick={() => console.log('deposit clicked')}
+                    onClick={() => {}}
                 >
                     <LuArrowDownToLine /> Deposit
                 </Button>
                 <Button
                     className="col-span-1 w-full h-10 text-sm"
                     variant="outline"
-                    onClick={() => console.log('withdraw clicked')}
+                    onClick={() => {}}
                 >
                     <LuArrowUpFromLine /> Withdraw
                 </Button>

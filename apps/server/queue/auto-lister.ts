@@ -71,12 +71,7 @@ export class AutoLister {
         if (this.running) return;
         this.running = true;
         try {
-            const result = await this.runOnce();
-            if (result.discovered > 0 || result.failed > 0) {
-                console.log(
-                    `[auto-lister] discovered=${result.discovered} skipped=${result.skippedExisting} failed=${result.failed}`,
-                );
-            }
+            await this.runOnce();
         } catch (err) {
             console.error("[auto-lister] tick failed:", err);
         } finally {

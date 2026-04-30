@@ -122,9 +122,6 @@ export class SocketEventHandlers {
         );
         useLastTradeStore.getState().apply(payload);
         useStreamStore.getState().markFresh(mapping.marketId);
-        console.log(
-            `[7.handler→store] book ${mapping.marketId.slice(0, 8)}/${mapping.outcome} bestBid=${payload.bestBid} bestAsk=${payload.bestAsk} depth=${bids.length}+${asks.length}`,
-        );
     }
 
     private static handle_price_change(
@@ -171,20 +168,11 @@ export class SocketEventHandlers {
             new Date(event.timestamp).getTime(),
         );
         useLastTradeStore.getState().apply(payload);
-        console.log(
-            `[7.handler→store] price_change ${mapping.marketId.slice(0, 8)}/${mapping.outcome} changes=${depth_changes.length} bestBid=${payload.bestBid} bestAsk=${payload.bestAsk}`,
-        );
     }
 
     static handle_market(msg: Extract<ServerMessage, { type: SERVER_MESSAGE_TYPE.MARKET }>): void {
         const tokenMap = SocketEventHandlers.build_token_map();
         const { event } = msg;
-        const asset = event.asset_id;
-        const trunc = asset.length > 12 ? `${asset.slice(0, 6)}…${asset.slice(-4)}` : asset;
-        const mapping = tokenMap.get(asset);
-        console.log(
-            `[6.client→handler] dispatch type=${event.event_type} asset=${trunc} mapped=${mapping ? `${mapping.marketId.slice(0, 8)}/${mapping.outcome}` : 'NO_MAPPING'}`,
-        );
 
         switch (event.event_type) {
             case 'book':

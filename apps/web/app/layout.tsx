@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import LenisProvider from '@/providers/LenisProvider';
 import AuthSessionProvider from '@/providers/AuthSessionProvider';
 import SessionSetter from '@/components/utility/SessionSetter';
+import WebSocketHost from '@/components/utility/WebSocketHost';
 import { Toaster } from 'sonner';
 
 const poppins = Poppins({
@@ -77,6 +78,7 @@ export default function RootLayout({
             <body className="min-h-full flex flex-col">
                 <AuthSessionProvider>
                     <SessionSetter />
+                    <WebSocketHost />
                     <Toaster />
                     <LenisProvider>{children}</LenisProvider>
                 </AuthSessionProvider>

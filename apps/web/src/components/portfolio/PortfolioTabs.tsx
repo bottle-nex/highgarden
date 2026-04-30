@@ -58,7 +58,7 @@ export default function PortfolioTabs(): JSX.Element {
                 </div>
                 <Button
                     variant="outline"
-                    onClick={() => console.log('sort toggled')}
+                    onClick={() => {}}
                     className="h-10 px-4 border-neutral-900 bg-dark-alpha text-sm text-white/70 hover:bg-dark-alpha hover:text-white"
                 >
                     <LuArrowUpDown className="size-3.5" />

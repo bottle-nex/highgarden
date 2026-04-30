@@ -5,9 +5,14 @@ import { ENV } from "../config/config.env";
 import type { MarketEvent } from "@solmarket/polymarket-contracts";
 import type PolymarketPublisher from "../services/service.polymarket.publisher";
 import type TokenIndex from "../services/service.token-index";
+import chalk from "chalk";
 
 export default class MarketSocket extends SocketBase {
     public readonly registry = new SubscriptionRegistry();
+    // Brief debounce so a market switch (UNSUB old → SUB new arriving back-to-
+    // back) doesn't tear down and rebuild the Polymarket WSS for nothing.
+    private idle_close_timer: ReturnType<typeof setTimeout> | null = null;
+    private readonly idle_close_grace_ms = 750;
 
     constructor(publisher: PolymarketPublisher, token_index: TokenIndex) {
         super("market", publisher, token_index);
@@ -24,10 +29,14 @@ export default class MarketSocket extends SocketBase {
     }
 
     public subscribe(token_id: string): void {
-        const { firstRef, count } = this.registry.acquire(token_id);
-        console.log(
-            `[poly:market] acquire market=${this.token_index.label(token_id)} (count=${count}, first_ref=${firstRef})`,
-        );
+        // A new subscriber arrived during the close grace window — keep the
+        // socket alive instead of bouncing it.
+        if (this.idle_close_timer) {
+            clearTimeout(this.idle_close_timer);
+            this.idle_close_timer = null;
+        }
+
+        const { firstRef } = this.registry.acquire(token_id);
         if (!firstRef) return;
 
         // Polymarket drops idle sockets, so we only open the connection on the
@@ -40,13 +49,22 @@ export default class MarketSocket extends SocketBase {
     }
 
     public unsubscribe(token_id: string): void {
-        const { lastRef, count } = this.registry.release(token_id);
-        console.log(
-            `[poly:market] release market=${this.token_index.label(token_id)} (count=${count}, last_ref=${lastRef})`,
-        );
-        // v1: Polymarket WSS has no unsubscribe frame. If bandwidth becomes an
-        // issue, force-reconnect when last_ref is true — get_subscribe_frame()
-        // will re-send the smaller set.
+        const { lastRef } = this.registry.release(token_id);
+        // Polymarket's market WSS has no unsubscribe frame. To actually stop
+        // receiving data when no users are watching anything, drop the socket
+        // entirely once the registry is empty. Next subscribe will reconnect.
+        if (lastRef && this.registry.size() === 0 && this.state === "open") {
+            if (this.idle_close_timer) clearTimeout(this.idle_close_timer);
+            this.idle_close_timer = setTimeout(() => {
+                this.idle_close_timer = null;
+                if (this.registry.size() === 0 && this.state === "open") {
+                    console.log(
+                        chalk.gray("[poly:market] no subscribers — closing Polymarket WSS"),
+                    );
+                    void this.stop();
+                }
+            }, this.idle_close_grace_ms);
+        }
     }
 
     protected handle_message(msg: unknown): void {

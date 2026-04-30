@@ -6,12 +6,10 @@ export const services = new Services();
 services.boot();
 
 await services.polymarket.start();
-console.log("[mirror] up");
 
-const shutdown = async (signal: string) => {
-    console.log(`[mirror] ${signal} received, stopping`);
+const shutdown = async () => {
     await services.polymarket.stop();
     process.exit(0);
 };
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown());
+process.on("SIGINT", () => shutdown());

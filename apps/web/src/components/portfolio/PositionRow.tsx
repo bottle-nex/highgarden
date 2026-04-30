@@ -68,14 +68,14 @@ export default function PositionRow({ position }: { position: Position }): JSX.E
                 <Button
                     variant="outline"
                     className="h-9 px-4 text-sm"
-                    onClick={() => console.log('redeem', position.id)}
+                    onClick={() => {}}
                 >
                     Redeem
                 </Button>
                 <Button
                     size="icon"
                     className="size-9 bg-neutral-800 hover:bg-neutral-900"
-                    onClick={() => console.log('share', position.id)}
+                    onClick={() => {}}
                 >
                     <LuShare2 />
                 </Button>

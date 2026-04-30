@@ -3,6 +3,7 @@ import type { SocketState } from "@solmarket/polymarket-contracts";
 import { POLY_WS } from "../config/config.polymarket";
 import type PolymarketPublisher from "../services/service.polymarket.publisher";
 import type TokenIndex from "../services/service.token-index";
+import chalk from "chalk";
 
 export abstract class SocketBase {
     protected ws: WebSocket | null = null;
@@ -101,6 +102,9 @@ export abstract class SocketBase {
     }
 
     private on_message(data: unknown): void {
+
+        // console.log(chalk.magenta("unparsed data from clob client: "), data);
+
         if (typeof data !== "string") return;
         if (data === "PONG" || data === "pong") return;
 
@@ -111,13 +115,11 @@ export abstract class SocketBase {
             return;
         }
 
+        // console.log(chalk.yellow("message received from clob client: "), parsed);
+        console.log(chalk.yellow("message received from clob client"));
+
         const items = Array.isArray(parsed) ? parsed : [parsed];
         for (const item of items) {
-            const o = (item ?? {}) as Record<string, unknown>;
-            const asset = typeof o.asset_id === "string" ? o.asset_id : undefined;
-            console.log(
-                `[1.poly→mirror] ${this.name} event_type=${o.event_type ?? "?"} market=${this.token_index.label(asset)} keys=${Object.keys(o).join(",")}`,
-            );
             this.handle_message(item);
         }
     }

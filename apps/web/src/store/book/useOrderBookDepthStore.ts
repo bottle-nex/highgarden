@@ -92,7 +92,10 @@ export const useOrderBookDepthStore = create<DepthState>()(
 
                             if (!prev) continue;
                             if (entry.deltas.length === 0) continue;
-                            if (entry.ts <= prev.updatedAt) continue;
+                            // Strict `<`: a hydrate written with the same wall-
+                            // clock ms as an incoming Polymarket delta must not
+                            // shadow that delta.
+                            if (entry.ts < prev.updatedAt) continue;
 
                             byKey[key] = apply_changes(prev, entry.deltas, entry.ts);
                             changed = true;

@@ -31,10 +31,11 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 const server = createServer(app);
-export const socket_server = new SocketServer(server, ENV.SERVER_REDIS_URL);
-socket_server.label_for = (id) => services.token_index.label(id);
-socket_server.subscriber.label_for = (id) => services.token_index.label(id);
+export const socket_server = new SocketServer(
+    server,
+    ENV.SERVER_REDIS_URL,
+    services.mirror_control,
+    services.book_cache,
+);
 
-server.listen(ENV.SERVER_PORT, () => {
-    console.log(`server up on :${ENV.SERVER_PORT}`);
-});
+server.listen(ENV.SERVER_PORT);

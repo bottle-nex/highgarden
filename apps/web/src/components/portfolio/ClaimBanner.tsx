@@ -22,7 +22,7 @@ export default function ClaimBanner(): JSX.Element {
                     <span className="text-white text-2xl font-semibold">$2.37</span>
                 </div>
             </div>
-            <Button className="h-10 px-6 text-sm" onClick={() => console.log('claim clicked')}>
+            <Button className="h-10 px-6 text-sm" onClick={() => {}}>
                 <LuTicket /> Claim
             </Button>
         </section>

@@ -1,35 +1,33 @@
 import Redis from "ioredis";
-import { REDIS_CHANNELS, type ControlMessage } from "@solmarket/polymarket-contracts";
+import { REDIS_CHANNELS } from "@solmarket/polymarket-contracts";
+import type MirrorControlPublisher from "../services/service.mirror-control";
+import type BookCache from "./../services/service.book-cache";
+import chalk from "chalk";
 
 export default class RedisSubscriber {
     private sub: Redis;
-    private pub: Redis;
     private refs = new Map<string, number>();
     private channel_to_token = new Map<string, string>();
     // eslint-disable-next-line no-unused-vars
     private on_message: (token_id: string, data: string) => void;
-    /** Optional marketId/name resolver injected after construction. */
-    // eslint-disable-next-line no-unused-vars
-    public label_for: ((token_id: string) => string) | null = null;
+    private mirror_control: MirrorControlPublisher;
+    private book_cache: BookCache;
 
-    // eslint-disable-next-line no-unused-vars
-    constructor(redis_url: string, on_message: (token_id: string, data: string) => void) {
+    constructor(
+        redis_url: string,
+        // eslint-disable-next-line no-unused-vars
+        on_message: (token_id: string, data: string) => void,
+        mirror_control: MirrorControlPublisher,
+        book_cache: BookCache,
+    ) {
         this.on_message = on_message;
+        this.mirror_control = mirror_control;
+        this.book_cache = book_cache;
         this.sub = new Redis(redis_url);
-        this.pub = new Redis(redis_url);
 
         this.sub.on("message", (channel: string, data: string) => {
             const token_id = this.channel_to_token.get(channel);
             if (!token_id) return;
-            const label = this.label_for?.(token_id) ?? short(token_id);
-            const kind = channel.includes(":book:")
-                ? "book"
-                : channel.includes(":price:")
-                  ? "price"
-                  : "tick";
-            console.log(
-                `[4.redis→ws-srv] forward market=${label} kind=${kind} bytes=${data.length}`,
-            );
             this.on_message(token_id, data);
         });
     }
@@ -37,17 +35,23 @@ export default class RedisSubscriber {
     public subscribe(token_id: string): void {
         const prev = this.refs.get(token_id) ?? 0;
         this.refs.set(token_id, prev + 1);
+        if (prev > 0) return;
 
-        if (prev === 0) {
-            const channels = this.channels_for(token_id);
-            for (const ch of channels) {
-                this.channel_to_token.set(ch, token_id);
-            }
-            this.sub.subscribe(...channels);
-            this.publish_control({ action: "subscribe", token_id });
-            const label = this.label_for?.(token_id) ?? short(token_id);
-            console.log(`[ws:subscriber] subscribed market=${label} (3 channels)`);
+        const channels = this.channels_for(token_id);
+        for (const ch of channels) {
+            this.channel_to_token.set(ch, token_id);
         }
+        this.sub.subscribe(...channels).catch((err) => {
+            console.error(chalk.red("[ws:server] redis subscribe failed"), token_id, err);
+        });
+        // First user interest in this token — persist intent (SADD + nudge)
+        // and start caching the book so REST snapshot calls see live data.
+        Promise.all([
+            this.mirror_control.subscribe([token_id]),
+            this.book_cache.track([token_id]),
+        ]).catch((err) => {
+            console.error(chalk.red("[ws:server] mirror arm failed"), token_id, err);
+        });
     }
 
     public snapshot_refs(): Map<string, number> {
@@ -59,23 +63,31 @@ export default class RedisSubscriber {
         if (prev <= 0) return;
 
         const next = prev - 1;
-        if (next === 0) {
-            this.refs.delete(token_id);
-            const channels = this.channels_for(token_id);
-            for (const ch of channels) {
-                this.channel_to_token.delete(ch);
-            }
-            this.sub.unsubscribe(...channels);
-            this.publish_control({ action: "unsubscribe", token_id });
-            console.log(`[ws:subscriber] unsubscribed from ${token_id}`);
-        } else {
+        if (next > 0) {
             this.refs.set(token_id, next);
+            return;
         }
+
+        this.refs.delete(token_id);
+        const channels = this.channels_for(token_id);
+        for (const ch of channels) {
+            this.channel_to_token.delete(ch);
+        }
+        this.sub.unsubscribe(...channels).catch((err) => {
+            console.error(chalk.red("[ws:server] redis unsubscribe failed"), token_id, err);
+        });
+        // Last user interest gone — clear durable intent and free the cache so
+        // the mirror stops pulling this token from Polymarket.
+        Promise.all([
+            this.mirror_control.unsubscribe([token_id]),
+            this.book_cache.untrack([token_id]),
+        ]).catch((err) => {
+            console.error(chalk.red("[ws:server] mirror disarm failed"), token_id, err);
+        });
     }
 
     public async shutdown(): Promise<void> {
         await this.sub.quit();
-        await this.pub.quit();
     }
 
     private channels_for(token_id: string): [string, string, string] {
@@ -85,13 +97,4 @@ export default class RedisSubscriber {
             REDIS_CHANNELS.market_tick(token_id),
         ];
     }
-
-    private publish_control(msg: ControlMessage): void {
-        this.pub.publish(REDIS_CHANNELS.control, JSON.stringify(msg));
-    }
-}
-
-function short(token_id: string): string {
-    if (token_id.length <= 12) return token_id;
-    return `${token_id.slice(0, 8)}…${token_id.slice(-4)}`;
 }

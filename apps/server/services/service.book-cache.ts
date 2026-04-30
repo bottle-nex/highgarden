@@ -46,7 +46,6 @@ export default class BookCache {
         }
 
         await this.psubscribe_for(fresh);
-        console.log(`[book-cache] tracking ${fresh.length} new asset(s)`);
     }
 
     public async untrack(token_ids: string[]): Promise<void> {
@@ -61,7 +60,6 @@ export default class BookCache {
         }
 
         await this.punsubscribe_for(known);
-        console.log(`[book-cache] dropped ${known.length} asset(s)`);
     }
 
     public getTopOfBook(token_id: string): TopOfBook | null {
@@ -161,32 +159,20 @@ export default class BookCache {
         }
 
         const token_id = event.asset_id;
-        const label = this.label_for?.(token_id) ?? short(token_id);
         if (!this.tracked.has(token_id)) {
-            console.log(`[3.redis→cache] DROP untracked market=${label} type=${event.event_type}`);
             return;
         }
 
         if (event.event_type === "book") {
             this.apply_snapshot(token_id, event.bids, event.asks);
-            console.log(
-                `[3.redis→cache] APPLY book market=${label} bids=${event.bids.length} asks=${event.asks.length}`,
-            );
         } else if (event.event_type === "price_change") {
             this.apply_changes(token_id, event.changes);
-            console.log(
-                `[3.redis→cache] APPLY price_change market=${label} changes=${event.changes.length}`,
-            );
         } else {
             return;
         }
 
         this.recompute_top(token_id);
     }
-
-    /** Optional marketId/name resolver, injected after construction. */
-    // eslint-disable-next-line no-unused-vars
-    public label_for: ((token_id: string) => string) | null = null;
 
     private apply_snapshot(
         token_id: string,
@@ -254,9 +240,4 @@ export default class BookCache {
             updatedAt: Date.now(),
         });
     }
-}
-
-function short(token_id: string): string {
-    if (token_id.length <= 12) return token_id;
-    return `${token_id.slice(0, 8)}…${token_id.slice(-4)}`;
 }

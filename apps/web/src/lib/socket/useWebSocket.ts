@@ -21,7 +21,7 @@ export function useWebSocket() {
     useEffect(() => {
         if (!token) return;
 
-        const ws = SingletonSocket.get_socket_client(token);
+        const ws = SingletonSocket.acquire(token);
         socket.current = ws;
         useStreamStore.getState().setStatus('connecting');
 
@@ -43,9 +43,8 @@ export function useWebSocket() {
 
         return () => {
             clearInterval(poll);
-            SingletonSocket.destroy_socket_client();
+            SingletonSocket.release();
             socket.current = null;
-            useStreamStore.getState().reset();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);

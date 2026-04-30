@@ -19,6 +19,10 @@ export default class WebSocketClient {
     private max_reconnect_delay: number = 30000;
     private persistent_reconnect_delay: number = 5000;
     private message_queue: ClientMessage[] = [];
+    // Authoritative set of subscriptions held by this client. Used to replay
+    // SUBSCRIBE frames on every (re)connect so the server, which forgets per-
+    // socket subscriptions on close, can rebuild its routing table.
+    private active_subscriptions: Set<string> = new Set();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private handlers: Map<SERVER_MESSAGE_TYPE, ((msg: any) => void)[]> = new Map();
     private is_manually_closed: boolean = false;
@@ -38,6 +42,7 @@ export default class WebSocketClient {
             this.is_connected = true;
             this.reconnect_attempts = 0;
             this.reconnect_delay = 1000;
+            this.replay_subscriptions();
             this.flush_message_queue();
         };
 
@@ -92,7 +97,6 @@ export default class WebSocketClient {
     }
 
     private handle_incoming_message(msg: ServerMessage): void {
-        console.log("messate icoming from the socket is : ", msg)
         const handlers = this.handlers.get(msg.type);
         if (handlers) {
             handlers.forEach((h) => h(msg as never));
@@ -115,10 +119,30 @@ export default class WebSocketClient {
     }
 
     public send(msg: ClientMessage): void {
+        if (msg.type === CLIENT_MESSAGE_TYPE.SUBSCRIBE) {
+            this.active_subscriptions.add(msg.token_id);
+        } else if (msg.type === CLIENT_MESSAGE_TYPE.UNSUBSCRIBE) {
+            this.active_subscriptions.delete(msg.token_id);
+        }
+
         if (this.is_connected && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(msg));
-        } else {
+        } else if (
+            msg.type !== CLIENT_MESSAGE_TYPE.SUBSCRIBE &&
+            msg.type !== CLIENT_MESSAGE_TYPE.UNSUBSCRIBE
+        ) {
+            // Subscriptions are replayed from active_subscriptions on (re)connect,
+            // so we don't queue them here — that would risk duplicate sends.
             this.message_queue.push(msg);
+        }
+    }
+
+    private replay_subscriptions(): void {
+        if (this.active_subscriptions.size === 0) return;
+        for (const token_id of this.active_subscriptions) {
+            this.ws.send(
+                JSON.stringify({ type: CLIENT_MESSAGE_TYPE.SUBSCRIBE, token_id }),
+            );
         }
     }
 
@@ -182,6 +206,7 @@ export default class WebSocketClient {
         this.is_connected = false;
         this.handlers.clear();
         this.message_queue = [];
+        this.active_subscriptions.clear();
     }
 
     public get_status() {

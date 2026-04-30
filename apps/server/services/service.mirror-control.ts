@@ -28,7 +28,6 @@ export default class MirrorControlPublisher {
             pipeline.publish(REDIS_CHANNELS.control, this.encode("subscribe", id));
         }
         await pipeline.exec();
-        console.log(`[mirror-control] SADD ${token_ids.length} token(s) + nudge`);
     }
 
     public async unsubscribe(token_ids: string[]): Promise<void> {
@@ -39,7 +38,6 @@ export default class MirrorControlPublisher {
             pipeline.publish(REDIS_CHANNELS.control, this.encode("unsubscribe", id));
         }
         await pipeline.exec();
-        console.log(`[mirror-control] SREM ${token_ids.length} token(s) + nudge`);
     }
 
     /** Reconcile the SET to exactly match `desired`. Returns added/removed counts. */

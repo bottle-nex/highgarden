@@ -1,36 +1,51 @@
 import { WebSocketServer, type WebSocket } from "ws";
 import type { Server, IncomingMessage } from "http";
 import type { Duplex } from "stream";
-import { verifySessionJwt } from "../services/service.jwt";
+import { verifySessionJwt, type SessionClaims } from "../services/service.jwt";
 import RedisSubscriber from "./socket.subscriber";
 import { SERVER_MESSAGE_TYPE, CLIENT_MESSAGE_TYPE } from "@solmarket/types";
 import type { ServerMessage, ClientMessage } from "@solmarket/types";
+import type MirrorControlPublisher from "../services/service.mirror-control";
+import type BookCache from "../services/service.book-cache";
+import chalk from "chalk";
 
 export default class SocketServer {
     private wss: WebSocketServer;
     public readonly subscriber: RedisSubscriber;
     private client_subs = new Map<WebSocket, Set<string>>();
     private token_clients = new Map<string, Set<WebSocket>>();
-    /** Optional marketId/name resolver injected after construction. */
-    // eslint-disable-next-line no-unused-vars
-    public label_for: ((token_id: string) => string) | null = null;
+    private client_claims = new Map<WebSocket, SessionClaims>();
 
-    constructor(server: Server, redis_url: string) {
+    constructor(
+        server: Server,
+        redis_url: string,
+        mirror_control: MirrorControlPublisher,
+        book_cache: BookCache,
+    ) {
         this.wss = new WebSocketServer({ noServer: true });
-        this.subscriber = new RedisSubscriber(redis_url, this.route_redis_message.bind(this));
+        this.subscriber = new RedisSubscriber(
+            redis_url,
+            this.route_redis_message.bind(this),
+            mirror_control,
+            book_cache,
+        );
 
         server.on("upgrade", (req: IncomingMessage, socket: Duplex, head: Buffer) => {
-            if (!this.authenticate(req)) {
+            const claims = this.authenticate(req);
+            if (!claims) {
                 socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
                 socket.destroy();
                 return;
             }
             this.wss.handleUpgrade(req, socket, head, (ws) => {
+                this.client_claims.set(ws, claims);
                 this.wss.emit("connection", ws, req);
             });
         });
 
         this.wss.on("connection", (ws: WebSocket) => {
+            const who = this.who(ws);
+            console.log(chalk.bgGreen('socket connected'), who);
             this.client_subs.set(ws, new Set());
 
             ws.on("message", (raw: Buffer) => {
@@ -38,16 +53,19 @@ export default class SocketServer {
             });
 
             ws.on("close", () => {
+                console.log(chalk.bgRed('socket disconnected'), who);
                 this.on_client_close(ws);
             });
 
             ws.on("error", (err) => {
-                console.error("[ws:server] client error:", err.message);
+                console.log(chalk.bgRed('socket disconnected with error'), who, err);
                 ws.close();
             });
         });
+    }
 
-        console.log("[ws:server] websocket server attached");
+    private who(ws: WebSocket): string {
+        return this.client_claims.get(ws)?.email ?? "unknown";
     }
 
     public async shutdown(): Promise<void> {
@@ -103,6 +121,8 @@ export default class SocketServer {
         }
         clients.add(ws);
 
+        console.log(chalk.green("→ subscribe  "), this.who(ws), token_id);
+
         this.subscriber.subscribe(token_id);
         this.send(ws, { type: SERVER_MESSAGE_TYPE.SUBSCRIBED, token_id });
     }
@@ -126,6 +146,8 @@ export default class SocketServer {
             }
         }
 
+        console.log(chalk.yellow("← unsubscribe"), this.who(ws), token_id);
+
         this.subscriber.unsubscribe(token_id);
         this.send(ws, { type: SERVER_MESSAGE_TYPE.UNSUBSCRIBED, token_id });
     }
@@ -145,13 +167,12 @@ export default class SocketServer {
             }
         }
         this.client_subs.delete(ws);
+        this.client_claims.delete(ws);
     }
 
     private route_redis_message(token_id: string, data: string): void {
         const clients = this.token_clients.get(token_id);
-        const label = this.label_for?.(token_id) ?? short(token_id);
         if (!clients || clients.size === 0) {
-            console.log(`[5.ws-srv→client] DROP market=${label} no_subscribed_clients`);
             return;
         }
 
@@ -164,14 +185,11 @@ export default class SocketServer {
 
         const payload = JSON.stringify({ type: SERVER_MESSAGE_TYPE.MARKET, event });
 
-        let sent = 0;
         for (const ws of clients) {
             if (ws.readyState === ws.OPEN) {
                 ws.send(payload);
-                sent++;
             }
         }
-        console.log(`[5.ws-srv→client] send market=${label} clients=${sent}`);
     }
 
     public snapshot_clients(): Map<string, number> {
@@ -182,15 +200,14 @@ export default class SocketServer {
         return counts;
     }
 
-    private authenticate(req: IncomingMessage): boolean {
+    private authenticate(req: IncomingMessage): SessionClaims | null {
         try {
             const url = new URL(req.url || "", `http://${req.headers.host}`);
             const token = url.searchParams.get("token");
-            if (!token) return false;
-            verifySessionJwt(token);
-            return true;
+            if (!token) return null;
+            return verifySessionJwt(token);
         } catch {
-            return false;
+            return null;
         }
     }
 
@@ -221,9 +238,4 @@ export default class SocketServer {
             return null;
         }
     }
-}
-
-function short(token_id: string): string {
-    if (token_id.length <= 12) return token_id;
-    return `${token_id.slice(0, 8)}…${token_id.slice(-4)}`;
 }
