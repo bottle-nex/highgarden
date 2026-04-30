@@ -13,6 +13,12 @@ import { useFillsStore } from '@/store/portfolio/useFillsStore';
 import { usePositionsStore } from '@/store/portfolio/usePositionsStore';
 import { useUIStore } from '@/store/ui/useUIStore';
 import { enqueueBookUpdate } from '@/store/book/useOrderBookStore';
+import {
+    enqueueDepthChanges,
+    enqueueDepthSnapshot,
+    useOrderBookDepthStore,
+    type DepthChange,
+} from '@/store/book/useOrderBookDepthStore';
 import { useLastTradeStore } from '@/store/book/useLastTradeStore';
 import { toast } from 'sonner';
 
@@ -28,6 +34,18 @@ export class SocketEventHandlers {
         string,
         { bids: BookLevel[]; asks: BookLevel[] }
     >();
+
+    /**
+     * Seed the per-asset working cache from a REST snapshot so subsequent
+     * `price_change` events can apply deltas instead of bailing out for lack
+     * of base state.
+     */
+    static seed_book(asset_id: string, bids: BookLevel[], asks: BookLevel[]): void {
+        SocketEventHandlers.book_cache.set(asset_id, {
+            bids: bids.map((l) => ({ price: l.price, size: l.size })),
+            asks: asks.map((l) => ({ price: l.price, size: l.size })),
+        });
+    }
 
     // Build a reverse lookup from Polymarket token ID → { marketId, outcome }
     private static build_token_map(): Map<string, TokenMapping> {
@@ -95,8 +113,18 @@ export class SocketEventHandlers {
             event.timestamp,
         );
         enqueueBookUpdate(payload);
+        enqueueDepthSnapshot(
+            mapping.marketId,
+            mapping.outcome,
+            bids,
+            asks,
+            new Date(event.timestamp).getTime(),
+        );
         useLastTradeStore.getState().apply(payload);
         useStreamStore.getState().markFresh(mapping.marketId);
+        console.log(
+            `[7.handler→store] book ${mapping.marketId.slice(0, 8)}/${mapping.outcome} bestBid=${payload.bestBid} bestAsk=${payload.bestAsk} depth=${bids.length}+${asks.length}`,
+        );
     }
 
     private static handle_price_change(
@@ -112,6 +140,7 @@ export class SocketEventHandlers {
             return;
         }
 
+        const depth_changes: DepthChange[] = [];
         for (const change of event.changes) {
             const price = parseFloat(change.price);
             const size = parseFloat(change.size);
@@ -125,6 +154,7 @@ export class SocketEventHandlers {
             } else {
                 levels.push({ price, size });
             }
+            depth_changes.push({ price, size, side: change.side });
         }
 
         const payload = SocketEventHandlers.build_price_payload(
@@ -134,12 +164,27 @@ export class SocketEventHandlers {
             event.timestamp,
         );
         enqueueBookUpdate(payload);
+        enqueueDepthChanges(
+            mapping.marketId,
+            mapping.outcome,
+            depth_changes,
+            new Date(event.timestamp).getTime(),
+        );
         useLastTradeStore.getState().apply(payload);
+        console.log(
+            `[7.handler→store] price_change ${mapping.marketId.slice(0, 8)}/${mapping.outcome} changes=${depth_changes.length} bestBid=${payload.bestBid} bestAsk=${payload.bestAsk}`,
+        );
     }
 
     static handle_market(msg: Extract<ServerMessage, { type: SERVER_MESSAGE_TYPE.MARKET }>): void {
         const tokenMap = SocketEventHandlers.build_token_map();
         const { event } = msg;
+        const asset = event.asset_id;
+        const trunc = asset.length > 12 ? `${asset.slice(0, 6)}…${asset.slice(-4)}` : asset;
+        const mapping = tokenMap.get(asset);
+        console.log(
+            `[6.client→handler] dispatch type=${event.event_type} asset=${trunc} mapped=${mapping ? `${mapping.marketId.slice(0, 8)}/${mapping.outcome}` : 'NO_MAPPING'}`,
+        );
 
         switch (event.event_type) {
             case 'book':
@@ -165,6 +210,10 @@ export class SocketEventHandlers {
         msg: Extract<ServerMessage, { type: SERVER_MESSAGE_TYPE.UNSUBSCRIBED }>,
     ): void {
         SocketEventHandlers.book_cache.delete(msg.token_id);
+        const mapping = SocketEventHandlers.build_token_map().get(msg.token_id);
+        if (mapping) {
+            useOrderBookDepthStore.getState().clear(mapping.marketId);
+        }
     }
 
     static handle_error(msg: Extract<ServerMessage, { type: SERVER_MESSAGE_TYPE.ERROR }>): void {

@@ -72,6 +72,62 @@ export default class BookCache {
         return Object.fromEntries(this.tops);
     }
 
+    public has_token(token_id: string): boolean {
+        return this.tracked.has(token_id);
+    }
+
+    public snapshot_tracked(): Array<{
+        token_id: string;
+        top: TopOfBook | null;
+        bid_levels: number;
+        ask_levels: number;
+    }> {
+        const out: Array<{
+            token_id: string;
+            top: TopOfBook | null;
+            bid_levels: number;
+            ask_levels: number;
+        }> = [];
+        for (const id of this.tracked) {
+            out.push({
+                token_id: id,
+                top: this.tops.get(id) ?? null,
+                bid_levels: this.bids.get(id)?.levels.size ?? 0,
+                ask_levels: this.asks.get(id)?.levels.size ?? 0,
+            });
+        }
+        return out;
+    }
+
+    public get_depth(
+        token_id: string,
+        depth: number,
+    ): {
+        bids: Array<{ price: number; size: number }>;
+        asks: Array<{ price: number; size: number }>;
+    } | null {
+        const bids = this.bids.get(token_id);
+        const asks = this.asks.get(token_id);
+        if (!bids || !asks) return null;
+
+        const bid_levels: Array<{ price: number; size: number }> = [];
+        for (const [price, size] of bids.levels) {
+            if (size > 0) bid_levels.push({ price, size });
+        }
+        bid_levels.sort((a, b) => b.price - a.price);
+
+        const ask_levels: Array<{ price: number; size: number }> = [];
+        for (const [price, size] of asks.levels) {
+            if (size > 0) ask_levels.push({ price, size });
+        }
+        ask_levels.sort((a, b) => a.price - b.price);
+
+        return {
+            bids: bid_levels.slice(0, depth),
+            asks: ask_levels.slice(0, depth),
+        };
+    }
+
     public async shutdown(): Promise<void> {
         await this.sub.quit();
     }
@@ -105,18 +161,31 @@ export default class BookCache {
         }
 
         const token_id = event.asset_id;
-        if (!this.tracked.has(token_id)) return;
+        const label = this.label_for?.(token_id) ?? short(token_id);
+        if (!this.tracked.has(token_id)) {
+            console.log(`[3.redis→cache] DROP untracked market=${label} type=${event.event_type}`);
+            return;
+        }
 
         if (event.event_type === "book") {
             this.apply_snapshot(token_id, event.bids, event.asks);
+            console.log(
+                `[3.redis→cache] APPLY book market=${label} bids=${event.bids.length} asks=${event.asks.length}`,
+            );
         } else if (event.event_type === "price_change") {
             this.apply_changes(token_id, event.changes);
+            console.log(
+                `[3.redis→cache] APPLY price_change market=${label} changes=${event.changes.length}`,
+            );
         } else {
             return;
         }
 
         this.recompute_top(token_id);
     }
+
+    /** Optional marketId/name resolver, injected after construction. */
+    public label_for: ((token_id: string) => string) | null = null;
 
     private apply_snapshot(
         token_id: string,
@@ -184,4 +253,9 @@ export default class BookCache {
             updatedAt: Date.now(),
         });
     }
+}
+
+function short(token_id: string): string {
+    if (token_id.length <= 12) return token_id;
+    return `${token_id.slice(0, 8)}…${token_id.slice(-4)}`;
 }

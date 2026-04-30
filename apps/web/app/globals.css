@@ -142,3 +142,22 @@ body {
         @apply font-sans;
     }
 }
+
+@keyframes flash-up-anim {
+    0% { background-color: rgba(16, 185, 129, 0); }
+    20% { background-color: rgba(16, 185, 129, 0.22); }
+    100% { background-color: rgba(16, 185, 129, 0); }
+}
+@keyframes flash-down-anim {
+    0% { background-color: rgba(244, 63, 94, 0); }
+    20% { background-color: rgba(244, 63, 94, 0.22); }
+    100% { background-color: rgba(244, 63, 94, 0); }
+}
+.flash-up {
+    animation: flash-up-anim 350ms ease-out;
+    border-radius: 4px;
+}
+.flash-down {
+    animation: flash-down-anim 350ms ease-out;
+    border-radius: 4px;
+}

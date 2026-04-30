@@ -1,4 +1,4 @@
-import type { ListingStatus, MarketStatus } from "../prisma/enums.prisma";
+import type { ListingStatus, MarketStatus, Outcome, Side } from "../prisma/enums.prisma";
 
 // ─── On-chain wire formats ────────────────────────────────────────────────────
 // These mirror the Anchor structs in apps/contract/programs/contract/src so the
@@ -74,6 +74,72 @@ export interface MarketDTO {
   solanaMarketPda: string | null;
   volume24hUsd: number | null;
   liquidityUsd: number | null;
+}
+
+// ─── Order book ───────────────────────────────────────────────────────────────
+
+export interface OrderBookLevelDTO {
+  price: number;
+  size: number;
+}
+
+/**
+ * Tri-state describing why bids/asks may be empty:
+ *   TRACKED       — at least one level on at least one side; render the ladder.
+ *   TRACKED_EMPTY — book is being mirrored, just no resting orders yet.
+ *   NOT_TRACKED   — server's BookCache isn't following this token (mirror
+ *                   pipeline likely degraded or market not yet armed). The
+ *                   controller will lazy-trigger an arm when this is returned.
+ */
+export type OrderBookStatus = "TRACKED" | "TRACKED_EMPTY" | "NOT_TRACKED";
+
+/** Snapshot served by GET /api/v1/markets/:id/orderbook. */
+export interface OrderBookSnapshotDTO {
+  marketId: string;
+  outcome: Outcome;
+  tokenId: string;
+  status: OrderBookStatus;
+  bids: OrderBookLevelDTO[];
+  asks: OrderBookLevelDTO[];
+  bestBid: number | null;
+  bestAsk: number | null;
+  midPrice: number | null;
+  /** Epoch ms when the cache last touched this token. */
+  updatedAt: number;
+}
+
+// ─── Price history ────────────────────────────────────────────────────────────
+
+export type PriceHistoryRange = "1h" | "6h" | "1d" | "1w" | "1m" | "all";
+
+export interface PriceHistoryPoint {
+  /** Unix seconds. */
+  t: number;
+  /** Price in [0, 1]. */
+  p: number;
+}
+
+/** Served by GET /api/v1/markets/:id/price-history. */
+export interface PriceHistoryDTO {
+  marketId: string;
+  tokenId: string;
+  range: PriceHistoryRange;
+  history: PriceHistoryPoint[];
+}
+
+// ─── Recent trades ────────────────────────────────────────────────────────────
+
+/** Served by GET /api/v1/markets/:id/trades. */
+export interface RecentTradeDTO {
+  id: string;
+  side: Side;
+  outcome: Outcome;
+  /** Cents in [1, 99]. */
+  price: number;
+  /** Whole shares. */
+  size: number;
+  solanaTxSig: string;
+  createdAt: string;
 }
 
 /** Admin curator view served by GET /api/v1/admin/listings. */

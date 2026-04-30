@@ -4,6 +4,7 @@ import { ENV } from "../config/config.env";
 import { build_polymarket_auth } from "../services/service.polymarket.auth";
 import type { UserEvent } from "@solmarket/polymarket-contracts";
 import type PolymarketPublisher from "../services/service.polymarket.publisher";
+import type TokenIndex from "../services/service.token-index";
 
 export type UserMarketsProvider = () => Promise<string[]>;
 
@@ -11,8 +12,12 @@ export default class UserSocket extends SocketBase {
     private markets: string[] = [];
     private readonly load_markets: UserMarketsProvider;
 
-    constructor(publisher: PolymarketPublisher, load_markets: UserMarketsProvider) {
-        super("user", publisher);
+    constructor(
+        publisher: PolymarketPublisher,
+        token_index: TokenIndex,
+        load_markets: UserMarketsProvider,
+    ) {
+        super("user", publisher, token_index);
         this.load_markets = load_markets;
     }
 

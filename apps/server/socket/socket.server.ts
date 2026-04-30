@@ -8,9 +8,11 @@ import type { ServerMessage, ClientMessage } from "@solmarket/types";
 
 export default class SocketServer {
     private wss: WebSocketServer;
-    private subscriber: RedisSubscriber;
+    public readonly subscriber: RedisSubscriber;
     private client_subs = new Map<WebSocket, Set<string>>();
     private token_clients = new Map<string, Set<WebSocket>>();
+    /** Optional marketId/name resolver injected after construction. */
+    public label_for: ((token_id: string) => string) | null = null;
 
     constructor(server: Server, redis_url: string) {
         this.wss = new WebSocketServer({ noServer: true });
@@ -146,7 +148,11 @@ export default class SocketServer {
 
     private route_redis_message(token_id: string, data: string): void {
         const clients = this.token_clients.get(token_id);
-        if (!clients || clients.size === 0) return;
+        const label = this.label_for?.(token_id) ?? short(token_id);
+        if (!clients || clients.size === 0) {
+            console.log(`[5.ws-srv→client] DROP market=${label} no_subscribed_clients`);
+            return;
+        }
 
         let event: unknown;
         try {
@@ -157,11 +163,22 @@ export default class SocketServer {
 
         const payload = JSON.stringify({ type: SERVER_MESSAGE_TYPE.MARKET, event });
 
+        let sent = 0;
         for (const ws of clients) {
             if (ws.readyState === ws.OPEN) {
                 ws.send(payload);
+                sent++;
             }
         }
+        console.log(`[5.ws-srv→client] send market=${label} clients=${sent}`);
+    }
+
+    public snapshot_clients(): Map<string, number> {
+        const counts = new Map<string, number>();
+        for (const [token_id, sockets] of this.token_clients) {
+            counts.set(token_id, sockets.size);
+        }
+        return counts;
     }
 
     private authenticate(req: IncomingMessage): boolean {
@@ -203,4 +220,9 @@ export default class SocketServer {
             return null;
         }
     }
+}
+
+function short(token_id: string): string {
+    if (token_id.length <= 12) return token_id;
+    return `${token_id.slice(0, 8)}…${token_id.slice(-4)}`;
 }

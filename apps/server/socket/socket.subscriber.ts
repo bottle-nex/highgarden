@@ -8,6 +8,8 @@ export default class RedisSubscriber {
     private channel_to_token = new Map<string, string>();
     // eslint-disable-next-line no-unused-vars
     private on_message: (token_id: string, data: string) => void;
+    /** Optional marketId/name resolver injected after construction. */
+    public label_for: ((token_id: string) => string) | null = null;
 
     // eslint-disable-next-line no-unused-vars
     constructor(redis_url: string, on_message: (token_id: string, data: string) => void) {
@@ -17,9 +19,17 @@ export default class RedisSubscriber {
 
         this.sub.on("message", (channel: string, data: string) => {
             const token_id = this.channel_to_token.get(channel);
-            if (token_id) {
-                this.on_message(token_id, data);
-            }
+            if (!token_id) return;
+            const label = this.label_for?.(token_id) ?? short(token_id);
+            const kind = channel.includes(":book:")
+                ? "book"
+                : channel.includes(":price:")
+                  ? "price"
+                  : "tick";
+            console.log(
+                `[4.redis→ws-srv] forward market=${label} kind=${kind} bytes=${data.length}`,
+            );
+            this.on_message(token_id, data);
         });
     }
 
@@ -34,8 +44,13 @@ export default class RedisSubscriber {
             }
             this.sub.subscribe(...channels);
             this.publish_control({ action: "subscribe", token_id });
-            console.log(`[ws:subscriber] subscribed to ${token_id} (3 channels)`);
+            const label = this.label_for?.(token_id) ?? short(token_id);
+            console.log(`[ws:subscriber] subscribed market=${label} (3 channels)`);
         }
+    }
+
+    public snapshot_refs(): Map<string, number> {
+        return new Map(this.refs);
     }
 
     public unsubscribe(token_id: string): void {
@@ -73,4 +88,9 @@ export default class RedisSubscriber {
     private publish_control(msg: ControlMessage): void {
         this.pub.publish(REDIS_CHANNELS.control, JSON.stringify(msg));
     }
+}
+
+function short(token_id: string): string {
+    if (token_id.length <= 12) return token_id;
+    return `${token_id.slice(0, 8)}…${token_id.slice(-4)}`;
 }

@@ -2,16 +2,10 @@ import { JSX } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import LiveFeaturedMarket from '@/components/dashboard/LiveFeaturedMarket';
 import LiveMarketGrid from '@/components/dashboard/LiveMarketGrid';
+import LiveStakingSection from '@/components/dashboard/LiveStakingSection';
 import BreakingNewsList from '@/components/dashboard/BreakingNewsList';
 import HotTopicsList from '@/components/dashboard/HotTopicsList';
-import StakingSection from '@/components/dashboard/StakingSection';
-import {
-    breakingNews,
-    hotTopics,
-    yesNoMarkets,
-    multiCandidateMarkets,
-    multiOptionMarkets,
-} from '@/utils/constants';
+import { breakingNews, hotTopics } from '@/utils/constants';
 
 export default function DashboardPage(): JSX.Element {
     return (
@@ -28,11 +22,7 @@ export default function DashboardPage(): JSX.Element {
                     </aside>
                 </div>
 
-                <StakingSection
-                    yesNoMarkets={yesNoMarkets}
-                    multiCandidateMarkets={multiCandidateMarkets}
-                    multiOptionMarkets={multiOptionMarkets}
-                />
+                <LiveStakingSection />
 
                 <LiveMarketGrid />
 

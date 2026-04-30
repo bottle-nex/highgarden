@@ -53,8 +53,8 @@ export default class RejectListingController {
                 },
             });
 
-            // If we were tracking this market, unwind the mirror subscription
-            // and book cache entry. Best-effort.
+            // If we were tracking this market, unwind the mirror subscription,
+            // book cache entry, and token index. Best-effort.
             if (wasApproved) {
                 const poly = listing.market?.polymarket;
                 if (poly) {
@@ -62,6 +62,7 @@ export default class RejectListingController {
                     try {
                         await services.mirror_control.unsubscribe(token_ids);
                         await services.book_cache.untrack(token_ids);
+                        await services.token_index.remove(token_ids);
                     } catch (err) {
                         console.error("[admin/reject] mirror unwire failed", err);
                     }

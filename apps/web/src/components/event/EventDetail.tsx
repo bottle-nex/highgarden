@@ -1,9 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { MarketDTO } from '@solmarket/types';
-import { fetch_market_by_id } from '@/lib/api/markets';
+import { Outcome } from '@solmarket/types';
+import { fetch_market_by_id, fetch_market_orderbook } from '@/lib/api/markets';
+import { useMarketsStore } from '@/store/markets/useMarketsStore';
+import { useMarketStream } from '@/lib/socket/useWebSocket';
+import { useSubscribeEventHandlers } from '@/lib/socket/useSubscribeEventHandlers';
+import { enqueueBookUpdate } from '@/store/book/useOrderBookStore';
+import { SocketEventHandlers } from '@/lib/socket/socket-event-handlers';
+
+import EventBreadcrumb from './EventBreadcrumb';
+import EventTitleBlock from './EventTitleBlock';
+import ProbabilityHeadline from './ProbabilityHeadline';
+import EventPriceChart from './EventPriceChart';
+import EventOrderBook from './EventOrderBook';
+import EventTradePanel from './EventTradePanel';
+import EventTabs from './EventTabs';
+import EventRelatedMarkets from './EventRelatedMarkets';
 
 function format_usd(usd: number | null): string {
     if (usd === null) return '—';
@@ -12,18 +27,15 @@ function format_usd(usd: number | null): string {
     return `$${usd.toFixed(0)}`;
 }
 
-function format_date(iso: string): string {
+function format_close_label(iso: string): string {
     const d = new Date(iso);
-    return d.toLocaleDateString(undefined, {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-    });
-}
-
-function truncate(s: string, head = 8, tail = 8): string {
-    if (s.length <= head + tail + 1) return s;
-    return `${s.slice(0, head)}…${s.slice(-tail)}`;
+    return `CLOSES ${d
+        .toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+        })
+        .toUpperCase()}`;
 }
 
 type State =
@@ -38,7 +50,12 @@ export default function EventDetail({ id }: { id: string }) {
         let cancelled = false;
         fetch_market_by_id(id).then((m) => {
             if (cancelled) return;
-            set_state(m ? { status: 'ready', market: m } : { status: 'not_found' });
+            if (m) {
+                useMarketsStore.getState().upsert_one(m);
+                set_state({ status: 'ready', market: m });
+            } else {
+                set_state({ status: 'not_found' });
+            }
         });
         return () => {
             cancelled = true;
@@ -46,7 +63,7 @@ export default function EventDetail({ id }: { id: string }) {
     }, [id]);
 
     return (
-        <div className="min-h-screen w-full bg-dark-base text-white/80">
+        <div data-lenis-prevent className="min-h-screen w-full bg-dark-base text-white/80">
             <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm border-b border-white/8">
                 <div className="mx-auto w-full max-w-360 h-16 px-6 lg:px-8 flex items-center justify-between">
                     <Link
@@ -61,7 +78,7 @@ export default function EventDetail({ id }: { id: string }) {
                 </div>
             </header>
 
-            <main className="mx-auto w-full max-w-360 px-6 lg:px-8 py-12">
+            <main className="mx-auto w-full max-w-360 px-6 lg:px-8 py-10 lg:py-12">
                 {state.status === 'loading' && <Frame>Loading market…</Frame>}
                 {state.status === 'not_found' && (
                     <Frame>
@@ -75,66 +92,71 @@ export default function EventDetail({ id }: { id: string }) {
 }
 
 function Body({ market }: { market: MarketDTO }) {
+    useSubscribeEventHandlers();
+    useMarketStream(market.id);
+
+    const [selected_outcome, set_selected_outcome] = useState<Outcome>(Outcome.YES);
+    const [delta24h, set_delta24h] = useState<number | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        const seed = (outcome: Outcome) =>
+            fetch_market_orderbook(market.id, outcome, 25).then((snap) => {
+                if (cancelled || !snap) return;
+                SocketEventHandlers.seed_book(snap.tokenId, snap.bids, snap.asks);
+                if (snap.bestBid !== null && snap.bestAsk !== null) {
+                    enqueueBookUpdate({
+                        marketId: snap.marketId,
+                        outcome: snap.outcome,
+                        bestBid: snap.bestBid,
+                        bestAsk: snap.bestAsk,
+                        quotedPrice: snap.bestAsk,
+                        updatedAt: new Date(snap.updatedAt).toISOString(),
+                    });
+                }
+            });
+        seed(Outcome.YES);
+        seed(Outcome.NO);
+        return () => {
+            cancelled = true;
+        };
+    }, [market.id]);
+
+    const handle_chart_loaded = useCallback((_latest: number, delta: number | null) => {
+        set_delta24h(delta);
+    }, []);
+
     return (
-        <div className="space-y-10">
-            <header className="space-y-4">
-                <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-white/40">
-                    Polymarket #{market.polyMarketId}
-                </span>
-                <h1 className="text-3xl text-white leading-tight font-medium">{market.name}</h1>
-                {market.description && (
-                    <p className="text-sm text-white/55 leading-relaxed max-w-3xl">
-                        {market.description}
-                    </p>
-                )}
-            </header>
+        <div className="space-y-8">
+            <EventBreadcrumb title={market.name} />
+            <EventTitleBlock market={market} />
+            <ProbabilityHeadline marketId={market.id} delta24hPct={delta24h} />
 
-            <section className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 border border-white/10 rounded-[6px] overflow-hidden">
-                <Stat label="ENDS" value={format_date(market.endAt)} />
-                <Stat label="24H VOLUME" value={format_usd(market.volume24hUsd)} />
-                <Stat label="LIQUIDITY" value={format_usd(market.liquidityUsd)} />
-                <Stat label="TICK SIZE" value={market.tickSize} />
-            </section>
-
-            <section className="border border-white/10 rounded-[6px] p-6 space-y-4">
-                <h2 className="text-[11px] tracking-[0.25em] uppercase text-white/55">
-                    Identifiers
-                </h2>
-                <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3 text-xs">
-                    <Row label="YES token" value={truncate(market.yesTokenId)} />
-                    <Row label="NO token" value={truncate(market.noTokenId)} />
-                    <Row
-                        label="Solana market PDA"
-                        value={market.solanaMarketPda ? truncate(market.solanaMarketPda) : '—'}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 xl:gap-8">
+                <div className="min-w-0 space-y-6">
+                    <EventPriceChart
+                        marketId={market.id}
+                        volumeLabel={format_usd(market.volume24hUsd)}
+                        closeLabel={format_close_label(market.endAt)}
+                        onLoaded={handle_chart_loaded}
                     />
-                    <Row label="Negative-risk" value={market.negRisk ? 'yes' : 'no'} />
-                </dl>
-            </section>
-
-            <section className="border border-dashed border-white/10 rounded-[6px] py-12 text-center text-sm text-white/40">
-                Trade panel coming soon. Live order book + buy/sell flow lands when the quote
-                endpoint and wallet adapter are wired.
-            </section>
-        </div>
-    );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-    return (
-        <div className="bg-neutral-950 px-5 py-4">
-            <div className="font-mono text-[10px] tracking-[0.22em] text-white/45 uppercase">
-                {label}
+                    <EventOrderBook
+                        marketId={market.id}
+                        selectedOutcome={selected_outcome}
+                        onOutcomeChange={set_selected_outcome}
+                    />
+                    <EventTabs description={market.description} />
+                </div>
+                <div>
+                    <EventTradePanel
+                        market={market}
+                        selectedOutcome={selected_outcome}
+                        onOutcomeChange={set_selected_outcome}
+                    />
+                </div>
             </div>
-            <div className="mt-2 text-base tabular-nums text-white/80">{value}</div>
-        </div>
-    );
-}
 
-function Row({ label, value }: { label: string; value: string }) {
-    return (
-        <div className="flex items-center justify-between gap-4 border-b border-white/5 pb-2">
-            <dt className="text-white/45">{label}</dt>
-            <dd className="text-white/80 font-mono">{value}</dd>
+            <EventRelatedMarkets excludeId={market.id} />
         </div>
     );
 }

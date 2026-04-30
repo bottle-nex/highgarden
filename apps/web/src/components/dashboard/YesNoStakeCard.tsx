@@ -10,7 +10,7 @@ export default function YesNoStakeCard({ market }: { market: YesNoMarket }): JSX
     const isUp = market.change24h >= 0;
     const TrendIcon = isUp ? HiArrowTrendingUp : HiArrowTrendingDown;
     const detail = getMarketById(market.id);
-    const href = detail ? `/market/${detail.slug}` : '#';
+    const href = detail ? `/market/${detail.slug}` : `/event/${market.id}`;
 
     return (
         <Link

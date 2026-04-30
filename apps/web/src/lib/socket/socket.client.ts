@@ -42,6 +42,7 @@ export default class WebSocketClient {
         };
 
         this.ws.onmessage = (event: MessageEvent<string>) => {
+
             try {
                 const msg: ServerMessage = JSON.parse(event.data);
                 this.handle_incoming_message(msg);
@@ -91,6 +92,7 @@ export default class WebSocketClient {
     }
 
     private handle_incoming_message(msg: ServerMessage): void {
+        console.log("messate icoming from the socket is : ", msg)
         const handlers = this.handlers.get(msg.type);
         if (handlers) {
             handlers.forEach((h) => h(msg as never));

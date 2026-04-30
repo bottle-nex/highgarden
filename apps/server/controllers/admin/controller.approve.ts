@@ -50,19 +50,30 @@ export default class ApproveListingController {
                 include: { market: { include: { polymarket: true } } },
             });
 
-            // Side effects: tell the mirror to start watching the YES/NO assets
-            // and seed the in-memory book cache so the future /quote endpoint
-            // has prices to serve.
+            // Side effects: tell the mirror to start watching the YES/NO assets,
+            // seed the in-memory book cache, and publish the token→market
+            // index so logs across the pipeline can identify this market.
             const poly = listing.market?.polymarket;
-            if (poly) {
+            const market = listing.market;
+            if (poly && market) {
                 const token_ids = [poly.yesTokenId, poly.noTokenId];
                 try {
+                    await services.token_index.write([
+                        {
+                            token_id: poly.yesTokenId,
+                            entry: { marketId: market.id, marketName: market.name, outcome: "YES" },
+                        },
+                        {
+                            token_id: poly.noTokenId,
+                            entry: { marketId: market.id, marketName: market.name, outcome: "NO" },
+                        },
+                    ]);
                     await services.book_cache.track(token_ids);
                     await services.mirror_control.subscribe(token_ids);
                 } catch (err) {
                     console.error("[admin/approve] mirror wiring failed", err);
                     // Approval already persisted — don't roll back the DB write.
-                    // Operator can re-approve or use a future "re-arm" endpoint.
+                    // Operator can re-approve or wait for next services.hydrate().
                 }
             } else {
                 console.warn(

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import type { Market, Listing, PolyMarket } from '@solmarket/types';
+import type { Market, Listing, MarketDTO, PolyMarket } from '@solmarket/types';
 import { MarketStatus, Outcome } from '@solmarket/types';
 
 // Shape we actually display: Market + its relations flattened
@@ -46,6 +46,26 @@ function toMarketEntry(
     };
 }
 
+function dto_to_market_entry(m: MarketDTO): MarketEntry {
+    return {
+        id: m.id,
+        name: m.name,
+        description: m.description,
+        solanaMarketPda: m.solanaMarketPda,
+        polyMarketId: m.polyMarketId,
+        status: m.status,
+        winningOutcome: null,
+        endAt: new Date(m.endAt),
+        resolvedAt: null,
+        yesTokenId: m.yesTokenId,
+        noTokenId: m.noTokenId,
+        tickSize: m.tickSize,
+        negRisk: m.negRisk,
+        volume24hUsd: m.volume24hUsd,
+        liquidityUsd: m.liquidityUsd,
+    };
+}
+
 interface MarketsState {
     byId: Record<string, MarketEntry>;
     /** Stable ordered list of ids as returned from the server */
@@ -55,6 +75,7 @@ interface MarketsState {
 
     // Actions
     hydrate: (markets: (Market & { polymarket?: PolyMarket; listing?: Listing | null })[]) => void;
+    upsert_one: (market: MarketDTO) => void;
     setFetchStatus: (s: MarketsState['fetchStatus'], error?: string) => void;
     /** Called when a MARKET_STATUS_CHANGE WS event arrives */
     applyStatusChange: (marketId: string, status: MarketStatus) => void;
@@ -70,15 +91,36 @@ export const useMarketsStore = create<MarketsState>()(
             fetchStatus: 'idle',
             error: null,
 
-            hydrate: (markets) => {
-                const byId: Record<string, MarketEntry> = {};
-                const ids: string[] = [];
-                for (const m of markets) {
-                    byId[m.id] = toMarketEntry(m);
-                    ids.push(m.id);
-                }
-                set({ byId, ids, fetchStatus: 'ready', error: null }, false, 'markets/hydrate');
-            },
+            hydrate: (markets) =>
+                set(
+                    (s) => {
+                        const byId = { ...s.byId };
+                        const seen = new Set(s.ids);
+                        const ids = [...s.ids];
+                        for (const m of markets) {
+                            byId[m.id] = toMarketEntry(m);
+                            if (!seen.has(m.id)) {
+                                ids.push(m.id);
+                                seen.add(m.id);
+                            }
+                        }
+                        return { byId, ids, fetchStatus: 'ready', error: null };
+                    },
+                    false,
+                    'markets/hydrate',
+                ),
+
+            upsert_one: (market) =>
+                set(
+                    (s) => {
+                        const entry = dto_to_market_entry(market);
+                        const byId = { ...s.byId, [entry.id]: entry };
+                        const ids = s.ids.includes(entry.id) ? s.ids : [...s.ids, entry.id];
+                        return { byId, ids };
+                    },
+                    false,
+                    'markets/upsert_one',
+                ),
 
             setFetchStatus: (fetchStatus, error) =>
                 set({ fetchStatus, error: error ?? null }, false, 'markets/setFetchStatus'),

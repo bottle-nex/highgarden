@@ -2,6 +2,7 @@ import { WebSocket } from "ws";
 import type { SocketState } from "@solmarket/polymarket-contracts";
 import { POLY_WS } from "../config/config.polymarket";
 import type PolymarketPublisher from "../services/service.polymarket.publisher";
+import type TokenIndex from "../services/service.token-index";
 
 export abstract class SocketBase {
     protected ws: WebSocket | null = null;
@@ -14,10 +15,15 @@ export abstract class SocketBase {
 
     protected readonly name: "market" | "user";
     protected readonly publisher: PolymarketPublisher;
+    protected readonly token_index: TokenIndex;
 
-    constructor(name: "market" | "user", publisher: PolymarketPublisher) {
+    /** Called after every successful WSS open (initial connect and reconnects). */
+    public on_open_hook: (() => void) | null = null;
+
+    constructor(name: "market" | "user", publisher: PolymarketPublisher, token_index: TokenIndex) {
         this.name = name;
         this.publisher = publisher;
+        this.token_index = token_index;
     }
 
     protected abstract get_url(): string;
@@ -53,7 +59,7 @@ export abstract class SocketBase {
         try {
             this.ws?.close(1000, "shutdown");
             //eslint-disable-next-line no-empty
-        } catch {}
+        } catch { }
         this.ws = null;
         this.set_state("closed");
     }
@@ -84,8 +90,14 @@ export abstract class SocketBase {
             try {
                 this.ws?.send("PING");
                 //eslint-disable-next-line no-empty
-            } catch {}
+            } catch { }
         }, POLY_WS.heartbeat_ms);
+
+        try {
+            this.on_open_hook?.();
+        } catch (err) {
+            console.warn(`[poly:${this.name}] on_open_hook threw`, err);
+        }
     }
 
     private on_message(data: unknown): void {
@@ -99,10 +111,14 @@ export abstract class SocketBase {
             return;
         }
 
-        if (Array.isArray(parsed)) {
-            for (const item of parsed) this.handle_message(item);
-        } else {
-            this.handle_message(parsed);
+        const items = Array.isArray(parsed) ? parsed : [parsed];
+        for (const item of items) {
+            const o = (item ?? {}) as Record<string, unknown>;
+            const asset = typeof o.asset_id === "string" ? o.asset_id : undefined;
+            console.log(
+                `[1.poly→mirror] ${this.name} event_type=${o.event_type ?? "?"} market=${this.token_index.label(asset)} keys=${Object.keys(o).join(",")}`,
+            );
+            this.handle_message(item);
         }
     }
 

@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import jwt, { type SignOptions } from "jsonwebtoken";
 import { ENV } from "../config/config.env";
 
 export interface SessionClaims {
@@ -9,7 +9,7 @@ export interface SessionClaims {
 export function signSessionJwt(claims: SessionClaims): string {
     return jwt.sign(claims, ENV.SERVER_AUTH_SECRET, {
         algorithm: "HS256",
-        expiresIn: "15m",
+        expiresIn: ENV.SERVER_AUTH_TOKEN_TTL as SignOptions["expiresIn"],
     });
 }
 

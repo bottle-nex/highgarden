@@ -11,7 +11,7 @@ import { notFoundHandler } from "./middleware/not-found";
 
 Env.parse_env();
 export const services = new Services();
-services.boot();
+await services.boot();
 await services.hydrate();
 
 const app = express();
@@ -31,7 +31,9 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 const server = createServer(app);
-new SocketServer(server, ENV.SERVER_REDIS_URL);
+export const socket_server = new SocketServer(server, ENV.SERVER_REDIS_URL);
+socket_server.label_for = (id) => services.token_index.label(id);
+socket_server.subscriber.label_for = (id) => services.token_index.label(id);
 
 server.listen(ENV.SERVER_PORT, () => {
     console.log(`server up on :${ENV.SERVER_PORT}`);
