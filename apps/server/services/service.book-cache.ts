@@ -185,6 +185,7 @@ export default class BookCache {
     }
 
     /** Optional marketId/name resolver, injected after construction. */
+    // eslint-disable-next-line no-unused-vars
     public label_for: ((token_id: string) => string) | null = null;
 
     private apply_snapshot(

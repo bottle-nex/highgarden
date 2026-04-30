@@ -12,6 +12,7 @@ export default class SocketServer {
     private client_subs = new Map<WebSocket, Set<string>>();
     private token_clients = new Map<string, Set<WebSocket>>();
     /** Optional marketId/name resolver injected after construction. */
+    // eslint-disable-next-line no-unused-vars
     public label_for: ((token_id: string) => string) | null = null;
 
     constructor(server: Server, redis_url: string) {

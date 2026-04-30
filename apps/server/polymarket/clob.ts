@@ -1,5 +1,6 @@
 import type { PriceHistoryPoint, PriceHistoryRange } from "@solmarket/types";
 
+
 const DEFAULT_CLOB_URL = "https://clob.polymarket.com";
 
 interface RangeMap {
@@ -23,7 +24,7 @@ interface RawHistoryResponse {
 export class ClobClient {
     private readonly base_url: string;
 
-    constructor(base_url: string = process.env.SERVER_POLYMARKET_CLOB_URL ?? DEFAULT_CLOB_URL) {
+    constructor(base_url: string = DEFAULT_CLOB_URL) {
         this.base_url = base_url;
     }
 

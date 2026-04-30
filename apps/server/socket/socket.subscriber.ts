@@ -9,6 +9,7 @@ export default class RedisSubscriber {
     // eslint-disable-next-line no-unused-vars
     private on_message: (token_id: string, data: string) => void;
     /** Optional marketId/name resolver injected after construction. */
+    // eslint-disable-next-line no-unused-vars
     public label_for: ((token_id: string) => string) | null = null;
 
     // eslint-disable-next-line no-unused-vars
