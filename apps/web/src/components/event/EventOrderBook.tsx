@@ -13,20 +13,26 @@ interface Props {
 const VISIBLE_LEVELS = 10;
 
 function format_cents(price: number): string {
-    return `${(price * 100).toFixed(1)}¢`;
+    const cents = price * 100;
+    const rounded = Math.round(cents * 10) / 10;
+    // Drop the trailing ".0" so 18.0¢ renders as 18¢, like Polymarket.
+    const text = Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1);
+    return `${text}¢`;
 }
 
 function format_size(size: number): string {
-    if (size >= 1_000_000) return `${(size / 1_000_000).toFixed(2)}M`;
-    if (size >= 1_000) return `${(size / 1_000).toFixed(2)}K`;
-    return size.toFixed(0);
+    return size.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 }
 
 function format_total(price: number, size: number): string {
     const usd = price * size;
-    if (usd >= 1_000_000) return `$${(usd / 1_000_000).toFixed(2)}M`;
-    if (usd >= 1_000) return `$${(usd / 1_000).toFixed(2)}K`;
-    return `$${usd.toFixed(0)}`;
+    return `$${usd.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })}`;
 }
 
 export default function EventOrderBook({

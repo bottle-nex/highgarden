@@ -57,7 +57,6 @@ function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | n
                 boxShadow: '0 4px 24px rgba(0,0,0,0.6)',
                 backdropFilter: 'blur(16px)',
                 whiteSpace: 'nowrap',
-                transform: 'translateX(-50%)',
                 pointerEvents: 'none',
             }}
         >
@@ -94,6 +93,7 @@ export default function EventPriceChart({
     onLoaded,
 }: Props): JSX.Element {
     const [range, set_range] = useState<PriceHistoryRange>('1d');
+    const [activeCoord, set_active_coord] = useState<{ x: number; y: number } | null>(null);
     const [snapshot, set_snapshot] = useState<{
         key: string;
         status: 'ready' | 'error';
@@ -198,7 +198,16 @@ export default function EventPriceChart({
                 )}
                 {points.length > 0 && (
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={points} margin={{ top: 24, right: 16, bottom: 0, left: 0 }}>
+                        <AreaChart
+                            data={points}
+                            margin={{ top: 24, right: 16, bottom: 0, left: 0 }}
+                            onMouseMove={(state) => {
+                                if (state.activeCoordinate) {
+                                    set_active_coord({ x: state.activeCoordinate.x, y: state.activeCoordinate.y });
+                                }
+                            }}
+                            onMouseLeave={() => set_active_coord(null)}
+                        >
                             <defs>
                                 <linearGradient id="evtPriceLine" x1="0" y1="0" x2="1" y2="0">
                                     <stop offset="0%" stopColor="rgba(255,204,0,0.5)" />
@@ -234,6 +243,7 @@ export default function EventPriceChart({
                                 cursor={{ stroke: 'rgba(255,204,0,0.25)', strokeWidth: 1 }}
                                 isAnimationActive={false}
                                 wrapperStyle={{ transition: 'none', pointerEvents: 'none' }}
+                                position={activeCoord ? { x: activeCoord.x + 14, y: activeCoord.y - 22 } : undefined}
                             />
                             <Area
                                 type="monotone"
