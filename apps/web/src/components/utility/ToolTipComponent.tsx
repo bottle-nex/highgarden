@@ -22,9 +22,9 @@ export default function ToolTipComponent({
     side = 'bottom',
 }: ToolTipComponentProps) {
     return (
-        <TooltipProvider delayDuration={duration}>
+        <TooltipProvider delay={duration}>
             <Tooltip>
-                <TooltipTrigger asChild>{children}</TooltipTrigger>
+                <TooltipTrigger render={children as React.ReactElement} />
                 <TooltipContent className={className} side={side} sideOffset={5}>
                     <span>{content}</span>
                 </TooltipContent>
