@@ -65,11 +65,7 @@ export default function PositionRow({ position }: { position: Position }): JSX.E
                 </div>
             </div>
             <div className="flex items-center gap-x-2">
-                <Button
-                    variant="outline"
-                    className="h-9 px-4 text-sm"
-                    onClick={() => {}}
-                >
+                <Button variant="outline" className="h-9 px-4 text-sm" onClick={() => {}}>
                     Redeem
                 </Button>
                 <Button

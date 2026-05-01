@@ -133,7 +133,7 @@ export default function DepositDialog({ onClose }: DepositDialogProps): JSX.Elem
                 </div>
 
                 <div className="group flex items-center gap-2 bg-dark-base border border-dark-faded rounded-md pl-3 pr-1.5 py-1.5 hover:border-light-alpha/20 transition-colors">
-                    <span className="flex-1 text-sm font-mono text-light-alpha/90 truncate">
+                    <span className="flex-1 text-sm  text-light-alpha/90 truncate">
                         {DEPOSIT_ADDRESS}
                     </span>
                     <button

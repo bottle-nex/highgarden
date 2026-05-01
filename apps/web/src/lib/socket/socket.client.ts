@@ -47,7 +47,6 @@ export default class WebSocketClient {
         };
 
         this.ws.onmessage = (event: MessageEvent<string>) => {
-
             try {
                 const msg: ServerMessage = JSON.parse(event.data);
                 this.handle_incoming_message(msg);
@@ -140,9 +139,7 @@ export default class WebSocketClient {
     private replay_subscriptions(): void {
         if (this.active_subscriptions.size === 0) return;
         for (const token_id of this.active_subscriptions) {
-            this.ws.send(
-                JSON.stringify({ type: CLIENT_MESSAGE_TYPE.SUBSCRIBE, token_id }),
-            );
+            this.ws.send(JSON.stringify({ type: CLIENT_MESSAGE_TYPE.SUBSCRIBE, token_id }));
         }
     }
 

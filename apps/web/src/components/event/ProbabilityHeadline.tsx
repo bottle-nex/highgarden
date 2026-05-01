@@ -2,10 +2,7 @@
 
 import { JSX, useEffect, useRef } from 'react';
 import { Outcome } from '@solmarket/types';
-import {
-    selectDepth,
-    useOrderBookDepthStore,
-} from '@/store/book/useOrderBookDepthStore';
+import { selectDepth, useOrderBookDepthStore } from '@/store/book/useOrderBookDepthStore';
 
 interface Props {
     marketId: string;
@@ -32,8 +29,7 @@ export default function ProbabilityHeadline({ marketId, delta24hPct }: Props): J
     }, [yes_price]);
 
     const pct = yes_price !== undefined ? yes_price * 100 : null;
-    const display =
-        pct === null ? '—' : pct < 1 ? '<1%' : pct > 99 ? '>99%' : `${pct.toFixed(0)}%`;
+    const display = pct === null ? '—' : pct < 1 ? '<1%' : pct > 99 ? '>99%' : `${pct.toFixed(0)}%`;
 
     const delta_color =
         delta24hPct === null
@@ -42,8 +38,7 @@ export default function ProbabilityHeadline({ marketId, delta24hPct }: Props): J
               ? 'text-emerald-300/90'
               : 'text-rose-300/90';
     const delta_sign = delta24hPct === null ? '' : delta24hPct >= 0 ? '▲' : '▼';
-    const delta_value =
-        delta24hPct === null ? '—' : `${Math.abs(delta24hPct).toFixed(1)}%`;
+    const delta_value = delta24hPct === null ? '—' : `${Math.abs(delta24hPct).toFixed(1)}%`;
 
     return (
         <div className="flex items-baseline gap-4">
@@ -51,7 +46,7 @@ export default function ProbabilityHeadline({ marketId, delta24hPct }: Props): J
                 {display}
             </span>
             <span className="text-[11px] tracking-[0.25em] uppercase text-white/40">CHANCE</span>
-            <span className={`font-mono text-xs tabular-nums ${delta_color}`}>
+            <span className={` text-xs tabular-nums ${delta_color}`}>
                 {delta_sign} {delta_value}
             </span>
         </div>

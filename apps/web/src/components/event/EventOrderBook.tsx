@@ -72,7 +72,7 @@ export default function EventOrderBook({
                             key={o}
                             type="button"
                             onClick={() => onOutcomeChange(o)}
-                            className={`px-3 py-1 rounded text-[9px] tracking-[0.2em] uppercase font-mono transition-colors cursor-pointer ${
+                            className={`px-3 py-1 rounded text-[9px] tracking-[0.2em] uppercase  transition-colors cursor-pointer ${
                                 selectedOutcome === o
                                     ? o === Outcome.YES
                                         ? 'bg-emerald-500/15 text-emerald-300'
@@ -88,7 +88,7 @@ export default function EventOrderBook({
 
             {is_open && (
                 <div className="px-5 py-4">
-                    <div className="grid grid-cols-3 gap-4 font-mono text-[9px] tracking-[0.22em] uppercase text-white/35 pb-3 border-b border-white/8">
+                    <div className="grid grid-cols-3 gap-4  text-[9px] tracking-[0.22em] uppercase text-white/35 pb-3 border-b border-white/8">
                         <span>PRICE</span>
                         <span className="text-right">SHARES</span>
                         <span className="text-right">TOTAL</span>
@@ -111,7 +111,7 @@ export default function EventOrderBook({
                             <button
                                 type="button"
                                 onClick={() => window.location.reload()}
-                                className="mt-1 px-4 py-1.5 rounded-md border border-white/10 hover:border-white/25 font-mono text-[10px] tracking-[0.25em] uppercase text-white/65 hover:text-white cursor-pointer"
+                                className="mt-1 px-4 py-1.5 rounded-md border border-white/10 hover:border-white/25  text-[10px] tracking-[0.25em] uppercase text-white/65 hover:text-white cursor-pointer"
                             >
                                 RETRY
                             </button>
@@ -137,7 +137,7 @@ export default function EventOrderBook({
                                         return (
                                             <div
                                                 key={`ask-${lvl.price}`}
-                                                className="relative grid grid-cols-3 gap-4 py-1 font-mono text-[11px] tabular-nums"
+                                                className="relative grid grid-cols-3 gap-4 py-1  text-[11px] tabular-nums"
                                             >
                                                 <div
                                                     className="absolute inset-y-0 right-0 bg-rose-500/10 rounded-sm"
@@ -158,7 +158,7 @@ export default function EventOrderBook({
                                     .reverse()}
                             </div>
 
-                            <div className="my-3 px-2 py-2 flex items-center justify-between bg-white/[0.02] border-y border-white/8 font-mono text-[10px] tracking-[0.22em] uppercase">
+                            <div className="my-3 px-2 py-2 flex items-center justify-between bg-white/[0.02] border-y border-white/8  text-[10px] tracking-[0.22em] uppercase">
                                 <span className="text-white/55">SPREAD</span>
                                 <span className="text-white/85 tabular-nums">
                                     {book.spread !== null
@@ -174,7 +174,7 @@ export default function EventOrderBook({
                                     return (
                                         <div
                                             key={`bid-${lvl.price}`}
-                                            className="relative grid grid-cols-3 gap-4 py-1 font-mono text-[11px] tabular-nums"
+                                            className="relative grid grid-cols-3 gap-4 py-1  text-[11px] tabular-nums"
                                         >
                                             <div
                                                 className="absolute inset-y-0 right-0 bg-emerald-500/10 rounded-sm"

@@ -62,7 +62,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | n
         >
             <div
                 style={{
-                    fontFamily: 'var(--m-font-mono, monospace)',
+                    fontFamily: 'var(--m-, monospace)',
                     fontSize: 9,
                     letterSpacing: '0.18em',
                     textTransform: 'uppercase',
@@ -168,7 +168,7 @@ export default function EventPriceChart({
                             key={r.key}
                             type="button"
                             onClick={() => set_range(r.key)}
-                            className={`px-3 py-1 rounded text-[9px] tracking-[0.2em] uppercase font-mono transition-colors cursor-pointer ${
+                            className={`px-3 py-1 rounded text-[9px] tracking-[0.2em] uppercase  transition-colors cursor-pointer ${
                                 range === r.key
                                     ? 'bg-white/[0.07] text-white'
                                     : 'text-white/45 hover:text-white/75'
@@ -203,7 +203,10 @@ export default function EventPriceChart({
                             margin={{ top: 24, right: 16, bottom: 0, left: 0 }}
                             onMouseMove={(state) => {
                                 if (state.activeCoordinate) {
-                                    set_active_coord({ x: state.activeCoordinate.x, y: state.activeCoordinate.y });
+                                    set_active_coord({
+                                        x: state.activeCoordinate.x,
+                                        y: state.activeCoordinate.y,
+                                    });
                                 }
                             }}
                             onMouseLeave={() => set_active_coord(null)}
@@ -230,7 +233,7 @@ export default function EventPriceChart({
                                 tick={{
                                     fill: 'rgba(255,255,255,0.18)',
                                     fontSize: 9,
-                                    fontFamily: 'var(--m-font-mono, monospace)',
+                                    fontFamily: 'var(--m-, monospace)',
                                 }}
                                 tickFormatter={(v) => `${Math.round(v)}%`}
                                 tickLine={false}
@@ -243,7 +246,11 @@ export default function EventPriceChart({
                                 cursor={{ stroke: 'rgba(255,204,0,0.25)', strokeWidth: 1 }}
                                 isAnimationActive={false}
                                 wrapperStyle={{ transition: 'none', pointerEvents: 'none' }}
-                                position={activeCoord ? { x: activeCoord.x + 14, y: activeCoord.y - 22 } : undefined}
+                                position={
+                                    activeCoord
+                                        ? { x: activeCoord.x + 14, y: activeCoord.y - 22 }
+                                        : undefined
+                                }
                             />
                             <Area
                                 type="monotone"
@@ -267,7 +274,7 @@ export default function EventPriceChart({
                 )}
             </div>
 
-            <div className="flex items-center justify-between px-5 py-4 border-t border-white/8 font-mono text-[10px] tracking-[0.22em] uppercase text-white/40">
+            <div className="flex items-center justify-between px-5 py-4 border-t border-white/8  text-[10px] tracking-[0.22em] uppercase text-white/40">
                 <span>VOL {volumeLabel}</span>
                 <span>{closeLabel}</span>
             </div>

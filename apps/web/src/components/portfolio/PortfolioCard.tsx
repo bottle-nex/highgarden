@@ -33,10 +33,7 @@ export default function PortfolioCard(): JSX.Element {
                 {hidden ? '•••• past day' : '+$0.23 (6.64%) past day'}
             </p>
             <div className="w-full grid gap-x-4 mt-5 grid-cols-2">
-                <Button
-                    className="col-span-1 w-full h-10 text-sm"
-                    onClick={() => {}}
-                >
+                <Button className="col-span-1 w-full h-10 text-sm" onClick={() => {}}>
                     <LuArrowDownToLine /> Deposit
                 </Button>
                 <Button

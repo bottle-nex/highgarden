@@ -10,7 +10,7 @@
 .panelHeader {
     padding: 16px 20px;
     border-bottom: 1px solid var(--m-border);
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 10px;
     letter-spacing: 0.25em;
     text-transform: uppercase;
@@ -91,7 +91,7 @@
 }
 
 .sideBtnLabel {
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 9px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
@@ -147,7 +147,7 @@
 }
 
 .outcomeBtnPrice {
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 11px;
     color: var(--m-text-secondary);
     font-variant-numeric: tabular-nums;
@@ -158,7 +158,7 @@
 }
 
 .inputLabel {
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 9px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
@@ -194,7 +194,7 @@
 .inputCurrency {
     position: absolute;
     right: 14px;
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 10px;
     letter-spacing: 0.15em;
     color: var(--m-text-muted);
@@ -213,7 +213,7 @@
     border: 1px solid var(--m-border);
     background: var(--m-glass);
     color: var(--m-text-secondary);
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 9px;
     letter-spacing: 0.15em;
     cursor: pointer;
@@ -262,7 +262,7 @@
     height: 46px;
     border-radius: var(--m-radius-sm);
     border: none;
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 11px;
     letter-spacing: 0.2em;
     text-transform: uppercase;

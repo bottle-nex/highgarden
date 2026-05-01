@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function EventBreadcrumb({ title }: { title: string }): JSX.Element {
     return (
-        <nav className="flex items-center gap-2 font-mono text-[10px] tracking-[0.25em] uppercase text-white/40">
+        <nav className="flex items-center gap-2  text-[10px] tracking-[0.25em] uppercase text-white/40">
             <Link href="/dashboard" className="hover:text-white/70">
                 MARKETS
             </Link>

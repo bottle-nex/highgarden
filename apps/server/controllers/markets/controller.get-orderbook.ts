@@ -59,25 +59,30 @@ export default class GetOrderBookController {
                 // this market. Best-effort — the next refresh will see TRACKED.
                 void services.mirror_control.subscribe([p.yesTokenId, p.noTokenId]).catch(() => {});
                 void services.book_cache.track([p.yesTokenId, p.noTokenId]).catch(() => {});
-                void services.token_index.write([
-                    {
-                        token_id: p.yesTokenId,
-                        entry: {
-                            marketId: listing.market.id,
-                            marketName: listing.market.name,
-                            outcome: "YES",
+                void services.token_index
+                    .write([
+                        {
+                            token_id: p.yesTokenId,
+                            entry: {
+                                marketId: listing.market.id,
+                                marketName: listing.market.name,
+                                outcome: "YES",
+                            },
                         },
-                    },
-                    {
-                        token_id: p.noTokenId,
-                        entry: {
-                            marketId: listing.market.id,
-                            marketName: listing.market.name,
-                            outcome: "NO",
+                        {
+                            token_id: p.noTokenId,
+                            entry: {
+                                marketId: listing.market.id,
+                                marketName: listing.market.name,
+                                outcome: "NO",
+                            },
                         },
-                    },
-                ]).catch(() => {});
-            } else if ((depth_view?.bids.length ?? 0) === 0 && (depth_view?.asks.length ?? 0) === 0) {
+                    ])
+                    .catch(() => {});
+            } else if (
+                (depth_view?.bids.length ?? 0) === 0 &&
+                (depth_view?.asks.length ?? 0) === 0
+            ) {
                 status = "TRACKED_EMPTY";
             } else {
                 status = "TRACKED";

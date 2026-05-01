@@ -43,10 +43,7 @@ export default function AdminListings({
         return c;
     }, [listings]);
 
-    const visible = useMemo(
-        () => listings.filter((l) => l.status === active),
-        [listings, active],
-    );
+    const visible = useMemo(() => listings.filter((l) => l.status === active), [listings, active]);
 
     return (
         <div className="space-y-5">

@@ -60,7 +60,9 @@ export default class TokenIndex {
         return Object.fromEntries(this.cache);
     }
 
-    public async write(entries: Array<{ token_id: string; entry: TokenIndexEntry }>): Promise<void> {
+    public async write(
+        entries: Array<{ token_id: string; entry: TokenIndexEntry }>,
+    ): Promise<void> {
         if (entries.length === 0) return;
         const flat: Record<string, string> = {};
         for (const { token_id, entry } of entries) {

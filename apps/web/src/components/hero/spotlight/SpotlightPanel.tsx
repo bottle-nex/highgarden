@@ -66,7 +66,7 @@ export default function SpotlightPanel({ feature, index }: { feature: Feature; i
                         transition={{ duration: 0.35, ease }}
                     >
                         <div className="flex items-center gap-3 text-[11px]">
-                            <span className="font-mono text-alpha/50">0{index + 1}</span>
+                            <span className=" text-alpha/50">0{index + 1}</span>
                             <span className="uppercase tracking-[0.15em] text-neutral-600">
                                 {feature.label}
                             </span>

@@ -76,18 +76,14 @@ export default function LiveMarketGrid() {
     if (state.status === 'error') {
         return (
             <Section>
-                <Frame tone="error">
-                    Couldn&apos;t load markets — {state.message}.
-                </Frame>
+                <Frame tone="error">Couldn&apos;t load markets — {state.message}.</Frame>
             </Section>
         );
     }
 
     // Sort by 24h volume desc, drop the highest (it's shown as the featured
     // card), then cap to 9 cards so the grid stays at most 3×3.
-    const sorted = [...state.markets].sort(
-        (a, b) => (b.volume24hUsd ?? 0) - (a.volume24hUsd ?? 0),
-    );
+    const sorted = [...state.markets].sort((a, b) => (b.volume24hUsd ?? 0) - (a.volume24hUsd ?? 0));
     const grid_markets = sorted.slice(1, 10);
 
     if (grid_markets.length === 0) {
@@ -114,10 +110,7 @@ export default function LiveMarketGrid() {
     }
 
     return (
-        <MarketGrid
-            markets={grid_markets.map(dto_to_card)}
-            get_href={(m) => `/event/${m.id}`}
-        />
+        <MarketGrid markets={grid_markets.map(dto_to_card)} get_href={(m) => `/event/${m.id}`} />
     );
 }
 

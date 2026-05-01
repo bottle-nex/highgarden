@@ -1,6 +1,5 @@
 import type { PriceHistoryPoint, PriceHistoryRange } from "@solmarket/types";
 
-
 const DEFAULT_CLOB_URL = "https://clob.polymarket.com";
 
 interface RangeMap {

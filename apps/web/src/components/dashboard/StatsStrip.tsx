@@ -30,15 +30,13 @@ function StatCell({ stat }: { stat: DashboardStat }): JSX.Element {
 
     return (
         <div className="group relative bg-neutral-950 px-5 py-5 overflow-hidden hover:bg-neutral-900/70 transition-colors">
-            <div className="flex items-center justify-between font-mono text-[11px] tracking-[0.22em] text-white/45 uppercase">
+            <div className="flex items-center justify-between  text-[11px] tracking-[0.22em] text-white/45 uppercase">
                 <span>{stat.label}</span>
                 <Icon className={cn('size-3.5', trendColor)} />
             </div>
             <div className="mt-3 flex items-baseline gap-2">
                 <span className="text-2xl text-white/80 tabular-nums font-light">{stat.value}</span>
-                <span className={cn('font-mono text-[12px] tabular-nums', trendColor)}>
-                    {stat.delta}
-                </span>
+                <span className={cn(' text-[12px] tabular-nums', trendColor)}>{stat.delta}</span>
             </div>
         </div>
     );

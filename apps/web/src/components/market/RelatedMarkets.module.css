@@ -35,7 +35,7 @@
 }
 
 .cardCategory {
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 8px;
     letter-spacing: 0.22em;
     text-transform: uppercase;
@@ -43,7 +43,7 @@
 }
 
 .cardStatus {
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 8px;
     letter-spacing: 0.15em;
     text-transform: uppercase;
@@ -79,7 +79,7 @@
     margin-top: auto;
     padding-top: 12px;
     border-top: 1px solid rgba(255, 255, 255, 0.04);
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 9px;
     letter-spacing: 0.15em;
     text-transform: uppercase;
