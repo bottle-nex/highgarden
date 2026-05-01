@@ -43,8 +43,11 @@ export function useWebSocket() {
 
         return () => {
             clearInterval(poll);
+            // Release BEFORE nulling — unsubscribe_market cleanup (registered
+            // after this effect) still reads socket.current. Nulling here would
+            // fire first (same component, forward cleanup order) and cause
+            // unsubscribe_market to bail early, leaving the server subscribed.
             SingletonSocket.release();
-            socket.current = null;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);

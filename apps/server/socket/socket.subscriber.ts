@@ -60,9 +60,11 @@ export default class RedisSubscriber {
 
     public unsubscribe(token_id: string): void {
         const prev = this.refs.get(token_id) ?? 0;
+        console.log(chalk.yellow("[ws:sub] unsubscribe"), chalk.gray(`prev_refs=${prev}`), token_id);
         if (prev <= 0) return;
 
         const next = prev - 1;
+        console.log(chalk.yellow("[ws:sub] refs after "), chalk.gray(`next_refs=${next}`), token_id);
         if (next > 0) {
             this.refs.set(token_id, next);
             return;

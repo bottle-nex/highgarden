@@ -115,8 +115,21 @@ export abstract class SocketBase {
             return;
         }
 
-        // console.log(chalk.yellow("message received from clob client: "), parsed);
-        console.log(chalk.yellow("message received from clob client"));
+        let log_data_1;
+        let log_data_2;
+
+        if (typeof parsed === "object" && parsed !== null && "price_changes" in parsed) {
+            const priceChanges = (parsed as { price_changes: Array<{ asset_id: string }> }).price_changes;
+            if (Array.isArray(priceChanges)) {
+                log_data_1 = priceChanges[0]?.asset_id;
+                log_data_2 = priceChanges[1]?.asset_id;
+            }
+        }
+
+
+        console.log(chalk.yellow("message received from clob client: "), log_data_1);
+        console.log(chalk.yellow("message received from clob client: "), log_data_2);
+        // console.log(chalk.yellow("message received from clob client"));
 
         const items = Array.isArray(parsed) ? parsed : [parsed];
         for (const item of items) {

@@ -40,6 +40,7 @@ model Listing {
 
 model PolyMarket {
     id         String  @id
+    slug       String?
     yesTokenId String
     noTokenId  String
     tickSize   String

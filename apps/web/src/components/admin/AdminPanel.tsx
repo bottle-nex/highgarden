@@ -14,6 +14,7 @@ function toRow(l: AdminListingApi): AdminListingRow {
         description: l.market?.description ?? '',
         endAt: l.market?.endAt ?? null,
         polyMarketId: l.market?.polyMarketId ?? '',
+        polyMarketSlug: l.market?.polymarket?.slug ?? null,
         solanaMarketPda: l.market?.solanaMarketPda ?? null,
         yesTokenId: l.market?.polymarket?.yesTokenId ?? null,
         noTokenId: l.market?.polymarket?.noTokenId ?? null,

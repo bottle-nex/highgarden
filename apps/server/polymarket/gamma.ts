@@ -12,6 +12,7 @@ export interface GammaToken {
 
 export interface GammaMarket {
     id: string;
+    slug: string;
     question: string;
     description: string;
     end_date_iso: string;
@@ -35,6 +36,7 @@ export interface FetchMarketsParams {
  */
 interface RawGammaMarket {
     id: string | number;
+    slug?: string;
     question?: string;
     description?: string;
     endDate?: string;
@@ -134,6 +136,7 @@ function normalise(raw: RawGammaMarket): GammaMarket | null {
 
     return {
         id: String(raw.id),
+        slug: raw.slug ?? "",
         question: raw.question ?? "",
         description: raw.description ?? "",
         end_date_iso: raw.endDate,

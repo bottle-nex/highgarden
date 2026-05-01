@@ -29,11 +29,10 @@ export default class MarketSocket extends SocketBase {
     }
 
     public subscribe(token_id: string): void {
-        // A new subscriber arrived during the close grace window — keep the
-        // socket alive instead of bouncing it.
         if (this.idle_close_timer) {
             clearTimeout(this.idle_close_timer);
             this.idle_close_timer = null;
+            console.log(chalk.gray("[poly:market] close timer cancelled — new subscriber arrived"), token_id);
         }
 
         const { firstRef } = this.registry.acquire(token_id);
@@ -49,18 +48,15 @@ export default class MarketSocket extends SocketBase {
     }
 
     public unsubscribe(token_id: string): void {
-        const { lastRef } = this.registry.release(token_id);
-        // Polymarket's market WSS has no unsubscribe frame. To actually stop
-        // receiving data when no users are watching anything, drop the socket
-        // entirely once the registry is empty. Next subscribe will reconnect.
+        const { lastRef, count } = this.registry.release(token_id);
+        console.log(chalk.yellow("[poly:market] unsubscribe"), token_id, chalk.gray(`refs=${count} registry=${this.registry.size()}`));
         if (lastRef && this.registry.size() === 0 && this.state === "open") {
             if (this.idle_close_timer) clearTimeout(this.idle_close_timer);
+            console.log(chalk.gray("[poly:market] no subscribers — starting 750ms close timer"));
             this.idle_close_timer = setTimeout(() => {
                 this.idle_close_timer = null;
                 if (this.registry.size() === 0 && this.state === "open") {
-                    console.log(
-                        chalk.gray("[poly:market] no subscribers — closing Polymarket WSS"),
-                    );
+                    console.log(chalk.gray("[poly:market] closing Polymarket WSS"));
                     void this.stop();
                 }
             }, this.idle_close_grace_ms);

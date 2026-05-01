@@ -124,6 +124,7 @@ export default class SocketServer {
         console.log(chalk.green("→ subscribe  "), this.who(ws), token_id);
 
         this.subscriber.subscribe(token_id);
+        this.fetch_and_send_book(ws, token_id);
         this.send(ws, { type: SERVER_MESSAGE_TYPE.SUBSCRIBED, token_id });
     }
 
@@ -153,6 +154,7 @@ export default class SocketServer {
     }
 
     private on_client_close(ws: WebSocket): void {
+        const who = this.who(ws);
         const subs = this.client_subs.get(ws);
         if (subs) {
             for (const token_id of subs) {
@@ -163,11 +165,46 @@ export default class SocketServer {
                         this.token_clients.delete(token_id);
                     }
                 }
+                console.log(chalk.yellow("← unsubscribe"), chalk.gray("[disconnect]"), who, token_id);
                 this.subscriber.unsubscribe(token_id);
             }
         }
         this.client_subs.delete(ws);
         this.client_claims.delete(ws);
+    }
+
+    private fetch_and_send_book(ws: WebSocket, token_id: string): void {
+        console.log(chalk.cyan("[ws:book] fetching"), this.who(ws), token_id);
+        void (async () => {
+            try {
+                const res = await fetch(`https://clob.polymarket.com/book?token_id=${token_id}`);
+                console.log(chalk.cyan("[ws:book] response"), token_id, chalk.gray(`status=${res.status} ws_state=${ws.readyState}`));
+                if (!res.ok) {
+                    console.warn(chalk.yellow("[ws:book] fetch failed"), token_id, res.status);
+                    return;
+                }
+                const data = await res.json() as Record<string, unknown>;
+                console.log(chalk.cyan("[ws:book] parsed"), token_id, chalk.gray(`bids=${Array.isArray(data.bids) ? (data.bids as unknown[]).length : "NOT_ARRAY"} asks=${Array.isArray(data.asks) ? (data.asks as unknown[]).length : "NOT_ARRAY"}`));
+                if (!Array.isArray(data.bids) || !Array.isArray(data.asks)) return;
+                const event = {
+                    event_type: "book" as const,
+                    asset_id: token_id,
+                    market: typeof data.market === "string" ? data.market : "",
+                    bids: data.bids as Array<{ price: string; size: string }>,
+                    asks: data.asks as Array<{ price: string; size: string }>,
+                    timestamp: typeof data.timestamp === "string" ? data.timestamp : new Date().toISOString(),
+                    hash: typeof data.hash === "string" ? data.hash : "",
+                };
+                if (ws.readyState !== ws.OPEN) {
+                    console.warn(chalk.yellow("[ws:book] ws closed before send"), token_id, chalk.gray(`ws_state=${ws.readyState}`));
+                    return;
+                }
+                console.log(chalk.cyan("→ book fetch "), this.who(ws), token_id, chalk.gray(`bids=${event.bids.length} asks=${event.asks.length}`));
+                this.send(ws, { type: SERVER_MESSAGE_TYPE.MARKET, event });
+            } catch (err) {
+                console.warn(chalk.yellow("[ws:book] fetch error"), token_id, err);
+            }
+        })();
     }
 
     private route_redis_message(token_id: string, data: string): void {

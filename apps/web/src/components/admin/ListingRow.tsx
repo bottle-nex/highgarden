@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { FiExternalLink } from 'react-icons/fi';
 import { approveListing, rejectListing } from '@/lib/api/admin';
 import type { AdminListingRow } from './AdminListings';
 
@@ -63,7 +64,20 @@ export default function ListingRow({
         <li className="border border-white/8 rounded p-4 hover:border-white/20 transition-colors">
             <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                    <p className="text-sm text-white truncate">{listing.question}</p>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <p className="text-sm text-white truncate">{listing.question}</p>
+                        {listing.polyMarketSlug && (
+                            <a
+                                href={`https://polymarket.com/event/${listing.polyMarketSlug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="shrink-0 text-white/30 hover:text-white/70 transition-colors"
+                                title="View on Polymarket"
+                            >
+                                <FiExternalLink size={13} />
+                            </a>
+                        )}
+                    </div>
                     {listing.description && (
                         <p className="text-xs text-white/45 mt-1 line-clamp-2">
                             {listing.description}

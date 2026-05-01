@@ -1,5 +1,6 @@
 import type Redis from "ioredis";
 import { REDIS_CHANNELS, type MarketEvent, type UserEvent } from "@solmarket/polymarket-contracts";
+import chalk from "chalk";
 
 export default class PolymarketPublisher {
     private redis!: Redis;
@@ -10,9 +11,11 @@ export default class PolymarketPublisher {
     public async publish_market(event: MarketEvent): Promise<void> {
         const payload = JSON.stringify(event);
         switch (event.event_type) {
-            case "book":
+            case "book": {
+                console.log(chalk.blue('book received for: '), event.asset_id);
                 await this.redis.publish(REDIS_CHANNELS.market_book(event.asset_id), payload);
                 return;
+            };
             case "price_change":
                 await this.redis.publish(REDIS_CHANNELS.market_price(event.asset_id), payload);
                 return;

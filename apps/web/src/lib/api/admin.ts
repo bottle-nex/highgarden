@@ -19,6 +19,7 @@ export interface AdminListingApi {
         polyMarketId: string;
         solanaMarketPda: string | null;
         polymarket: {
+            slug: string | null;
             yesTokenId: string;
             noTokenId: string;
             tickSize: string;

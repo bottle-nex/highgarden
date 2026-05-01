@@ -97,12 +97,14 @@ export class AutoLister {
                 where: { id: market.id },
                 create: {
                     id: market.id,
+                    slug: market.slug || null,
                     yesTokenId: yes_token_id,
                     noTokenId: no_token_id,
                     tickSize: market.minimum_tick_size,
                     negRisk: market.neg_risk,
                 },
                 update: {
+                    slug: market.slug || null,
                     yesTokenId: yes_token_id,
                     noTokenId: no_token_id,
                     tickSize: market.minimum_tick_size,
