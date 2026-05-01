@@ -1,8 +1,11 @@
 'use client';
 
-import { JSX, useState } from 'react';
+import { JSX, useCallback, useRef, useState } from 'react';
+import { VscLayoutCentered } from 'react-icons/vsc';
 import { Outcome } from '@solmarket/types';
 import { useOrderBook } from '@/lib/socket/useOrderBook';
+import { Button } from '@/components/ui/button';
+import ToolTipComponent from '@/components/utility/ToolTipComponent';
 
 interface Props {
     marketId: string;
@@ -42,6 +45,23 @@ export default function EventOrderBook({
 }: Props): JSX.Element {
     const [is_open, set_is_open] = useState(true);
     const book = useOrderBook(marketId, selectedOutcome);
+    const scroll_ref = useRef<HTMLDivElement | null>(null);
+    const spread_ref = useRef<HTMLDivElement | null>(null);
+
+    const center_book = useCallback(() => {
+        const container = scroll_ref.current;
+        const spread = spread_ref.current;
+        if (!container || !spread) return;
+        const container_rect = container.getBoundingClientRect();
+        const spread_rect = spread.getBoundingClientRect();
+        const offset_within_container =
+            spread_rect.top - container_rect.top + container.scrollTop;
+        const target =
+            offset_within_container -
+            container.clientHeight / 2 +
+            spread_rect.height / 2;
+        container.scrollTo({ top: target, behavior: 'smooth' });
+    }, []);
 
     const bids = book.bids.slice(0, VISIBLE_LEVELS);
     const asks = book.asks.slice(0, VISIBLE_LEVELS);
@@ -50,70 +70,99 @@ export default function EventOrderBook({
     const max_total = Math.max(max_bid_total, max_ask_total, 1);
 
     return (
-        <section className="border border-white/10 rounded-[6px] bg-neutral-950/60">
-            <header className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+        <section className="border border-white/10 rounded-[8px] bg-dark-base overflow-hidden">
+            <header
+                onClick={() => set_is_open((v) => !v)}
+                className={`group flex items-center justify-between px-7 py-5 border-white/7 cursor-pointer select-none transition-colors ${
+                    is_open ? 'border-b bg-dark-alpha' : 'bg-dark-base'
+                }`}
+            >
                 <button
                     type="button"
-                    onClick={() => set_is_open((v) => !v)}
-                    className="flex items-center gap-2 text-[10px] tracking-[0.25em] uppercase text-white/65 hover:text-white cursor-pointer"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        set_is_open((v) => !v);
+                    }}
+                    className="flex items-center gap-3 text-[10px] tracking-[0.32em] uppercase text-white/70 group-hover:text-white cursor-pointer"
                 >
                     <span
-                        className={`inline-block w-2 h-2 transition-transform ${
+                        className={`inline-block w-2.5 text-white/45 group-hover:text-white/70 transition-transform duration-200 ${
                             is_open ? 'rotate-90' : ''
                         }`}
                     >
                         ▸
                     </span>
-                    ORDER BOOK
+                    <span className="font-medium">Order Book</span>
                 </button>
-                <div className="flex gap-1 bg-white/[0.02] border border-white/10 rounded-md p-[3px]">
-                    {[Outcome.YES, Outcome.NO].map((o) => (
-                        <button
-                            key={o}
+                <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2"
+                >
+                    <ToolTipComponent content="Recenter book">
+                        <Button
                             type="button"
-                            onClick={() => onOutcomeChange(o)}
-                            className={`px-3 py-1 rounded text-[9px] tracking-[0.2em] uppercase  transition-colors cursor-pointer ${
-                                selectedOutcome === o
-                                    ? o === Outcome.YES
-                                        ? 'bg-emerald-500/15 text-emerald-300'
-                                        : 'bg-rose-500/15 text-rose-300'
-                                    : 'text-white/45 hover:text-white/75'
-                            }`}
+                            size="icon-sm"
+                            onClick={center_book}
+                            aria-label="Center order book"
+                            className="text-white/55 hover:text-white"
                         >
-                            {o}
-                        </button>
-                    ))}
+                            <VscLayoutCentered className="rotate-90" />
+                        </Button>
+                    </ToolTipComponent>
+                    <div className="flex gap-1 bg-white/2.5 border border-white/8 rounded-md p-0.75">
+                        {[Outcome.YES, Outcome.NO].map((o) => (
+                            <button
+                                key={o}
+                                type="button"
+                                onClick={() => onOutcomeChange(o)}
+                                className={`px-3.5 py-1.5 rounded text-[9.5px] tracking-[0.28em] uppercase font-medium transition-colors cursor-pointer ${
+                                    selectedOutcome === o
+                                        ? o === Outcome.YES
+                                            ? 'bg-emerald-500/15 text-emerald-300'
+                                            : 'bg-rose-500/15 text-rose-300'
+                                        : 'text-white/45 hover:text-white/75'
+                                }`}
+                            >
+                                {o}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </header>
 
-            {is_open && (
-                <div className="px-5 py-4">
-                    <div className="grid grid-cols-3 gap-4  text-[9px] tracking-[0.22em] uppercase text-white/35 pb-3 border-b border-white/8">
-                        <span>PRICE</span>
-                        <span className="text-right">SHARES</span>
-                        <span className="text-right">TOTAL</span>
+            <div
+                className={`overflow-hidden [overflow-anchor:none] transition-[max-height] duration-300 ease-in-out ${
+                    is_open ? 'max-h-100' : 'max-h-0'
+                }`}
+            >
+                <div>
+                    <div className="py-6">
+                    <div className="grid grid-cols-3 gap-x-10 pr-5 text-[9.5px] tracking-[0.32em] uppercase text-white/35 pb-4 border-b border-white/7">
+                        <span className="text-right">Price</span>
+                        <span className="text-right">Shares</span>
+                        <span className="text-right">Total</span>
                     </div>
 
                     {!book.isHydrated && (
-                        <div className="py-8 text-center text-[10px] tracking-[0.25em] uppercase text-white/30">
+                        <div className="py-12 text-center text-[10px] tracking-[0.3em] uppercase text-white/30">
                             Loading book…
                         </div>
                     )}
 
                     {book.isHydrated && book.status === 'NOT_TRACKED' && (
-                        <div className="py-8 text-center space-y-3">
-                            <div className="text-[10px] tracking-[0.25em] uppercase text-amber-300/70">
+                        <div className="py-12 text-center space-y-3">
+                            <div className="text-[10px] tracking-[0.3em] uppercase text-amber-300/70">
                                 Market data starting up
                             </div>
-                            <div className="text-[11px] text-white/45">
+                            <div className="text-[11.5px] text-white/45 leading-relaxed">
                                 The mirror is being notified now. Refresh in a few seconds.
                             </div>
                             <button
                                 type="button"
                                 onClick={() => window.location.reload()}
-                                className="mt-1 px-4 py-1.5 rounded-md border border-white/10 hover:border-white/25  text-[10px] tracking-[0.25em] uppercase text-white/65 hover:text-white cursor-pointer"
+                                className="mt-1 px-4 py-1.5 rounded-md border border-white/10 hover:border-white/25 text-[10px] tracking-[0.3em] uppercase text-white/65 hover:text-white cursor-pointer"
                             >
-                                RETRY
+                                Retry
                             </button>
                         </div>
                     )}
@@ -122,14 +171,14 @@ export default function EventOrderBook({
                         book.status !== 'NOT_TRACKED' &&
                         asks.length === 0 &&
                         bids.length === 0 && (
-                            <div className="py-8 text-center text-[10px] tracking-[0.25em] uppercase text-white/30">
+                            <div className="py-12 text-center text-[10px] tracking-[0.3em] uppercase text-white/30">
                                 No open orders
                             </div>
                         )}
 
                     {book.isHydrated && (asks.length > 0 || bids.length > 0) && (
-                        <>
-                            <div className="pt-2 space-y-[3px]">
+                        <div ref={scroll_ref} className="h-105 overflow-y-auto">
+                            <div className="pt-3.5 space-y-0.5">
                                 {asks
                                     .map((lvl, i) => {
                                         const cum = book.cumulativeAsks[i] ?? lvl.size;
@@ -137,19 +186,19 @@ export default function EventOrderBook({
                                         return (
                                             <div
                                                 key={`ask-${lvl.price}`}
-                                                className="relative grid grid-cols-3 gap-4 py-1  text-[11px] tabular-nums"
+                                                className="relative grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                             >
                                                 <div
-                                                    className="absolute inset-y-0 right-0 bg-rose-500/10 rounded-sm"
+                                                    className="absolute inset-y-0 right-0 bg-rose-500/20 rounded-l-sm pointer-events-none"
                                                     style={{ width: `${w}%` }}
                                                 />
-                                                <span className="relative text-rose-300/85">
+                                                <span className="relative text-right font-medium text-rose-300">
                                                     {format_cents(lvl.price)}
                                                 </span>
-                                                <span className="relative text-right text-white/60">
+                                                <span className="relative text-right text-white font-light">
                                                     {format_size(lvl.size)}
                                                 </span>
-                                                <span className="relative text-right text-white/45">
+                                                <span className="relative text-right text-white/40 font-light">
                                                     {format_total(lvl.price, lvl.size)}
                                                 </span>
                                             </div>
@@ -158,45 +207,51 @@ export default function EventOrderBook({
                                     .reverse()}
                             </div>
 
-                            <div className="my-3 px-2 py-2 flex items-center justify-between bg-white/[0.02] border-y border-white/8  text-[10px] tracking-[0.22em] uppercase">
-                                <span className="text-white/55">SPREAD</span>
-                                <span className="text-white/85 tabular-nums">
+                            <div
+                                ref={spread_ref}
+                                className="my-5 flex items-center justify-between px-1 py-2.5 border-y border-white/6"
+                            >
+                                <span className="text-[9.5px] tracking-[0.32em] uppercase text-white/45 font-medium">
+                                    Spread
+                                </span>
+                                <span className="text-[13px] tabular-nums text-white/85 font-medium">
                                     {book.spread !== null
                                         ? `${(book.spread * 100).toFixed(2)}¢`
                                         : '—'}
                                 </span>
                             </div>
 
-                            <div className="space-y-[3px]">
+                            <div className="space-y-0.5">
                                 {bids.map((lvl, i) => {
                                     const cum = book.cumulativeBids[i] ?? lvl.size;
                                     const w = (cum / max_total) * 100;
                                     return (
                                         <div
                                             key={`bid-${lvl.price}`}
-                                            className="relative grid grid-cols-3 gap-4 py-1  text-[11px] tabular-nums"
+                                            className="relative grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                         >
                                             <div
-                                                className="absolute inset-y-0 right-0 bg-emerald-500/10 rounded-sm"
+                                                className="absolute inset-y-0 right-0 bg-emerald-500/20 rounded-l-sm pointer-events-none"
                                                 style={{ width: `${w}%` }}
                                             />
-                                            <span className="relative text-emerald-300/85">
+                                            <span className="relative text-right font-medium text-emerald-300">
                                                 {format_cents(lvl.price)}
                                             </span>
-                                            <span className="relative text-right text-white/60">
+                                            <span className="relative text-right text-white font-light">
                                                 {format_size(lvl.size)}
                                             </span>
-                                            <span className="relative text-right text-white/45">
+                                            <span className="relative text-right text-white/40 font-light">
                                                 {format_total(lvl.price, lvl.size)}
                                             </span>
                                         </div>
                                     );
                                 })}
                             </div>
-                        </>
+                        </div>
                     )}
+                    </div>
                 </div>
-            )}
+            </div>
         </section>
     );
 }

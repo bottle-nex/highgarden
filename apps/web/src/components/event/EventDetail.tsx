@@ -63,7 +63,7 @@ export default function EventDetail({ id }: { id: string }) {
     }, [id]);
 
     return (
-        <div data-lenis-prevent className="min-h-screen w-full bg-dark-base text-white/80">
+        <div data-lenis-prevent className="min-h-screen w-full bg-dark-alpha text-white/80">
             <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm border-b border-white/8">
                 <div className="mx-auto w-full max-w-360 h-16 px-6 lg:px-8 flex items-center justify-between">
                     <Link
@@ -127,7 +127,7 @@ function Body({ market }: { market: MarketDTO }) {
     }, []);
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 [overflow-anchor:none]">
             <EventBreadcrumb title={market.noTokenId} />
             <EventBreadcrumb title={market.yesTokenId} />
             <EventTitleBlock market={market} />

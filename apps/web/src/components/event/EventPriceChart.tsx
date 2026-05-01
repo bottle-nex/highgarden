@@ -51,7 +51,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | n
         <div
             style={{
                 background: 'rgba(6,6,8,0.94)',
-                border: '1px solid rgba(255,204,0,0.15)',
+                border: '1px solid rgba(3,148,252,0.15)',
                 borderRadius: 6,
                 padding: '8px 14px',
                 boxShadow: '0 4px 24px rgba(0,0,0,0.6)',
@@ -66,7 +66,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | n
                     fontSize: 9,
                     letterSpacing: '0.18em',
                     textTransform: 'uppercase',
-                    color: 'rgba(255,204,0,0.5)',
+                    color: 'rgba(3,148,252,0.5)',
                     marginBottom: 2,
                 }}
             >
@@ -171,10 +171,10 @@ export default function EventPriceChart({
     }, [status, points, range, onLoaded]);
 
     return (
-        <section className="border border-white/10 rounded-[6px] bg-neutral-950/60">
+        <section className="">
             <div className="flex items-center justify-between px-5 pt-5 pb-3">
                 <div className="flex items-center gap-2 text-[10px] tracking-[0.25em] uppercase text-white/55">
-                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-400/70" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600/70" />
                     PRICE HISTORY
                 </div>
                 <div className="flex gap-1 bg-white/[0.02] border border-white/10 rounded-md p-[3px]">
@@ -241,28 +241,28 @@ export default function EventPriceChart({
                                 >
                                     {activeCoord && chart_svg_width > 0 ? (
                                         <>
-                                            <stop offset="0" stopColor="rgba(255,204,0,0.9)" />
+                                            <stop offset="0" stopColor="rgba(3,148,252,0.9)" />
                                             <stop
                                                 offset={Math.max(
                                                     0,
                                                     activeCoord.x / chart_svg_width - 0.004,
                                                 )}
-                                                stopColor="rgba(255,204,0,0.9)"
+                                                stopColor="rgba(3,148,252,0.9)"
                                             />
                                             <stop
                                                 offset={Math.min(
                                                     1,
                                                     activeCoord.x / chart_svg_width + 0.004,
                                                 )}
-                                                stopColor="rgba(255,204,0,0.1)"
+                                                stopColor="rgba(3,148,252,0.1)"
                                             />
-                                            <stop offset="1" stopColor="rgba(255,204,0,0.1)" />
+                                            <stop offset="1" stopColor="rgba(3,148,252,0.1)" />
                                         </>
                                     ) : (
                                         <>
-                                            <stop offset="0" stopColor="rgba(255,204,0,0.5)" />
-                                            <stop offset="0.5" stopColor="rgba(255,204,0,0.9)" />
-                                            <stop offset="1" stopColor="rgba(255,204,0,0.7)" />
+                                            <stop offset="0" stopColor="rgba(3,148,252,0.5)" />
+                                            <stop offset="0.5" stopColor="rgba(3,148,252,0.9)" />
+                                            <stop offset="1" stopColor="rgba(3,148,252,0.7)" />
                                         </>
                                     )}
                                 </linearGradient>
@@ -276,27 +276,27 @@ export default function EventPriceChart({
                                 >
                                     {activeCoord && chart_svg_width > 0 ? (
                                         <>
-                                            <stop offset="0" stopColor="rgba(255,204,0,0.18)" />
+                                            <stop offset="0" stopColor="rgba(3,148,252,0.18)" />
                                             <stop
                                                 offset={Math.max(
                                                     0,
                                                     activeCoord.x / chart_svg_width - 0.004,
                                                 )}
-                                                stopColor="rgba(255,204,0,0.18)"
+                                                stopColor="rgba(3,148,252,0.18)"
                                             />
                                             <stop
                                                 offset={Math.min(
                                                     1,
                                                     activeCoord.x / chart_svg_width + 0.004,
                                                 )}
-                                                stopColor="rgba(255,204,0,0.02)"
+                                                stopColor="rgba(3,148,252,0.02)"
                                             />
-                                            <stop offset="1" stopColor="rgba(255,204,0,0.02)" />
+                                            <stop offset="1" stopColor="rgba(3,148,252,0.02)" />
                                         </>
                                     ) : (
                                         <>
-                                            <stop offset="0" stopColor="rgba(255,204,0,0.18)" />
-                                            <stop offset="1" stopColor="rgba(255,204,0,0.18)" />
+                                            <stop offset="0" stopColor="rgba(3,148,252,0.18)" />
+                                            <stop offset="1" stopColor="rgba(3,148,252,0.18)" />
                                         </>
                                     )}
                                 </linearGradient>
@@ -322,7 +322,7 @@ export default function EventPriceChart({
                             />
                             <Tooltip
                                 content={(props) => <ChartTooltip {...props} />}
-                                cursor={{ stroke: 'rgba(255,204,0,0.25)', strokeWidth: 1 }}
+                                cursor={{ stroke: 'rgba(3,148,252,0.25)', strokeWidth: 1 }}
                                 isAnimationActive={false}
                                 wrapperStyle={{ transition: 'none', pointerEvents: 'none' }}
                                 position={
@@ -341,7 +341,7 @@ export default function EventPriceChart({
                                 fill="url(#evtPriceArea)"
                                 activeDot={{
                                     r: 4.5,
-                                    fill: '#FFCC00',
+                                    fill: '#0394fc',
                                     stroke: '#0E0D0D',
                                     strokeWidth: 2,
                                 }}
