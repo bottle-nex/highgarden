@@ -6,7 +6,7 @@ import {
     type OrderBookSnapshotDTO,
     type OrderBookStatus,
 } from "@solmarket/types";
-import { services } from "../../index";
+import { services, socket_server } from "../../index";
 import ResponseWriter from "../../services/service.response";
 
 const DEFAULT_DEPTH = 10;
@@ -48,6 +48,10 @@ export default class GetOrderBookController {
             const p = listing.market.polymarket;
             const token_id = outcome === Outcome.YES ? p.yesTokenId : p.noTokenId;
 
+            // Self-heal: ensure mirror is following this token. Uses TTL-based
+            // lifecycle separate from the WS ref counter — no phantom refs.
+            socket_server.subscriber.touch_http(token_id);
+
             const tracked = services.book_cache.has_token(token_id);
             const depth_view = services.book_cache.get_depth(token_id, depth);
             const top = services.book_cache.getTopOfBook(token_id);
@@ -55,12 +59,9 @@ export default class GetOrderBookController {
             let status: OrderBookStatus;
             if (!tracked) {
                 status = "NOT_TRACKED";
-                // Write token metadata for the mirror's token index — idempotent
-                // and safe to call on every miss. Do NOT call mirror_control.subscribe
-                // here: that goes through the WS subscriber's ref counter, so a
-                // direct call would add a phantom ref the subscriber never removes,
-                // preventing the mirror from fully unsubscribing when all WS clients
-                // leave the market.
+                // Mirror subscribe is handled above by touch_http. Here we just
+                // refresh the token→market index used for cross-pipeline log
+                // correlation; idempotent and safe to call on every miss.
                 void services.token_index.write([
                     {
                         token_id: p.yesTokenId,
@@ -78,7 +79,7 @@ export default class GetOrderBookController {
                             outcome: "NO",
                         },
                     },
-                ]).catch(() => {});
+                ]).catch(() => { });
             } else if (
                 (depth_view?.bids.length ?? 0) === 0 &&
                 (depth_view?.asks.length ?? 0) === 0

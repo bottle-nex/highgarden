@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
     CLIENT_MESSAGE_TYPE,
     SERVER_MESSAGE_TYPE,
@@ -14,7 +14,10 @@ import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import SingletonSocket from './singleton-socket';
 
 export function useWebSocket() {
-    const socket = useRef<WebSocketClient | null>(null);
+    // Client lives in state, not a ref, so consumers re-render when the WS
+    // becomes available. Subscribe / handler effects close over `client`
+    // through useCallback deps and re-fire once it transitions null → ws.
+    const [client, set_client] = useState<WebSocketClient | null>(null);
     const session = useUserSessionStore((s) => s.session);
     const token = session?.user?.token ?? null;
 
@@ -22,13 +25,12 @@ export function useWebSocket() {
         if (!token) return;
 
         const ws = SingletonSocket.acquire(token);
-        socket.current = ws;
+        set_client(ws);
         useStreamStore.getState().setStatus('connecting');
 
         // Reflect WebSocket readyState changes into the stream store
         const poll = setInterval(() => {
-            if (!socket.current) return;
-            const s = socket.current.get_status();
+            const s = ws.get_status();
             const status = useStreamStore.getState().status;
 
             if (s.is_connected && status !== 'open') {
@@ -43,68 +45,68 @@ export function useWebSocket() {
 
         return () => {
             clearInterval(poll);
-            // Release BEFORE nulling — unsubscribe_market cleanup (registered
-            // after this effect) still reads socket.current. Nulling here would
-            // fire first (same component, forward cleanup order) and cause
-            // unsubscribe_market to bail early, leaving the server subscribed.
             SingletonSocket.release();
+            set_client(null);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [token]);
 
-    const subscribe_market = useCallback((marketId: string) => {
-        const ws = socket.current;
-        if (!ws) return;
+    const subscribe_market = useCallback(
+        (marketId: string) => {
+            if (!client) return;
 
-        const market = useMarketsStore.getState().byId[marketId];
-        if (!market) return;
+            const market = useMarketsStore.getState().byId[marketId];
+            if (!market) return;
 
-        const is_first = useStreamStore.getState().addSubscriber(marketId);
-        if (!is_first) return;
+            const is_first = useStreamStore.getState().addSubscriber(marketId);
+            if (!is_first) return;
 
-        if (market.yesTokenId)
-            ws.send({ type: CLIENT_MESSAGE_TYPE.SUBSCRIBE, token_id: market.yesTokenId });
-        if (market.noTokenId)
-            ws.send({ type: CLIENT_MESSAGE_TYPE.SUBSCRIBE, token_id: market.noTokenId });
-    }, []);
+            if (market.yesTokenId)
+                client.send({ type: CLIENT_MESSAGE_TYPE.SUBSCRIBE, token_id: market.yesTokenId });
+            if (market.noTokenId)
+                client.send({ type: CLIENT_MESSAGE_TYPE.SUBSCRIBE, token_id: market.noTokenId });
+        },
+        [client],
+    );
 
-    const unsubscribe_market = useCallback((marketId: string) => {
-        const ws = socket.current;
-        if (!ws) return;
+    const unsubscribe_market = useCallback(
+        (marketId: string) => {
+            if (!client) return;
 
-        const market = useMarketsStore.getState().byId[marketId];
-        if (!market) return;
+            const market = useMarketsStore.getState().byId[marketId];
+            if (!market) return;
 
-        const is_last = useStreamStore.getState().removeSubscriber(marketId);
-        if (!is_last) return;
+            const is_last = useStreamStore.getState().removeSubscriber(marketId);
+            if (!is_last) return;
 
-        if (market.yesTokenId)
-            ws.send({ type: CLIENT_MESSAGE_TYPE.UNSUBSCRIBE, token_id: market.yesTokenId });
-        if (market.noTokenId)
-            ws.send({ type: CLIENT_MESSAGE_TYPE.UNSUBSCRIBE, token_id: market.noTokenId });
-    }, []);
+            if (market.yesTokenId)
+                client.send({ type: CLIENT_MESSAGE_TYPE.UNSUBSCRIBE, token_id: market.yesTokenId });
+            if (market.noTokenId)
+                client.send({ type: CLIENT_MESSAGE_TYPE.UNSUBSCRIBE, token_id: market.noTokenId });
+        },
+        [client],
+    );
 
     const on = useCallback(
         <T extends SERVER_MESSAGE_TYPE>(type: T, handler: ServerMessageHandler<T>) => {
-            socket.current?.on(type, handler);
+            client?.on(type, handler);
         },
-        [],
+        [client],
     );
 
     const off = useCallback(
         <T extends SERVER_MESSAGE_TYPE>(type: T, handler: ServerMessageHandler<T>) => {
-            socket.current?.off(type, handler);
+            client?.off(type, handler);
         },
-        [],
+        [client],
     );
 
     const ping = useCallback(() => {
-        socket.current?.ping();
-    }, []);
+        client?.ping();
+    }, [client]);
 
     return {
-        socket: socket.current,
-        is_connected: socket.current?.is_connected ?? false,
+        socket: client,
+        is_connected: client?.is_connected ?? false,
         subscribe_market,
         unsubscribe_market,
         on,

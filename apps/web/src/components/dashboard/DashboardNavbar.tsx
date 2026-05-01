@@ -25,14 +25,14 @@ export default function DashboardNavbar(): JSX.Element {
                     <Button
                         type="button"
                         className={cn(
-                            'h-9 px-4 rounded-sm text-[12px] tracking-wider bg-linear-to-b from-neutral-200 to-neutral-400 hover:bg-linear-to-b hover:from-neutral-300 hover:to-neutral-400 text-black shadow-xs shadow-black/10 inset-shadow-sm inset-shadow-black/30 transition-all transform duration-250',
+                            'h-9 px-4 rounded-sm text-[13px] tracking-wider bg-white text-black shadow-xs shadow-black/10 inset-shadow-2xs inset-shadow-black/10 transition-all transform duration-250',
                         )}
                     >
                         Portfolio
                     </Button>
                     <Button
                         className={cn(
-                            'h-9 px-4 rounded-sm text-[12px] tracking-wider bg-linear-to-b from-dark-base to-dark-base hover:bg-linear-to-b hover:from-dark-base hover:to-dark-base text-gray-400 shadow-xs shadow-black/10 inset-shadow-sm inset-shadow-white/5 transition-all transform duration-250',
+                            'h-9 px-4 rounded-sm text-[13px] tracking-wider bg-dark-base text-white transition-all transform duration-250',
                         )}
                     >
                         Deposit

@@ -25,7 +25,8 @@ export interface GammaMarket {
 
 export interface FetchMarketsParams {
     limit?: number;
-    order?: "volume_24hr" | "liquidity";
+    offset?: number;
+    order?: "volume_24hr" | "liquidity" | "start_date";
     ascending?: boolean;
 }
 
@@ -56,6 +57,7 @@ interface RawGammaMarket {
 const ORDER_FIELD_MAP: Record<NonNullable<FetchMarketsParams["order"]>, string> = {
     volume_24hr: "volume24hr",
     liquidity: "liquidityNum",
+    start_date: "startDate",
 };
 
 const DEFAULT_GAMMA_URL = "https://gamma-api.polymarket.com";
@@ -73,6 +75,9 @@ export class GammaClient {
     async fetch_markets(params: FetchMarketsParams = {}): Promise<GammaMarket[]> {
         const url = new URL("/markets", this.base_url);
         url.searchParams.set("limit", String(params.limit ?? 50));
+        if (params.offset !== undefined) {
+            url.searchParams.set("offset", String(params.offset));
+        }
         url.searchParams.set("order", ORDER_FIELD_MAP[params.order ?? "volume_24hr"]);
         url.searchParams.set("ascending", String(params.ascending ?? false));
         url.searchParams.set("active", "true");

@@ -5,6 +5,7 @@ import v1_router from "./routers/v1/router.v1";
 import Env, { ENV } from "./config/config.env";
 import Services from "./services/service.singleton";
 import SocketServer from "./socket/socket.server";
+import { autoLister } from "./services/auto-lister.service";
 import { errorHandler } from "./middleware/error-handler";
 import { requestLogger } from "./middleware/request-logger";
 import { notFoundHandler } from "./middleware/not-found";
@@ -13,6 +14,7 @@ Env.parse_env();
 export const services = new Services();
 await services.boot();
 await services.hydrate();
+autoLister.start();
 
 const app = express();
 app.use(

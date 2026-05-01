@@ -1,6 +1,6 @@
 'use client';
 
-import { JSX, useEffect, useMemo, useState } from 'react';
+import { JSX, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ResponsiveContainer,
     AreaChart,
@@ -94,11 +94,26 @@ export default function EventPriceChart({
 }: Props): JSX.Element {
     const [range, set_range] = useState<PriceHistoryRange>('1d');
     const [activeCoord, set_active_coord] = useState<{ x: number; y: number } | null>(null);
+    const [chart_svg_width, set_chart_svg_width] = useState(0);
+    const wrapper_ref = useRef<HTMLDivElement>(null);
     const [snapshot, set_snapshot] = useState<{
         key: string;
         status: 'ready' | 'error';
         history: PriceHistoryPoint[];
     } | null>(null);
+
+    useEffect(() => {
+        const el = wrapper_ref.current;
+        if (!el) return;
+        const update = (): void => {
+            // px-2 → 8px padding each side; clientWidth includes padding
+            set_chart_svg_width(Math.max(0, el.clientWidth - 16));
+        };
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
 
     const current_key = `${marketId}:${range}`;
     const is_current = snapshot !== null && snapshot.key === current_key;
@@ -180,7 +195,11 @@ export default function EventPriceChart({
                 </div>
             </div>
 
-            <div className="relative w-full px-2" style={{ aspectRatio: '600 / 260' }}>
+            <div
+                ref={wrapper_ref}
+                className="relative w-full px-2"
+                style={{ aspectRatio: '600 / 260' }}
+            >
                 {status === 'loading' && points.length === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.25em] uppercase text-white/30">
                         Loading…
@@ -212,14 +231,74 @@ export default function EventPriceChart({
                             onMouseLeave={() => set_active_coord(null)}
                         >
                             <defs>
-                                <linearGradient id="evtPriceLine" x1="0" y1="0" x2="1" y2="0">
-                                    <stop offset="0%" stopColor="rgba(255,204,0,0.5)" />
-                                    <stop offset="50%" stopColor="rgba(255,204,0,0.9)" />
-                                    <stop offset="100%" stopColor="rgba(255,204,0,0.7)" />
+                                <linearGradient
+                                    id="evtPriceLine"
+                                    x1="0"
+                                    y1="0"
+                                    x2={chart_svg_width || 1}
+                                    y2="0"
+                                    gradientUnits="userSpaceOnUse"
+                                >
+                                    {activeCoord && chart_svg_width > 0 ? (
+                                        <>
+                                            <stop offset="0" stopColor="rgba(255,204,0,0.9)" />
+                                            <stop
+                                                offset={Math.max(
+                                                    0,
+                                                    activeCoord.x / chart_svg_width - 0.004,
+                                                )}
+                                                stopColor="rgba(255,204,0,0.9)"
+                                            />
+                                            <stop
+                                                offset={Math.min(
+                                                    1,
+                                                    activeCoord.x / chart_svg_width + 0.004,
+                                                )}
+                                                stopColor="rgba(255,204,0,0.1)"
+                                            />
+                                            <stop offset="1" stopColor="rgba(255,204,0,0.1)" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <stop offset="0" stopColor="rgba(255,204,0,0.5)" />
+                                            <stop offset="0.5" stopColor="rgba(255,204,0,0.9)" />
+                                            <stop offset="1" stopColor="rgba(255,204,0,0.7)" />
+                                        </>
+                                    )}
                                 </linearGradient>
-                                <linearGradient id="evtPriceArea" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="rgba(255,204,0,0.18)" />
-                                    <stop offset="100%" stopColor="rgba(255,204,0,0)" />
+                                <linearGradient
+                                    id="evtPriceArea"
+                                    x1="0"
+                                    y1="0"
+                                    x2={chart_svg_width || 1}
+                                    y2="0"
+                                    gradientUnits="userSpaceOnUse"
+                                >
+                                    {activeCoord && chart_svg_width > 0 ? (
+                                        <>
+                                            <stop offset="0" stopColor="rgba(255,204,0,0.18)" />
+                                            <stop
+                                                offset={Math.max(
+                                                    0,
+                                                    activeCoord.x / chart_svg_width - 0.004,
+                                                )}
+                                                stopColor="rgba(255,204,0,0.18)"
+                                            />
+                                            <stop
+                                                offset={Math.min(
+                                                    1,
+                                                    activeCoord.x / chart_svg_width + 0.004,
+                                                )}
+                                                stopColor="rgba(255,204,0,0.02)"
+                                            />
+                                            <stop offset="1" stopColor="rgba(255,204,0,0.02)" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <stop offset="0" stopColor="rgba(255,204,0,0.18)" />
+                                            <stop offset="1" stopColor="rgba(255,204,0,0.18)" />
+                                        </>
+                                    )}
                                 </linearGradient>
                             </defs>
                             <CartesianGrid

@@ -31,7 +31,9 @@ export interface AdminListingApi {
 export interface AutoListerResult {
     discovered: number;
     skippedExisting: number;
+    skippedFiltered: number;
     failed: number;
+    candidates: number;
 }
 
 export async function fetchAdminListings(status?: ListingStatus): Promise<AdminListingApi[]> {
@@ -51,5 +53,13 @@ export async function rejectListing(marketId: string, reason?: string | null): P
 
 export async function runAutoLister(): Promise<AutoListerResult> {
     const { data } = await apiClient.post('/admin/lister/run');
-    return data?.data ?? { discovered: 0, skippedExisting: 0, failed: 0 };
+    return (
+        data?.data ?? {
+            discovered: 0,
+            skippedExisting: 0,
+            skippedFiltered: 0,
+            failed: 0,
+            candidates: 0,
+        }
+    );
 }

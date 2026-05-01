@@ -13,7 +13,7 @@ export default function RunListerButton({ onComplete }: { onComplete?: () => voi
         try {
             const result = await runAutoLister();
             toast.success(
-                `Discovered ${result.discovered} new · ${result.skippedExisting} known · ${result.failed} failed`,
+                `Candidates ${result.candidates} · ${result.discovered} new · ${result.skippedExisting} known · ${result.skippedFiltered} filtered · ${result.failed} failed`,
             );
             onComplete?.();
         } catch (err) {
