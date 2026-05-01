@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import {
     CLIENT_MESSAGE_TYPE,
     SERVER_MESSAGE_TYPE,
@@ -14,18 +14,22 @@ import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import SingletonSocket from './singleton-socket';
 
 export function useWebSocket() {
-    // Client lives in state, not a ref, so consumers re-render when the WS
-    // becomes available. Subscribe / handler effects close over `client`
-    // through useCallback deps and re-fire once it transitions null → ws.
-    const [client, set_client] = useState<WebSocketClient | null>(null);
     const session = useUserSessionStore((s) => s.session);
     const token = session?.user?.token ?? null;
+    // Subscribe to the stream store so consumers re-render when the WS
+    // transitions states. `client` is derived from the singleton during render
+    // — keeping it out of useState avoids setState-in-effect cascades.
+    const status = useStreamStore((s) => s.status);
+
+    const client: WebSocketClient | null =
+        token && status !== 'idle' && status !== 'closed'
+            ? SingletonSocket.get_current_client()
+            : null;
 
     useEffect(() => {
         if (!token) return;
 
         const ws = SingletonSocket.acquire(token);
-        set_client(ws);
         useStreamStore.getState().setStatus('connecting');
 
         // Reflect WebSocket readyState changes into the stream store
@@ -46,7 +50,6 @@ export function useWebSocket() {
         return () => {
             clearInterval(poll);
             SingletonSocket.release();
-            set_client(null);
         };
     }, [token]);
 
