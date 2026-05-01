@@ -16,9 +16,9 @@ export default function MultiOptionStakeCard({
     return (
         <Link
             href={href}
-            className="group bg-neutral-950 border border-white/10 rounded-[6px] overflow-hidden hover:border-white/20 transition-colors block no-underline"
+            className="group bg-dark-base border border-white/10 rounded-[6px] overflow-hidden hover:border-white/20 transition-colors block no-underline"
         >
-            <div className="flex items-center justify-between px-6 py-3.5 border-b border-white/8 font-mono text-[11px] tracking-[0.22em] uppercase">
+            <div className="flex items-center justify-between px-6 py-3.5 border-b border-white/8  text-[11px] tracking-[0.22em] uppercase">
                 <div className="flex items-center gap-3">
                     <span className="inline-block size-1.5 rounded-full bg-amber-400" />
                     <span className="text-white/55">{market.category}</span>
@@ -40,12 +40,12 @@ export default function MultiOptionStakeCard({
                                 className="relative rounded-[4px] border border-white/8 bg-white/3 hover:bg-white/5 hover:border-white/14 transition-colors cursor-pointer px-4 py-3.5"
                             >
                                 <div className="flex items-center justify-between">
-                                    <span className="font-mono text-[13px] text-white/70 font-medium">
+                                    <span className=" text-[13px] text-white/70 font-medium">
                                         {option.label}
                                     </span>
                                     <span
                                         className={cn(
-                                            'font-mono text-[10px] tabular-nums',
+                                            ' text-[10px] tabular-nums',
                                             isUp ? 'text-emerald-500/60' : 'text-rose-500/60',
                                         )}
                                     >
@@ -66,7 +66,7 @@ export default function MultiOptionStakeCard({
                     })}
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-white/8 flex items-center justify-between font-mono text-[11px] tracking-[0.18em] uppercase text-white/45">
+                <div className="mt-5 pt-4 border-t border-white/8 flex items-center justify-between  text-[11px] tracking-[0.18em] uppercase text-white/45">
                     <div className="flex items-center gap-4">
                         <span>VOL {market.volume}</span>
                         <span className="text-white/25">·</span>

@@ -84,10 +84,10 @@ function SignInInner() {
 
                 <div className="px-7 pt-8 pb-7">
                     <div className="mb-6 flex items-center justify-between">
-                        <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-white/30">
+                        <span className=" text-[10px] tracking-[0.25em] uppercase text-white/30">
                             {step === 'email' ? 'AUTH / 01' : 'AUTH / 02'}
                         </span>
-                        <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-white/30">
+                        <span className=" text-[10px] tracking-[0.25em] uppercase text-white/30">
                             SOLMARKET
                         </span>
                     </div>
@@ -95,7 +95,7 @@ function SignInInner() {
                     <h1 className="text-xl tracking-tight text-white">
                         {step === 'email' ? 'Sign in' : 'Enter code'}
                     </h1>
-                    <p className="mt-1.5 font-mono text-[10px] tracking-[0.12em] uppercase text-white/35">
+                    <p className="mt-1.5  text-[10px] tracking-[0.12em] uppercase text-white/35">
                         {step === 'email' ? 'Continue with Google or email' : `Sent to ${email}`}
                     </p>
 
@@ -119,7 +119,7 @@ function SignInInner() {
                                         disabled={pending}
                                     >
                                         <FcGoogle className="size-4" />
-                                        <span className="font-mono text-[11px] tracking-[0.15em] uppercase">
+                                        <span className=" text-[11px] tracking-[0.15em] uppercase">
                                             Continue with Google
                                         </span>
                                     </Button>
@@ -127,7 +127,7 @@ function SignInInner() {
                                     <Divider />
 
                                     <form onSubmit={handleRequestOtp} className="space-y-3">
-                                        <label className="block font-mono text-[9px] tracking-[0.2em] uppercase text-white/40">
+                                        <label className="block  text-[9px] tracking-[0.2em] uppercase text-white/40">
                                             Email
                                         </label>
                                         <Input
@@ -146,7 +146,7 @@ function SignInInner() {
                                             className="w-full rounded-none bg-white text-black hover:bg-white/90"
                                             disabled={pending || !email}
                                         >
-                                            <span className="font-mono text-[11px] tracking-[0.2em] uppercase">
+                                            <span className=" text-[11px] tracking-[0.2em] uppercase">
                                                 {pending ? 'Sending…' : 'Send code →'}
                                             </span>
                                         </Button>
@@ -176,7 +176,7 @@ function SignInInner() {
                                                         key={i}
                                                         index={i}
                                                         className={cn(
-                                                            'size-10 rounded-none border border-white/15 bg-white/5 font-mono text-base text-white',
+                                                            'size-10 rounded-none border border-white/15 bg-white/5  text-base text-white',
                                                             'first:rounded-none last:rounded-none',
                                                             'data-[active=true]:border-white data-[active=true]:ring-0',
                                                         )}
@@ -196,7 +196,7 @@ function SignInInner() {
                                             setError(null);
                                         }}
                                         disabled={pending}
-                                        className="w-full rounded-none font-mono text-[10px] tracking-[0.2em] uppercase text-white/40 hover:bg-transparent hover:text-white/70"
+                                        className="w-full rounded-none  text-[10px] tracking-[0.2em] uppercase text-white/40 hover:bg-transparent hover:text-white/70"
                                     >
                                         ← Use a different email
                                     </Button>
@@ -211,7 +211,7 @@ function SignInInner() {
                                 initial={{ opacity: 0, y: -4 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0 }}
-                                className="mt-4 text-center font-mono text-[10px] tracking-[0.15em] uppercase text-red-400/90"
+                                className="mt-4 text-center  text-[10px] tracking-[0.15em] uppercase text-red-400/90"
                             >
                                 {error}
                             </motion.p>
@@ -219,10 +219,10 @@ function SignInInner() {
                     </AnimatePresence>
 
                     <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-4">
-                        <span className="font-mono text-[9px] tracking-[0.2em] uppercase text-white/25">
+                        <span className=" text-[9px] tracking-[0.2em] uppercase text-white/25">
                             SECURED · OTP
                         </span>
-                        <span className="font-mono text-[9px] tracking-[0.2em] uppercase text-white/25">
+                        <span className=" text-[9px] tracking-[0.2em] uppercase text-white/25">
                             v1.0
                         </span>
                     </div>
@@ -236,9 +236,7 @@ function Divider() {
     return (
         <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-white/10" />
-            <span className="font-mono text-[9px] tracking-[0.25em] uppercase text-white/30">
-                OR
-            </span>
+            <span className=" text-[9px] tracking-[0.25em] uppercase text-white/30">OR</span>
             <div className="h-px flex-1 bg-white/10" />
         </div>
     );

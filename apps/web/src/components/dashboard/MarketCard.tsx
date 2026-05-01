@@ -18,9 +18,9 @@ export default function MarketCard({
     return (
         <Link
             href={resolved_href}
-            className="group relative border border-white/10 rounded-[6px] p-5 hover:border-indigo-500/15 bg-neutral-900/70 transition-colors cursor-pointer block no-underline"
+            className="group relative border border-gray-500/15 rounded-[6px] p-5 bg-dark-base/80 transition-colors cursor-pointer block no-underline"
         >
-            <div className="flex items-center justify-between font-mono text-[11px] tracking-[0.22em] uppercase">
+            <div className="flex items-center justify-between text-[11px] tracking-[0.22em] uppercase">
                 <span className="text-white/55">{market.category}</span>
                 <span className="text-white/45">ENDS IN {market.endsIn}</span>
             </div>
@@ -34,7 +34,7 @@ export default function MarketCard({
                 <ProbBar label="NO" value={market.noPrice} color="bg-red-500/90" />
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between font-mono text-[11px] tracking-[0.18em] uppercase">
+            <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between  text-[11px] tracking-[0.18em] uppercase">
                 <span className="text-white/55">VOL {market.volume}</span>
                 <span
                     className={cn(
@@ -61,18 +61,14 @@ function ProbBar({
 }): JSX.Element {
     return (
         <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px] tracking-[0.15em] text-white/55 w-7">
-                {label}
-            </span>
+            <span className=" text-[11px] tracking-[0.15em] text-white/55 w-7">{label}</span>
             <div className="relative flex-1 h-1.5 bg-white/8 rounded-full overflow-hidden">
                 <div
                     className={cn('absolute inset-y-0 left-0 rounded-full', color)}
                     style={{ width: `${value}%` }}
                 />
             </div>
-            <span className="font-mono text-[12px] text-white/70 tabular-nums w-8 text-right">
-                {value}¢
-            </span>
+            <span className=" text-[12px] text-white/70 tabular-nums w-8 text-right">{value}¢</span>
         </div>
     );
 }

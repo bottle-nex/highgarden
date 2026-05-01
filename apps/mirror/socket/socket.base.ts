@@ -60,7 +60,7 @@ export abstract class SocketBase {
         try {
             this.ws?.close(1000, "shutdown");
             //eslint-disable-next-line no-empty
-        } catch { }
+        } catch {}
         this.ws = null;
         this.set_state("closed");
     }
@@ -91,7 +91,7 @@ export abstract class SocketBase {
             try {
                 this.ws?.send("PING");
                 //eslint-disable-next-line no-empty
-            } catch { }
+            } catch {}
         }, POLY_WS.heartbeat_ms);
 
         try {
@@ -102,7 +102,6 @@ export abstract class SocketBase {
     }
 
     private on_message(data: unknown): void {
-
         // console.log(chalk.magenta("unparsed data from clob client: "), data);
 
         if (typeof data !== "string") return;

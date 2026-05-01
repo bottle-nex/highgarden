@@ -50,15 +50,19 @@ export interface HotTopic {
 }
 
 export const CATEGORY_TABS = [
-    'TRENDING',
-    'BREAKING',
-    'NEW',
-    'POLITICS',
-    'SPORTS',
-    'CRYPTO',
-    'GEOPOLITICS',
-    'CULTURE',
-    'TECH',
+    'Trending',
+    'Breaking',
+    'New',
+    'Politics',
+    'Sports',
+    'Crypto',
+    'Geopolitics',
+    'Culture',
+    'Tech',
+    'Economy',
+    'Weather',
+    'Elections',
+    'Mentions',
 ] as const;
 
 export const featuredMarket: FeaturedMarket = {

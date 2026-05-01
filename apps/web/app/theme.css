@@ -1,14 +1,21 @@
 @theme {
-    /* --color-alpha: #fa5c5c; */
-    --color-light-base: #f5f5f5;
-    --color-light-alpha: #ffffff;
+    /* text */
+    --color-light-base: #E6EDF3;
+    --color-light-alpha: #FFFFFF;
+    --color-text-primary: #E6EDF3;
+    --color-text-secondary: #94A3B8;
 
-    --color-dark-alpha: #0C0B0B;
-    --color-dark-base: #0E0D0D;
-    --color-dark-faded: #151515;
-    /* solmarket */
-    --color-alpha: #2F2FE4;
-    --color-primary: #2F2FE4;
+    /* surfaces */
+    --color-dark-alpha: #0B0E11;
+    --color-dark-base: #101519;
+    --color-dark-faded: #121826;
+    --color-surface: #121826;
+
+    /* accents */
+    --color-alpha: #4FD1C5;
+    --color-primary: #4FD1C5;
+    --color-secondary-accent: #7C5CFF;
+    --color-highlight: #22C55E;
 }
 
 /* infinite scroll  */

@@ -103,7 +103,7 @@ export default function LandingFeatureCardsSection(): JSX.Element {
                         <div
                             key={card.id}
                             onClick={() => setActiveId(card.id)}
-                            className={`group relative aspect-square overflow-hidden text-left font-mono uppercase tracking-wider transition-colors duration-300 ease-in-out ${stateClasses}`}
+                            className={`group relative aspect-square overflow-hidden text-left  uppercase tracking-wider transition-colors duration-300 ease-in-out ${stateClasses}`}
                         >
                             {isActive ? (
                                 <ActiveCard card={card} />
@@ -168,7 +168,7 @@ function ActiveCard({ card }: { card: CardConfig }): JSX.Element {
                     <Input
                         type="text"
                         placeholder="ASK THE AI AGENT A QUESTION..."
-                        className="h-auto rounded-none border border-white/15 bg-neutral-950 px-3 py-2.5 pr-12 text-sm uppercase tracking-wider font-mono text-neutral-200 placeholder:text-neutral-500 md:text-sm"
+                        className="h-auto rounded-none border border-white/15 bg-neutral-950 px-3 py-2.5 pr-12 text-sm uppercase tracking-wider  text-neutral-200 placeholder:text-neutral-500 md:text-sm"
                     />
                     <span
                         className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-full text-base leading-none ${card.arrowBg} ${card.arrowInk}`}

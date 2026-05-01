@@ -5,10 +5,7 @@ import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import type { MarketDTO } from '@solmarket/types';
 import { Outcome } from '@solmarket/types';
-import {
-    selectDepth,
-    useOrderBookDepthStore,
-} from '@/store/book/useOrderBookDepthStore';
+import { selectDepth, useOrderBookDepthStore } from '@/store/book/useOrderBookDepthStore';
 
 interface Props {
     market: MarketDTO;
@@ -81,7 +78,7 @@ export default function EventTradePanel({
             className="border border-white/10 rounded-[6px] bg-neutral-950/60 lg:sticky lg:top-24"
         >
             <div className="flex items-center justify-between px-5 pt-5">
-                <div className="flex gap-4 font-mono text-[11px] tracking-[0.22em] uppercase">
+                <div className="flex gap-4  text-[11px] tracking-[0.22em] uppercase">
                     {(['BUY', 'SELL'] as const).map((t) => (
                         <button
                             key={t}
@@ -97,7 +94,7 @@ export default function EventTradePanel({
                         </button>
                     ))}
                 </div>
-                <span className="font-mono text-[9px] tracking-[0.25em] uppercase text-white/30">
+                <span className=" text-[9px] tracking-[0.25em] uppercase text-white/30">
                     MARKET
                 </span>
             </div>
@@ -113,10 +110,10 @@ export default function EventTradePanel({
                                 : 'bg-emerald-500/5 border-emerald-500/15 hover:border-emerald-500/30'
                         }`}
                     >
-                        <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-emerald-300/90">
+                        <span className=" text-[10px] tracking-[0.22em] uppercase text-emerald-300/90">
                             YES
                         </span>
-                        <span className="font-mono text-[13px] tabular-nums text-emerald-300">
+                        <span className=" text-[13px] tabular-nums text-emerald-300">
                             {format_cents(yes_price)}
                         </span>
                     </button>
@@ -129,21 +126,21 @@ export default function EventTradePanel({
                                 : 'bg-rose-500/5 border-rose-500/15 hover:border-rose-500/30'
                         }`}
                     >
-                        <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-rose-300/90">
+                        <span className=" text-[10px] tracking-[0.22em] uppercase text-rose-300/90">
                             NO
                         </span>
-                        <span className="font-mono text-[13px] tabular-nums text-rose-300">
+                        <span className=" text-[13px] tabular-nums text-rose-300">
                             {format_cents(no_price)}
                         </span>
                     </button>
                 </div>
 
                 <div>
-                    <div className="font-mono text-[9px] tracking-[0.25em] uppercase text-white/40 mb-2">
+                    <div className=" text-[9px] tracking-[0.25em] uppercase text-white/40 mb-2">
                         AMOUNT
                     </div>
                     <div className="flex items-center justify-between border border-white/10 rounded-md px-4 py-3 bg-white/[0.02]">
-                        <span className="font-mono text-[12px] tracking-[0.18em] uppercase text-white/40">
+                        <span className=" text-[12px] tracking-[0.18em] uppercase text-white/40">
                             $
                         </span>
                         <input
@@ -165,7 +162,7 @@ export default function EventTradePanel({
                             key={v}
                             type="button"
                             onClick={() => set_amount(String((parseFloat(amount) || 0) + v))}
-                            className="py-2 rounded-md border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05] font-mono text-[11px] tabular-nums text-white/65 cursor-pointer"
+                            className="py-2 rounded-md border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05]  text-[11px] tabular-nums text-white/65 cursor-pointer"
                         >
                             +${v}
                         </button>
@@ -180,23 +177,12 @@ export default function EventTradePanel({
                     Trade
                 </button>
 
-                <dl className="grid grid-cols-1 gap-1.5 font-mono text-[11px] tabular-nums">
+                <dl className="grid grid-cols-1 gap-1.5  text-[11px] tabular-nums">
                     <Row label="Avg price" value={format_cents(active_price)} />
-                    <Row
-                        label="Est. shares"
-                        value={shares > 0 ? shares.toFixed(2) : '0.00'}
-                    />
-                    <Row
-                        label="Est. payout"
-                        value={`$${est_payout.toFixed(2)}`}
-                        accent="emerald"
-                    />
+                    <Row label="Est. shares" value={shares > 0 ? shares.toFixed(2) : '0.00'} />
+                    <Row label="Est. payout" value={`$${est_payout.toFixed(2)}`} accent="emerald" />
                     <Row label="Fee (2%)" value={`$${fee.toFixed(2)}`} />
-                    <Row
-                        label="Tick"
-                        value={market.tickSize}
-                        muted
-                    />
+                    <Row label="Tick" value={market.tickSize} muted />
                 </dl>
 
                 <p className="text-[10px] text-white/35 text-center pt-1">

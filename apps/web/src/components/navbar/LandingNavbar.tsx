@@ -58,7 +58,7 @@ export default function LandingNavbar(): JSX.Element {
                         <a
                             key={item}
                             href="#"
-                            className="group/nav relative px-5 py-2 font-mono text-[10px] tracking-[0.2em] uppercase text-white transition-colors duration-300"
+                            className="group/nav relative px-5 py-2  text-[10px] tracking-[0.2em] uppercase text-white transition-colors duration-300"
                         >
                             <span className="text-white/50 mr-1.5">
                                 {String(i + 1).padStart(2, '0')}
@@ -84,10 +84,10 @@ function GetStartedButton({ onClick }: { onClick: () => void }): JSX.Element {
             onClick={onClick}
             className="relative group/cta inline-flex items-center gap-x-3 bg-alpha hover:bg-alpha rounded-none h-10 px-4 cursor-pointer transition-colors duration-300"
         >
-            <span className="font-mono text-[11px] tracking-[0.2em] uppercase text-white font-semibold">
+            <span className=" text-[11px] tracking-[0.2em] uppercase text-white font-semibold">
                 GET STARTED
             </span>
-            <span className="font-mono text-white/80 text-xs -translate-y-px group-hover/cta:translate-x-0.5 transition-transform duration-300">
+            <span className=" text-white/80 text-xs -translate-y-px group-hover/cta:translate-x-0.5 transition-transform duration-300">
                 &rarr;
             </span>
             <ButtonCorners />

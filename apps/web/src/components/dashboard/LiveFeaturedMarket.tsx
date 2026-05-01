@@ -97,9 +97,7 @@ export default function LiveFeaturedMarket() {
     if (state.status === 'error') {
         return (
             <Section>
-                <Frame tone="error">
-                    Couldn&apos;t load featured market — {state.message}.
-                </Frame>
+                <Frame tone="error">Couldn&apos;t load featured market — {state.message}.</Frame>
             </Section>
         );
     }
@@ -128,9 +126,8 @@ export default function LiveFeaturedMarket() {
 
 function Section({ children }: { children: React.ReactNode }) {
     return (
-        <section>
-            <SectionHeading title="FEATURED MARKET" subtitle="HIGHEST VOLUME" />
-            {children}
+        <section className="h-full min-h-0 flex flex-col p-1">
+            <div className="flex-1 min-h-0">{children}</div>
         </section>
     );
 }

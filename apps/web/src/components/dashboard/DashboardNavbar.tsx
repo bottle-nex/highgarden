@@ -12,19 +12,12 @@ import UtilityCard from '../ui/utility-card';
 
 export default function DashboardNavbar(): JSX.Element {
     const { session } = useUserSessionStore();
-    const [logoutOpen, setLogoutOpen] = useState(false);
+    const [logoutOpen, setLogoutOpen] = useState<boolean>(false);
 
     return (
-        <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm border-b border-white/8">
-            <div className="mx-auto w-full max-w-360 h-18 px-6 lg:px-8 flex items-center gap-8">
-                <div className="flex items-center gap-2">
-                    <span className="size-2 rounded-full bg-alpha" />
-                    <span className="text-white/75  text-[11px] tracking-[0.25em] font-semibold">
-                        SOLMARKET
-                    </span>
-                </div>
-
-                <div className="flex-1 flex justify-center">
+        <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm border-b border-gray-500/15">
+            <div className="w-full h-16 flex items-center justify-between gap-8 px-8">
+                <div className="flex justify-center">
                     <SearchBar />
                 </div>
 
@@ -32,18 +25,17 @@ export default function DashboardNavbar(): JSX.Element {
                     <Button
                         type="button"
                         className={cn(
-                            'h-9 px-4 rounded-[4px]! bg-transparent border border-white/12 hover:bg-white/5  text-[10px] tracking-[0.2em] uppercase text-white/75',
+                            'h-9 px-4 rounded-sm text-[12px] tracking-wider bg-linear-to-b from-neutral-200 to-neutral-400 hover:bg-linear-to-b hover:from-neutral-300 hover:to-neutral-400 text-black shadow-xs shadow-black/10 inset-shadow-sm inset-shadow-black/30 transition-all transform duration-250',
                         )}
                     >
-                        PORTFOLIO
+                        Portfolio
                     </Button>
                     <Button
-                        type="button"
                         className={cn(
-                            'h-9 px-4 rounded-[4px]! text-[10px] tracking-widest uppercase font-semibold',
+                            'h-9 px-4 rounded-sm text-[12px] tracking-wider bg-linear-to-b from-dark-base to-dark-base hover:bg-linear-to-b hover:from-dark-base hover:to-dark-base text-gray-400 shadow-xs shadow-black/10 inset-shadow-sm inset-shadow-white/5 transition-all transform duration-250',
                         )}
                     >
-                        DEPOSIT
+                        Deposit
                     </Button>
                     <span
                         role="button"
@@ -96,16 +88,16 @@ function LogoutDialog({ onClose }: { onClose: () => void }) {
 
                 <div className="px-7 pt-8 pb-7">
                     <div className="mb-6 flex items-center justify-between">
-                        <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-white/30">
+                        <span className=" text-[10px] tracking-[0.25em] uppercase text-white/30">
                             AUTH / 03
                         </span>
-                        <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-white/30">
+                        <span className=" text-[10px] tracking-[0.25em] uppercase text-white/30">
                             SOLMARKET
                         </span>
                     </div>
 
                     <h1 className="text-xl tracking-tight text-white">Sign out</h1>
-                    <p className="mt-1.5 font-mono text-[10px] tracking-[0.12em] uppercase text-white/35">
+                    <p className="mt-1.5  text-[10px] tracking-[0.12em] uppercase text-white/35">
                         Are you sure you want to log out?
                     </p>
 
@@ -117,7 +109,7 @@ function LogoutDialog({ onClose }: { onClose: () => void }) {
                             disabled={pending}
                             className="w-full rounded-none bg-white text-black hover:bg-white/90"
                         >
-                            <span className="font-mono text-[11px] tracking-[0.2em] uppercase">
+                            <span className=" text-[11px] tracking-[0.2em] uppercase">
                                 {pending ? 'Signing out…' : 'Logout →'}
                             </span>
                         </Button>
@@ -129,17 +121,15 @@ function LogoutDialog({ onClose }: { onClose: () => void }) {
                             disabled={pending}
                             className="w-full h-10 rounded-none border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
                         >
-                            <span className="font-mono text-[11px] tracking-[0.15em] uppercase">
-                                Cancel
-                            </span>
+                            <span className=" text-[11px] tracking-[0.15em] uppercase">Cancel</span>
                         </Button>
                     </div>
 
                     <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-4">
-                        <span className="font-mono text-[9px] tracking-[0.2em] uppercase text-white/25">
+                        <span className=" text-[9px] tracking-[0.2em] uppercase text-white/25">
                             SECURED · SESSION
                         </span>
-                        <span className="font-mono text-[9px] tracking-[0.2em] uppercase text-white/25">
+                        <span className=" text-[9px] tracking-[0.2em] uppercase text-white/25">
                             v1.0
                         </span>
                     </div>

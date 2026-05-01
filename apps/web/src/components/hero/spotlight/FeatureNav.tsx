@@ -39,7 +39,7 @@ export default function FeatureNav({
 
                         <span
                             className={cn(
-                                'mt-0.5 hidden font-mono text-xs transition-colors duration-300 md:block',
+                                'mt-0.5 hidden  text-xs transition-colors duration-300 md:block',
                                 isActive ? 'text-alpha' : 'text-neutral-800',
                             )}
                         >

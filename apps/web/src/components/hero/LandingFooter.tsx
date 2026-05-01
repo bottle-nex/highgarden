@@ -57,7 +57,7 @@ export default function LandingFooter(): JSX.Element {
                         index="00"
                         label="EST. 2026"
                     >
-                        <div className="mt-6 font-mono text-2xl md:text-8xl tracking-wide text-alpha font-semibold">
+                        <div className="mt-6  text-2xl md:text-8xl tracking-wide text-alpha font-semibold">
                             SOLMARKET
                         </div>
                         <div className="mt-auto">
@@ -70,11 +70,11 @@ export default function LandingFooter(): JSX.Element {
                                 type="button"
                                 className="mt-10 inline-flex items-center gap-x-4 group/cta cursor-pointer"
                             >
-                                <span className="font-mono text-xs tracking-[0.2em] uppercase text-white group-hover/cta:text-alpha transition-colors duration-300">
+                                <span className=" text-xs tracking-[0.2em] uppercase text-white group-hover/cta:text-alpha transition-colors duration-300">
                                     START PREDICTING
                                 </span>
                                 <span className="w-8 h-px bg-white/30 group-hover/cta:bg-alpha group-hover/cta:w-14 transition-all duration-300" />
-                                <span className="font-mono text-white/40 group-hover/cta:text-alpha transition-colors duration-300">
+                                <span className=" text-white/40 group-hover/cta:text-alpha transition-colors duration-300">
                                     &rarr;
                                 </span>
                             </button>
@@ -124,7 +124,7 @@ function Block({ className, children, index, label }: BlockProps): JSX.Element {
                 className,
             )}
         >
-            <div className="flex items-center justify-between font-mono text-[10px] tracking-[0.2em] uppercase">
+            <div className="flex items-center justify-between  text-[10px] tracking-[0.2em] uppercase">
                 <span className="text-white/40 group-hover/block:text-white/60 transition-colors duration-500">
                     INDEX / {index}
                 </span>
@@ -148,7 +148,7 @@ function NavGroup({ label, links }: NavGroupProps): JSX.Element {
         <div className="flex flex-col gap-y-4">
             <div className="flex items-center gap-x-2">
                 <span className="w-3 h-px bg-white/25" />
-                <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-white/40">
+                <span className=" text-[10px] tracking-[0.2em] uppercase text-white/40">
                     {label}
                 </span>
             </div>
@@ -183,19 +183,19 @@ function SocialTile({
             className="relative bg-neutral-950 hover:bg-dark-alpha p-5 flex flex-col justify-between gap-y-6 min-h-28 transition-colors duration-300 group/tile overflow-hidden"
         >
             <div className="flex items-start justify-between">
-                <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-white/40 group-hover/tile:text-alpha transition-colors duration-300">
+                <span className=" text-[10px] tracking-[0.2em] uppercase text-white/40 group-hover/tile:text-alpha transition-colors duration-300">
                     {name}
                 </span>
                 <MdArrowOutward className="size-3.5 text-white/30 group-hover/tile:text-white group-hover/tile:translate-x-0.5 group-hover/tile:-translate-y-0.5 transition-all duration-300" />
             </div>
-            <div className="font-mono text-[11px] tracking-wider text-white/80">{handle}</div>
+            <div className=" text-[11px] tracking-wider text-white/80">{handle}</div>
         </a>
     );
 }
 
 function BottomBar(): JSX.Element {
     return (
-        <div className="mt-12 pt-6 border-t border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-y-4 font-mono text-[10px] tracking-[0.2em] uppercase text-white/40">
+        <div className="mt-12 pt-6 border-t border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-y-4  text-[10px] tracking-[0.2em] uppercase text-white/40">
             <div className="flex items-center gap-x-3">
                 <span className="text-white/60">© SOLMARKET 2026</span>
                 <span className="w-6 h-px bg-white/15" />

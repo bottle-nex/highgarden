@@ -17,7 +17,7 @@
     border-radius: 4px;
     background: rgba(110, 122, 224, 0.06);
     border: 1px solid rgba(110, 122, 224, 0.1);
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 9px;
     letter-spacing: 0.22em;
     text-transform: uppercase;
@@ -30,7 +30,7 @@
     gap: 6px;
     padding: 4px 10px;
     border-radius: 4px;
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 9px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
@@ -73,7 +73,7 @@
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--m-border);
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 9px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
@@ -116,7 +116,7 @@
 }
 
 .metaLabel {
-    font-family: var(--m-font-mono);
+    font-family: var(--m-);
     font-size: 8px;
     letter-spacing: 0.25em;
     text-transform: uppercase;

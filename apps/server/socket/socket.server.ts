@@ -45,7 +45,7 @@ export default class SocketServer {
 
         this.wss.on("connection", (ws: WebSocket) => {
             const who = this.who(ws);
-            console.log(chalk.bgGreen('socket connected'), who);
+            console.log(chalk.bgGreen("socket connected"), who);
             this.client_subs.set(ws, new Set());
 
             ws.on("message", (raw: Buffer) => {
@@ -53,12 +53,12 @@ export default class SocketServer {
             });
 
             ws.on("close", () => {
-                console.log(chalk.bgRed('socket disconnected'), who);
+                console.log(chalk.bgRed("socket disconnected"), who);
                 this.on_client_close(ws);
             });
 
             ws.on("error", (err) => {
-                console.log(chalk.bgRed('socket disconnected with error'), who, err);
+                console.log(chalk.bgRed("socket disconnected with error"), who, err);
                 ws.close();
             });
         });

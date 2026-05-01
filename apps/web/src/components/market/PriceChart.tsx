@@ -128,7 +128,7 @@ export default function PriceChart({ data, label = 'PRICE HISTORY' }: Props): JS
                                 tick={{
                                     fill: 'rgba(255, 255, 255, 0.15)',
                                     fontSize: 8,
-                                    fontFamily: 'var(--m-font-mono)',
+                                    fontFamily: 'var(--m-)',
                                 }}
                                 tickFormatter={(v) => `${Math.round(v)}%`}
                                 tickLine={false}

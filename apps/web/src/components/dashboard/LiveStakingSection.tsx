@@ -88,10 +88,7 @@ export default function LiveStakingSection() {
             <Section>
                 <Frame>
                     No markets approved yet. Visit{' '}
-                    <Link
-                        href="/admin"
-                        className="text-white underline-offset-2 hover:underline"
-                    >
+                    <Link href="/admin" className="text-white underline-offset-2 hover:underline">
                         /admin
                     </Link>{' '}
                     to approve some.
@@ -103,11 +100,7 @@ export default function LiveStakingSection() {
     const yes_no = state.markets.map(dto_to_yes_no_market);
 
     return (
-        <StakingSection
-            yesNoMarkets={yes_no}
-            multiCandidateMarkets={[]}
-            multiOptionMarkets={[]}
-        />
+        <StakingSection yesNoMarkets={yes_no} multiCandidateMarkets={[]} multiOptionMarkets={[]} />
     );
 }
 

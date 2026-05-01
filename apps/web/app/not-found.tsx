@@ -12,7 +12,7 @@ export default function NotFound() {
             <section className="relative z-10 flex-1 flex flex-col justify-between px-8 md:px-12 lg:px-16 pt-32 pb-10">
                 <div className="flex items-start justify-between">
                     <div>
-                        <div className="font-mono text-[10px] tracking-[0.25em] uppercase text-alpha/80 mb-4">
+                        <div className=" text-[10px] tracking-[0.25em] uppercase text-alpha/80 mb-4">
                             ERROR · SIGNAL LOST
                         </div>
                         <div
@@ -23,18 +23,18 @@ export default function NotFound() {
                         >
                             404
                         </div>
-                        <div className="mt-2 font-mono text-[10px] md:text-xs tracking-[0.2em] uppercase text-white/35">
+                        <div className="mt-2  text-[10px] md:text-xs tracking-[0.2em] uppercase text-white/35">
                             PAGE NOT FOUND
                         </div>
                     </div>
 
                     <div className="hidden md:flex flex-col items-end gap-y-4">
-                        <div className="flex items-center gap-x-3 font-mono text-[10px] tracking-[0.2em] uppercase text-white/40">
+                        <div className="flex items-center gap-x-3  text-[10px] tracking-[0.2em] uppercase text-white/40">
                             <span>STATUS</span>
                             <span className="w-6 h-px bg-white/20" />
                             <span>OFF-CHAIN</span>
                         </div>
-                        <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-white/30">
+                        <div className=" text-[10px] tracking-[0.2em] uppercase text-white/30">
                             ROUTE / UNRESOLVED
                         </div>
                     </div>
@@ -51,10 +51,10 @@ export default function NotFound() {
                             <div className="mt-5 flex items-center gap-x-4">
                                 <div className="w-5 h-px bg-white/20" />
                                 <div>
-                                    <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-white/90">
+                                    <p className=" text-[10px] tracking-[0.15em] uppercase text-white/90">
                                         SOLMARKET ROUTER
                                     </p>
-                                    <p className="font-mono text-[10px] tracking-widest text-white/30 mt-0.5">
+                                    <p className=" text-[10px] tracking-widest text-white/30 mt-0.5">
                                         EDGE NODE · MAINNET
                                     </p>
                                 </div>
@@ -67,10 +67,10 @@ export default function NotFound() {
                             href="/"
                             className="relative block border border-white/10 hover:border-white/20 bg-white/3 backdrop-blur-sm px-8 py-5 group"
                         >
-                            <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-white/30 mb-3">
+                            <div className=" text-[10px] tracking-[0.2em] uppercase text-white/30 mb-3">
                                 DEAD END
                             </div>
-                            <div className="font-mono text-xs tracking-[0.2em] uppercase text-white group-hover:text-alpha transition-colors duration-300 flex items-center gap-x-3">
+                            <div className=" text-xs tracking-[0.2em] uppercase text-white group-hover:text-alpha transition-colors duration-300 flex items-center gap-x-3">
                                 <span>RETURN HOME</span>
                                 <span className="w-6 h-px bg-white/30 group-hover:bg-alpha group-hover:w-10 transition-all duration-300" />
                                 <span className="text-white/30 group-hover:text-alpha transition-colors duration-300">

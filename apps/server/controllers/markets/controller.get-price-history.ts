@@ -1,10 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "@solmarket/database";
-import {
-    ListingStatus,
-    type PriceHistoryDTO,
-    type PriceHistoryRange,
-} from "@solmarket/types";
+import { ListingStatus, type PriceHistoryDTO, type PriceHistoryRange } from "@solmarket/types";
 import { services } from "../../index";
 import ResponseWriter from "../../services/service.response";
 

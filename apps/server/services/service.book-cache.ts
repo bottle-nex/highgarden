@@ -230,8 +230,7 @@ export default class BookCache {
         for (const price of asks.levels.keys()) {
             if (bestAsk === null || price < bestAsk) bestAsk = price;
         }
-        const midPrice =
-            bestBid !== null && bestAsk !== null ? (bestBid + bestAsk) / 2 : null;
+        const midPrice = bestBid !== null && bestAsk !== null ? (bestBid + bestAsk) / 2 : null;
 
         this.tops.set(token_id, {
             bestBid,

@@ -1,43 +1,84 @@
 'use client';
-import { JSX, useState } from 'react';
+import { JSX } from 'react';
+import { IconType } from 'react-icons';
+import {
+    LuFlame,
+    LuBellRing,
+    LuSparkles,
+    LuLandmark,
+    LuTrophy,
+    LuBitcoin,
+    LuGlobe,
+    LuClapperboard,
+    LuCpu,
+    LuChartLine,
+    LuCloudSun,
+    LuVote,
+    LuAtSign,
+} from 'react-icons/lu';
 import { cn } from '@/lib/utils';
 import { CATEGORY_TABS } from '@/utils/constants';
+import { useCategoryStore } from '@/store/ui/useCategoryStore';
+import { AiOutlineStock } from 'react-icons/ai';
+
+const CATEGORY_ICONS: Record<(typeof CATEGORY_TABS)[number], IconType> = {
+    Trending: LuFlame,
+    Breaking: LuBellRing,
+    New: LuSparkles,
+    Politics: LuLandmark,
+    Sports: LuTrophy,
+    Crypto: LuBitcoin,
+    Geopolitics: LuGlobe,
+    Culture: LuClapperboard,
+    Tech: LuCpu,
+    Economy: LuChartLine,
+    Weather: LuCloudSun,
+    Elections: LuVote,
+    Mentions: LuAtSign,
+};
 
 export default function CategoryTabs(): JSX.Element {
-    const [active, setActive] = useState<string>(CATEGORY_TABS[0]);
+    const active = useCategoryStore((s) => s.activeCategory);
+    const setActive = useCategoryStore((s) => s.setActiveCategory);
 
     return (
-        <div className="w-full border-b border-white/8 bg-dark-alpha">
-            <div className="mx-auto w-full max-w-360 px-6 lg:px-8">
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-                    {CATEGORY_TABS.map((tab) => {
-                        const isActive = tab === active;
-                        return (
-                            <button
-                                key={tab}
-                                type="button"
-                                onClick={() => setActive(tab)}
-                                className={cn(
-                                    'group relative flex items-center px-5 py-5 text-[11px] tracking-widest uppercase transition-colors duration-200 whitespace-nowrap cursor-pointer',
-                                    isActive
-                                        ? 'text-white/80'
-                                        : 'text-white/45 hover:text-white/70',
-                                )}
-                            >
-                                {tab}
-                                <span
-                                    className={cn(
-                                        'absolute left-0 right-0 bottom-0 h-px bg-[#ffcc00] origin-center transition-transform duration-300',
-                                        isActive
-                                            ? 'scale-x-100'
-                                            : 'scale-x-0 group-hover:scale-x-100',
-                                    )}
-                                />
-                            </button>
-                        );
-                    })}
+        <aside className="sticky top-0 self-start h-screen w-54 shrink-0 border-r border-gray-500/15 bg-dark-alpha flex flex-col">
+            <div className="h-16 px-3 flex items-center shrink-0">
+                <div className="flex gap-x-2 items-center">
+                    <div className="h-8 w-8 rounded-sm bg-linear-to-b from-neutral-100 to-neutral-300 flex items-center justify-center ring-1 ring-black/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-2px_3px_rgba(0,0,0,0.35),0_2px_3px_rgba(0,0,0,0.5),0_4px_8px_-2px_rgba(0,0,0,0.45)] shrink-0">
+                        <AiOutlineStock className="text-neutral-800 size-5" />
+                    </div>
+
+                    <div className="h-8 w-full flex flex-col -space-y-0.5">
+                        <span className="text-gray-300 text-[14px] tracking-wider">Probexa</span>
+                        <span className="text-[11px] text-gray-600 tracking-wide">
+                            Solana markets
+                        </span>
+                    </div>
                 </div>
             </div>
-        </div>
+            <nav className="flex flex-col overflow-y-auto no-scrollbar flex-1 p-2">
+                {CATEGORY_TABS.map((tab) => {
+                    const isActive = tab === active;
+                    const Icon = CATEGORY_ICONS[tab];
+                    return (
+                        <button
+                            key={tab}
+                            type="button"
+                            onClick={() => setActive(tab)}
+                            className={cn(
+                                'group relative flex items-center gap-2.5 px-3 py-2 text-[14px] tracking-wider transition-colors duration-200 whitespace-nowrap cursor-pointer text-left rounded-sm bg-linear-to-b from-[#13181d] to-[#12171c]',
+                                isActive
+                                    ? 'text-white/80 shadow-xs shadow-black/3 inset-shadow-xs inset-shadow-white/2'
+                                    : 'text-white/50 bg-none hover:text-white/80 ',
+                            )}
+                        >
+                            <Icon className="size-4.25 shrink-0" aria-hidden />
+                            {tab}
+                        </button>
+                    );
+                })}
+            </nav>
+        </aside>
     );
 }

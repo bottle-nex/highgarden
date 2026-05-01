@@ -122,7 +122,7 @@ export default function LandingCtaSection(): JSX.Element {
                                 exit={{ opacity: 0, y: -16 }}
                                 transition={slideTransition}
                             >
-                                <div className="font-mono text-[10px] tracking-[0.25em] uppercase text-alpha/80 mb-4">
+                                <div className=" text-[10px] tracking-[0.25em] uppercase text-alpha/80 mb-4">
                                     {slide.context}
                                 </div>
                                 <div
@@ -133,7 +133,7 @@ export default function LandingCtaSection(): JSX.Element {
                                 >
                                     {slide.stat.value}
                                 </div>
-                                <div className="mt-2 font-mono text-[10px] md:text-xs tracking-[0.2em] uppercase text-white/35">
+                                <div className="mt-2  text-[10px] md:text-xs tracking-[0.2em] uppercase text-white/35">
                                     {slide.stat.label}
                                 </div>
                             </motion.div>
@@ -141,7 +141,7 @@ export default function LandingCtaSection(): JSX.Element {
 
                         {/* Right: metadata + slide nav */}
                         <div className="flex flex-col items-end gap-y-4">
-                            <div className="flex items-center gap-x-3 font-mono text-[10px] tracking-[0.2em] uppercase text-white/40">
+                            <div className="flex items-center gap-x-3  text-[10px] tracking-[0.2em] uppercase text-white/40">
                                 <span>PROOF</span>
                                 <span className="w-6 h-px bg-white/20" />
                                 <span>ECOSYSTEM VOICES</span>
@@ -153,7 +153,7 @@ export default function LandingCtaSection(): JSX.Element {
                                         key={i}
                                         onClick={() => goToSlide(i)}
                                         className={cn(
-                                            'w-7 h-7 flex items-center justify-center font-mono text-[10px] border transition-all duration-300 rounded-none hover:bg-transparent',
+                                            'w-7 h-7 flex items-center justify-center  text-[10px] border transition-all duration-300 rounded-none hover:bg-transparent',
                                             i === activeSlide
                                                 ? 'border-white bg-white text-black'
                                                 : 'border-white/15 text-white/30 hover:border-white/40 hover:text-white/60',
@@ -190,10 +190,10 @@ export default function LandingCtaSection(): JSX.Element {
                                     <div className="mt-5 flex items-center gap-x-4">
                                         <div className="w-5 h-px bg-white/20" />
                                         <div>
-                                            <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-white/90">
+                                            <p className=" text-[10px] tracking-[0.15em] uppercase text-white/90">
                                                 {slide.author}
                                             </p>
-                                            <p className="font-mono text-[10px] tracking-widest text-white/30 mt-0.5">
+                                            <p className=" text-[10px] tracking-widest text-white/30 mt-0.5">
                                                 {slide.role}
                                             </p>
                                         </div>
@@ -205,12 +205,12 @@ export default function LandingCtaSection(): JSX.Element {
                         {/* CTA block */}
                         <div className="relative shrink-0">
                             <div className="relative border border-white/10 hover:border-white/20 bg-white/3 backdrop-blur-sm px-8 py-5 cursor-pointer group">
-                                <div className="font-mono text-[10px] tracking-[0.2em] uppercase text-white/30 mb-3">
+                                <div className=" text-[10px] tracking-[0.2em] uppercase text-white/30 mb-3">
                                     GET STARTED
                                 </div>
                                 <button
                                     type="button"
-                                    className="font-mono text-xs tracking-[0.2em] uppercase text-white group-hover:text-alpha transition-colors duration-300 flex items-center gap-x-3 group"
+                                    className=" text-xs tracking-[0.2em] uppercase text-white group-hover:text-alpha transition-colors duration-300 flex items-center gap-x-3 group"
                                 >
                                     <span>START TRADING</span>
                                     <span className="w-6 h-px bg-white/30 group-hover:bg-alpha group-hover:w-10 transition-all duration-300" />

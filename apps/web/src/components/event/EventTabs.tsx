@@ -20,7 +20,7 @@ export default function EventTabs({ description }: Props): JSX.Element {
                         key={t}
                         type="button"
                         onClick={() => set_active(t)}
-                        className={`pb-3 font-mono text-[10px] tracking-[0.25em] uppercase border-b-2 transition-colors cursor-pointer ${
+                        className={`pb-3  text-[10px] tracking-[0.25em] uppercase border-b-2 transition-colors cursor-pointer ${
                             active === t
                                 ? 'border-yellow-300/80 text-white'
                                 : 'border-transparent text-white/40 hover:text-white/70'

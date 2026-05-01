@@ -40,7 +40,7 @@ export default function EventRelatedMarkets({ excludeId }: Props): JSX.Element |
 
     return (
         <section className="space-y-4">
-            <h2 className="font-mono text-[10px] tracking-[0.25em] uppercase text-white/45">
+            <h2 className=" text-[10px] tracking-[0.25em] uppercase text-white/45">
                 RELATED MARKETS
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -53,7 +53,7 @@ export default function EventRelatedMarkets({ excludeId }: Props): JSX.Element |
                         <h3 className="text-[14px] text-white/85 leading-snug line-clamp-2 min-h-[2.6em]">
                             {m.name}
                         </h3>
-                        <div className="mt-4 pt-4 border-t border-white/8 flex items-center justify-between font-mono text-[10px] tracking-[0.22em] uppercase">
+                        <div className="mt-4 pt-4 border-t border-white/8 flex items-center justify-between  text-[10px] tracking-[0.22em] uppercase">
                             <span className="text-white/45">VOL {format_usd(m.volume24hUsd)}</span>
                             <span className="text-white/30">→</span>
                         </div>
