@@ -1,20 +1,23 @@
-import { WebSocketServer, type WebSocket } from "ws";
+import { WebSocket, WebSocketServer } from "ws";
 import type { Server, IncomingMessage } from "http";
 import type { Duplex } from "stream";
-import { verifySessionJwt, type SessionClaims } from "../services/service.jwt";
+import { verifySessionJwt } from "../services/service.jwt";
 import RedisSubscriber from "./socket.subscriber";
 import { SERVER_MESSAGE_TYPE, CLIENT_MESSAGE_TYPE } from "@solmarket/types";
-import type { ServerMessage, ClientMessage } from "@solmarket/types";
+import type { ServerMessage, ClientMessage, CustomWebSocketFields } from "@solmarket/types";
 import type MirrorControlPublisher from "../services/service.mirror-control";
 import type BookCache from "../services/service.book-cache";
 import chalk from "chalk";
 
+export interface CustomWebSocket extends WebSocket, CustomWebSocketFields {}
+
 export default class SocketServer {
     private wss: WebSocketServer;
     public readonly subscriber: RedisSubscriber;
-    private client_subs = new Map<WebSocket, Set<string>>();
-    private token_clients = new Map<string, Set<WebSocket>>();
-    private client_claims = new Map<WebSocket, SessionClaims>();
+    private socket_mapping = new Map<string, CustomWebSocket>(); // Map<ws.id, CustomWebSocket>
+    private email_socket = new Map<string, string>();             // Map<email, ws.id>
+    private client_subs = new Map<string, Set<string>>();         // Map<ws.id, Set<token_id>>
+    private token_clients = new Map<string, Set<string>>();       // Map<token_id, Set<ws.id>>
 
     constructor(
         server: Server,
@@ -37,48 +40,64 @@ export default class SocketServer {
                 socket.destroy();
                 return;
             }
-            this.wss.handleUpgrade(req, socket, head, (ws) => {
-                this.client_claims.set(ws, claims);
+            this.wss.handleUpgrade(req, socket, head, (raw_ws) => {
+                const ws = raw_ws as CustomWebSocket;
+                ws.id = crypto.randomUUID();
+                ws.user = { id: claims.sub, email: claims.email };
                 this.wss.emit("connection", ws, req);
             });
         });
 
-        this.wss.on("connection", (ws: WebSocket) => {
-            const who = this.who(ws);
-            console.log(chalk.bgGreen("socket connected"), who);
-            this.client_subs.set(ws, new Set());
+        this.wss.on("connection", (raw_ws: WebSocket) => {
+            const ws = raw_ws as CustomWebSocket;
+            console.log(chalk.bgGreen("socket connected"), ws.user.email, chalk.gray(ws.id));
+
+            this.evict_existing(ws.user.email, ws.id);
+
+            this.socket_mapping.set(ws.id, ws);
+            this.email_socket.set(ws.user.email, ws.id);
+            this.client_subs.set(ws.id, new Set());
 
             ws.on("message", (raw: Buffer) => {
                 this.on_client_message(ws, raw.toString());
             });
 
             ws.on("close", () => {
-                console.log(chalk.bgRed("socket disconnected"), who);
+                console.log(chalk.bgRed("socket disconnected"), ws.user.email, chalk.gray(ws.id));
                 this.on_client_close(ws);
             });
 
             ws.on("error", (err) => {
-                console.log(chalk.bgRed("socket disconnected with error"), who, err);
+                console.log(chalk.bgRed("socket disconnected with error"), ws.user.email, chalk.gray(ws.id), err);
                 ws.close();
             });
         });
     }
 
-    private who(ws: WebSocket): string {
-        return this.client_claims.get(ws)?.email ?? "unknown";
+    private evict_existing(email: string, new_ws_id: string): void {
+        const old_ws_id = this.email_socket.get(email);
+        if (!old_ws_id || old_ws_id === new_ws_id) return;
+
+        const old_ws = this.socket_mapping.get(old_ws_id);
+        console.log(chalk.yellow("[ws] evicting old socket for"), email, chalk.gray(old_ws_id));
+
+        this.cleanup_socket(old_ws_id, email);
+        old_ws?.close(1000, "replaced by new connection");
     }
 
     public async shutdown(): Promise<void> {
-        for (const ws of this.client_subs.keys()) {
+        for (const ws of this.socket_mapping.values()) {
             ws.close(1001, "server shutting down");
         }
+        this.socket_mapping.clear();
+        this.email_socket.clear();
         this.client_subs.clear();
         this.token_clients.clear();
         this.wss.close();
         await this.subscriber.shutdown();
     }
 
-    private on_client_message(ws: WebSocket, raw: string): void {
+    private on_client_message(ws: CustomWebSocket, raw: string): void {
         const msg = this.parse_client_message(raw);
         if (!msg) {
             this.send(ws, { type: SERVER_MESSAGE_TYPE.ERROR, message: "invalid message format" });
@@ -100,8 +119,8 @@ export default class SocketServer {
         }
     }
 
-    private handle_subscribe(ws: WebSocket, token_id: string): void {
-        const subs = this.client_subs.get(ws);
+    private handle_subscribe(ws: CustomWebSocket, token_id: string): void {
+        const subs = this.client_subs.get(ws.id);
         if (!subs) return;
 
         if (subs.has(token_id)) {
@@ -119,17 +138,17 @@ export default class SocketServer {
             clients = new Set();
             this.token_clients.set(token_id, clients);
         }
-        clients.add(ws);
+        clients.add(ws.id);
 
-        console.log(chalk.green("→ subscribe  "), this.who(ws), token_id);
+        console.log(chalk.green("→ subscribe  "), ws.user.email, token_id);
 
         this.subscriber.subscribe(token_id);
         this.fetch_and_send_book(ws, token_id);
         this.send(ws, { type: SERVER_MESSAGE_TYPE.SUBSCRIBED, token_id });
     }
 
-    private handle_unsubscribe(ws: WebSocket, token_id: string): void {
-        const subs = this.client_subs.get(ws);
+    private handle_unsubscribe(ws: CustomWebSocket, token_id: string): void {
+        const subs = this.client_subs.get(ws.id);
         if (!subs || !subs.has(token_id)) {
             this.send(ws, {
                 type: SERVER_MESSAGE_TYPE.ERROR,
@@ -141,40 +160,48 @@ export default class SocketServer {
         subs.delete(token_id);
         const clients = this.token_clients.get(token_id);
         if (clients) {
-            clients.delete(ws);
+            clients.delete(ws.id);
             if (clients.size === 0) {
                 this.token_clients.delete(token_id);
             }
         }
 
-        console.log(chalk.yellow("← unsubscribe"), this.who(ws), token_id);
+        console.log(chalk.yellow("← unsubscribe"), ws.user.email, token_id);
 
         this.subscriber.unsubscribe(token_id);
         this.send(ws, { type: SERVER_MESSAGE_TYPE.UNSUBSCRIBED, token_id });
     }
 
-    private on_client_close(ws: WebSocket): void {
-        const who = this.who(ws);
-        const subs = this.client_subs.get(ws);
+    private on_client_close(ws: CustomWebSocket): void {
+        // Only clear email mapping if this socket is still the active one —
+        // evict_existing may have already replaced it with a newer connection.
+        if (this.email_socket.get(ws.user.email) === ws.id) {
+            this.email_socket.delete(ws.user.email);
+        }
+        this.cleanup_socket(ws.id, ws.user.email);
+    }
+
+    private cleanup_socket(ws_id: string, email: string): void {
+        const subs = this.client_subs.get(ws_id);
         if (subs) {
             for (const token_id of subs) {
                 const clients = this.token_clients.get(token_id);
                 if (clients) {
-                    clients.delete(ws);
+                    clients.delete(ws_id);
                     if (clients.size === 0) {
                         this.token_clients.delete(token_id);
                     }
                 }
-                console.log(chalk.yellow("← unsubscribe"), chalk.gray("[disconnect]"), who, token_id);
+                console.log(chalk.yellow("← unsubscribe"), chalk.gray("[disconnect]"), email, token_id);
                 this.subscriber.unsubscribe(token_id);
             }
         }
-        this.client_subs.delete(ws);
-        this.client_claims.delete(ws);
+        this.client_subs.delete(ws_id);
+        this.socket_mapping.delete(ws_id);
     }
 
-    private fetch_and_send_book(ws: WebSocket, token_id: string): void {
-        console.log(chalk.cyan("[ws:book] fetching"), this.who(ws), token_id);
+    private fetch_and_send_book(ws: CustomWebSocket, token_id: string): void {
+        console.log(chalk.cyan("[ws:book] fetching"), ws.user.email, token_id);
         void (async () => {
             try {
                 const res = await fetch(`https://clob.polymarket.com/book?token_id=${token_id}`);
@@ -199,7 +226,7 @@ export default class SocketServer {
                     console.warn(chalk.yellow("[ws:book] ws closed before send"), token_id, chalk.gray(`ws_state=${ws.readyState}`));
                     return;
                 }
-                console.log(chalk.cyan("→ book fetch "), this.who(ws), token_id, chalk.gray(`bids=${event.bids.length} asks=${event.asks.length}`));
+                console.log(chalk.cyan("→ book fetch "), ws.user.email, token_id, chalk.gray(`bids=${event.bids.length} asks=${event.asks.length}`));
                 this.send(ws, { type: SERVER_MESSAGE_TYPE.MARKET, event });
             } catch (err) {
                 console.warn(chalk.yellow("[ws:book] fetch error"), token_id, err);
@@ -208,10 +235,8 @@ export default class SocketServer {
     }
 
     private route_redis_message(token_id: string, data: string): void {
-        const clients = this.token_clients.get(token_id);
-        if (!clients || clients.size === 0) {
-            return;
-        }
+        const ws_ids = this.token_clients.get(token_id);
+        if (!ws_ids || ws_ids.size === 0) return;
 
         let event: unknown;
         try {
@@ -222,8 +247,9 @@ export default class SocketServer {
 
         const payload = JSON.stringify({ type: SERVER_MESSAGE_TYPE.MARKET, event });
 
-        for (const ws of clients) {
-            if (ws.readyState === ws.OPEN) {
+        for (const ws_id of ws_ids) {
+            const ws = this.socket_mapping.get(ws_id);
+            if (ws && ws.readyState === ws.OPEN) {
                 ws.send(payload);
             }
         }
@@ -231,13 +257,13 @@ export default class SocketServer {
 
     public snapshot_clients(): Map<string, number> {
         const counts = new Map<string, number>();
-        for (const [token_id, sockets] of this.token_clients) {
-            counts.set(token_id, sockets.size);
+        for (const [token_id, ws_ids] of this.token_clients) {
+            counts.set(token_id, ws_ids.size);
         }
         return counts;
     }
 
-    private authenticate(req: IncomingMessage): SessionClaims | null {
+    private authenticate(req: IncomingMessage) {
         try {
             const url = new URL(req.url || "", `http://${req.headers.host}`);
             const token = url.searchParams.get("token");
@@ -248,7 +274,7 @@ export default class SocketServer {
         }
     }
 
-    private send(ws: WebSocket, msg: ServerMessage): void {
+    private send(ws: CustomWebSocket, msg: ServerMessage): void {
         if (ws.readyState === ws.OPEN) {
             ws.send(JSON.stringify(msg));
         }

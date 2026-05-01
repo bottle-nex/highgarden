@@ -11,7 +11,6 @@ import { useSubscribeEventHandlers } from '@/lib/socket/useSubscribeEventHandler
 import { enqueueBookUpdate } from '@/store/book/useOrderBookStore';
 import { SocketEventHandlers } from '@/lib/socket/socket-event-handlers';
 
-import EventBreadcrumb from './EventBreadcrumb';
 import EventTitleBlock from './EventTitleBlock';
 import ProbabilityHeadline from './ProbabilityHeadline';
 import EventPriceChart from './EventPriceChart';
@@ -19,6 +18,7 @@ import EventOrderBook from './EventOrderBook';
 import EventTradePanel from './EventTradePanel';
 import EventTabs from './EventTabs';
 import EventRelatedMarkets from './EventRelatedMarkets';
+import EventBreadcrumb from './EventBreadcrumb';
 
 function format_usd(usd: number | null): string {
     if (usd === null) return '—';

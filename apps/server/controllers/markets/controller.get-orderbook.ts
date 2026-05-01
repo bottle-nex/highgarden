@@ -55,30 +55,30 @@ export default class GetOrderBookController {
             let status: OrderBookStatus;
             if (!tracked) {
                 status = "NOT_TRACKED";
-                // Lazy-arm: opening the page asks the system to start mirroring
-                // this market. Best-effort — the next refresh will see TRACKED.
-                void services.mirror_control.subscribe([p.yesTokenId, p.noTokenId]).catch(() => {});
-                void services.book_cache.track([p.yesTokenId, p.noTokenId]).catch(() => {});
-                void services.token_index
-                    .write([
-                        {
-                            token_id: p.yesTokenId,
-                            entry: {
-                                marketId: listing.market.id,
-                                marketName: listing.market.name,
-                                outcome: "YES",
-                            },
+                // Write token metadata for the mirror's token index — idempotent
+                // and safe to call on every miss. Do NOT call mirror_control.subscribe
+                // here: that goes through the WS subscriber's ref counter, so a
+                // direct call would add a phantom ref the subscriber never removes,
+                // preventing the mirror from fully unsubscribing when all WS clients
+                // leave the market.
+                void services.token_index.write([
+                    {
+                        token_id: p.yesTokenId,
+                        entry: {
+                            marketId: listing.market.id,
+                            marketName: listing.market.name,
+                            outcome: "YES",
                         },
-                        {
-                            token_id: p.noTokenId,
-                            entry: {
-                                marketId: listing.market.id,
-                                marketName: listing.market.name,
-                                outcome: "NO",
-                            },
+                    },
+                    {
+                        token_id: p.noTokenId,
+                        entry: {
+                            marketId: listing.market.id,
+                            marketName: listing.market.name,
+                            outcome: "NO",
                         },
-                    ])
-                    .catch(() => {});
+                    },
+                ]).catch(() => {});
             } else if (
                 (depth_view?.bids.length ?? 0) === 0 &&
                 (depth_view?.asks.length ?? 0) === 0

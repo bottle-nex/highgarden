@@ -46,6 +46,7 @@ export default class RedisSubscriber {
         });
         // First user interest in this token — persist intent (SADD + nudge)
         // and start caching the book so REST snapshot calls see live data.
+        console.log(chalk.green("[ws:server] refs 0→1, publishing subscribe"), token_id);
         Promise.all([
             this.mirror_control.subscribe([token_id]),
             this.book_cache.track([token_id]),

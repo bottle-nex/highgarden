@@ -92,6 +92,13 @@ export default class PolymarketControlListener {
         const to_add = desired.filter((id) => !current_set.has(id));
         const to_remove = current.filter((id) => !desired_set.has(id));
 
+        console.log(
+            chalk.cyan("[poly:control] converge"),
+            chalk.gray(`desired=${desired.length} current=${current.length} to_add=${to_add.length} to_remove=${to_remove.length}`),
+            to_add.length > 0 ? chalk.green(`+${to_add.join(",")}`) : "",
+            to_remove.length > 0 ? chalk.red(`-${to_remove.join(",")}`) : "",
+        );
+
         for (const id of to_add) this.market.subscribe(id);
         for (const id of to_remove) this.market.unsubscribe(id);
 

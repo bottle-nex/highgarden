@@ -67,6 +67,19 @@ export type ServerMessageHandler<T extends SERVER_MESSAGE_TYPE> = (
   msg: Extract<ServerMessage, { type: T }>,
 ) => void;
 
+// ─── Custom WebSocket ─────────────────────────────────────────────────────────
+
+export interface UserSocketPayload {
+  id: string;
+  email: string;
+  name?: string;
+}
+
+export interface CustomWebSocketFields {
+  id: string;
+  user: UserSocketPayload;
+}
+
 // ─── Close-code helpers ───────────────────────────────────────────────────────
 
 const INTENTIONAL_CLOSE_CODES = new Set<number>([

@@ -33,22 +33,35 @@ export abstract class SocketBase {
     protected abstract handle_message(msg: unknown): void;
 
     public async connect(): Promise<void> {
-        if (this.state === "open" || this.state === "connecting") return;
+        console.log(chalk.blue(`[poly:${this.name}] connect()`), chalk.gray(`state=${this.state} stopped=${this.stopped}`));
+        if (this.state === "open" || this.state === "connecting") {
+            console.log(chalk.gray(`[poly:${this.name}] connect() skipped — already ${this.state}`));
+            return;
+        }
         this.stopped = false;
+        this.clear_timers(); // cancel any pending reconnect so this connect wins
         this.set_state("connecting");
 
+        let ws: WebSocket;
         try {
-            this.ws = new WebSocket(this.get_url());
+            ws = new WebSocket(this.get_url());
         } catch (err) {
             console.error(`[poly:${this.name}] ctor failed`, err);
             this.schedule_reconnect();
             return;
         }
 
-        this.ws.on("open", () => this.on_open());
-        this.ws.on("message", (data) => this.on_message(data.toString()));
-        this.ws.on("close", (code, reason) => this.on_close(code, reason.toString()));
-        this.ws.on("error", (err) => {
+        this.ws = ws;
+        ws.on("open", () => {
+            if (this.ws !== ws) return; // stale — a newer ws was already assigned
+            this.on_open();
+        });
+        ws.on("message", (data) => this.on_message(data.toString()));
+        ws.on("close", (code, reason) => {
+            if (this.ws !== ws) return; // stale close from a replaced ws — ignore
+            this.on_close(code, reason.toString());
+        });
+        ws.on("error", (err) => {
             console.error(`[poly:${this.name}] error`, err);
         });
     }
@@ -75,12 +88,17 @@ export abstract class SocketBase {
     }
 
     private on_open(): void {
+        console.log(chalk.green(`[poly:${this.name}] ws opened`));
         this.set_state("open");
         this.reconnect_delay = POLY_WS.reconnect_initial_ms;
 
         const frame = this.get_subscribe_frame();
         if (frame) {
+            const ids = (frame as { assets_ids?: string[] }).assets_ids ?? [];
+            console.log(chalk.green(`[poly:${this.name}] sending subscribe frame`), chalk.gray(`tokens=${ids.length}`), ids);
             this.ws!.send(JSON.stringify(frame));
+        } else {
+            console.log(chalk.yellow(`[poly:${this.name}] no tokens in registry at open — skipping subscribe frame`));
         }
 
         while (this.send_queue.length > 0 && this.ws) {
