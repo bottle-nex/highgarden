@@ -14,24 +14,31 @@ import { createHash, randomBytes } from "crypto";
 
 import type { Contract } from "./contract";
 import { IDL } from "./idl";
+
+export { IDL } from "./idl";
+export type { Contract } from "./contract";
+export * from "./types";
+
 import {
+  CONFIG_SEED,
+  MARKET_SEED,
+  NONCE_SEED,
+  POSITION_SEED,
+  TREASURY_AUTHORITY_SEED,
+  TREASURY_VAULT_SEED,
+} from "./types";
+import type {
   AdminMarketParams,
   ClaimParams,
-  CONFIG_SEED,
   ConfigAccount,
   CreateMarketParams,
   CreateMarketResult,
   InitializeConfigParams,
-  MARKET_SEED,
   MarketAccount,
-  NONCE_SEED,
   PlaceOrderParams,
-  POSITION_SEED,
   QuoteInput,
   ResolveMarketParams,
   SignedQuoteType,
-  TREASURY_AUTHORITY_SEED,
-  TREASURY_VAULT_SEED,
   UserPositionAccount,
 } from "./types";
 

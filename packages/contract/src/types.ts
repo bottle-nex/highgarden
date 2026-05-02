@@ -1,6 +1,8 @@
-import { BN, IdlAccounts, IdlTypes } from "@coral-xyz/anchor";
-import { Contract } from "./contract";
-import { PublicKey, TransactionInstruction, TransactionSignature } from "@solana/web3.js";
+import { BN } from "@coral-xyz/anchor";
+import type { IdlAccounts, IdlTypes } from "@coral-xyz/anchor";
+import type { Contract } from "./contract";
+import { PublicKey } from "@solana/web3.js";
+import type { TransactionInstruction, TransactionSignature } from "@solana/web3.js";
 
 export { IDL } from "./idl";
 export type { Contract } from "./contract";

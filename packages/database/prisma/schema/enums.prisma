@@ -17,9 +17,24 @@ enum MarketStatus {
 
 enum HedgeStatus {
   PENDING
+  HEDGING
   FILLED
   PARTIAL
   FAILED
+}
+
+enum HedgerEventLevel {
+  INFO
+  WARN
+  ERROR
+  ALERT
+}
+
+enum ResolverStage {
+  PENDING
+  POLYMARKET_RESOLVED
+  SOLANA_RESOLVED
+  REDEEMED
 }
 
 enum Chain {

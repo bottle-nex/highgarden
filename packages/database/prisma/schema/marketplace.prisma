@@ -110,21 +110,31 @@ model Hedge {
   fill   Fill   @relation(fields: [fillId], references: [id])
 
   polymarketOrderId String?
+  polymarketTokenId String?
+  polymarketSide    Side?
+  bullJobId         String?     @unique
+  clientOrderId     String?     @unique
+  requestedSize     Int?
   status            HedgeStatus @default(PENDING)
   filledSize        Int         @default(0)
   avgPrice          Int?
   attempts          Int         @default(0)
   lastError         String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
 }
 
 model Exposure {
-  marketId    String   @id
-  market      Market   @relation(fields: [marketId], references: [id])
-  unhedgedUsd Int      @default(0)
-  updatedAt   DateTime @updatedAt
+  marketId        String    @id
+  market          Market    @relation(fields: [marketId], references: [id])
+  unhedgedUsd     Int       @default(0)
+  trackerEnabled  Boolean   @default(true)
+  paused          Boolean   @default(false)
+  lastIncrementAt DateTime?
+  lastDecrementAt DateTime?
+  updatedAt       DateTime  @updatedAt
 }
 
 model TreasuryBalance {

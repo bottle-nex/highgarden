@@ -1,0 +1,35 @@
+model BotCursor {
+    id                       Int       @id @default(1)
+    lastProcessedSignature   String?
+    lastProcessedSlot        BigInt?
+    liveStreamConnectedAt    DateTime?
+    liveStreamDisconnectedAt DateTime?
+    pollerLastRunAt          DateTime?
+    updatedAt                DateTime  @updatedAt
+}
+
+model ResolverState {
+    marketId               String         @id
+    stage                  ResolverStage  @default(PENDING)
+    polymarketResolvedAt   DateTime?
+    winningOutcome         Outcome?
+    solanaResolveTxSig     String?
+    solanaResolvedAt       DateTime?
+    polymarketRedeemedAt   DateTime?
+    polymarketRedeemTxHash String?
+    notes                  String?
+    updatedAt              DateTime       @updatedAt
+}
+
+model HedgerEvent {
+    id        BigInt           @id @default(autoincrement())
+    ts        DateTime         @default(now())
+    level     HedgerEventLevel
+    category  String
+    message   String
+    payload   Json?
+
+    @@index([ts])
+    @@index([level])
+    @@index([category])
+}
