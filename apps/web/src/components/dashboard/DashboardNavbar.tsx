@@ -37,7 +37,7 @@ export default function DashboardNavbar(): JSX.Element {
                     <Button
                         onClick={() => setDepositDropdown(!openDepositDropdown)}
                         className={cn(
-                            'h-9 px-5 rounded-full text-[13px] font-medium tracking-tight',
+                            'h-9 px-5 rounded-sm text-[13px] font-medium tracking-tight',
                             'bg-dark-base/85 text-neutral-200 hover:text-white hover:bg-dark-base',
                             'border border-white/6',
                             'shadow-[0_2px_10px_-2px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.05)]',

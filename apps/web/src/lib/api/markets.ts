@@ -1,5 +1,6 @@
 import type {
     MarketDTO,
+    NewsArticleDTO,
     OrderBookSnapshotDTO,
     PriceHistoryDTO,
     PriceHistoryRange,
@@ -57,6 +58,28 @@ export async function fetch_market_recent_trades(
 ): Promise<RecentTradeDTO[]> {
     try {
         const { data } = await apiClient.get(`/markets/${market_id}/trades`, {
+            params: { limit },
+        });
+        return data?.data ?? [];
+    } catch {
+        return [];
+    }
+}
+
+export async function fetch_market_news(market_id: string, limit = 12): Promise<NewsArticleDTO[]> {
+    try {
+        const { data } = await apiClient.get(`/markets/${market_id}/news`, {
+            params: { limit },
+        });
+        return data?.data ?? [];
+    } catch {
+        return [];
+    }
+}
+
+export async function fetch_recent_news(limit = 10): Promise<NewsArticleDTO[]> {
+    try {
+        const { data } = await apiClient.get(`/markets/news/recent`, {
             params: { limit },
         });
         return data?.data ?? [];

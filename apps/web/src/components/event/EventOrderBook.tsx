@@ -54,12 +54,9 @@ export default function EventOrderBook({
         if (!container || !spread) return;
         const container_rect = container.getBoundingClientRect();
         const spread_rect = spread.getBoundingClientRect();
-        const offset_within_container =
-            spread_rect.top - container_rect.top + container.scrollTop;
+        const offset_within_container = spread_rect.top - container_rect.top + container.scrollTop;
         const target =
-            offset_within_container -
-            container.clientHeight / 2 +
-            spread_rect.height / 2;
+            offset_within_container - container.clientHeight / 2 + spread_rect.height / 2;
         container.scrollTo({ top: target, behavior: 'smooth' });
     }, []);
 
@@ -94,10 +91,7 @@ export default function EventOrderBook({
                     </span>
                     <span className="font-medium">Order Book</span>
                 </button>
-                <div
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-2"
-                >
+                <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
                     <ToolTipComponent content="Recenter book">
                         <Button
                             type="button"
@@ -137,67 +131,117 @@ export default function EventOrderBook({
             >
                 <div>
                     <div className="py-6">
-                    <div className="grid grid-cols-3 gap-x-10 pr-5 text-[9.5px] tracking-[0.32em] uppercase text-white/35 pb-4 border-b border-white/7">
-                        <span className="text-right">Price</span>
-                        <span className="text-right">Shares</span>
-                        <span className="text-right">Total</span>
-                    </div>
-
-                    {!book.isHydrated && (
-                        <div className="py-12 text-center text-[10px] tracking-[0.3em] uppercase text-white/30">
-                            Loading book…
+                        <div className="grid grid-cols-3 gap-x-10 pr-5 text-[9.5px] tracking-[0.32em] uppercase text-white/35 pb-4 border-b border-white/7">
+                            <span className="text-right">Price</span>
+                            <span className="text-right">Shares</span>
+                            <span className="text-right">Total</span>
                         </div>
-                    )}
 
-                    {book.isHydrated && book.status === 'NOT_TRACKED' && (
-                        <div className="py-12 text-center space-y-3">
-                            <div className="text-[10px] tracking-[0.3em] uppercase text-amber-300/70">
-                                Market data starting up
-                            </div>
-                            <div className="text-[11.5px] text-white/45 leading-relaxed">
-                                The mirror is being notified now. Refresh in a few seconds.
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => window.location.reload()}
-                                className="mt-1 px-4 py-1.5 rounded-md border border-white/10 hover:border-white/25 text-[10px] tracking-[0.3em] uppercase text-white/65 hover:text-white cursor-pointer"
-                            >
-                                Retry
-                            </button>
-                        </div>
-                    )}
-
-                    {book.isHydrated &&
-                        book.status !== 'NOT_TRACKED' &&
-                        asks.length === 0 &&
-                        bids.length === 0 && (
+                        {!book.isHydrated && (
                             <div className="py-12 text-center text-[10px] tracking-[0.3em] uppercase text-white/30">
-                                No open orders
+                                Loading book…
                             </div>
                         )}
 
-                    {book.isHydrated && (asks.length > 0 || bids.length > 0) && (
-                        <div ref={scroll_ref} className="h-105 overflow-y-auto">
-                            <div className="pt-3.5 space-y-0.5">
-                                {asks.length === 0 ? (
-                                    <div className="py-4 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
-                                        No asks
-                                    </div>
-                                ) : (
-                                    asks
-                                        .map((lvl, i) => {
-                                            const cum = book.cumulativeAsks[i] ?? lvl.size;
+                        {book.isHydrated && book.status === 'NOT_TRACKED' && (
+                            <div className="py-12 text-center space-y-3">
+                                <div className="text-[10px] tracking-[0.3em] uppercase text-amber-300/70">
+                                    Market data starting up
+                                </div>
+                                <div className="text-[11.5px] text-white/45 leading-relaxed">
+                                    The mirror is being notified now. Refresh in a few seconds.
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => window.location.reload()}
+                                    className="mt-1 px-4 py-1.5 rounded-md border border-white/10 hover:border-white/25 text-[10px] tracking-[0.3em] uppercase text-white/65 hover:text-white cursor-pointer"
+                                >
+                                    Retry
+                                </button>
+                            </div>
+                        )}
+
+                        {book.isHydrated &&
+                            book.status !== 'NOT_TRACKED' &&
+                            asks.length === 0 &&
+                            bids.length === 0 && (
+                                <div className="py-12 text-center text-[10px] tracking-[0.3em] uppercase text-white/30">
+                                    No open orders
+                                </div>
+                            )}
+
+                        {book.isHydrated && (asks.length > 0 || bids.length > 0) && (
+                            <div ref={scroll_ref} className="h-105 overflow-y-auto">
+                                <div className="pt-3.5 space-y-0.5">
+                                    {asks.length === 0 ? (
+                                        <div className="py-4 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
+                                            No asks
+                                        </div>
+                                    ) : (
+                                        asks
+                                            .map((lvl, i) => {
+                                                const cum = book.cumulativeAsks[i] ?? lvl.size;
+                                                const w = (cum / max_total) * 100;
+                                                return (
+                                                    <div
+                                                        key={`ask-${lvl.price}`}
+                                                        className="relative grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
+                                                    >
+                                                        <div
+                                                            className="absolute inset-y-0 right-0 bg-rose-500/20 rounded-l-sm pointer-events-none"
+                                                            style={{ width: `${w}%` }}
+                                                        />
+                                                        <span className="relative text-right font-medium text-rose-300">
+                                                            {format_cents(lvl.price)}
+                                                        </span>
+                                                        <span className="relative text-right text-white font-light">
+                                                            {format_size(lvl.size)}
+                                                        </span>
+                                                        <span className="relative text-right text-white/40 font-light">
+                                                            {format_total(lvl.price, lvl.size)}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })
+                                            .reverse()
+                                    )}
+                                </div>
+
+                                <div
+                                    ref={spread_ref}
+                                    className="my-5 flex items-center justify-between px-1 py-2.5 border-y border-white/6"
+                                >
+                                    <span className="text-[9.5px] tracking-[0.32em] uppercase text-white/45 font-medium">
+                                        Spread
+                                    </span>
+                                    <span className="text-[13px] tabular-nums text-white/85 font-medium">
+                                        {book.spread !== null
+                                            ? `${(book.spread * 100).toFixed(2)}¢`
+                                            : '0.00¢'}
+                                    </span>
+                                </div>
+
+                                <div className="space-y-0.5">
+                                    {bids.length === 0 ? (
+                                        <div className="grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums">
+                                            <span className="col-span-3 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
+                                                No bids
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        bids.map((lvl, i) => {
+                                            const cum = book.cumulativeBids[i] ?? lvl.size;
                                             const w = (cum / max_total) * 100;
                                             return (
                                                 <div
-                                                    key={`ask-${lvl.price}`}
+                                                    key={`bid-${lvl.price}`}
                                                     className="relative grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                                 >
                                                     <div
-                                                        className="absolute inset-y-0 right-0 bg-rose-500/20 rounded-l-sm pointer-events-none"
+                                                        className="absolute inset-y-0 right-0 bg-emerald-500/20 rounded-l-sm pointer-events-none"
                                                         style={{ width: `${w}%` }}
                                                     />
-                                                    <span className="relative text-right font-medium text-rose-300">
+                                                    <span className="relative text-right font-medium text-emerald-300">
                                                         {format_cents(lvl.price)}
                                                     </span>
                                                     <span className="relative text-right text-white font-light">
@@ -209,58 +253,10 @@ export default function EventOrderBook({
                                                 </div>
                                             );
                                         })
-                                        .reverse()
-                                )}
+                                    )}
+                                </div>
                             </div>
-
-                            <div
-                                ref={spread_ref}
-                                className="my-5 flex items-center justify-between px-1 py-2.5 border-y border-white/6"
-                            >
-                                <span className="text-[9.5px] tracking-[0.32em] uppercase text-white/45 font-medium">
-                                    Spread
-                                </span>
-                                <span className="text-[13px] tabular-nums text-white/85 font-medium">
-                                    {book.spread !== null
-                                        ? `${(book.spread * 100).toFixed(2)}¢`
-                                        : '0.00¢'}
-                                </span>
-                            </div>
-
-                            <div className="space-y-0.5">
-                                {bids.length === 0 ? (
-                                    <div className="grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums">
-                                        <span className="col-span-3 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">No bids</span>
-                                    </div>
-                                ) : (
-                                    bids.map((lvl, i) => {
-                                        const cum = book.cumulativeBids[i] ?? lvl.size;
-                                        const w = (cum / max_total) * 100;
-                                        return (
-                                            <div
-                                                key={`bid-${lvl.price}`}
-                                                className="relative grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
-                                            >
-                                                <div
-                                                    className="absolute inset-y-0 right-0 bg-emerald-500/20 rounded-l-sm pointer-events-none"
-                                                    style={{ width: `${w}%` }}
-                                                />
-                                                <span className="relative text-right font-medium text-emerald-300">
-                                                    {format_cents(lvl.price)}
-                                                </span>
-                                                <span className="relative text-right text-white font-light">
-                                                    {format_size(lvl.size)}
-                                                </span>
-                                                <span className="relative text-right text-white/40 font-light">
-                                                    {format_total(lvl.price, lvl.size)}
-                                                </span>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </div>
-                        </div>
-                    )}
+                        )}
                     </div>
                 </div>
             </div>

@@ -143,6 +143,25 @@ export interface RecentTradeDTO {
   createdAt: string;
 }
 
+// ─── Market news ──────────────────────────────────────────────────────────────
+
+/**
+ * One news article tied to a market. Sourced from Google News RSS keyed off
+ * the market title; refreshed on approval and on a periodic background job.
+ * Served by GET /api/v1/markets/:id/news.
+ */
+export interface NewsArticleDTO {
+  id: string;
+  title: string;
+  /** Google News redirect URL — opens the publisher article. */
+  link: string;
+  publicationName: string | null;
+  /** Favicon URL (Google s2 service). */
+  publicationFavicon: string | null;
+  /** ISO timestamp of when the article was published. */
+  pubDate: string | null;
+}
+
 /** Admin curator view served by GET /api/v1/admin/listings. */
 export interface AdminListingDTO {
   marketId: string;

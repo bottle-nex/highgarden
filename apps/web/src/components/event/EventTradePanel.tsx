@@ -1,7 +1,7 @@
 'use client';
 
 import { JSX, useEffect, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import type { MarketDTO } from '@solmarket/types';
 import { Outcome } from '@solmarket/types';
@@ -14,7 +14,6 @@ interface Props {
 }
 
 const QUICK_AMOUNTS = [1, 5, 10, 100] as const;
-const FEE_RATE = 0.02;
 
 function format_cents(price: number | undefined): string {
     if (price === undefined || !Number.isFinite(price)) return '—';
@@ -55,8 +54,6 @@ export default function EventTradePanel({
     const safe_price =
         active_price !== undefined && active_price > 0 && active_price < 1 ? active_price : 0.5;
     const shares = usd > 0 ? usd / safe_price : 0;
-    const est_payout = shares;
-    const fee = usd * FEE_RATE;
 
     const handle_submit = () => {
         if (usd <= 0) {
@@ -75,150 +72,178 @@ export default function EventTradePanel({
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="border border-white/10 rounded-[6px] bg-neutral-950/60 lg:sticky lg:top-24"
+            className="border border-gray-500/15 rounded-2xl bg-dark-base lg:sticky lg:top-24 p-1"
         >
-            <div className="flex items-center justify-between px-5 pt-5">
-                <div className="flex gap-4  text-[11px] tracking-[0.22em] uppercase">
+            <div className="flex items-center justify-between px-5 pt-4">
+                <div className="flex gap-1">
                     {(['BUY', 'SELL'] as const).map((t) => (
                         <button
                             key={t}
                             type="button"
                             onClick={() => set_tab(t)}
-                            className={`pb-2 border-b-2 transition-colors cursor-pointer ${
-                                tab === t
-                                    ? 'border-white text-white'
-                                    : 'border-transparent text-white/40 hover:text-white/65'
+                            className={`relative px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer ${
+                                tab === t ? 'text-white' : 'text-white/45 hover:text-white/75'
                             }`}
                         >
-                            {t}
+                            {tab === t && (
+                                <motion.span
+                                    layoutId="trade-tab-pill"
+                                    className="absolute inset-0 rounded-full bg-gray-800/80"
+                                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                                />
+                            )}
+                            <span className="relative z-10">{t === 'BUY' ? 'Buy' : 'Sell'}</span>
                         </button>
                     ))}
                 </div>
-                <span className=" text-[9px] tracking-[0.25em] uppercase text-white/30">
-                    MARKET
+                <span className="text-[10px] font-medium tracking-[0.18em] uppercase text-white/35">
+                    Market
                 </span>
             </div>
 
-            <div className="px-5 pt-5 pb-6 space-y-5">
-                <div ref={flash_ref} className="grid grid-cols-2 gap-3">
+            <div className="px-5 pt-4 pb-5 space-y-3.5">
+                <div ref={flash_ref} className="grid grid-cols-2 gap-2.5">
                     <button
                         type="button"
                         onClick={() => onOutcomeChange(Outcome.YES)}
-                        className={`flex items-center justify-between px-4 py-3 rounded-md border transition-colors cursor-pointer ${
+                        className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors cursor-pointer ${
                             selectedOutcome === Outcome.YES
-                                ? 'bg-emerald-500/12 border-emerald-500/40'
-                                : 'bg-emerald-500/5 border-emerald-500/15 hover:border-emerald-500/30'
+                                ? 'bg-emerald-500/90'
+                                : 'bg-emerald-500/8 hover:bg-emerald-500/15'
                         }`}
                     >
-                        <span className=" text-[10px] tracking-[0.22em] uppercase text-emerald-300/90">
-                            YES
+                        <span
+                            className={`text-[12px] font-semibold tracking-[0.16em] uppercase ${
+                                selectedOutcome === Outcome.YES
+                                    ? 'text-white'
+                                    : 'text-emerald-400/85'
+                            }`}
+                        >
+                            Yes
                         </span>
-                        <span className=" text-[13px] tabular-nums text-emerald-300">
+                        <span
+                            className={`text-[15px] font-bold tabular-nums ${
+                                selectedOutcome === Outcome.YES ? 'text-white' : 'text-emerald-300'
+                            }`}
+                        >
                             {format_cents(yes_price)}
                         </span>
                     </button>
                     <button
                         type="button"
                         onClick={() => onOutcomeChange(Outcome.NO)}
-                        className={`flex items-center justify-between px-4 py-3 rounded-md border transition-colors cursor-pointer ${
+                        className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors cursor-pointer ${
                             selectedOutcome === Outcome.NO
-                                ? 'bg-rose-500/12 border-rose-500/40'
-                                : 'bg-rose-500/5 border-rose-500/15 hover:border-rose-500/30'
+                                ? 'bg-rose-600/80'
+                                : 'bg-rose-500/8 hover:bg-rose-500/15'
                         }`}
                     >
-                        <span className=" text-[10px] tracking-[0.22em] uppercase text-rose-300/90">
-                            NO
+                        <span
+                            className={`text-[12px] font-semibold tracking-[0.16em] uppercase ${
+                                selectedOutcome === Outcome.NO ? 'text-white' : 'text-rose-400/85'
+                            }`}
+                        >
+                            No
                         </span>
-                        <span className=" text-[13px] tabular-nums text-rose-300">
+                        <span
+                            className={`text-[15px] font-bold tabular-nums ${
+                                selectedOutcome === Outcome.NO ? 'text-white' : 'text-rose-300'
+                            }`}
+                        >
                             {format_cents(no_price)}
                         </span>
                     </button>
                 </div>
 
-                <div>
-                    <div className=" text-[9px] tracking-[0.25em] uppercase text-white/40 mb-2">
-                        AMOUNT
+                <div className="rounded-lg bg-white/2.5 px-4 py-3.5">
+                    <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-[12px] font-medium text-white/55">Amount</span>
+                        <span className="text-[11px] font-medium text-white/35 tabular-nums">
+                            ≈ {shares > 0 ? shares.toFixed(2) : '0.00'} shares
+                        </span>
                     </div>
-                    <div className="flex items-center justify-between border border-white/10 rounded-md px-4 py-3 bg-white/[0.02]">
-                        <span className=" text-[12px] tracking-[0.18em] uppercase text-white/40">
+                    <div className="flex items-center gap-1">
+                        <span
+                            className={`text-3xl font-bold leading-none transition-colors ${
+                                amount ? 'text-white' : 'text-white/40'
+                            }`}
+                        >
                             $
                         </span>
-                        <input
-                            type="number"
-                            inputMode="decimal"
-                            min={0}
-                            step="0.01"
-                            placeholder="0"
-                            value={amount}
-                            onChange={(e) => set_amount(e.target.value)}
-                            className="flex-1 bg-transparent outline-none text-right text-2xl tabular-nums text-white/90 placeholder:text-white/15"
-                        />
+                        <div className="relative flex-1 min-w-0 h-10">
+                            <input
+                                type="number"
+                                inputMode="decimal"
+                                min={0}
+                                step="0.01"
+                                placeholder="0"
+                                value={amount}
+                                onChange={(e) => set_amount(e.target.value)}
+                                className="absolute inset-0 w-full bg-transparent outline-none text-3xl font-bold tabular-nums text-transparent caret-transparent placeholder:text-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                            <div
+                                className={`absolute inset-0 flex items-center pointer-events-none text-3xl font-bold tabular-nums ${
+                                    amount ? 'text-white' : 'text-white/20'
+                                }`}
+                            >
+                                {(amount || '0').split('').map((char, idx) => (
+                                    <span
+                                        key={idx}
+                                        className="relative inline-flex justify-center overflow-hidden"
+                                        style={{ width: char === '.' ? '0.35em' : '0.6em' }}
+                                    >
+                                        <AnimatePresence mode="popLayout" initial={false}>
+                                            <motion.span
+                                                key={char}
+                                                initial={{ y: '70%', opacity: 0 }}
+                                                animate={{ y: 0, opacity: 1 }}
+                                                exit={{ y: '-70%', opacity: 0 }}
+                                                transition={{
+                                                    type: 'spring',
+                                                    stiffness: 500,
+                                                    damping: 38,
+                                                }}
+                                                className="inline-block"
+                                            >
+                                                {char}
+                                            </motion.span>
+                                        </AnimatePresence>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-4 gap-2">
-                    {QUICK_AMOUNTS.map((v) => (
-                        <button
-                            key={v}
-                            type="button"
-                            onClick={() => set_amount(String((parseFloat(amount) || 0) + v))}
-                            className="py-2 rounded-md border border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.05]  text-[11px] tabular-nums text-white/65 cursor-pointer"
-                        >
-                            +${v}
-                        </button>
-                    ))}
+                <div className="flex items-center gap-3">
+                    <span className="text-[12px] font-medium text-white/55 shrink-0 w-20"></span>
+                    <div className="grid grid-cols-4 gap-2 flex-1">
+                        {QUICK_AMOUNTS.map((v) => (
+                            <button
+                                key={v}
+                                type="button"
+                                onClick={() => set_amount(String((parseFloat(amount) || 0) + v))}
+                                className="py-1.5 rounded-md bg-white/5 hover:bg-white/6 text-[12px] font-semibold tabular-nums text-white/50 hover:text-white/80 transition-colors duration-250 cursor-pointer"
+                            >
+                                +${v}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <button
                     type="button"
                     onClick={handle_submit}
-                    className="w-full py-3.5 rounded-md bg-indigo-500/90 hover:bg-indigo-500 transition-colors text-[13px] font-medium text-white tracking-wide cursor-pointer disabled:opacity-50"
+                    className="w-full py-3 rounded-lg bg-blue-500 hover:bg-blue-500/95 active:translate-y-px text-[14px] font-bold text-white cursor-pointer disabled:opacity-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_1px_0_rgba(0,0,0,0.25)] transition-all transform duration-200"
                 >
                     Trade
                 </button>
 
-                <dl className="grid grid-cols-1 gap-1.5  text-[11px] tabular-nums">
-                    <Row label="Avg price" value={format_cents(active_price)} />
-                    <Row label="Est. shares" value={shares > 0 ? shares.toFixed(2) : '0.00'} />
-                    <Row label="Est. payout" value={`$${est_payout.toFixed(2)}`} accent="emerald" />
-                    <Row label="Fee (2%)" value={`$${fee.toFixed(2)}`} />
-                    <Row label="Tick" value={market.tickSize} muted />
-                </dl>
-
-                <p className="text-[10px] text-white/35 text-center pt-1">
+                <p className="text-[10px] text-white/35 text-center">
                     By trading, you agree to the{' '}
                     <span className="underline underline-offset-2">Terms of Use</span>.
                 </p>
             </div>
         </motion.aside>
-    );
-}
-
-function Row({
-    label,
-    value,
-    accent,
-    muted,
-}: {
-    label: string;
-    value: string;
-    accent?: 'emerald';
-    muted?: boolean;
-}) {
-    return (
-        <div className="flex items-center justify-between">
-            <dt className="text-white/40">{label}</dt>
-            <dd
-                className={
-                    accent === 'emerald'
-                        ? 'text-emerald-300/90'
-                        : muted
-                          ? 'text-white/35'
-                          : 'text-white/80'
-                }
-            >
-                {value}
-            </dd>
-        </div>
     );
 }

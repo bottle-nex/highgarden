@@ -1,6 +1,6 @@
 'use client';
 import { JSX, ReactNode } from 'react';
-import { FaBitcoin, FaCheckCircle } from 'react-icons/fa';
+import { FaCheckCircle } from 'react-icons/fa';
 import { LuShare2 } from 'react-icons/lu';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';

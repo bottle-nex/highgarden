@@ -50,8 +50,7 @@ function dto_to_featured(m: MarketDTO, history: PriceHistoryPoint[]): FeaturedMa
     const lastP = history.length > 0 ? history[history.length - 1]!.p : 0.5;
     const firstP = history.length > 0 ? history[0]!.p : 0.5;
     const currentProbability = Math.round(lastP * 100);
-    const trend =
-        lastP > firstP + 0.01 ? 'up' : lastP < firstP - 0.01 ? 'down' : 'flat';
+    const trend = lastP > firstP + 0.01 ? 'up' : lastP < firstP - 0.01 ? 'down' : 'flat';
 
     return {
         id: m.id,

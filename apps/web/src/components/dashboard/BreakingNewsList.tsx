@@ -1,43 +1,96 @@
-import { JSX } from 'react';
-import { cn } from '@/lib/utils';
-import { HiArrowTrendingUp, HiArrowTrendingDown } from 'react-icons/hi2';
-import type { BreakingNewsItem } from '@/utils/constants';
+'use client';
+import { JSX, useEffect, useState } from 'react';
+import type { NewsArticleDTO } from '@solmarket/types';
+import { fetch_recent_news } from '@/lib/api/markets';
 import SectionHeading from './SectionHeading';
 
-export default function BreakingNewsList({ items }: { items: BreakingNewsItem[] }): JSX.Element {
+const POLL_INTERVAL_MS = 5 * 60_000;
+
+function format_relative(iso: string | null): string {
+    if (!iso) return '';
+    const t = new Date(iso).getTime();
+    if (Number.isNaN(t)) return '';
+    const diff_ms = Date.now() - t;
+    if (diff_ms < 0) return '';
+    const min = Math.round(diff_ms / 60_000);
+    if (min < 1) return 'NOW';
+    if (min < 60) return `${min}M AGO`;
+    const hr = Math.round(min / 60);
+    if (hr < 24) return `${hr}H AGO`;
+    const d = Math.round(hr / 24);
+    return `${d}D AGO`;
+}
+
+export default function BreakingNewsList({ limit = 3 }: { limit?: number }): JSX.Element {
+    const [items, set_items] = useState<NewsArticleDTO[] | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        const load = () => {
+            fetch_recent_news(limit).then((next) => {
+                if (cancelled) return;
+                set_items(next);
+            });
+        };
+        load();
+        const handle = setInterval(load, POLL_INTERVAL_MS);
+        return () => {
+            cancelled = true;
+            clearInterval(handle);
+        };
+    }, [limit]);
+
     return (
         <section className="flex flex-col min-h-0 pt-1">
             <div className="px-2">
                 <SectionHeading title="Breaking News" subtitle="Live Feed" />
             </div>
             <ul className="flex-1 min-h-0 overflow-hidden">
-                {items.map((item, i) => {
-                    const isUp = item.trend === 'up';
-                    const Icon = isUp ? HiArrowTrendingUp : HiArrowTrendingDown;
-                    return (
-                        <li
-                            key={item.id}
-                            className="py-3 flex items-center gap-3 hover:bg-white/3 transition-colors cursor-pointer group px-2 rounded-sm"
+                {items === null && (
+                    <li className="px-2 py-3 text-[13px] text-white/35">Loading…</li>
+                )}
+                {items !== null && items.length === 0 && (
+                    <li className="px-2 py-3 text-[13px] text-white/35">
+                        No news yet — approve some markets to populate the feed.
+                    </li>
+                )}
+                {items?.map((item, i) => (
+                    <li key={item.id}>
+                        <a
+                            href={item.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="py-3 flex items-center gap-3 hover:bg-white/3 transition-colors group px-2 rounded-sm"
                         >
                             <span className="text-[15px] tabular-nums text-white/35 shrink-0">
                                 {String(i + 1).padStart(2, '0')}
                             </span>
-                            <p className="flex-1 min-w-0 text-[13px] text-white/70 leading-snug line-clamp-2 group-hover:text-white/85 transition-colors">
-                                {item.title}
-                            </p>
-                            <div
-                                className={cn(
-                                    'flex items-center gap-1 text-[16px] tabular-nums shrink-0',
-                                    isUp ? 'text-green-600/80' : 'text-red-600/80',
-                                )}
-                            >
-                                <Icon className="size-3" />
-                                {isUp ? '+' : ''}
-                                {item.delta}%
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[13px] text-white/70 leading-snug line-clamp-2 group-hover:text-white/85 transition-colors">
+                                    {item.title}
+                                </p>
+                                <div className="mt-1 flex items-center gap-2 text-[10px] tracking-widest uppercase text-white/35">
+                                    {item.publicationFavicon ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                            src={item.publicationFavicon}
+                                            alt=""
+                                            width={12}
+                                            height={12}
+                                            className="size-3 rounded-sm opacity-80"
+                                            loading="lazy"
+                                        />
+                                    ) : null}
+                                    {item.publicationName && (
+                                        <span className="truncate">{item.publicationName}</span>
+                                    )}
+                                    {item.publicationName && item.pubDate && <span>·</span>}
+                                    {item.pubDate && <span>{format_relative(item.pubDate)}</span>}
+                                </div>
                             </div>
-                        </li>
-                    );
-                })}
+                        </a>
+                    </li>
+                ))}
             </ul>
         </section>
     );

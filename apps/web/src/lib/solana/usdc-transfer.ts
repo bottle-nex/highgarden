@@ -1,9 +1,4 @@
-import {
-    Connection,
-    PublicKey,
-    TransactionMessage,
-    VersionedTransaction,
-} from '@solana/web3.js';
+import { Connection, PublicKey, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import {
     createAssociatedTokenAccountIdempotentInstruction,
     createTransferCheckedInstruction,

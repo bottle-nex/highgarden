@@ -62,24 +62,26 @@ export default class GetOrderBookController {
                 // Mirror subscribe is handled above by touch_http. Here we just
                 // refresh the token→market index used for cross-pipeline log
                 // correlation; idempotent and safe to call on every miss.
-                void services.token_index.write([
-                    {
-                        token_id: p.yesTokenId,
-                        entry: {
-                            marketId: listing.market.id,
-                            marketName: listing.market.name,
-                            outcome: "YES",
+                void services.token_index
+                    .write([
+                        {
+                            token_id: p.yesTokenId,
+                            entry: {
+                                marketId: listing.market.id,
+                                marketName: listing.market.name,
+                                outcome: "YES",
+                            },
                         },
-                    },
-                    {
-                        token_id: p.noTokenId,
-                        entry: {
-                            marketId: listing.market.id,
-                            marketName: listing.market.name,
-                            outcome: "NO",
+                        {
+                            token_id: p.noTokenId,
+                            entry: {
+                                marketId: listing.market.id,
+                                marketName: listing.market.name,
+                                outcome: "NO",
+                            },
                         },
-                    },
-                ]).catch(() => { });
+                    ])
+                    .catch(() => {});
             } else if (
                 (depth_view?.bids.length ?? 0) === 0 &&
                 (depth_view?.asks.length ?? 0) === 0

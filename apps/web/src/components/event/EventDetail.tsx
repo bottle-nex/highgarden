@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
 import type { MarketDTO } from '@solmarket/types';
 import { Outcome } from '@solmarket/types';
 import { fetch_market_by_id, fetch_market_orderbook } from '@/lib/api/markets';
@@ -17,6 +16,7 @@ import EventPriceChart from './EventPriceChart';
 import EventOrderBook from './EventOrderBook';
 import EventTradePanel from './EventTradePanel';
 import EventTabs from './EventTabs';
+import EventNews from './EventNews';
 import EventRelatedMarkets from './EventRelatedMarkets';
 import EventBreadcrumb from './EventBreadcrumb';
 import DashboardNavbar from '../dashboard/DashboardNavbar';
@@ -123,7 +123,7 @@ function Body({ market }: { market: MarketDTO }) {
             <EventTitleBlock market={market} />
             <ProbabilityHeadline marketId={market.id} delta24hPct={delta24h} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 xl:gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 xl:gap-8">
                 <div className="min-w-0 space-y-6">
                     <EventPriceChart
                         marketId={market.id}
@@ -136,6 +136,7 @@ function Body({ market }: { market: MarketDTO }) {
                         selectedOutcome={selected_outcome}
                         onOutcomeChange={set_selected_outcome}
                     />
+                    <EventNews marketId={market.id} />
                     <EventTabs description={market.description} />
                 </div>
                 <div>

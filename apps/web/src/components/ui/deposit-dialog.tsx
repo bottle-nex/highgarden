@@ -1,25 +1,13 @@
 'use client';
-import { JSX, useEffect, useState } from 'react';
+import { JSX, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { QRCode } from 'react-qrcode-logo';
-import {
-    PiX,
-    PiCopy,
-    PiInfo,
-    PiArrowClockwise,
-    PiLightning,
-    PiShieldCheck,
-    PiCheckCircle,
-} from 'react-icons/pi';
+import { PiX, PiCopy, PiInfo, PiArrowClockwise, PiCheckCircle } from 'react-icons/pi';
 import { toast } from 'sonner';
+import { AnimatePresence, motion } from 'motion/react';
 import OpacityBackground from './opacity-background';
 import UtilityCard from './utility-card';
 import { Button } from './button';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from './tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip';
 import { Input } from './input';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { useExternalWalletUsdc } from '@/hooks/useExternalWalletUsdc';
@@ -46,6 +34,21 @@ export default function DepositDialog({ onClose }: DepositDialogProps): JSX.Elem
     const [mode, set_mode] = useState<Mode>('wallet');
     const wallet = useWalletBalance({ enabled: true });
 
+    const measure_ref = useRef<HTMLDivElement>(null);
+    const [content_height, set_content_height] = useState<number | 'auto'>('auto');
+
+    useLayoutEffect(() => {
+        const node = measure_ref.current;
+        if (!node) return;
+        set_content_height(node.scrollHeight);
+        const observer = new ResizeObserver((entries) => {
+            const next = entries[0]?.contentRect.height;
+            if (typeof next === 'number') set_content_height(next);
+        });
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, []);
+
     const address = wallet.data?.publicKey ?? '';
     const network_label = wallet.data?.network ?? 'Solana';
     const balance_text = usd_fmt.format(wallet.data?.usdcBalance.uiAmount ?? 0);
@@ -62,19 +65,40 @@ export default function DepositDialog({ onClose }: DepositDialogProps): JSX.Elem
 
                     <ModeToggle mode={mode} on_change={set_mode} />
 
-                    {mode === 'wallet' ? (
-                        <SendFromWalletPanel
-                            recipient={address}
-                            on_deposit_success={() => void wallet.refetch()}
-                        />
-                    ) : (
-                        <ReceiveAddressPanel
-                            address={address}
-                            loading={wallet.loading}
-                            error={wallet.error}
-                            on_retry={() => void wallet.refetch()}
-                        />
-                    )}
+                    <motion.div
+                        animate={{ height: content_height }}
+                        transition={{ duration: 0.35, ease: [0.32, 0.72, 0.24, 1] }}
+                        style={{ overflow: 'hidden' }}
+                    >
+                        <div ref={measure_ref}>
+                            <AnimatePresence mode="wait" initial={false}>
+                                <motion.div
+                                    key={mode}
+                                    initial={{ opacity: 0, filter: 'blur(6px)' }}
+                                    animate={{ opacity: 1, filter: 'blur(0px)' }}
+                                    exit={{ opacity: 0, filter: 'blur(6px)' }}
+                                    transition={{
+                                        duration: 0.18,
+                                        ease: [0.25, 0.46, 0.45, 0.94],
+                                    }}
+                                >
+                                    {mode === 'wallet' ? (
+                                        <SendFromWalletPanel
+                                            recipient={address}
+                                            on_deposit_success={() => void wallet.refetch()}
+                                        />
+                                    ) : (
+                                        <ReceiveAddressPanel
+                                            address={address}
+                                            loading={wallet.loading}
+                                            error={wallet.error}
+                                            on_retry={() => void wallet.refetch()}
+                                        />
+                                    )}
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
+                    </motion.div>
 
                     {/* <FeatureBullets /> */}
                     <NetworkWarning network_label={network_label} />
@@ -88,13 +112,7 @@ export default function DepositDialog({ onClose }: DepositDialogProps): JSX.Elem
 // Header
 // ────────────────────────────────────────────────────────────────────────────
 
-function DialogHeader({
-    balance_text,
-    onClose,
-}: {
-    balance_text: string;
-    onClose: () => void;
-}) {
+function DialogHeader({ balance_text, onClose }: { balance_text: string; onClose: () => void }) {
     return (
         <div className="relative flex flex-col items-center pb-4 text-center">
             <h2 className="text-xl font-semibold tracking-tight">
@@ -115,9 +133,7 @@ function DialogHeader({
                     </TooltipContent>
                 </Tooltip>
             </h2>
-            <p className="mt-1 text-sm text-light-alpha/55">
-                Add USDC funds to start trading
-            </p>
+            <p className="mt-1 text-sm text-light-alpha/55">Add USDC funds to start trading</p>
             <p className="mt-2 text-[11px] uppercase tracking-wider text-light-alpha/40">
                 Available · <span className="text-light-alpha/70 tabular-nums">{balance_text}</span>
             </p>
@@ -127,7 +143,7 @@ function DialogHeader({
                 size="icon-sm"
                 aria-label="Close"
                 onClick={onClose}
-                className="absolute top-0 right-0 text-light-alpha/60 hover:text-light-alpha"
+                className="absolute top-0 right-0 text-light-alpha/60 hover:text-light-alpha rounded-full"
             >
                 <PiX />
             </Button>
@@ -145,20 +161,27 @@ function ModeToggle({ mode, on_change }: { mode: Mode; on_change: (m: Mode) => v
         { value: 'address', label: 'Receive to address' },
     ];
     return (
-        <div className="flex p-0.5 rounded-full bg-dark-base/60 border border-dark-faded/60 mb-4">
+        <div className="flex p-1 rounded-full bg-dark-base/60 border border-dark-faded/60 mb-4 shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]">
             {options.map((o) => (
                 <button
                     key={o.value}
                     type="button"
                     onClick={() => on_change(o.value)}
                     className={cn(
-                        'flex-1 rounded-full text-sm font-medium py-3 transition-colors cursor-pointer',
+                        'relative flex-1 rounded-full text-sm font-medium py-3 transition-colors cursor-pointer',
                         mode === o.value
-                            ? 'bg-dark-alpha text-light-alpha shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]'
+                            ? 'text-light-alpha'
                             : 'text-light-alpha/50 hover:text-light-alpha/80',
                     )}
                 >
-                    {o.label}
+                    {mode === o.value && (
+                        <motion.span
+                            layoutId="deposit-mode-pill"
+                            className="absolute inset-0 rounded-full bg-dark-alpha shadow-[inset_0_1px_rgba(255,255,255,0.03),0_1px_3px_rgba(0,0,0,0.25)]"
+                            transition={{ type: 'spring', stiffness: 400, damping: 34 }}
+                        />
+                    )}
+                    <span className="relative z-10">{o.label}</span>
                 </button>
             ))}
         </div>
@@ -177,8 +200,11 @@ function SendFromWalletPanel({
     on_deposit_success: () => void;
 }) {
     const { publicKey } = useWallet();
-    const { ui_amount: wallet_balance, loading: balance_loading, refetch: refetch_balance } =
-        useExternalWalletUsdc();
+    const {
+        ui_amount: wallet_balance,
+        loading: balance_loading,
+        refetch: refetch_balance,
+    } = useExternalWalletUsdc();
     const { phase, error, last_signature, deposit, reset } = useDepositFromWallet();
     const [amount_input, set_amount_input] = useState('');
 
@@ -239,10 +265,7 @@ function SendFromWalletPanel({
 
     return (
         <div className="space-y-3">
-            <ConnectedWalletRow
-                wallet_balance={wallet_balance}
-                balance_loading={balance_loading}
-            />
+            <ConnectedWalletRow wallet_balance={wallet_balance} balance_loading={balance_loading} />
 
             <AmountInput
                 value={amount_input}
@@ -430,14 +453,13 @@ function StatusLine({
     if (!insufficient && !error && !success_signature) return null;
     return (
         <div className="px-1 text-xs">
-            {insufficient && (
-                <p className="text-destructive">Amount exceeds your wallet balance</p>
-            )}
+            {insufficient && <p className="text-destructive">Amount exceeds your wallet balance</p>}
             {error && <p className="text-destructive">{error}</p>}
             {success_signature && (
                 <p className="flex items-center gap-1.5 text-emerald-400">
                     <PiCheckCircle className="size-3.5" />
-                    Deposited · <span className="font-mono">{shorten_address(success_signature)}</span>
+                    Deposited ·{' '}
+                    <span className="font-mono">{shorten_address(success_signature)}</span>
                 </p>
             )}
         </div>
@@ -573,30 +595,30 @@ function ReceiveAddressPanel({
 // Reassurance + warning footers
 // ────────────────────────────────────────────────────────────────────────────
 
-function FeatureBullets() {
-    return (
-        <ul className="mt-4 space-y-1.5 px-1 text-xs text-light-alpha/55">
-            <li className="flex items-center gap-2">
-                <PiArrowClockwise className="size-3.5 text-light-alpha/40 shrink-0" />
-                Withdraw your funds anytime, no lock-ups
-            </li>
-            <li className="flex items-center gap-2">
-                <PiLightning className="size-3.5 text-light-alpha/40 shrink-0" />
-                Deposits arrive in seconds on Solana
-            </li>
-            <li className="flex items-center gap-2">
-                <PiShieldCheck className="size-3.5 text-light-alpha/40 shrink-0" />
-                Your address is yours alone, never shared or reused
-            </li>
-        </ul>
-    );
-}
+// function FeatureBullets() {
+//     return (
+//         <ul className="mt-4 space-y-1.5 px-1 text-xs text-light-alpha/55">
+//             <li className="flex items-center gap-2">
+//                 <PiArrowClockwise className="size-3.5 text-light-alpha/40 shrink-0" />
+//                 Withdraw your funds anytime, no lock-ups
+//             </li>
+//             <li className="flex items-center gap-2">
+//                 <PiLightning className="size-3.5 text-light-alpha/40 shrink-0" />
+//                 Deposits arrive in seconds on Solana
+//             </li>
+//             <li className="flex items-center gap-2">
+//                 <PiShieldCheck className="size-3.5 text-light-alpha/40 shrink-0" />
+//                 Your address is yours alone, never shared or reused
+//             </li>
+//         </ul>
+//     );
+// }
 
 function NetworkWarning({ network_label }: { network_label: string }) {
     return (
         <div className="mt-3 flex items-start gap-2 rounded-md border border-dark-faded/60 bg-dark-base/60 px-3 py-2.5">
             <PiInfo className="size-4 mt-0.5 shrink-0 text-light-alpha/50" />
-            <p className="text-xs leading-relaxed text-light-alpha/60">
+            <p className="text-[10.5px] leading-relaxed text-light-alpha/60">
                 Send USDC on{' '}
                 <Tooltip>
                     <TooltipTrigger

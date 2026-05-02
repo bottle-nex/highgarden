@@ -18,12 +18,9 @@ export function encrypt_secret_key(plaintext: Uint8Array): string {
     const cipher = createCipheriv(ALGO, get_master_key(), iv);
     const ct = Buffer.concat([cipher.update(plaintext), cipher.final()]);
     const tag = cipher.getAuthTag();
-    return [
-        VERSION,
-        iv.toString("base64"),
-        tag.toString("base64"),
-        ct.toString("base64"),
-    ].join(":");
+    return [VERSION, iv.toString("base64"), tag.toString("base64"), ct.toString("base64")].join(
+        ":",
+    );
 }
 
 export function decrypt_secret_key(serialized: string): Uint8Array {
