@@ -30,7 +30,11 @@ function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | n
 
 export default function ProbabilityChart({ data, height = 240 }: Props): JSX.Element {
     const values = data.map((d) => d.value);
-    const yMax = Math.max(100, Math.ceil(Math.max(...values) / 10) * 10 + 10);
+    const minV = values.length > 0 ? Math.min(...values) : 0;
+    const maxV = values.length > 0 ? Math.max(...values) : 100;
+    const pad = Math.max(1, (maxV - minV) * 0.1);
+    const yMin = Math.max(0, minV - pad);
+    const yMax = Math.min(100, maxV + pad);
 
     return (
         <div className="relative w-full" style={{ height }}>
@@ -54,9 +58,9 @@ export default function ProbabilityChart({ data, height = 240 }: Props): JSX.Ele
                         minTickGap={48}
                     />
                     <YAxis
-                        domain={[0, yMax]}
-                        ticks={[0, 25, 50, 75, 100]}
-                        tickFormatter={(v) => `${v}%`}
+                        domain={[yMin, yMax]}
+                        tickCount={5}
+                        tickFormatter={(v) => `${Math.round(v)}%`}
                         tick={{
                             fill: 'rgba(255,255,255,0.5)',
                             fontSize: 12,

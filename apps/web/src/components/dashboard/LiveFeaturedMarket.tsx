@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import type { MarketDTO } from '@solmarket/types';
+import type { MarketDTO, PriceHistoryPoint } from '@solmarket/types';
 import FeaturedMarketCard from './FeaturedMarketCard';
-import SectionHeading from './SectionHeading';
-import { fetchPublicMarkets } from '@/lib/api/markets';
-import type { FeaturedMarket } from '@/utils/constants';
+import { fetchPublicMarkets, fetch_market_price_history } from '@/lib/api/markets';
+import type { FeaturedMarket, ProbabilityPoint } from '@/utils/constants';
 
 function format_usd(usd: number | null): string {
     if (usd === null) return '—';
@@ -26,26 +25,17 @@ function format_date(iso: string): string {
         .toUpperCase();
 }
 
-function dto_to_featured(m: MarketDTO): FeaturedMarket {
-    return {
-        id: m.id,
-        title: m.name,
-        category: 'MARKET',
-        description: m.description,
-        // Real price-history needs the book-cache + a time-series store, neither
-        // of which is wired yet. Keep the chart visually present but flat at 50.
-        probabilities: synthesise_flat_series(50),
-        currentProbability: 50,
-        openDate: '—',
-        closeDate: format_date(m.endAt),
-        volume: format_usd(m.volume24hUsd),
-        liquidity: format_usd(m.liquidityUsd),
-        traders: 0,
-        trend: 'flat',
-    };
+function history_to_points(history: PriceHistoryPoint[]): ProbabilityPoint[] {
+    return history.map((p) => ({
+        date: new Date(p.t * 1000).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+        }),
+        value: Math.round(p.p * 1000) / 10,
+    }));
 }
 
-function synthesise_flat_series(value: number) {
+function synthesise_flat_series(value: number): ProbabilityPoint[] {
     const points = 30;
     const now = Date.now();
     const day = 24 * 60 * 60 * 1000;
@@ -55,10 +45,34 @@ function synthesise_flat_series(value: number) {
     }));
 }
 
+function dto_to_featured(m: MarketDTO, history: PriceHistoryPoint[]): FeaturedMarket {
+    const points = history.length > 0 ? history_to_points(history) : synthesise_flat_series(50);
+    const lastP = history.length > 0 ? history[history.length - 1]!.p : 0.5;
+    const firstP = history.length > 0 ? history[0]!.p : 0.5;
+    const currentProbability = Math.round(lastP * 100);
+    const trend =
+        lastP > firstP + 0.01 ? 'up' : lastP < firstP - 0.01 ? 'down' : 'flat';
+
+    return {
+        id: m.id,
+        title: m.name,
+        category: 'MARKET',
+        description: m.description,
+        probabilities: points,
+        currentProbability,
+        openDate: '—',
+        closeDate: format_date(m.endAt),
+        volume: format_usd(m.volume24hUsd),
+        liquidity: format_usd(m.liquidityUsd),
+        traders: 0,
+        trend,
+    };
+}
+
 type State =
     | { status: 'loading' }
     | { status: 'error'; message: string }
-    | { status: 'ready'; market: MarketDTO | null };
+    | { status: 'ready'; market: MarketDTO | null; history: PriceHistoryPoint[] };
 
 export default function LiveFeaturedMarket() {
     const [state, set_state] = useState<State>({ status: 'loading' });
@@ -66,12 +80,19 @@ export default function LiveFeaturedMarket() {
     useEffect(() => {
         let cancelled = false;
         fetchPublicMarkets()
-            .then((markets) => {
+            .then(async (markets) => {
                 if (cancelled) return;
                 const sorted = [...markets].sort(
                     (a, b) => (b.volume24hUsd ?? 0) - (a.volume24hUsd ?? 0),
                 );
-                set_state({ status: 'ready', market: sorted[0] ?? null });
+                const market = sorted[0] ?? null;
+                if (!market) {
+                    set_state({ status: 'ready', market: null, history: [] });
+                    return;
+                }
+                const dto = await fetch_market_price_history(market.id, '1w');
+                if (cancelled) return;
+                set_state({ status: 'ready', market, history: dto?.history ?? [] });
             })
             .catch((err) => {
                 if (!cancelled) {
@@ -116,7 +137,7 @@ export default function LiveFeaturedMarket() {
         );
     }
 
-    const featured = dto_to_featured(state.market);
+    const featured = dto_to_featured(state.market, state.history);
     return (
         <Section>
             <FeaturedMarketCard market={featured} href={`/event/${state.market.id}`} />
