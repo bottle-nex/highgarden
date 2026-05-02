@@ -22,6 +22,8 @@ export interface GammaMarket {
     neg_risk: boolean;
     image_url: string | null;
     tokens: GammaToken[];
+    event_id: string | null;
+    event_slug: string | null;
 }
 
 export interface FetchMarketsParams {
@@ -29,6 +31,50 @@ export interface FetchMarketsParams {
     offset?: number;
     order?: "volume_24hr" | "liquidity" | "start_date";
     ascending?: boolean;
+}
+
+export interface FetchEventsParams {
+    limit?: number;
+    offset?: number;
+    order?: "volume_24hr" | "liquidity" | "start_date";
+    ascending?: boolean;
+}
+
+export interface FetchEventCommentsParams {
+    event_id: string;
+    limit?: number;
+    offset?: number;
+    holders_only?: boolean;
+}
+
+export interface GammaCommentPosition {
+    token_id: string;
+    position_size: string;
+}
+
+export interface GammaCommentReaction {
+    reaction_type: string;
+    user_address: string | null;
+}
+
+export interface GammaCommentProfile {
+    name: string | null;
+    pseudonym: string | null;
+    proxy_wallet: string | null;
+    base_address: string | null;
+    profile_image: string | null;
+    positions: GammaCommentPosition[];
+}
+
+export interface GammaComment {
+    id: string;
+    body: string;
+    parent_comment_id: string | null;
+    user_address: string | null;
+    created_at: string;
+    reaction_count: number;
+    profile: GammaCommentProfile;
+    reactions: GammaCommentReaction[];
 }
 
 /**
@@ -54,6 +100,43 @@ interface RawGammaMarket {
     clobTokenIds?: string;
     outcomes?: string;
     image?: string;
+}
+
+interface RawGammaEvent {
+    id: string | number;
+    slug?: string;
+    title?: string;
+    markets?: RawGammaMarket[];
+}
+
+interface RawGammaCommentPosition {
+    tokenId?: string | null;
+    positionSize?: string | null;
+}
+
+interface RawGammaCommentReaction {
+    reactionType?: string | null;
+    userAddress?: string | null;
+}
+
+interface RawGammaCommentProfile {
+    name?: string | null;
+    pseudonym?: string | null;
+    proxyWallet?: string | null;
+    baseAddress?: string | null;
+    profileImage?: string | null;
+    positions?: RawGammaCommentPosition[];
+}
+
+interface RawGammaComment {
+    id: string | number;
+    body?: string | null;
+    parentCommentID?: string | null;
+    userAddress?: string | null;
+    createdAt?: string | null;
+    reactionCount?: number | null;
+    profile?: RawGammaCommentProfile;
+    reactions?: RawGammaCommentReaction[];
 }
 
 const ORDER_FIELD_MAP: Record<NonNullable<FetchMarketsParams["order"]>, string> = {
@@ -91,7 +174,86 @@ export class GammaClient {
             throw new Error(`gamma fetch failed: ${res.status} ${res.statusText}`);
         }
         const raw = (await res.json()) as RawGammaMarket[];
-        return raw.map(normalise).filter((m): m is GammaMarket => m !== null);
+        return raw
+            .map((m) => normalise(m, null, null))
+            .filter((m): m is GammaMarket => m !== null);
+    }
+
+    async fetch_events(params: FetchEventsParams = {}): Promise<GammaMarket[]> {
+        const url = new URL("/events", this.base_url);
+        url.searchParams.set("limit", String(params.limit ?? 50));
+        if (params.offset !== undefined) {
+            url.searchParams.set("offset", String(params.offset));
+        }
+        url.searchParams.set("order", ORDER_FIELD_MAP[params.order ?? "volume_24hr"]);
+        url.searchParams.set("ascending", String(params.ascending ?? false));
+        url.searchParams.set("active", "true");
+        url.searchParams.set("closed", "false");
+        url.searchParams.set("archived", "false");
+
+        const res = await fetch(url);
+        if (!res.ok) {
+            throw new Error(`gamma events fetch failed: ${res.status} ${res.statusText}`);
+        }
+        const raw = (await res.json()) as RawGammaEvent[];
+
+        const flattened: GammaMarket[] = [];
+        for (const event of raw) {
+            const event_id = String(event.id);
+            const event_slug = event.slug ?? null;
+            for (const m of event.markets ?? []) {
+                const normalised = normalise(m, event_id, event_slug);
+                if (normalised) flattened.push(normalised);
+            }
+        }
+        return flattened;
+    }
+
+    async fetch_event_id_for_market(market_id: string): Promise<{
+        event_id: string;
+        event_slug: string | null;
+    } | null> {
+        const url = new URL("/events", this.base_url);
+        url.searchParams.set("related_markets", market_id);
+        url.searchParams.set("limit", "1");
+
+        const res = await fetch(url);
+        if (!res.ok) {
+            throw new Error(
+                `gamma related-events fetch failed: ${res.status} ${res.statusText}`,
+            );
+        }
+        const raw = (await res.json()) as RawGammaEvent[];
+        if (raw.length === 0) return null;
+        const first = raw[0];
+        if (!first) return null;
+        return {
+            event_id: String(first.id),
+            event_slug: first.slug ?? null,
+        };
+    }
+
+    async fetch_event_comments(params: FetchEventCommentsParams): Promise<GammaComment[]> {
+        const url = new URL("/comments", this.base_url);
+        url.searchParams.set("parent_entity_type", "Event");
+        url.searchParams.set("parent_entity_id", params.event_id);
+        url.searchParams.set("limit", String(params.limit ?? 30));
+        url.searchParams.set("offset", String(params.offset ?? 0));
+        url.searchParams.set("get_positions", "true");
+        url.searchParams.set("order", "createdAt");
+        url.searchParams.set("ascending", "false");
+        if (params.holders_only) {
+            url.searchParams.set("holders_only", "true");
+        }
+
+        const res = await fetch(url);
+        if (!res.ok) {
+            throw new Error(
+                `gamma comments fetch failed: ${res.status} ${res.statusText}`,
+            );
+        }
+        const raw = (await res.json()) as RawGammaComment[];
+        return raw.map(normalise_comment);
     }
 
     static pick_yes_no_token_ids(market: GammaMarket): {
@@ -112,7 +274,11 @@ export class GammaClient {
  * that aren't tradable binary YES/NO markets — the upstream API ignores some
  * filter flags so we re-check here.
  */
-function normalise(raw: RawGammaMarket): GammaMarket | null {
+function normalise(
+    raw: RawGammaMarket,
+    event_id: string | null,
+    event_slug: string | null,
+): GammaMarket | null {
     if (
         !raw.enableOrderBook ||
         !raw.acceptingOrders ||
@@ -153,6 +319,37 @@ function normalise(raw: RawGammaMarket): GammaMarket | null {
         neg_risk: raw.negRisk ?? false,
         image_url: raw.image ?? null,
         tokens,
+        event_id,
+        event_slug,
+    };
+}
+
+function normalise_comment(raw: RawGammaComment): GammaComment {
+    const profile = raw.profile ?? {};
+    return {
+        id: String(raw.id),
+        body: raw.body ?? "",
+        parent_comment_id: raw.parentCommentID ?? null,
+        user_address: raw.userAddress ?? null,
+        created_at: raw.createdAt ?? "",
+        reaction_count: raw.reactionCount ?? 0,
+        profile: {
+            name: profile.name ?? null,
+            pseudonym: profile.pseudonym ?? null,
+            proxy_wallet: profile.proxyWallet ?? null,
+            base_address: profile.baseAddress ?? null,
+            profile_image: profile.profileImage ?? null,
+            positions: (profile.positions ?? [])
+                .filter((p) => p.tokenId && p.positionSize)
+                .map((p) => ({
+                    token_id: String(p.tokenId),
+                    position_size: String(p.positionSize),
+                })),
+        },
+        reactions: (raw.reactions ?? []).map((r) => ({
+            reaction_type: r.reactionType ?? "",
+            user_address: r.userAddress ?? null,
+        })),
     };
 }
 

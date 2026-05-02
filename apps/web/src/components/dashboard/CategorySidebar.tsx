@@ -16,10 +16,11 @@ import {
     PiCheckSquareOffsetFill,
     PiAtFill,
 } from 'react-icons/pi';
+import { GiCrystalGrowth } from "react-icons/gi";
 import { cn } from '@/lib/utils';
 import { CATEGORY_TABS } from '@/utils/constants';
 import { useCategoryStore } from '@/store/ui/useCategoryStore';
-import { AiOutlineStock } from 'react-icons/ai';
+import { GiDragonOrb } from 'react-icons/gi';
 
 const CATEGORY_ICONS: Record<(typeof CATEGORY_TABS)[number], IconType> = {
     Trending: PiFlameFill,
@@ -37,7 +38,7 @@ const CATEGORY_ICONS: Record<(typeof CATEGORY_TABS)[number], IconType> = {
     Mentions: PiAtFill,
 };
 
-export default function CategoryTabs(): JSX.Element {
+export default function CategorySidebar(): JSX.Element {
     const active = useCategoryStore((s) => s.activeCategory);
     const setActive = useCategoryStore((s) => s.setActiveCategory);
 
@@ -45,9 +46,10 @@ export default function CategoryTabs(): JSX.Element {
         <aside className="sticky top-0 self-start h-screen w-54 shrink-0 border-r border-gray-500/15 bg-dark-alpha flex flex-col">
             <div className="h-16 px-3 flex items-center shrink-0">
                 <div className="flex gap-x-2 items-center">
-                    <div className="h-8 w-8 rounded-sm bg-linear-to-b from-neutral-100 to-neutral-300 flex items-center justify-center ring-1 ring-black/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),inset_0_-2px_3px_rgba(0,0,0,0.35),0_2px_3px_rgba(0,0,0,0.5),0_4px_8px_-2px_rgba(0,0,0,0.45)] shrink-0">
-                        <AiOutlineStock className="text-neutral-800 size-5" />
+                    <div className="h-8 w-8 rounded-sm flex items-center justify-center shrink-0">
+                        <GiDragonOrb className="text-white size-6" />
                     </div>
+
 
                     <div className="h-8 w-full flex flex-col -space-y-0.5">
                         <span className="text-gray-300 text-[14px] tracking-wider">Probexa</span>

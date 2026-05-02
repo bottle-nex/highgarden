@@ -20,6 +20,7 @@ import EventNews from './EventNews';
 import EventRelatedMarkets from './EventRelatedMarkets';
 import EventBreadcrumb from './EventBreadcrumb';
 import DashboardNavbar from '../dashboard/DashboardNavbar';
+import MarketComments from '../market/comments/MarketComments';
 
 function format_usd(usd: number | null): string {
     if (usd === null) return '—';
@@ -138,6 +139,7 @@ function Body({ market }: { market: MarketDTO }) {
                     />
                     <EventNews marketId={market.id} />
                     <EventTabs description={market.description} />
+                    <MarketComments market_id={market.id} />
                 </div>
                 <div>
                     <EventTradePanel

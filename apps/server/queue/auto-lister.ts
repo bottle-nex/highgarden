@@ -37,12 +37,12 @@ export class AutoLister {
     }
 
     async runOnce(): Promise<AutoListerResult> {
-        const by_volume = await this.gamma.fetch_markets({
+        const by_volume = await this.gamma.fetch_events({
             limit: this.batchLimit,
             order: "volume_24hr",
             ascending: false,
         });
-        const by_recency = await this.gamma.fetch_markets({
+        const by_recency = await this.gamma.fetch_events({
             limit: this.batchLimit,
             order: "start_date",
             ascending: false,
@@ -126,12 +126,14 @@ export class AutoLister {
 
         const { yes_token_id, no_token_id } = GammaClient.pick_yes_no_token_ids(market);
 
-        // Always keep PolyMarket metadata (imageUrl, slug, etc.) up to date.
+        // Always keep PolyMarket metadata (imageUrl, slug, eventId, etc.) up to date.
         await this.db.polyMarket.upsert({
             where: { id: market.id },
             create: {
                 id: market.id,
                 slug: market.slug || null,
+                eventId: market.event_id,
+                eventSlug: market.event_slug,
                 yesTokenId: yes_token_id,
                 noTokenId: no_token_id,
                 tickSize: market.minimum_tick_size,
@@ -140,6 +142,8 @@ export class AutoLister {
             },
             update: {
                 slug: market.slug || null,
+                eventId: market.event_id,
+                eventSlug: market.event_slug,
                 yesTokenId: yes_token_id,
                 noTokenId: no_token_id,
                 tickSize: market.minimum_tick_size,

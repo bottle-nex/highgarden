@@ -1,13 +1,14 @@
 model User {
-    id            String    @id @default(cuid())
-    name          String?
-    email         String    @unique
-    image         String?
-    emailVerified DateTime?
-    walletAddress String?
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  image         String?
+  emailVerified DateTime?
+  walletAddress String?
 
-    custodialPublicKey       String? @unique
-    custodialSecretEncrypted String?
+  custodialPublicKey       String? @unique
+  custodialSecretEncrypted String?
 
-    fills Fill[]
+  fills    Fill[]
+  comments Comment[]
 }

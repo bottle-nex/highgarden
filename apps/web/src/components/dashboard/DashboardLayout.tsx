@@ -1,6 +1,6 @@
 import { JSX, ReactNode } from 'react';
 import DashboardNavbar from './DashboardNavbar';
-import CategoryTabs from './CategoryTabs';
+import CategoryTabs from './CategorySidebar';
 
 export default function DashboardLayout({ children }: { children: ReactNode }): JSX.Element {
     return (

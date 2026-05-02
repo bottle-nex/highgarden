@@ -75,6 +75,44 @@ export interface MarketDTO {
   volume24hUsd: number | null;
   liquidityUsd: number | null;
   imageUrl: string | null;
+  eventId: string | null;
+  eventSlug: string | null;
+}
+
+/** Native comment posted by a solmarket user. */
+export interface CommentDTO {
+  id: string;
+  eventId: string;
+  body: string;
+  reportCount: number;
+  createdAt: string;
+  author: {
+    userId: string;
+    username: string;
+    walletShort: string | null;
+  };
+}
+
+/** Position the commenter holds in this event (only present for holders). */
+export interface PolymarketCommentPositionDTO {
+  tokenId: string;
+  positionUsd: number;
+}
+
+/** Read-only comment mirrored from Polymarket's gamma API. */
+export interface PolymarketCommentDTO {
+  id: string;
+  body: string;
+  parentCommentId: string | null;
+  createdAt: string;
+  reactionCount: number;
+  author: {
+    name: string | null;
+    pseudonym: string | null;
+    walletShort: string | null;
+    profileImage: string | null;
+  };
+  positions: PolymarketCommentPositionDTO[];
 }
 
 // ─── Order book ───────────────────────────────────────────────────────────────

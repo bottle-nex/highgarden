@@ -1,35 +1,34 @@
-
 enum Side {
-    BUY
-    SELL
+  BUY
+  SELL
 }
 
 enum Outcome {
-    YES
-    NO
+  YES
+  NO
 }
 
 enum MarketStatus {
-    OPEN
-    PAUSED
-    RESOLVED
-    CANCELLED
+  OPEN
+  PAUSED
+  RESOLVED
+  CANCELLED
 }
 
 enum HedgeStatus {
-    PENDING
-    FILLED
-    PARTIAL
-    FAILED
+  PENDING
+  FILLED
+  PARTIAL
+  FAILED
 }
 
 enum Chain {
-    SOLANA
-    POLYGON
+  SOLANA
+  POLYGON
 }
 
 enum ListingStatus {
-    PENDING
-    APPROVED
-    REJECTED
+  PENDING
+  APPROVED
+  REJECTED
 }

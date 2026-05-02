@@ -32,6 +32,8 @@ export default class ListPublicMarketsController {
                     volume24hUsd: l.volume24hUsd,
                     liquidityUsd: l.liquidityUsd,
                     imageUrl: p.imageUrl,
+                    eventId: p.eventId,
+                    eventSlug: p.eventSlug,
                 });
             }
 

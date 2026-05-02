@@ -6,6 +6,10 @@ import GetPriceHistoryController from "../../controllers/markets/controller.get-
 import GetRecentTradesController from "../../controllers/markets/controller.get-recent-trades";
 import GetMarketNewsController from "../../controllers/markets/controller.get-news";
 import GetRecentNewsController from "../../controllers/markets/controller.get-recent-news";
+import GetPolymarketCommentsController from "../../controllers/markets/controller.get-polymarket-comments";
+import ListCommentsController from "../../controllers/comments/controller.list-comments";
+import CreateCommentController from "../../controllers/comments/controller.create-comment";
+import { requireAuth } from "../../middleware/middleware.auth";
 
 const markets_router: Router = Router();
 
@@ -18,5 +22,8 @@ markets_router.get("/:id/orderbook", GetOrderBookController.process);
 markets_router.get("/:id/price-history", GetPriceHistoryController.process);
 markets_router.get("/:id/trades", GetRecentTradesController.process);
 markets_router.get("/:id/news", GetMarketNewsController.process);
+markets_router.get("/:id/polymarket-comments", GetPolymarketCommentsController.process);
+markets_router.get("/:id/comments", ListCommentsController.process);
+markets_router.post("/:id/comments", requireAuth, CreateCommentController.process);
 
 export default markets_router;

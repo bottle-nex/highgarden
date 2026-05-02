@@ -42,6 +42,8 @@ export default class GetMarketByIdController {
                 volume24hUsd: listing.volume24hUsd,
                 liquidityUsd: listing.liquidityUsd,
                 imageUrl: p.imageUrl,
+                eventId: p.eventId,
+                eventSlug: p.eventSlug,
             };
 
             return ResponseWriter.success(res, dto, "Market");
