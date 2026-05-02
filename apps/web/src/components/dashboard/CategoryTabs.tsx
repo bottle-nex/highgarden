@@ -2,39 +2,39 @@
 import { JSX } from 'react';
 import { IconType } from 'react-icons';
 import {
-    LuFlame,
-    LuBellRing,
-    LuSparkles,
-    LuLandmark,
-    LuTrophy,
-    LuBitcoin,
-    LuGlobe,
-    LuClapperboard,
-    LuCpu,
-    LuChartLine,
-    LuCloudSun,
-    LuVote,
-    LuAtSign,
-} from 'react-icons/lu';
+    PiFlameFill,
+    PiBellRingingFill,
+    PiSparkleFill,
+    PiBankFill,
+    PiTrophyFill,
+    PiCurrencyBtcFill,
+    PiGlobeFill,
+    PiFilmSlateFill,
+    PiCpuFill,
+    PiChartLineFill,
+    PiCloudSunFill,
+    PiCheckSquareOffsetFill,
+    PiAtFill,
+} from 'react-icons/pi';
 import { cn } from '@/lib/utils';
 import { CATEGORY_TABS } from '@/utils/constants';
 import { useCategoryStore } from '@/store/ui/useCategoryStore';
 import { AiOutlineStock } from 'react-icons/ai';
 
 const CATEGORY_ICONS: Record<(typeof CATEGORY_TABS)[number], IconType> = {
-    Trending: LuFlame,
-    Breaking: LuBellRing,
-    New: LuSparkles,
-    Politics: LuLandmark,
-    Sports: LuTrophy,
-    Crypto: LuBitcoin,
-    Geopolitics: LuGlobe,
-    Culture: LuClapperboard,
-    Tech: LuCpu,
-    Economy: LuChartLine,
-    Weather: LuCloudSun,
-    Elections: LuVote,
-    Mentions: LuAtSign,
+    Trending: PiFlameFill,
+    Breaking: PiBellRingingFill,
+    New: PiSparkleFill,
+    Politics: PiBankFill,
+    Sports: PiTrophyFill,
+    Crypto: PiCurrencyBtcFill,
+    Geopolitics: PiGlobeFill,
+    Culture: PiFilmSlateFill,
+    Tech: PiCpuFill,
+    Economy: PiChartLineFill,
+    Weather: PiCloudSunFill,
+    Elections: PiCheckSquareOffsetFill,
+    Mentions: PiAtFill,
 };
 
 export default function CategoryTabs(): JSX.Element {

@@ -19,6 +19,7 @@ import EventTradePanel from './EventTradePanel';
 import EventTabs from './EventTabs';
 import EventRelatedMarkets from './EventRelatedMarkets';
 import EventBreadcrumb from './EventBreadcrumb';
+import DashboardNavbar from '../dashboard/DashboardNavbar';
 
 function format_usd(usd: number | null): string {
     if (usd === null) return '—';
@@ -64,19 +65,7 @@ export default function EventDetail({ id }: { id: string }) {
 
     return (
         <div data-lenis-prevent className="min-h-screen w-full bg-dark-alpha text-white/80">
-            <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm border-b border-white/8">
-                <div className="mx-auto w-full max-w-360 h-16 px-6 lg:px-8 flex items-center justify-between">
-                    <Link
-                        href="/dashboard"
-                        className="text-[10px] tracking-[0.25em] uppercase text-white/55 hover:text-white"
-                    >
-                        ← Back to dashboard
-                    </Link>
-                    <span className="text-[10px] tracking-[0.25em] uppercase text-white/30">
-                        EVENT
-                    </span>
-                </div>
-            </header>
+            <DashboardNavbar />
 
             <main className="mx-auto w-full max-w-360 px-6 lg:px-8 py-10 lg:py-12">
                 {state.status === 'loading' && <Frame>Loading market…</Frame>}

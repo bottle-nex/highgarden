@@ -163,11 +163,11 @@ export default function EventPriceChart({
     const xTicks = useMemo(() => {
         if (points.length === 0) return [];
         const stepSeconds: Record<PriceHistoryRange, number> = {
-            '1h':  15 * 60,
-            '6h':   1 * 60 * 60,
-            '1d':   4 * 60 * 60,
-            '1w':  24 * 60 * 60,
-            '1m':   7 * 24 * 60 * 60,
+            '1h': 15 * 60,
+            '6h': 1 * 60 * 60,
+            '1d': 4 * 60 * 60,
+            '1w': 24 * 60 * 60,
+            '1m': 7 * 24 * 60 * 60,
             'all': 30 * 24 * 60 * 60,
         };
         const step = stepSeconds[range];
@@ -261,6 +261,7 @@ export default function EventPriceChart({
                     </div>
                     <div ref={settings_ref} className="relative flex gap-1 bg-white/2 border border-white/10 rounded-md p-0.75">
                         <button
+                            aria-label='settings'
                             type="button"
                             onClick={() => set_settings_open((v) => !v)}
                             className={`px-2 py-1 rounded transition-colors cursor-pointer flex items-center ${settings_open ? 'text-white/90 bg-white/[0.07]' : 'text-white/45 hover:text-white/75'}`}
@@ -282,6 +283,7 @@ export default function EventPriceChart({
                                         <div key={label} className="flex items-center justify-between py-2">
                                             <span className="text-[11px] text-white/70">{label}</span>
                                             <button
+                                                aria-label='settings'
                                                 type="button"
                                                 onClick={() => setter(!value)}
                                                 className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer ${value ? 'bg-blue-500' : 'bg-white/15'}`}

@@ -9,10 +9,12 @@ import { signOut } from 'next-auth/react';
 import { AnimatePresence } from 'motion/react';
 import OpacityBackground from '../ui/opacity-background';
 import UtilityCard from '../ui/utility-card';
+import DepositDialog from '../ui/deposit-dialog';
 
 export default function DashboardNavbar(): JSX.Element {
     const { session } = useUserSessionStore();
     const [logoutOpen, setLogoutOpen] = useState<boolean>(false);
+    const [openDepositDropdown, setDepositDropdown] = useState<boolean>(false);
 
     return (
         <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm border-b border-gray-500/15">
@@ -31,6 +33,7 @@ export default function DashboardNavbar(): JSX.Element {
                         Portfolio
                     </Button>
                     <Button
+                        onClick={() => setDepositDropdown((prev) => !prev)}
                         className={cn(
                             'h-9 px-4 rounded-sm text-[13px] tracking-wider bg-dark-base text-white transition-all transform duration-250',
                         )}
@@ -62,6 +65,7 @@ export default function DashboardNavbar(): JSX.Element {
                 </div>
             </div>
 
+            {openDepositDropdown && <DepositDialog onClose={() => setDepositDropdown(prev => !prev)} />}
             <AnimatePresence>
                 {logoutOpen && <LogoutDialog onClose={() => setLogoutOpen(false)} />}
             </AnimatePresence>
