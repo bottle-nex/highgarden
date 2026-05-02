@@ -132,7 +132,7 @@ export default function EventOrderBook({
 
             <div
                 className={`overflow-hidden [overflow-anchor:none] transition-[max-height] duration-300 ease-in-out ${
-                    is_open ? 'max-h-100' : 'max-h-0'
+                    is_open ? 'max-h-130' : 'max-h-0'
                 }`}
             >
                 <div>
@@ -179,32 +179,38 @@ export default function EventOrderBook({
                     {book.isHydrated && (asks.length > 0 || bids.length > 0) && (
                         <div ref={scroll_ref} className="h-105 overflow-y-auto">
                             <div className="pt-3.5 space-y-0.5">
-                                {asks
-                                    .map((lvl, i) => {
-                                        const cum = book.cumulativeAsks[i] ?? lvl.size;
-                                        const w = (cum / max_total) * 100;
-                                        return (
-                                            <div
-                                                key={`ask-${lvl.price}`}
-                                                className="relative grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
-                                            >
+                                {asks.length === 0 ? (
+                                    <div className="py-4 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
+                                        No asks
+                                    </div>
+                                ) : (
+                                    asks
+                                        .map((lvl, i) => {
+                                            const cum = book.cumulativeAsks[i] ?? lvl.size;
+                                            const w = (cum / max_total) * 100;
+                                            return (
                                                 <div
-                                                    className="absolute inset-y-0 right-0 bg-rose-500/20 rounded-l-sm pointer-events-none"
-                                                    style={{ width: `${w}%` }}
-                                                />
-                                                <span className="relative text-right font-medium text-rose-300">
-                                                    {format_cents(lvl.price)}
-                                                </span>
-                                                <span className="relative text-right text-white font-light">
-                                                    {format_size(lvl.size)}
-                                                </span>
-                                                <span className="relative text-right text-white/40 font-light">
-                                                    {format_total(lvl.price, lvl.size)}
-                                                </span>
-                                            </div>
-                                        );
-                                    })
-                                    .reverse()}
+                                                    key={`ask-${lvl.price}`}
+                                                    className="relative grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
+                                                >
+                                                    <div
+                                                        className="absolute inset-y-0 right-0 bg-rose-500/20 rounded-l-sm pointer-events-none"
+                                                        style={{ width: `${w}%` }}
+                                                    />
+                                                    <span className="relative text-right font-medium text-rose-300">
+                                                        {format_cents(lvl.price)}
+                                                    </span>
+                                                    <span className="relative text-right text-white font-light">
+                                                        {format_size(lvl.size)}
+                                                    </span>
+                                                    <span className="relative text-right text-white/40 font-light">
+                                                        {format_total(lvl.price, lvl.size)}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })
+                                        .reverse()
+                                )}
                             </div>
 
                             <div
@@ -217,35 +223,41 @@ export default function EventOrderBook({
                                 <span className="text-[13px] tabular-nums text-white/85 font-medium">
                                     {book.spread !== null
                                         ? `${(book.spread * 100).toFixed(2)}¢`
-                                        : '—'}
+                                        : '0.00¢'}
                                 </span>
                             </div>
 
                             <div className="space-y-0.5">
-                                {bids.map((lvl, i) => {
-                                    const cum = book.cumulativeBids[i] ?? lvl.size;
-                                    const w = (cum / max_total) * 100;
-                                    return (
-                                        <div
-                                            key={`bid-${lvl.price}`}
-                                            className="relative grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
-                                        >
+                                {bids.length === 0 ? (
+                                    <div className="grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums">
+                                        <span className="col-span-3 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">No bids</span>
+                                    </div>
+                                ) : (
+                                    bids.map((lvl, i) => {
+                                        const cum = book.cumulativeBids[i] ?? lvl.size;
+                                        const w = (cum / max_total) * 100;
+                                        return (
                                             <div
-                                                className="absolute inset-y-0 right-0 bg-emerald-500/20 rounded-l-sm pointer-events-none"
-                                                style={{ width: `${w}%` }}
-                                            />
-                                            <span className="relative text-right font-medium text-emerald-300">
-                                                {format_cents(lvl.price)}
-                                            </span>
-                                            <span className="relative text-right text-white font-light">
-                                                {format_size(lvl.size)}
-                                            </span>
-                                            <span className="relative text-right text-white/40 font-light">
-                                                {format_total(lvl.price, lvl.size)}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
+                                                key={`bid-${lvl.price}`}
+                                                className="relative grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
+                                            >
+                                                <div
+                                                    className="absolute inset-y-0 right-0 bg-emerald-500/20 rounded-l-sm pointer-events-none"
+                                                    style={{ width: `${w}%` }}
+                                                />
+                                                <span className="relative text-right font-medium text-emerald-300">
+                                                    {format_cents(lvl.price)}
+                                                </span>
+                                                <span className="relative text-right text-white font-light">
+                                                    {format_size(lvl.size)}
+                                                </span>
+                                                <span className="relative text-right text-white/40 font-light">
+                                                    {format_total(lvl.price, lvl.size)}
+                                                </span>
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
                         </div>
                     )}
