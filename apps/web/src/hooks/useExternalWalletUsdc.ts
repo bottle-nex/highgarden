@@ -45,8 +45,8 @@ export function useExternalWalletUsdc(): State {
             const balance = await connection.getTokenAccountBalance(ata, 'confirmed');
             const v = balance.value;
             // uiAmount can be null for tiny amounts; fall back to uiAmountString → amount/10^decimals.
-            const ui = v.uiAmount ?? Number(v.uiAmountString) ??
-                Number(v.amount) / 10 ** v.decimals;
+            const ui =
+                v.uiAmount ?? Number(v.uiAmountString) ?? Number(v.amount) / 10 ** v.decimals;
             set_ui_amount(Number.isFinite(ui) ? ui : 0);
         } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);

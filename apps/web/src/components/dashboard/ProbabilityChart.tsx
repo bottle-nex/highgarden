@@ -87,7 +87,11 @@ export default function ProbabilityChart({ data, height = 240 }: Props): JSX.Ele
     }, []);
 
     return (
-        <div ref={wrapper_ref} className="relative w-full select-none outline-none" style={{ height }}>
+        <div
+            ref={wrapper_ref}
+            className="relative w-full select-none outline-none"
+            style={{ height }}
+        >
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                     data={data}

@@ -32,39 +32,65 @@ export default class MarketSocket extends SocketBase {
         if (this.idle_close_timer) {
             clearTimeout(this.idle_close_timer);
             this.idle_close_timer = null;
-            console.log(chalk.gray("[poly:market] close timer cancelled — new subscriber arrived"), token_id);
+            console.log(
+                chalk.gray("[poly:market] close timer cancelled — new subscriber arrived"),
+                token_id,
+            );
         }
 
         const { firstRef } = this.registry.acquire(token_id);
-        console.log(chalk.blue("[poly:market] subscribe"), token_id, chalk.gray(`firstRef=${firstRef} state=${this.state} registry=${this.registry.size()}`));
+        console.log(
+            chalk.blue("[poly:market] subscribe"),
+            token_id,
+            chalk.gray(`firstRef=${firstRef} state=${this.state} registry=${this.registry.size()}`),
+        );
         if (!firstRef) return;
 
         // Polymarket drops idle sockets, so we only open the connection on the
         // first subscription. Later acquires ride on the existing socket.
         if (this.state === "open") {
             this.send({ type: "MARKET", assets_ids: [token_id] });
-        } else if (this.state === "idle" || this.state === "closed" || this.state === "reconnecting") {
+        } else if (
+            this.state === "idle" ||
+            this.state === "closed" ||
+            this.state === "reconnecting"
+        ) {
             // "reconnecting" means a previous connect failed and a timer is pending —
             // clear it and reconnect immediately now that there's a real subscriber.
-            console.log(chalk.blue("[poly:market] → connecting"), token_id, chalk.gray(`state=${this.state}`));
+            console.log(
+                chalk.blue("[poly:market] → connecting"),
+                token_id,
+                chalk.gray(`state=${this.state}`),
+            );
             void this.connect();
         } else {
             // state="connecting" — token is in registry and will be included in the
             // subscribe frame when on_open fires. No connect() needed.
-            console.log(chalk.gray("[poly:market] queued in registry, waiting for open"), token_id, chalk.gray(`state=${this.state} registry=${this.registry.size()}`));
+            console.log(
+                chalk.gray("[poly:market] queued in registry, waiting for open"),
+                token_id,
+                chalk.gray(`state=${this.state} registry=${this.registry.size()}`),
+            );
         }
     }
 
     public unsubscribe(token_id: string): void {
         const { lastRef, count } = this.registry.release(token_id);
-        console.log(chalk.yellow("[poly:market] unsubscribe"), token_id, chalk.gray(`refs=${count} registry=${this.registry.size()}`));
+        console.log(
+            chalk.yellow("[poly:market] unsubscribe"),
+            token_id,
+            chalk.gray(`refs=${count} registry=${this.registry.size()}`),
+        );
         const active = this.state === "open" || this.state === "connecting";
         if (lastRef && this.registry.size() === 0 && active) {
             if (this.idle_close_timer) clearTimeout(this.idle_close_timer);
             console.log(chalk.gray("[poly:market] no subscribers — starting 3s close timer"));
             this.idle_close_timer = setTimeout(() => {
                 this.idle_close_timer = null;
-                if (this.registry.size() === 0 && (this.state === "open" || this.state === "connecting")) {
+                if (
+                    this.registry.size() === 0 &&
+                    (this.state === "open" || this.state === "connecting")
+                ) {
                     console.log(chalk.gray("[poly:market] closing Polymarket WSS"));
                     void this.stop();
                 }

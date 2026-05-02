@@ -5,7 +5,7 @@ import LiveMarketGrid from './LiveMarketGrid';
 import LiveStakingSection from './LiveStakingSection';
 import BreakingNewsList from './BreakingNewsList';
 import HotTopicsList from './HotTopicsList';
-import { breakingNews, hotTopics } from '@/utils/constants';
+import { hotTopics } from '@/utils/constants';
 import { useCategoryStore } from '@/store/ui/useCategoryStore';
 import type { Category } from '@/store/ui/useCategoryStore';
 
@@ -25,7 +25,7 @@ function TrendingSection(): JSX.Element {
                 </div>
 
                 <aside className="grid grid-rows-2 gap-2 min-h-0 py-1">
-                    <BreakingNewsList items={breakingNews.slice(0, 3)} />
+                    <BreakingNewsList limit={3} />
                     <HotTopicsList topics={hotTopics.slice(0, 3)} />
                 </aside>
             </div>

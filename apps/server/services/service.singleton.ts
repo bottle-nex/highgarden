@@ -6,6 +6,7 @@ import BookCache from "./service.book-cache";
 import MirrorControlPublisher from "./service.mirror-control";
 import PriceHistoryCache from "./service.price-history-cache";
 import TokenIndex from "./service.token-index";
+import NewsService from "./service.news";
 import { ClobClient } from "../polymarket/clob";
 
 export default class Services {
@@ -15,6 +16,7 @@ export default class Services {
     public clob!: ClobClient;
     public price_history_cache!: PriceHistoryCache;
     public token_index!: TokenIndex;
+    public news!: NewsService;
 
     public async boot(): Promise<void> {
         this.redis = new Redis(ENV.SERVER_REDIS_URL);
@@ -23,6 +25,7 @@ export default class Services {
         this.clob = new ClobClient();
         this.price_history_cache = new PriceHistoryCache();
         this.token_index = new TokenIndex(this.redis);
+        this.news = new NewsService();
         await this.token_index.start();
         errorHandler;
     }

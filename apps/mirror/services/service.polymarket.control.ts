@@ -94,7 +94,9 @@ export default class PolymarketControlListener {
 
         console.log(
             chalk.cyan("[poly:control] converge"),
-            chalk.gray(`desired=${desired.length} current=${current.length} to_add=${to_add.length} to_remove=${to_remove.length}`),
+            chalk.gray(
+                `desired=${desired.length} current=${current.length} to_add=${to_add.length} to_remove=${to_remove.length}`,
+            ),
             to_add.length > 0 ? chalk.green(`+${to_add.join(",")}`) : "",
             to_remove.length > 0 ? chalk.red(`-${to_remove.join(",")}`) : "",
         );

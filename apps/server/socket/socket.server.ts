@@ -15,9 +15,9 @@ export default class SocketServer {
     private wss: WebSocketServer;
     public readonly subscriber: RedisSubscriber;
     private socket_mapping = new Map<string, CustomWebSocket>(); // Map<ws.id, CustomWebSocket>
-    private email_socket = new Map<string, string>();             // Map<email, ws.id>
-    private client_subs = new Map<string, Set<string>>();         // Map<ws.id, Set<token_id>>
-    private token_clients = new Map<string, Set<string>>();       // Map<token_id, Set<ws.id>>
+    private email_socket = new Map<string, string>(); // Map<email, ws.id>
+    private client_subs = new Map<string, Set<string>>(); // Map<ws.id, Set<token_id>>
+    private token_clients = new Map<string, Set<string>>(); // Map<token_id, Set<ws.id>>
 
     constructor(
         server: Server,
@@ -68,7 +68,12 @@ export default class SocketServer {
             });
 
             ws.on("error", (err) => {
-                console.log(chalk.bgRed("socket disconnected with error"), ws.user.email, chalk.gray(ws.id), err);
+                console.log(
+                    chalk.bgRed("socket disconnected with error"),
+                    ws.user.email,
+                    chalk.gray(ws.id),
+                    err,
+                );
                 ws.close();
             });
         });
@@ -192,7 +197,12 @@ export default class SocketServer {
                         this.token_clients.delete(token_id);
                     }
                 }
-                console.log(chalk.yellow("← unsubscribe"), chalk.gray("[disconnect]"), email, token_id);
+                console.log(
+                    chalk.yellow("← unsubscribe"),
+                    chalk.gray("[disconnect]"),
+                    email,
+                    token_id,
+                );
                 this.subscriber.unsubscribe(token_id);
             }
         }
@@ -205,13 +215,23 @@ export default class SocketServer {
         void (async () => {
             try {
                 const res = await fetch(`https://clob.polymarket.com/book?token_id=${token_id}`);
-                console.log(chalk.cyan("[ws:book] response"), token_id, chalk.gray(`status=${res.status} ws_state=${ws.readyState}`));
+                console.log(
+                    chalk.cyan("[ws:book] response"),
+                    token_id,
+                    chalk.gray(`status=${res.status} ws_state=${ws.readyState}`),
+                );
                 if (!res.ok) {
                     console.warn(chalk.yellow("[ws:book] fetch failed"), token_id, res.status);
                     return;
                 }
-                const data = await res.json() as Record<string, unknown>;
-                console.log(chalk.cyan("[ws:book] parsed"), token_id, chalk.gray(`bids=${Array.isArray(data.bids) ? (data.bids as unknown[]).length : "NOT_ARRAY"} asks=${Array.isArray(data.asks) ? (data.asks as unknown[]).length : "NOT_ARRAY"}`));
+                const data = (await res.json()) as Record<string, unknown>;
+                console.log(
+                    chalk.cyan("[ws:book] parsed"),
+                    token_id,
+                    chalk.gray(
+                        `bids=${Array.isArray(data.bids) ? (data.bids as unknown[]).length : "NOT_ARRAY"} asks=${Array.isArray(data.asks) ? (data.asks as unknown[]).length : "NOT_ARRAY"}`,
+                    ),
+                );
                 if (!Array.isArray(data.bids) || !Array.isArray(data.asks)) return;
                 const event = {
                     event_type: "book" as const,
@@ -219,14 +239,26 @@ export default class SocketServer {
                     market: typeof data.market === "string" ? data.market : "",
                     bids: data.bids as Array<{ price: string; size: string }>,
                     asks: data.asks as Array<{ price: string; size: string }>,
-                    timestamp: typeof data.timestamp === "string" ? data.timestamp : new Date().toISOString(),
+                    timestamp:
+                        typeof data.timestamp === "string"
+                            ? data.timestamp
+                            : new Date().toISOString(),
                     hash: typeof data.hash === "string" ? data.hash : "",
                 };
                 if (ws.readyState !== ws.OPEN) {
-                    console.warn(chalk.yellow("[ws:book] ws closed before send"), token_id, chalk.gray(`ws_state=${ws.readyState}`));
+                    console.warn(
+                        chalk.yellow("[ws:book] ws closed before send"),
+                        token_id,
+                        chalk.gray(`ws_state=${ws.readyState}`),
+                    );
                     return;
                 }
-                console.log(chalk.cyan("→ book fetch "), ws.user.email, token_id, chalk.gray(`bids=${event.bids.length} asks=${event.asks.length}`));
+                console.log(
+                    chalk.cyan("→ book fetch "),
+                    ws.user.email,
+                    token_id,
+                    chalk.gray(`bids=${event.bids.length} asks=${event.asks.length}`),
+                );
                 this.send(ws, { type: SERVER_MESSAGE_TYPE.MARKET, event });
             } catch (err) {
                 console.warn(chalk.yellow("[ws:book] fetch error"), token_id, err);

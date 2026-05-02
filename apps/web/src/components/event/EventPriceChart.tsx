@@ -1,6 +1,7 @@
 'use client';
 
 import { JSX, useEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import {
     ResponsiveContainer,
     AreaChart,
@@ -13,7 +14,7 @@ import {
 } from 'recharts';
 import { Outcome, type PriceHistoryPoint, type PriceHistoryRange } from '@solmarket/types';
 import { fetch_market_price_history } from '@/lib/api/markets';
-import { TbSettings } from "react-icons/tb";
+import { TbSettings } from 'react-icons/tb';
 
 const RANGES: ReadonlyArray<{ key: PriceHistoryRange; label: string }> = [
     { key: '1h', label: '1H' },
@@ -168,7 +169,7 @@ export default function EventPriceChart({
             '1d': 4 * 60 * 60,
             '1w': 24 * 60 * 60,
             '1m': 7 * 24 * 60 * 60,
-            'all': 30 * 24 * 60 * 60,
+            all: 30 * 24 * 60 * 60,
         };
         const step = stepSeconds[range];
         const result: number[] = [];
@@ -226,21 +227,33 @@ export default function EventPriceChart({
                     <span className="w-1.5 h-1.5 rounded-full bg-yellow-400/80" />
                     PRICE HISTORY
                 </div>
-                <div className='flex items-center gap-x-3'>
+                <div className="flex items-center gap-x-3">
                     <div className="flex gap-1 bg-white/2.5 border border-white/8 rounded-md p-0.75">
                         {[Outcome.YES, Outcome.NO].map((o) => (
                             <button
                                 key={o}
                                 type="button"
                                 onClick={() => onOutcomeChange(o)}
-                                className={`px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium transition-colors cursor-pointer ${selectedOutcome === o
-                                    ? o === Outcome.YES
-                                        ? 'bg-emerald-500/15 text-emerald-300'
-                                        : 'bg-rose-500/15 text-rose-300'
-                                    : 'text-white/45 hover:text-white/75'
-                                    }`}
+                                className={`relative px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium transition-colors cursor-pointer ${
+                                    selectedOutcome === o
+                                        ? o === Outcome.YES
+                                            ? 'text-emerald-300'
+                                            : 'text-rose-300'
+                                        : 'text-white/45 hover:text-white/75'
+                                }`}
                             >
-                                {o}
+                                {selectedOutcome === o && (
+                                    <motion.span
+                                        layoutId="chart-outcome-pill"
+                                        className={`absolute inset-0 rounded ${
+                                            o === Outcome.YES
+                                                ? 'bg-emerald-500/15'
+                                                : 'bg-rose-500/15'
+                                        }`}
+                                        transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                                    />
+                                )}
+                                <span className="relative z-10">{o}</span>
                             </button>
                         ))}
                     </div>
@@ -250,18 +263,29 @@ export default function EventPriceChart({
                                 key={r.key}
                                 type="button"
                                 onClick={() => set_range(r.key)}
-                                className={`px-3 py-1 rounded text-[9px] tracking-[0.2em] uppercase  transition-colors cursor-pointer ${range === r.key
-                                    ? 'bg-white/[0.07] text-white'
-                                    : 'text-white/45 hover:text-white/75'
-                                    }`}
+                                className={`relative px-3 py-1 rounded text-[9px] tracking-[0.2em] uppercase transition-colors cursor-pointer ${
+                                    range === r.key
+                                        ? 'text-white'
+                                        : 'text-white/45 hover:text-white/75'
+                                }`}
                             >
-                                {r.label}
+                                {range === r.key && (
+                                    <motion.span
+                                        layoutId="chart-range-pill"
+                                        className="absolute inset-0 rounded bg-white/[0.07]"
+                                        transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                                    />
+                                )}
+                                <span className="relative z-10">{r.label}</span>
                             </button>
                         ))}
                     </div>
-                    <div ref={settings_ref} className="relative flex gap-1 bg-white/2 border border-white/10 rounded-md p-0.75">
+                    <div
+                        ref={settings_ref}
+                        className="relative flex gap-1 bg-white/2 border border-white/10 rounded-md p-0.75"
+                    >
                         <button
-                            aria-label='settings'
+                            aria-label="settings"
                             type="button"
                             onClick={() => set_settings_open((v) => !v)}
                             className={`px-2 py-1 rounded transition-colors cursor-pointer flex items-center ${settings_open ? 'text-white/90 bg-white/[0.07]' : 'text-white/45 hover:text-white/75'}`}
@@ -271,24 +295,43 @@ export default function EventPriceChart({
                         {settings_open && (
                             <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-52 rounded-lg border border-white/10 bg-[rgba(10,10,14,0.97)] shadow-[0_8px_32px_rgba(0,0,0,0.7)] backdrop-blur-xl">
                                 <div className="px-4 py-3 border-b border-white/8">
-                                    <span className="text-[10px] tracking-[0.25em] uppercase text-white/55 font-medium">Settings</span>
+                                    <span className="text-[10px] tracking-[0.25em] uppercase text-white/55 font-medium">
+                                        Settings
+                                    </span>
                                 </div>
                                 <div className="px-4 py-2 flex flex-col gap-0.5">
-                                    {([
-                                        ['X-Axis', showXAxis, setShowXAxis],
-                                        ['Y-Axis', showYAxis, setShowYAxis],
-                                        ['Horizontal Grid', showHorizontalGrid, setShowHorizontalGrid],
-                                        ['Vertical Grid', showVerticalGrid, setShowVerticalGrid],
-                                    ] as [string, boolean, (v: boolean) => void][]).map(([label, value, setter]) => (
-                                        <div key={label} className="flex items-center justify-between py-2">
-                                            <span className="text-[11px] text-white/70">{label}</span>
+                                    {(
+                                        [
+                                            ['X-Axis', showXAxis, setShowXAxis],
+                                            ['Y-Axis', showYAxis, setShowYAxis],
+                                            [
+                                                'Horizontal Grid',
+                                                showHorizontalGrid,
+                                                setShowHorizontalGrid,
+                                            ],
+                                            [
+                                                'Vertical Grid',
+                                                showVerticalGrid,
+                                                setShowVerticalGrid,
+                                            ],
+                                        ] as [string, boolean, (v: boolean) => void][]
+                                    ).map(([label, value, setter]) => (
+                                        <div
+                                            key={label}
+                                            className="flex items-center justify-between py-2"
+                                        >
+                                            <span className="text-[11px] text-white/70">
+                                                {label}
+                                            </span>
                                             <button
-                                                aria-label='settings'
+                                                aria-label="settings"
                                                 type="button"
                                                 onClick={() => setter(!value)}
                                                 className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer ${value ? 'bg-blue-500' : 'bg-white/15'}`}
                                             >
-                                                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${value ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+                                                <span
+                                                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${value ? 'translate-x-4.5' : 'translate-x-0.5'}`}
+                                                />
                                             </button>
                                         </div>
                                     ))}
@@ -419,7 +462,11 @@ export default function EventPriceChart({
                                 ticks={xTicks}
                                 tickFormatter={(v) => format_x_label(v as number, range)}
                                 hide={!showXAxis}
-                                tick={{ fill: 'rgba(255,255,255,0.18)', fontSize: 9, fontFamily: 'var(--m-, monospace)' }}
+                                tick={{
+                                    fill: 'rgba(255,255,255,0.18)',
+                                    fontSize: 9,
+                                    fontFamily: 'var(--m-, monospace)',
+                                }}
                                 tickLine={false}
                                 axisLine={false}
                             />
@@ -439,7 +486,10 @@ export default function EventPriceChart({
                             />
                             <Tooltip
                                 content={(props) => <ChartTooltip {...props} />}
-                                cursor={{ stroke: isNo ? 'rgba(244,63,94,0.25)' : 'rgba(255,214,8,0.3)', strokeWidth: 1 }}
+                                cursor={{
+                                    stroke: isNo ? 'rgba(244,63,94,0.25)' : 'rgba(255,214,8,0.3)',
+                                    strokeWidth: 1,
+                                }}
                                 isAnimationActive={false}
                                 wrapperStyle={{ transition: 'none', pointerEvents: 'none' }}
                                 position={

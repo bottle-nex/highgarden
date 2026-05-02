@@ -33,9 +33,14 @@ export abstract class SocketBase {
     protected abstract handle_message(msg: unknown): void;
 
     public async connect(): Promise<void> {
-        console.log(chalk.blue(`[poly:${this.name}] connect()`), chalk.gray(`state=${this.state} stopped=${this.stopped}`));
+        console.log(
+            chalk.blue(`[poly:${this.name}] connect()`),
+            chalk.gray(`state=${this.state} stopped=${this.stopped}`),
+        );
         if (this.state === "open" || this.state === "connecting") {
-            console.log(chalk.gray(`[poly:${this.name}] connect() skipped — already ${this.state}`));
+            console.log(
+                chalk.gray(`[poly:${this.name}] connect() skipped — already ${this.state}`),
+            );
             return;
         }
         this.stopped = false;
@@ -73,7 +78,7 @@ export abstract class SocketBase {
         try {
             this.ws?.close(1000, "shutdown");
             //eslint-disable-next-line no-empty
-        } catch { }
+        } catch {}
         this.ws = null;
         this.set_state("closed");
     }
@@ -95,10 +100,18 @@ export abstract class SocketBase {
         const frame = this.get_subscribe_frame();
         if (frame) {
             const ids = (frame as { assets_ids?: string[] }).assets_ids ?? [];
-            console.log(chalk.green(`[poly:${this.name}] sending subscribe frame`), chalk.gray(`tokens=${ids.length}`), ids);
+            console.log(
+                chalk.green(`[poly:${this.name}] sending subscribe frame`),
+                chalk.gray(`tokens=${ids.length}`),
+                ids,
+            );
             this.ws!.send(JSON.stringify(frame));
         } else {
-            console.log(chalk.yellow(`[poly:${this.name}] no tokens in registry at open — skipping subscribe frame`));
+            console.log(
+                chalk.yellow(
+                    `[poly:${this.name}] no tokens in registry at open — skipping subscribe frame`,
+                ),
+            );
         }
 
         while (this.send_queue.length > 0 && this.ws) {
@@ -109,7 +122,7 @@ export abstract class SocketBase {
             try {
                 this.ws?.send("PING");
                 //eslint-disable-next-line no-empty
-            } catch { }
+            } catch {}
         }, POLY_WS.heartbeat_ms);
 
         try {
@@ -137,13 +150,13 @@ export abstract class SocketBase {
         let log_data_2;
 
         if (typeof parsed === "object" && parsed !== null && "price_changes" in parsed) {
-            const priceChanges = (parsed as { price_changes: Array<{ asset_id: string }> }).price_changes;
+            const priceChanges = (parsed as { price_changes: Array<{ asset_id: string }> })
+                .price_changes;
             if (Array.isArray(priceChanges)) {
                 log_data_1 = priceChanges[0]?.asset_id;
                 log_data_2 = priceChanges[1]?.asset_id;
             }
         }
-
 
         console.log(chalk.yellow("message received from clob client: "), log_data_1);
         console.log(chalk.yellow("message received from clob client: "), log_data_2);
