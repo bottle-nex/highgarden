@@ -118,6 +118,8 @@ function Body({ market }: { market: MarketDTO }) {
     return (
         <div className="space-y-8 [overflow-anchor:none]">
             <EventBreadcrumb title={market.name} />
+            {/* <EventBreadcrumb title={market.noTokenId} /> */}
+            {/* <EventBreadcrumb title={market.yesTokenId} /> */}
             <EventTitleBlock market={market} />
             <ProbabilityHeadline marketId={market.id} delta24hPct={delta24h} />
 

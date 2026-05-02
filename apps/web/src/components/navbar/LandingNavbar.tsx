@@ -82,7 +82,7 @@ function GetStartedButton({ onClick }: { onClick: () => void }): JSX.Element {
         <Button
             type="button"
             onClick={onClick}
-            className="relative group/cta inline-flex items-center gap-x-3 bg-alpha hover:bg-alpha rounded-none h-10 px-4 cursor-pointer transition-colors duration-300"
+            className="relative group/cta inline-flex items-center gap-x-3 bg-dark-base hover:bg-dark-base rounded-none h-10 px-4 cursor-pointer transition-colors duration-300"
         >
             <span className=" text-[11px] tracking-[0.2em] uppercase text-white font-semibold">
                 GET STARTED
