@@ -51,21 +51,13 @@ export default function YesNoStakeCard({ market }: { market: YesNoMarket }): JSX
                 </div>
 
                 <div className="mt-5 flex items-center gap-3">
-                    <div className="flex-1 flex items-center justify-center gap-2 py-2 rounded-[4px] bg-emerald-500/8 border border-emerald-500/20 cursor-pointer hover:bg-emerald-500/14 transition-colors">
-                        <span className=" text-[9px] tracking-[0.15em] text-emerald-400/50 uppercase">
-                            YES
-                        </span>
-                        <span className=" text-[12px] text-emerald-400/80 tabular-nums">
-                            {market.yesPrice}¢
-                        </span>
+                    <div className="green-btn flex-1 flex items-center justify-center gap-2 py-2 rounded-[4px] border border-emerald-500/20">
+                        <span className="text-[9px] tracking-[0.15em] uppercase">YES</span>
+                        <span className="text-[12px] tabular-nums">{market.yesPrice}¢</span>
                     </div>
-                    <div className="flex-1 flex items-center justify-center gap-2 py-2 rounded-[4px] bg-rose-500/6 border border-rose-500/15 cursor-pointer hover:bg-rose-500/12 transition-colors">
-                        <span className=" text-[9px] tracking-[0.15em] text-rose-400/50 uppercase">
-                            NO
-                        </span>
-                        <span className=" text-[12px] text-rose-400/80 tabular-nums">
-                            {market.noPrice}¢
-                        </span>
+                    <div className="red-btn flex-1 flex items-center justify-center gap-2 py-2 rounded-[4px] border border-rose-500/15">
+                        <span className="text-[9px] tracking-[0.15em] uppercase">NO</span>
+                        <span className="text-[12px] tabular-nums">{market.noPrice}¢</span>
                     </div>
                 </div>
 

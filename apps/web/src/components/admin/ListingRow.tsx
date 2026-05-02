@@ -115,7 +115,7 @@ export default function ListingRow({
                             type="button"
                             disabled={pending}
                             onClick={handleApprove}
-                            className="h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-40"
+                            className="green-btn h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase disabled:opacity-40"
                         >
                             Approve
                         </button>
@@ -123,7 +123,7 @@ export default function ListingRow({
                             type="button"
                             disabled={pending}
                             onClick={() => setShowRejectInput((v) => !v)}
-                            className="h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 disabled:opacity-40"
+                            className="red-btn h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase disabled:opacity-40"
                         >
                             Reject
                         </button>
@@ -135,7 +135,7 @@ export default function ListingRow({
                         type="button"
                         disabled={pending}
                         onClick={() => setShowRejectInput((v) => !v)}
-                        className="h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 disabled:opacity-40 shrink-0"
+                        className="red-btn h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase disabled:opacity-40 shrink-0"
                     >
                         Delist
                     </button>

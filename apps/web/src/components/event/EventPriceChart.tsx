@@ -233,27 +233,11 @@ export default function EventPriceChart({
                             <button
                                 key={o}
                                 type="button"
+                                aria-pressed={selectedOutcome === o}
                                 onClick={() => onOutcomeChange(o)}
-                                className={`relative px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium transition-colors cursor-pointer ${
-                                    selectedOutcome === o
-                                        ? o === Outcome.YES
-                                            ? 'text-emerald-300'
-                                            : 'text-rose-300'
-                                        : 'text-white/45 hover:text-white/75'
-                                }`}
+                                className={`${o === Outcome.YES ? 'green-btn' : 'red-btn'} px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium`}
                             >
-                                {selectedOutcome === o && (
-                                    <motion.span
-                                        layoutId="chart-outcome-pill"
-                                        className={`absolute inset-0 rounded ${
-                                            o === Outcome.YES
-                                                ? 'bg-emerald-500/15'
-                                                : 'bg-rose-500/15'
-                                        }`}
-                                        transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                                    />
-                                )}
-                                <span className="relative z-10">{o}</span>
+                                {o}
                             </button>
                         ))}
                     </div>

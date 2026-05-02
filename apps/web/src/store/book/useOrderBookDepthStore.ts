@@ -54,6 +54,18 @@ export const useOrderBookDepthStore = create<DepthState>()(
                 set(
                     (s) => {
                         const key = makeBookKey(snap.marketId, snap.outcome);
+                        const has_levels = snap.bids.length > 0 || snap.asks.length > 0;
+                        const existing = s.byKey[key];
+                        // An empty HTTP snapshot must not clobber a populated WS
+                        // snapshot — server-side BookCache races mean a hydrate
+                        // can land seconds after live data is already in store.
+                        if (
+                            !has_levels &&
+                            existing &&
+                            (existing.bids.length > 0 || existing.asks.length > 0)
+                        ) {
+                            return s;
+                        }
                         const next: OrderBookDepth = {
                             marketId: snap.marketId,
                             outcome: snap.outcome,

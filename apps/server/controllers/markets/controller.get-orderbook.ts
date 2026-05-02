@@ -55,7 +55,7 @@ export default class GetOrderBookController {
             const tracked = services.book_cache.has_token(token_id);
             const depth_view = services.book_cache.get_depth(token_id, depth);
             const top = services.book_cache.getTopOfBook(token_id);
-
+            console.log("depth view is : ", depth_view);
             let status: OrderBookStatus;
             if (!tracked) {
                 status = "NOT_TRACKED";
@@ -81,7 +81,7 @@ export default class GetOrderBookController {
                             },
                         },
                     ])
-                    .catch(() => {});
+                    .catch(() => { });
             } else if (
                 (depth_view?.bids.length ?? 0) === 0 &&
                 (depth_view?.asks.length ?? 0) === 0

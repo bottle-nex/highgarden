@@ -16,7 +16,6 @@ import {
     PiCheckSquareOffsetFill,
     PiAtFill,
 } from 'react-icons/pi';
-import { GiCrystalGrowth } from "react-icons/gi";
 import { cn } from '@/lib/utils';
 import { CATEGORY_TABS } from '@/utils/constants';
 import { useCategoryStore } from '@/store/ui/useCategoryStore';
@@ -47,7 +46,7 @@ export default function CategorySidebar(): JSX.Element {
             <div className="h-16 px-3 flex items-center shrink-0">
                 <div className="flex gap-x-2 items-center">
                     <div className="h-8 w-8 rounded-sm flex items-center justify-center shrink-0">
-                        <GiDragonOrb className="text-white size-6" />
+                        <GiDragonOrb className="text-white size-7.5" />
                     </div>
 
 

@@ -81,9 +81,8 @@ export default function EventTradePanel({
                             key={t}
                             type="button"
                             onClick={() => set_tab(t)}
-                            className={`relative px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer ${
-                                tab === t ? 'text-white' : 'text-white/45 hover:text-white/75'
-                            }`}
+                            className={`relative px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer ${tab === t ? 'text-white' : 'text-white/45 hover:text-white/75'
+                                }`}
                         >
                             {tab === t && (
                                 <motion.span
@@ -104,52 +103,27 @@ export default function EventTradePanel({
             <div className="px-5 pt-4 pb-5 space-y-3.5">
                 <div ref={flash_ref} className="grid grid-cols-2 gap-2.5">
                     <button
+                        aria-label='yes'
                         type="button"
                         onClick={() => onOutcomeChange(Outcome.YES)}
-                        className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors cursor-pointer ${
-                            selectedOutcome === Outcome.YES
-                                ? 'bg-emerald-500/90'
-                                : 'bg-emerald-500/8 hover:bg-emerald-500/15'
-                        }`}
+                        className="green-btn flex items-center justify-between px-4 py-3 rounded-lg"
                     >
-                        <span
-                            className={`text-[12px] font-semibold tracking-[0.16em] uppercase ${
-                                selectedOutcome === Outcome.YES
-                                    ? 'text-white'
-                                    : 'text-emerald-400/85'
-                            }`}
-                        >
+                        <span className="text-[12px] font-semibold tracking-[0.16em] uppercase">
                             Yes
                         </span>
-                        <span
-                            className={`text-[15px] font-bold tabular-nums ${
-                                selectedOutcome === Outcome.YES ? 'text-white' : 'text-emerald-300'
-                            }`}
-                        >
+                        <span className="text-[15px] font-bold tabular-nums text-emerald-300">
                             {format_cents(yes_price)}
                         </span>
                     </button>
                     <button
                         type="button"
                         onClick={() => onOutcomeChange(Outcome.NO)}
-                        className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors cursor-pointer ${
-                            selectedOutcome === Outcome.NO
-                                ? 'bg-rose-600/80'
-                                : 'bg-rose-500/8 hover:bg-rose-500/15'
-                        }`}
+                        className="red-btn flex items-center justify-between px-4 py-3 rounded-lg"
                     >
-                        <span
-                            className={`text-[12px] font-semibold tracking-[0.16em] uppercase ${
-                                selectedOutcome === Outcome.NO ? 'text-white' : 'text-rose-400/85'
-                            }`}
-                        >
+                        <span className="text-[12px] font-semibold tracking-[0.16em] uppercase">
                             No
                         </span>
-                        <span
-                            className={`text-[15px] font-bold tabular-nums ${
-                                selectedOutcome === Outcome.NO ? 'text-white' : 'text-rose-300'
-                            }`}
-                        >
+                        <span className="text-[15px] font-bold tabular-nums text-rose-300">
                             {format_cents(no_price)}
                         </span>
                     </button>
@@ -164,9 +138,8 @@ export default function EventTradePanel({
                     </div>
                     <div className="flex items-center gap-1">
                         <span
-                            className={`text-3xl font-bold leading-none transition-colors ${
-                                amount ? 'text-white' : 'text-white/40'
-                            }`}
+                            className={`text-3xl font-bold leading-none transition-colors ${amount ? 'text-white' : 'text-white/40'
+                                }`}
                         >
                             $
                         </span>
@@ -182,9 +155,8 @@ export default function EventTradePanel({
                                 className="absolute inset-0 w-full bg-transparent outline-none text-3xl font-bold tabular-nums text-transparent caret-transparent placeholder:text-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                             <div
-                                className={`absolute inset-0 flex items-center pointer-events-none text-3xl font-bold tabular-nums ${
-                                    amount ? 'text-white' : 'text-white/20'
-                                }`}
+                                className={`absolute inset-0 flex items-center pointer-events-none text-3xl font-bold tabular-nums ${amount ? 'text-white' : 'text-white/20'
+                                    }`}
                             >
                                 {(amount || '0').split('').map((char, idx) => (
                                     <span

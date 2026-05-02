@@ -38,21 +38,23 @@ export default function TradingPanel({ market }: { market: MarketDetail }): JSX.
                     <div className={s.sideSelector}>
                         <button
                             type="button"
-                            className={`${s.sideBtn} ${s.sideBtnYes} ${selectedSide === 'YES' ? s.sideBtnYesActive : ''}`}
+                            aria-pressed={selectedSide === 'YES'}
+                            className={`${s.sideBtn} green-btn`}
                             onClick={() => setSelectedSide('YES')}
                         >
-                            <span className={`${s.sideBtnLabel} ${s.sideBtnLabelYes}`}>YES</span>
-                            <span className={`${s.sideBtnPrice} ${s.sideBtnPriceYes}`}>
+                            <span className={s.sideBtnLabel}>YES</span>
+                            <span className={s.sideBtnPrice}>
                                 {market.outcomes.find((o) => o.label === 'YES')?.probability ?? 0}¢
                             </span>
                         </button>
                         <button
                             type="button"
-                            className={`${s.sideBtn} ${s.sideBtnNo} ${selectedSide === 'NO' ? s.sideBtnNoActive : ''}`}
+                            aria-pressed={selectedSide === 'NO'}
+                            className={`${s.sideBtn} red-btn`}
                             onClick={() => setSelectedSide('NO')}
                         >
-                            <span className={`${s.sideBtnLabel} ${s.sideBtnLabelNo}`}>NO</span>
-                            <span className={`${s.sideBtnPrice} ${s.sideBtnPriceNo}`}>
+                            <span className={s.sideBtnLabel}>NO</span>
+                            <span className={s.sideBtnPrice}>
                                 {market.outcomes.find((o) => o.label === 'NO')?.probability ?? 0}¢
                             </span>
                         </button>
