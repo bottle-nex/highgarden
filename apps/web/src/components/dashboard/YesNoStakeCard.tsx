@@ -1,6 +1,7 @@
 'use client';
-import { JSX } from 'react';
+import { JSX, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { HiArrowTrendingUp, HiArrowTrendingDown } from 'react-icons/hi2';
 import type { YesNoMarket } from '@/utils/constants';
@@ -11,6 +12,8 @@ export default function YesNoStakeCard({ market }: { market: YesNoMarket }): JSX
     const TrendIcon = isUp ? HiArrowTrendingUp : HiArrowTrendingDown;
     const detail = getMarketById(market.id);
     const href = detail ? `/market/${detail.slug}` : `/event/${market.id}`;
+    const [img_error, set_img_error] = useState(false);
+    const show_image = !!market.imageUrl && !img_error;
 
     return (
         <Link
@@ -26,12 +29,26 @@ export default function YesNoStakeCard({ market }: { market: YesNoMarket }): JSX
             </div>
 
             <div className="p-6">
-                <h3 className="text-[14px] text-white/80 font-medium leading-snug">
-                    {market.title}
-                </h3>
-                <p className="mt-2.5 text-[12px] text-white/40 leading-relaxed line-clamp-2">
-                    {market.description}
-                </p>
+                <div className="flex items-start gap-3">
+                    {show_image && (
+                        <Image
+                            src={market.imageUrl!}
+                            alt=""
+                            width={40}
+                            height={40}
+                            className="shrink-0 rounded object-cover"
+                            onError={() => set_img_error(true)}
+                        />
+                    )}
+                    <div className="min-w-0">
+                        <h3 className="text-[14px] text-white/80 font-medium leading-snug">
+                            {market.title}
+                        </h3>
+                        <p className="mt-2.5 text-[12px] text-white/40 leading-relaxed line-clamp-2">
+                            {market.description}
+                        </p>
+                    </div>
+                </div>
 
                 <div className="mt-5 flex items-center gap-3">
                     <div className="flex-1 flex items-center justify-center gap-2 py-2 rounded-[4px] bg-emerald-500/8 border border-emerald-500/20 cursor-pointer hover:bg-emerald-500/14 transition-colors">

@@ -45,6 +45,7 @@ model PolyMarket {
     noTokenId  String
     tickSize   String
     negRisk    Boolean
+    imageUrl   String?
 
     market Market?
 }

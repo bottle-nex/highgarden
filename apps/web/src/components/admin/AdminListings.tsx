@@ -12,6 +12,7 @@ export interface AdminListingRow {
     endAt: string | null;
     polyMarketId: string;
     polyMarketSlug: string | null;
+    imageUrl: string | null;
     solanaMarketPda: string | null;
     yesTokenId: string | null;
     noTokenId: string | null;

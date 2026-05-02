@@ -63,6 +63,14 @@ export default function ListingRow({
     return (
         <li className="border border-white/8 rounded p-4 hover:border-white/20 transition-colors">
             <div className="flex items-start justify-between gap-4">
+                {listing.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                        src={listing.imageUrl}
+                        alt=""
+                        className="w-10 h-10 rounded object-cover shrink-0 bg-white/5"
+                    />
+                )}
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 min-w-0">
                         <p className="text-sm text-white truncate">{listing.question}</p>

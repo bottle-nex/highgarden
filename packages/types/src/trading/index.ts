@@ -74,6 +74,7 @@ export interface MarketDTO {
   solanaMarketPda: string | null;
   volume24hUsd: number | null;
   liquidityUsd: number | null;
+  imageUrl: string | null;
 }
 
 // ─── Order book ───────────────────────────────────────────────────────────────

@@ -31,6 +31,7 @@ export default class ListPublicMarketsController {
                     solanaMarketPda: m.solanaMarketPda,
                     volume24hUsd: l.volume24hUsd,
                     liquidityUsd: l.liquidityUsd,
+                    imageUrl: p.imageUrl,
                 });
             }
 

@@ -41,6 +41,7 @@ export default class GetMarketByIdController {
                 solanaMarketPda: m.solanaMarketPda,
                 volume24hUsd: listing.volume24hUsd,
                 liquidityUsd: listing.liquidityUsd,
+                imageUrl: p.imageUrl,
             };
 
             return ResponseWriter.success(res, dto, "Market");

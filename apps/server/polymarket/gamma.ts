@@ -20,6 +20,7 @@ export interface GammaMarket {
     liquidity: number;
     minimum_tick_size: string;
     neg_risk: boolean;
+    image_url: string | null;
     tokens: GammaToken[];
 }
 
@@ -52,6 +53,7 @@ interface RawGammaMarket {
     enableOrderBook?: boolean;
     clobTokenIds?: string;
     outcomes?: string;
+    image?: string;
 }
 
 const ORDER_FIELD_MAP: Record<NonNullable<FetchMarketsParams["order"]>, string> = {
@@ -149,6 +151,7 @@ function normalise(raw: RawGammaMarket): GammaMarket | null {
         liquidity: raw.liquidityNum ?? 0,
         minimum_tick_size: String(raw.orderPriceMinTickSize ?? 0.01),
         neg_risk: raw.negRisk ?? false,
+        image_url: raw.image ?? null,
         tokens,
     };
 }

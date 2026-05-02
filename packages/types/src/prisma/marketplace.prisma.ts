@@ -47,10 +47,12 @@ export interface Listing {
 
 export interface PolyMarket {
   id: string;
+  slug: string | null;
   yesTokenId: string;
   noTokenId: string;
   tickSize: string;
   negRisk: boolean;
+  imageUrl: string | null;
 
   market?: Market | null;
 }

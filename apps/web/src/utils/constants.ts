@@ -266,6 +266,7 @@ export interface YesNoMarket {
     change24h: number;
     endsIn: string;
     description: string;
+    imageUrl?: string | null;
 }
 
 export interface Candidate {

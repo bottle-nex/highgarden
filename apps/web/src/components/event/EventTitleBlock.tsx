@@ -1,8 +1,9 @@
 'use client';
 
-import { JSX } from 'react';
+import { JSX, useState } from 'react';
 import { toast } from 'sonner';
 import type { MarketDTO } from '@solmarket/types';
+import Image from 'next/image';
 
 function placeholder_gradient(seed: string): string {
     let h = 0;
@@ -19,14 +20,28 @@ export default function EventTitleBlock({ market }: Props): JSX.Element {
     const handle_share = () => toast.info('Share link coming soon');
     const handle_bookmark = () => toast.info('Bookmark coming soon');
     const handle_embed = () => toast.info('Embed coming soon');
+    const [img_error, set_img_error] = useState(false);
+
+    const show_image = !!market.imageUrl && !img_error;
 
     return (
         <header className="flex items-start gap-5">
             <div
-                className="shrink-0 w-16 h-16 rounded-md border border-white/10"
-                style={{ background: placeholder_gradient(market.id) }}
+                className="shrink-0 w-16 h-16 rounded-md border border-white/10 overflow-hidden"
+                style={show_image ? undefined : { background: placeholder_gradient(market.id) }}
                 aria-hidden
-            />
+            >
+                {show_image && (
+                    <Image
+                        src={market.imageUrl!}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        onError={() => set_img_error(true)}
+                        width={64}
+                        height={64}
+                    />
+                )}
+            </div>
             <div className="flex-1 min-w-0 space-y-2">
                 <h1 className="text-2xl text-white leading-snug font-medium">{market.name}</h1>
                 {market.description && (

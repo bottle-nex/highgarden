@@ -37,6 +37,7 @@ function dto_to_yes_no_market(m: MarketDTO): YesNoMarket {
         change24h: 0,
         endsIn: format_ends_in(m.endAt),
         description: m.description,
+        imageUrl: m.imageUrl,
     };
 }
 

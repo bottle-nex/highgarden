@@ -124,34 +124,37 @@ export class AutoLister {
             return "filtered";
         }
 
+        const { yes_token_id, no_token_id } = GammaClient.pick_yes_no_token_ids(market);
+
+        // Always keep PolyMarket metadata (imageUrl, slug, etc.) up to date.
+        await this.db.polyMarket.upsert({
+            where: { id: market.id },
+            create: {
+                id: market.id,
+                slug: market.slug || null,
+                yesTokenId: yes_token_id,
+                noTokenId: no_token_id,
+                tickSize: market.minimum_tick_size,
+                negRisk: market.neg_risk,
+                imageUrl: market.image_url,
+            },
+            update: {
+                slug: market.slug || null,
+                yesTokenId: yes_token_id,
+                noTokenId: no_token_id,
+                tickSize: market.minimum_tick_size,
+                negRisk: market.neg_risk,
+                imageUrl: market.image_url,
+            },
+        });
+
         const existing = await this.db.market.findFirst({
             where: { polyMarketId: market.id },
             select: { id: true },
         });
         if (existing) return "existing";
 
-        const { yes_token_id, no_token_id } = GammaClient.pick_yes_no_token_ids(market);
-
         await this.db.$transaction(async (tx) => {
-            await tx.polyMarket.upsert({
-                where: { id: market.id },
-                create: {
-                    id: market.id,
-                    slug: market.slug || null,
-                    yesTokenId: yes_token_id,
-                    noTokenId: no_token_id,
-                    tickSize: market.minimum_tick_size,
-                    negRisk: market.neg_risk,
-                },
-                update: {
-                    slug: market.slug || null,
-                    yesTokenId: yes_token_id,
-                    noTokenId: no_token_id,
-                    tickSize: market.minimum_tick_size,
-                    negRisk: market.neg_risk,
-                },
-            });
-
             const created = await tx.market.create({
                 data: {
                     name: market.question,

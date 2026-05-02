@@ -24,6 +24,7 @@ export interface AdminListingApi {
             noTokenId: string;
             tickSize: string;
             negRisk: boolean;
+            imageUrl: string | null;
         } | null;
     } | null;
 }
