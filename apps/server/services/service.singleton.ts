@@ -8,6 +8,7 @@ import PriceHistoryCache from "./service.price-history-cache";
 import TokenIndex from "./service.token-index";
 import NewsService from "./service.news";
 import { ClobClient } from "../polymarket/clob";
+import SolanaAdminService from "./service.solana-admin";
 
 export default class Services {
     public redis!: Redis;
@@ -17,6 +18,7 @@ export default class Services {
     public price_history_cache!: PriceHistoryCache;
     public token_index!: TokenIndex;
     public news!: NewsService;
+    public solana_admin!: SolanaAdminService;
 
     public async boot(): Promise<void> {
         this.redis = new Redis(ENV.SERVER_REDIS_URL);
@@ -26,6 +28,7 @@ export default class Services {
         this.price_history_cache = new PriceHistoryCache();
         this.token_index = new TokenIndex(this.redis);
         this.news = new NewsService();
+        this.solana_admin = new SolanaAdminService();
         await this.token_index.start();
         errorHandler;
     }

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { FiExternalLink } from 'react-icons/fi';
-import { approveListing, rejectListing } from '@/lib/api/admin';
+import { approveAndListOnSolana, approveListing, rejectListing } from '@/lib/api/admin';
 import type { AdminListingRow } from './AdminListings';
 
 function formatUsd(n: number | null): string {
@@ -39,6 +39,20 @@ export default function ListingRow({
             onChange?.();
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'approve failed');
+        } finally {
+            setPending(false);
+        }
+    };
+
+    const handleApproveAndList = async () => {
+        if (pending) return;
+        setPending(true);
+        try {
+            await approveAndListOnSolana(listing.marketId);
+            toast.success('Approved and listed on Solana');
+            onChange?.();
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'approve + list failed');
         } finally {
             setPending(false);
         }
@@ -111,6 +125,15 @@ export default function ListingRow({
 
                 {listing.status === 'PENDING' && (
                     <div className="flex items-center gap-2 shrink-0">
+                        <button
+                            type="button"
+                            disabled={pending}
+                            onClick={handleApproveAndList}
+                            className="h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/25 disabled:opacity-40"
+                            title="Approve and create the on-chain Market PDA so users can trade it"
+                        >
+                            Approve & List on Solana
+                        </button>
                         <button
                             type="button"
                             disabled={pending}

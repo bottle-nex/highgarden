@@ -19,6 +19,10 @@ const env_schema = z.object({
         ),
     SERVER_SOLANA_RPC_URL: z.url().default("https://api.mainnet-beta.solana.com"),
     SERVER_USDC_MINT: z.string().default("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
+    SERVER_SOLANA_PROGRAM_ID: z
+        .string()
+        .default("6phzgYZv5a2k7iNKcoSjS9SaP8dzybtkVHjhcfHxWSL7"),
+    SERVER_SOLANA_ADMIN_KEYPAIR: z.string().optional(),
 });
 export let ENV: z.infer<typeof env_schema>;
 

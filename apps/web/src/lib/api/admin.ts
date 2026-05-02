@@ -48,6 +48,16 @@ export async function approveListing(marketId: string, approvedBy?: string): Pro
     await apiClient.post(`/admin/approve/${marketId}`, approvedBy ? { approvedBy } : {});
 }
 
+export async function approveAndListOnSolana(
+    marketId: string,
+    approvedBy?: string,
+): Promise<void> {
+    await apiClient.post(
+        `/admin/approve-and-list/${marketId}`,
+        approvedBy ? { approvedBy } : {},
+    );
+}
+
 export async function rejectListing(marketId: string, reason?: string | null): Promise<void> {
     await apiClient.post(`/admin/reject/${marketId}`, reason ? { reason } : {});
 }
