@@ -11,6 +11,14 @@ const env_schema = z.object({
     SERVER_WEB_ORIGIN: z.url(),
     SERVER_POLYMARKET_GAMMA_URL: z.url().default("https://gamma-api.polymarket.com"),
     SERVER_AUTH_TOKEN_TTL: z.string().default("7d"),
+    SERVER_KEY_ENCRYPTION_KEY: z
+        .string()
+        .refine(
+            (s) => Buffer.from(s, "base64").length === 32,
+            "SERVER_KEY_ENCRYPTION_KEY must be 32 bytes when base64-decoded",
+        ),
+    SERVER_SOLANA_RPC_URL: z.url().default("https://api.mainnet-beta.solana.com"),
+    SERVER_USDC_MINT: z.string().default("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
 });
 export let ENV: z.infer<typeof env_schema>;
 

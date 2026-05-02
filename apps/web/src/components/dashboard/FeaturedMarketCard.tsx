@@ -1,13 +1,21 @@
 'use client';
-import { JSX } from 'react';
+import { JSX, useState } from 'react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import Image from 'next/image';
 import { IoIosArrowRoundForward } from 'react-icons/io';
 import { HiArrowTrendingUp, HiArrowTrendingDown } from 'react-icons/hi2';
 import type { FeaturedMarket } from '@/utils/constants';
 import { getMarketById } from '@/utils/constants';
 import ProbabilityChart from './ProbabilityChart';
 import { Button } from '../ui/button';
+
+function placeholder_gradient(seed: string): string {
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 360;
+    const h2 = (h + 60) % 360;
+    return `linear-gradient(135deg, hsl(${h}, 65%, 22%), hsl(${h2}, 70%, 14%))`;
+}
 
 export default function FeaturedMarketCard({
     market,
@@ -19,6 +27,8 @@ export default function FeaturedMarketCard({
     const TrendIcon = market.trend === 'down' ? HiArrowTrendingDown : HiArrowTrendingUp;
     const detail = getMarketById(market.id);
     const resolved_href = href ?? (detail ? `/market/${detail.slug}` : '#');
+    const [img_error, set_img_error] = useState(false);
+    const show_image = !!market.imageUrl && !img_error;
 
     return (
         <Link
@@ -38,13 +48,35 @@ export default function FeaturedMarketCard({
 
             <div className="flex-1 min-h-0 flex flex-col p-5">
                 <div className="flex items-start justify-between gap-6 shrink-0">
-                    <div className="min-w-0 flex-1">
-                        <h2 className="text-xl text-white/85 font-medium leading-snug tracking-tight line-clamp-2">
-                            {market.title}
-                        </h2>
-                        <p className="mt-2 text-[12px] text-white/50 leading-relaxed line-clamp-1">
-                            {market.description}
-                        </p>
+                    <div className="min-w-0 flex-1 flex items-start gap-3">
+                        <div
+                            className="shrink-0 w-12 h-12 rounded-md border border-white/10 overflow-hidden"
+                            style={
+                                show_image
+                                    ? undefined
+                                    : { background: placeholder_gradient(market.id) }
+                            }
+                            aria-hidden
+                        >
+                            {show_image && (
+                                <Image
+                                    src={market.imageUrl!}
+                                    alt=""
+                                    className="w-full h-full object-cover"
+                                    onError={() => set_img_error(true)}
+                                    width={48}
+                                    height={48}
+                                />
+                            )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <h2 className="text-xl text-white/85 font-medium leading-snug tracking-tight line-clamp-2">
+                                {market.title}
+                            </h2>
+                            <p className="mt-2 text-[12px] text-white/50 leading-relaxed line-clamp-1">
+                                {market.description}
+                            </p>
+                        </div>
                     </div>
 
                     <div className="flex flex-col items-end gap-1 shrink-0">

@@ -6,5 +6,8 @@ model User {
     emailVerified DateTime?
     walletAddress String?
 
+    custodialPublicKey       String? @unique
+    custodialSecretEncrypted String?
+
     fills Fill[]
 }

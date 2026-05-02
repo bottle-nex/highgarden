@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import SearchBar from './SearchBar';
 import { Button } from '../ui/button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
+import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';
 import Image from 'next/image';
 import { signOut } from 'next-auth/react';
 import { AnimatePresence } from 'motion/react';
@@ -14,7 +15,8 @@ import DepositDialog from '../ui/deposit-dialog';
 export default function DashboardNavbar(): JSX.Element {
     const { session } = useUserSessionStore();
     const [logoutOpen, setLogoutOpen] = useState<boolean>(false);
-    const [openDepositDropdown, setDepositDropdown] = useState<boolean>(false);
+    const openDepositDropdown = useDepositDialogStore((s) => s.open);
+    const setDepositDropdown = useDepositDialogStore((s) => s.setOpen);
 
     return (
         <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm border-b border-gray-500/15">
@@ -33,9 +35,13 @@ export default function DashboardNavbar(): JSX.Element {
                         Portfolio
                     </Button>
                     <Button
-                        onClick={() => setDepositDropdown((prev) => !prev)}
+                        onClick={() => setDepositDropdown(!openDepositDropdown)}
                         className={cn(
-                            'h-9 px-4 rounded-sm text-[13px] tracking-wider bg-dark-base text-white transition-all transform duration-250',
+                            'h-9 px-5 rounded-full text-[13px] font-medium tracking-tight',
+                            'bg-dark-base/85 text-neutral-200 hover:text-white hover:bg-dark-base',
+                            'border border-white/6',
+                            'shadow-[0_2px_10px_-2px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.05)]',
+                            'transition-all duration-200',
                         )}
                     >
                         Deposit
@@ -65,7 +71,7 @@ export default function DashboardNavbar(): JSX.Element {
                 </div>
             </div>
 
-            {openDepositDropdown && <DepositDialog onClose={() => setDepositDropdown(prev => !prev)} />}
+            {openDepositDropdown && <DepositDialog onClose={() => setDepositDropdown(false)} />}
             <AnimatePresence>
                 {logoutOpen && <LogoutDialog onClose={() => setLogoutOpen(false)} />}
             </AnimatePresence>

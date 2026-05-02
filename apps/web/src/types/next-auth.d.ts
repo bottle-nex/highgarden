@@ -7,6 +7,7 @@ export interface UserType {
     image?: string | null;
     provider?: string | null;
     token?: string | null;
+    walletPublicKey?: string | null;
 }
 
 declare module 'next-auth' {

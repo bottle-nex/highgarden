@@ -58,6 +58,7 @@ function dto_to_featured(m: MarketDTO, history: PriceHistoryPoint[]): FeaturedMa
         title: m.name,
         category: 'MARKET',
         description: m.description,
+        imageUrl: m.imageUrl,
         probabilities: points,
         currentProbability,
         openDate: '—',

@@ -4,6 +4,7 @@ import { prisma } from "@solmarket/database";
 import ResponseWriter from "../../services/service.response";
 import OtpService from "../../services/service.otp";
 import { signSessionJwt } from "../../services/service.jwt";
+import { ensure_user_has_keypair } from "../../services/service.keypair";
 
 const body_schema = z.object({
     email: z.email(),
@@ -50,9 +51,14 @@ export default class OtpVerifyController {
                 select: { id: true, email: true, name: true, image: true },
             });
 
+            const walletPublicKey = await ensure_user_has_keypair(user.id);
             const token = signSessionJwt({ sub: user.id, email: user.email });
 
-            return ResponseWriter.success(res, { user, token }, "OTP verified");
+            return ResponseWriter.success(
+                res,
+                { user: { ...user, walletPublicKey }, token },
+                "OTP verified",
+            );
         } catch (err) {
             console.error("[otp-verify]", err);
             return ResponseWriter.system_error(res);

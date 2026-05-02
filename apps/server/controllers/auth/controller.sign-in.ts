@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@solmarket/database";
 import ResponseWriter from "../../services/service.response";
 import { signSessionJwt } from "../../services/service.jwt";
+import { ensure_user_has_keypair } from "../../services/service.keypair";
 
 const body_schema = z.object({
     user: z.object({
@@ -41,9 +42,14 @@ export default class SignInController {
                 select: { id: true, email: true, name: true, image: true },
             });
 
+            const walletPublicKey = await ensure_user_has_keypair(user.id);
             const token = signSessionJwt({ sub: user.id, email: user.email });
 
-            return ResponseWriter.success(res, { user, token }, "Signed in");
+            return ResponseWriter.success(
+                res,
+                { user: { ...user, walletPublicKey }, token },
+                "Signed in",
+            );
         } catch (err) {
             console.error("[sign-in]", err);
             return ResponseWriter.system_error(res);

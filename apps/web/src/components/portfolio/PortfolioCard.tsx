@@ -3,9 +3,11 @@ import { JSX, useState } from 'react';
 import { ImUserTie } from 'react-icons/im';
 import { LuArrowDownToLine, LuArrowUpFromLine, LuEye, LuEyeOff } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
+import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';
 
 export default function PortfolioCard(): JSX.Element {
     const [hidden, setHidden] = useState<boolean>(false);
+    const open_deposit_dialog = useDepositDialogStore((s) => s.setOpen);
     return (
         <div className="border border-neutral-900 col-span-1 p-5 bg-dark-faded rounded-lg">
             <div className="w-full flex items-start justify-between">
@@ -32,14 +34,17 @@ export default function PortfolioCard(): JSX.Element {
             <p className="mt-1 text-xs text-primary">
                 {hidden ? '•••• past day' : '+$0.23 (6.64%) past day'}
             </p>
-            <div className="w-full grid gap-x-4 mt-5 grid-cols-2">
-                <Button className="col-span-1 w-full h-10 text-sm" onClick={() => {}}>
+            <div className="w-full grid gap-x-3 mt-5 grid-cols-2">
+                <Button
+                    onClick={() => open_deposit_dialog(true)}
+                    className="col-span-1 w-full h-10 rounded-full text-sm font-medium tracking-tight bg-dark-base/85 text-neutral-200 hover:text-white hover:bg-dark-base border border-white/6 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-all duration-200"
+                >
                     <LuArrowDownToLine /> Deposit
                 </Button>
                 <Button
-                    className="col-span-1 w-full h-10 text-sm"
                     variant="outline"
                     onClick={() => {}}
+                    className="col-span-1 w-full h-10 rounded-full text-sm font-medium tracking-tight border-white/6 text-neutral-300 hover:text-white hover:bg-dark-base/60 transition-all duration-200"
                 >
                     <LuArrowUpFromLine /> Withdraw
                 </Button>

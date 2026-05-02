@@ -4,6 +4,8 @@ globs: "*.ts, *.tsx, *.html, *.css, *.js, *.jsx, package.json"
 alwaysApply: false
 ---
 
+Do not use Playwright in this repo. Do not run, install, or invoke the Playwright MCP server, the `playwright` CLI, or any `mcp__plugin_playwright_*` browser tools for any reason. Verify UI changes by other means (typecheck, lint, manual review, or asking the user to test in their browser).
+
 Default to using Bun instead of Node.js.
 
 - Use `bun <file>` instead of `node <file>` or `ts-node <file>`

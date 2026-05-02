@@ -17,26 +17,58 @@ interface Props {
     height?: number | string;
 }
 
-const YELLOW_RGBA = 'rgba(255,204,0,';
+const LINE_RGBA = 'rgba(255,214,8,';
+const AREA_RGBA = LINE_RGBA;
 
 function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | null {
     if (!active || !payload || !payload.length) return null;
     const point = payload[0].payload as ProbabilityPoint;
     return (
-        <div className="bg-neutral-950 border border-white/20 rounded px-2 py-1.5  text-[9px] tracking-[0.15em] uppercase">
-            <div className="text-white/45">{point.date}</div>
-            <div style={{ color: '#FFCC00' }}>{point.value}% YES</div>
+        <div
+            style={{
+                background: 'rgba(6,6,8,0.94)',
+                border: '1px solid rgba(255,214,8,0.18)',
+                borderRadius: 6,
+                padding: '8px 14px',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.6)',
+                backdropFilter: 'blur(16px)',
+                whiteSpace: 'nowrap',
+                pointerEvents: 'none',
+            }}
+        >
+            <div
+                style={{
+                    fontFamily: 'var(--m-, monospace)',
+                    fontSize: 9,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(255,214,8,0.55)',
+                    marginBottom: 2,
+                }}
+            >
+                {point.date}
+            </div>
+            <div
+                style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: 'rgba(255,255,255,0.92)',
+                    fontVariantNumeric: 'tabular-nums',
+                }}
+            >
+                {point.value.toFixed(1)}%
+            </div>
         </div>
     );
 }
 
 export default function ProbabilityChart({ data, height = 240 }: Props): JSX.Element {
     const values = data.map((d) => d.value);
-    const minV = values.length > 0 ? Math.min(...values) : 0;
-    const maxV = values.length > 0 ? Math.max(...values) : 100;
-    const pad = Math.max(1, (maxV - minV) * 0.1);
-    const yMin = Math.max(0, minV - pad);
-    const yMax = Math.min(100, maxV + pad);
+    const min_v = values.length > 0 ? Math.min(...values) : 0;
+    const max_v = values.length > 0 ? Math.max(...values) : 100;
+    const pad = Math.max(1, (max_v - min_v) * 0.1);
+    const y_min = Math.max(0, min_v - pad);
+    const y_max = Math.min(100, max_v + pad);
 
     const wrapper_ref = useRef<HTMLDivElement>(null);
     const [chart_svg_width, set_chart_svg_width] = useState(0);
@@ -55,11 +87,11 @@ export default function ProbabilityChart({ data, height = 240 }: Props): JSX.Ele
     }, []);
 
     return (
-        <div ref={wrapper_ref} className="relative w-full" style={{ height }}>
+        <div ref={wrapper_ref} className="relative w-full select-none outline-none" style={{ height }}>
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                     data={data}
-                    margin={{ top: 24, right: 24, bottom: 12, left: 8 }}
+                    margin={{ top: 24, right: 16, bottom: 0, left: 0 }}
                     onMouseMove={(state) => {
                         if (state.activeCoordinate) {
                             set_active_coord({
@@ -81,69 +113,89 @@ export default function ProbabilityChart({ data, height = 240 }: Props): JSX.Ele
                         >
                             {active_coord && chart_svg_width > 0 ? (
                                 <>
-                                    <stop offset="0" stopColor={`${YELLOW_RGBA}0.9)`} />
+                                    <stop offset="0" stopColor={`${LINE_RGBA}0.9)`} />
                                     <stop
                                         offset={Math.max(
                                             0,
                                             active_coord.x / chart_svg_width - 0.004,
                                         )}
-                                        stopColor={`${YELLOW_RGBA}0.9)`}
+                                        stopColor={`${LINE_RGBA}0.9)`}
                                     />
                                     <stop
                                         offset={Math.min(
                                             1,
                                             active_coord.x / chart_svg_width + 0.004,
                                         )}
-                                        stopColor={`${YELLOW_RGBA}0.15)`}
+                                        stopColor={`${LINE_RGBA}0.1)`}
                                     />
-                                    <stop offset="1" stopColor={`${YELLOW_RGBA}0.15)`} />
+                                    <stop offset="1" stopColor={`${LINE_RGBA}0.1)`} />
                                 </>
                             ) : (
                                 <>
-                                    <stop offset="0" stopColor={`${YELLOW_RGBA}0.6)`} />
-                                    <stop offset="0.5" stopColor={`${YELLOW_RGBA}0.95)`} />
-                                    <stop offset="1" stopColor={`${YELLOW_RGBA}0.7)`} />
+                                    <stop offset="0" stopColor={`${LINE_RGBA}0.5)`} />
+                                    <stop offset="0.5" stopColor={`${LINE_RGBA}0.9)`} />
+                                    <stop offset="1" stopColor={`${LINE_RGBA}0.7)`} />
+                                </>
+                            )}
+                        </linearGradient>
+                        <linearGradient
+                            id="probArea"
+                            x1="0"
+                            y1="0"
+                            x2={chart_svg_width || 1}
+                            y2="0"
+                            gradientUnits="userSpaceOnUse"
+                        >
+                            {active_coord && chart_svg_width > 0 ? (
+                                <>
+                                    <stop offset="0" stopColor={`${AREA_RGBA}0.18)`} />
+                                    <stop
+                                        offset={Math.max(
+                                            0,
+                                            active_coord.x / chart_svg_width - 0.004,
+                                        )}
+                                        stopColor={`${AREA_RGBA}0.18)`}
+                                    />
+                                    <stop
+                                        offset={Math.min(
+                                            1,
+                                            active_coord.x / chart_svg_width + 0.004,
+                                        )}
+                                        stopColor={`${AREA_RGBA}0.02)`}
+                                    />
+                                    <stop offset="1" stopColor={`${AREA_RGBA}0.02)`} />
+                                </>
+                            ) : (
+                                <>
+                                    <stop offset="0" stopColor={`${AREA_RGBA}0.18)`} />
+                                    <stop offset="1" stopColor={`${AREA_RGBA}0.18)`} />
                                 </>
                             )}
                         </linearGradient>
                     </defs>
                     <CartesianGrid
-                        stroke="rgba(255,255,255,0.08)"
-                        strokeDasharray="2 4"
+                        stroke="rgba(255,255,255,0.03)"
+                        strokeDasharray="4 3"
+                        horizontal
                         vertical={false}
                     />
-                    <XAxis
-                        dataKey="date"
-                        tick={{
-                            fill: 'rgba(255,255,255,0.5)',
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                        }}
-                        tickLine={false}
-                        axisLine={false}
-                        interval="preserveStartEnd"
-                        minTickGap={48}
-                    />
+                    <XAxis dataKey="date" hide />
                     <YAxis
-                        domain={[yMin, yMax]}
-                        tickCount={5}
-                        tickFormatter={(v) => `${Math.round(v)}%`}
+                        domain={[y_min, y_max]}
                         tick={{
-                            fill: 'rgba(255,255,255,0.5)',
-                            fontSize: 12,
-                            fontFamily: 'monospace',
+                            fill: 'rgba(255,255,255,0.18)',
+                            fontSize: 9,
+                            fontFamily: 'var(--m-, monospace)',
                         }}
+                        tickFormatter={(v) => `${Math.round(v)}%`}
                         tickLine={false}
                         axisLine={false}
-                        width={44}
+                        width={40}
+                        tickCount={5}
                     />
                     <Tooltip
                         content={(props) => <ChartTooltip {...props} />}
-                        cursor={{
-                            stroke: 'rgba(255,204,0,0.35)',
-                            strokeDasharray: '2 3',
-                            strokeWidth: 1,
-                        }}
+                        cursor={{ stroke: 'rgba(255,214,8,0.3)', strokeWidth: 1 }}
                         isAnimationActive={false}
                         wrapperStyle={{ transition: 'none', pointerEvents: 'none' }}
                         position={
@@ -156,11 +208,18 @@ export default function ProbabilityChart({ data, height = 240 }: Props): JSX.Ele
                         type="monotone"
                         dataKey="value"
                         stroke="url(#probLine)"
-                        strokeWidth={2}
+                        strokeWidth={2.5}
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        fill="none"
-                        activeDot={{ r: 4, fill: '#0a0a0a', stroke: '#FFCC00', strokeWidth: 1.5 }}
+                        fill="url(#probArea)"
+                        activeDot={{
+                            r: 4.5,
+                            fill: '#ffd608',
+                            stroke: '#0E0D0D',
+                            strokeWidth: 2,
+                        }}
+                        animationDuration={600}
+                        animationEasing="ease-out"
                     />
                 </AreaChart>
             </ResponsiveContainer>

@@ -14,6 +14,7 @@ export interface UserType {
     provider?: string | null;
     token?: string | null;
     isAdmin?: boolean;
+    walletPublicKey?: string | null;
 }
 
 export interface CustomSession {
@@ -41,6 +42,7 @@ export const authOption: NextAuthOptions = {
                         user.id = result.data.user.id.toString();
                         user.token = result.data.token;
                         user.provider = 'google';
+                        user.walletPublicKey = result.data.user.walletPublicKey ?? null;
                         return true;
                     }
                     return false;
@@ -110,6 +112,7 @@ export const authOption: NextAuthOptions = {
                             image: user.image ?? null,
                             provider: 'email-otp',
                             token,
+                            walletPublicKey: user.walletPublicKey ?? null,
                         };
                     }
 

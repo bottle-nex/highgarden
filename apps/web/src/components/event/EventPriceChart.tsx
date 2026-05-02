@@ -52,7 +52,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | n
         <div
             style={{
                 background: 'rgba(6,6,8,0.94)',
-                border: '1px solid rgba(3,148,252,0.15)',
+                border: '1px solid rgba(255,214,8,0.18)',
                 borderRadius: 6,
                 padding: '8px 14px',
                 boxShadow: '0 4px 24px rgba(0,0,0,0.6)',
@@ -67,7 +67,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | n
                     fontSize: 9,
                     letterSpacing: '0.18em',
                     textTransform: 'uppercase',
-                    color: 'rgba(3,148,252,0.5)',
+                    color: 'rgba(255,214,8,0.55)',
                     marginBottom: 2,
                 }}
             >
@@ -216,14 +216,14 @@ export default function EventPriceChart({
     }
 
     const isNo = selectedOutcome === Outcome.NO;
-    const lineColor = isNo ? 'rgba(244,63,94,' : 'rgba(3,148,252,';
+    const lineColor = isNo ? 'rgba(244,63,94,' : 'rgba(255,214,8,';
     const areaColor = lineColor;
 
     return (
         <section className="">
             <div className="flex items-center justify-between px-5 pt-5 pb-3">
                 <div className="flex items-center gap-2 text-[10px] tracking-[0.25em] uppercase text-white/55">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600/70" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-400/80" />
                     PRICE HISTORY
                 </div>
                 <div className='flex items-center gap-x-3'>
@@ -439,7 +439,7 @@ export default function EventPriceChart({
                             />
                             <Tooltip
                                 content={(props) => <ChartTooltip {...props} />}
-                                cursor={{ stroke: isNo ? 'rgba(244,63,94,0.25)' : 'rgba(3,148,252,0.25)', strokeWidth: 1 }}
+                                cursor={{ stroke: isNo ? 'rgba(244,63,94,0.25)' : 'rgba(255,214,8,0.3)', strokeWidth: 1 }}
                                 isAnimationActive={false}
                                 wrapperStyle={{ transition: 'none', pointerEvents: 'none' }}
                                 position={
@@ -458,7 +458,7 @@ export default function EventPriceChart({
                                 fill="url(#evtPriceArea)"
                                 activeDot={{
                                     r: 4.5,
-                                    fill: isNo ? '#f43f5e' : '#0394fc',
+                                    fill: isNo ? '#f43f5e' : '#ffd608',
                                     stroke: '#0E0D0D',
                                     strokeWidth: 2,
                                 }}

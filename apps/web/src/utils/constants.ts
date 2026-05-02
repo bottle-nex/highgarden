@@ -10,6 +10,7 @@ export interface FeaturedMarket {
     title: string;
     category: string;
     description: string;
+    imageUrl: string | null;
     probabilities: ProbabilityPoint[];
     currentProbability: number;
     openDate: string;
@@ -71,6 +72,7 @@ export const featuredMarket: FeaturedMarket = {
     category: 'GEOPOLITICS',
     description:
         'Market resolves YES if a bilateral permanent peace agreement between the United States and Iran is formally signed and announced by both heads of state before July 1, 2026.',
+    imageUrl: null,
     probabilities: [
         { date: 'MAR 18', value: 14 },
         { date: 'MAR 25', value: 18 },
