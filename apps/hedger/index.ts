@@ -11,6 +11,8 @@ import HedgeWorker from "./queue/hedge-worker";
 import HedgeQueueEvents from "./queue/queue-events";
 import RedisConnectionFactory from "./queue/connection";
 import EventRepo from "./db/event.repo";
+import HedgeProcessor from "./hedger/processor";
+import BootRecovery from "./hedger/recovery";
 import type { OrderFilledEvent } from "./solana/decoder";
 import type { HedgeJobData, HedgeJobResult } from "./queue/types";
 import type { Job } from "bullmq";
@@ -21,6 +23,8 @@ class HedgerApp {
     private readonly events = new EventRepo();
     private readonly health = new HealthServer();
     private readonly producer = new HedgeQueueProducer();
+    private readonly recovery = new BootRecovery();
+    private readonly processor = new HedgeProcessor();
     private listener: LiveListener | null = null;
     private poller: CatchUpPoller | null = null;
     private worker: HedgeWorker | null = null;
@@ -28,6 +32,7 @@ class HedgerApp {
 
     public async start(): Promise<void> {
         await this.cursor.load();
+        await this.recovery.run();
         await this.start_health();
         await this.start_queue_machinery();
         await this.start_solana_inputs();
@@ -79,11 +84,7 @@ class HedgerApp {
     }
 
     private async process_job(job: Job<HedgeJobData>): Promise<HedgeJobResult> {
-        this.log.info(
-            { jobId: job.id, attemptsMade: job.attemptsMade },
-            "processing hedge job (stub — Phase 4+)",
-        );
-        return { status: "SKIPPED", reason: "processor not yet implemented" };
+        return this.processor.handle(job);
     }
 
     private async on_job_failed(job_id: string, reason: string): Promise<void> {
