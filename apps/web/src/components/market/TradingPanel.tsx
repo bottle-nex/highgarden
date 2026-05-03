@@ -38,7 +38,7 @@ export default function TradingPanel({ market }: { market: MarketDetail }): JSX.
                     <div className={s.sideSelector}>
                         <button
                             type="button"
-                            aria-pressed={selectedSide === 'YES'}
+                            data-pressed={selectedSide === 'YES' ? 'true' : 'false'}
                             className={`${s.sideBtn} green-btn`}
                             onClick={() => setSelectedSide('YES')}
                         >
@@ -49,7 +49,7 @@ export default function TradingPanel({ market }: { market: MarketDetail }): JSX.
                         </button>
                         <button
                             type="button"
-                            aria-pressed={selectedSide === 'NO'}
+                            data-pressed={selectedSide === 'NO' ? 'true' : 'false'}
                             className={`${s.sideBtn} red-btn`}
                             onClick={() => setSelectedSide('NO')}
                         >

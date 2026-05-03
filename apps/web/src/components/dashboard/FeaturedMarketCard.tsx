@@ -119,6 +119,7 @@ export default function FeaturedMarketCard({
                     <Button
                         className={cn(
                             'flex-1 h-9 rounded-sm bg-green-500/10 hover:bg-green-500/15 border border-green-500/25 text-[10px] tracking-[0.2em] uppercase text-green-400/70 font-semibold',
+                            "bg-[#13a876] text-white font-semibold text-[12px] py-5!"
                         )}
                     >
                         BUY YES · 47¢
@@ -126,6 +127,7 @@ export default function FeaturedMarketCard({
                     <Button
                         className={cn(
                             'flex-1 h-9 rounded-sm bg-red-500/8 hover:bg-red-500/15 border border-red-500/20 text-[10px] tracking-[0.2em] uppercase text-red-400/70',
+                            "bg-[#b81f40] text-white font-semibold text-[12px] py-5"
                         )}
                     >
                         BUY NO · 53¢

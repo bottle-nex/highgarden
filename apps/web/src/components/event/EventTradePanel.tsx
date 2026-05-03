@@ -105,6 +105,7 @@ export default function EventTradePanel({
                     <button
                         aria-label='yes'
                         type="button"
+                        data-pressed={selectedOutcome === Outcome.YES ? 'true' : 'false'}
                         onClick={() => onOutcomeChange(Outcome.YES)}
                         className="green-btn flex items-center justify-between px-4 py-3 rounded-lg"
                     >
@@ -116,7 +117,9 @@ export default function EventTradePanel({
                         </span>
                     </button>
                     <button
+                        aria-label='no'
                         type="button"
+                        data-pressed={selectedOutcome === Outcome.NO ? 'true' : 'false'}
                         onClick={() => onOutcomeChange(Outcome.NO)}
                         className="red-btn flex items-center justify-between px-4 py-3 rounded-lg"
                     >

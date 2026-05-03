@@ -233,7 +233,7 @@ export default function EventPriceChart({
                             <button
                                 key={o}
                                 type="button"
-                                aria-pressed={selectedOutcome === o}
+                                data-pressed={selectedOutcome === o ? 'true' : 'false'}
                                 onClick={() => onOutcomeChange(o)}
                                 className={`${o === Outcome.YES ? 'green-btn' : 'red-btn'} px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium`}
                             >

@@ -108,7 +108,7 @@ export default function EventOrderBook({
                             <button
                                 key={o}
                                 type="button"
-                                aria-pressed={selectedOutcome === o}
+                                data-pressed={selectedOutcome === o ? 'true' : 'false'}
                                 onClick={() => onOutcomeChange(o)}
                                 className={`${o === Outcome.YES ? 'green-btn' : 'red-btn'} px-3.5 py-1.5 rounded text-[9.5px] tracking-[0.28em] uppercase font-medium`}
                             >
