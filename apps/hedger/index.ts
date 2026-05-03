@@ -46,13 +46,32 @@ class HedgerApp {
 
     public async stop(): Promise<void> {
         this.log.info("shutting down");
-        await this.listener?.stop();
-        this.poller?.stop();
-        await this.worker?.close();
-        await this.queue_events?.close();
-        await this.producer.close();
+        await this.stop_solana_inputs();
+        await this.stop_queue_machinery();
         await this.health.stop();
-        await RedisConnectionFactory.disconnect();
+        await this.with_timeout(RedisConnectionFactory.disconnect(), 1000);
+    }
+
+    private async stop_solana_inputs(): Promise<void> {
+        await this.with_timeout(this.listener?.stop() ?? Promise.resolve(), 1000);
+        this.poller?.stop();
+    }
+
+    private async stop_queue_machinery(): Promise<void> {
+        // Force-close BullMQ components — they otherwise wait for in-flight
+        // Redis commands which can hang indefinitely on shutdown when sockets
+        // are torn down. We don't care about graceful drain here; the
+        // FSM + boot recovery handles any in-flight job on next start.
+        await this.with_timeout(this.worker?.close(true) ?? Promise.resolve(), 1500);
+        await this.with_timeout(this.queue_events?.close() ?? Promise.resolve(), 1000);
+        await this.with_timeout(this.producer.close(), 1000);
+    }
+
+    private async with_timeout<T>(promise: Promise<T>, ms: number): Promise<void> {
+        await Promise.race([
+            promise.catch(() => undefined),
+            new Promise<void>((resolve) => setTimeout(resolve, ms)),
+        ]);
     }
 
     private async start_health(): Promise<void> {
@@ -94,10 +113,31 @@ class HedgerApp {
 
 const app = new HedgerApp();
 
+let shutting_down = false;
+
 const shutdown = async (signal: string): Promise<void> => {
+    if (shutting_down) {
+        // Second Ctrl+C — caller wants out NOW. Don't wait for graceful close.
+        process.exit(1);
+    }
+    shutting_down = true;
     LoggerFactory.for_category("boot").info({ signal }, "received shutdown signal");
-    await app.stop();
-    process.exit(0);
+
+    // Hard timeout: if graceful stop hasn't finished within 4s, exit anyway.
+    // Prevents the process from hanging due to ioredis sockets that won't drain.
+    const hard_timeout = setTimeout(() => {
+        LoggerFactory.for_category("boot").warn(
+            "graceful shutdown exceeded 4s budget — forcing exit",
+        );
+        process.exit(0);
+    }, 4000);
+
+    try {
+        await app.stop();
+    } finally {
+        clearTimeout(hard_timeout);
+        process.exit(0);
+    }
 };
 
 process.on("SIGINT", () => void shutdown("SIGINT"));

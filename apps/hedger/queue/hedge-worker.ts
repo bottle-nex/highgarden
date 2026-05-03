@@ -10,6 +10,7 @@ export type HedgeJobProcessor = (_job: Job<HedgeJobData>) => Promise<HedgeJobRes
 export default class HedgeWorker {
     private readonly log = LoggerFactory.for_category("worker");
     private readonly worker: Worker<HedgeJobData, HedgeJobResult>;
+    private closing = false;
 
     constructor(processor: HedgeJobProcessor) {
         this.worker = new Worker<HedgeJobData, HedgeJobResult>(
@@ -28,8 +29,9 @@ export default class HedgeWorker {
         this.attach_listeners();
     }
 
-    public async close(): Promise<void> {
-        await this.worker.close();
+    public async close(force = false): Promise<void> {
+        this.closing = true;
+        await this.worker.close(force);
     }
 
     private attach_listeners(): void {
@@ -38,6 +40,7 @@ export default class HedgeWorker {
         });
 
         this.worker.on("error", (err) => {
+            if (this.is_shutdown_noise(err)) return;
             this.log.error({ err }, "worker error");
         });
 
@@ -51,5 +54,13 @@ export default class HedgeWorker {
         this.worker.on("completed", (job, result) => {
             this.log.info({ jobId: job.id, result }, "job completed");
         });
+    }
+
+    private is_shutdown_noise(err: unknown): boolean {
+        // ETIMEDOUT during shutdown is BullMQ's graceful-close commands
+        // racing the socket teardown. Harmless — silence to keep logs clean.
+        if (!this.closing) return false;
+        const code = (err as { code?: string })?.code;
+        return code === "ETIMEDOUT" || code === "ECONNREFUSED" || code === "ECONNRESET";
     }
 }

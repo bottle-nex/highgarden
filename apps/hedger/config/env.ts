@@ -4,7 +4,12 @@ const env_schema = z.object({
     DATABASE_URL: z.string(),
 
     HEDGER_REDIS_URL: z.string(),
-    HEDGER_REDIS_TLS: z.coerce.boolean().default(false),
+    // NOTE: z.coerce.boolean() converts ANY non-empty string (including
+    // the literal "false") to true. Parse the string explicitly instead.
+    HEDGER_REDIS_TLS: z
+        .enum(["true", "false"])
+        .default("false")
+        .transform((s) => s === "true"),
 
     HEDGER_SOLANA_RPC_URL: z.string().url(),
     HEDGER_SOLANA_RPC_WS_URL: z.string().url(),
