@@ -23,6 +23,10 @@ const env_schema = z.object({
         .string()
         .default("2LEm66V2Ys8JbVoQfYbZqCy6YGM1wuPUc843xRx76t3P"),
     SERVER_SOLANA_ADMIN_KEYPAIR: z.string().optional(),
+    SERVER_QUOTE_SIGNER_KEYPAIR: z.string().optional(),
+    SERVER_QUOTE_EXPIRY_SECONDS: z.coerce.number().default(5),
+    SERVER_QUOTE_SPREAD_CENTS: z.coerce.number().default(1),
+    SERVER_UNHEDGED_DELTA_CAP_USD: z.coerce.number().default(500),
 });
 export let ENV: z.infer<typeof env_schema>;
 

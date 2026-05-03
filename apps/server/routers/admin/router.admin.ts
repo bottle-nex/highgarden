@@ -6,6 +6,8 @@ import ApproveAndListOnSolanaController from "../../controllers/admin/controller
 import RejectListingController from "../../controllers/admin/controller.reject";
 import RunListerController from "../../controllers/admin/controller.run-lister";
 import DiagnosticController from "../../controllers/admin/controller.diagnostic";
+import TestFundController from "../../controllers/admin/controller.test-fund";
+import { requireAuth } from "../../middleware/middleware.auth";
 
 const admin_router: Router = Router();
 
@@ -19,5 +21,6 @@ admin_router.post(
 );
 admin_router.post("/reject/:marketId", RejectListingController.process);
 admin_router.post("/lister/run", RunListerController.process);
+admin_router.post("/test-fund/:userId", requireAuth, TestFundController.process);
 
 export default admin_router;
