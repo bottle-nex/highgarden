@@ -97,7 +97,7 @@ export default function EventPriceChart({
     delta24hPct,
     onLoaded,
 }: Props): JSX.Element {
-    const [range, set_range] = useState<PriceHistoryRange>('1d');
+    const [range, set_range] = useState<PriceHistoryRange>('1m');
     const [activeCoord, set_active_coord] = useState<{ x: number; y: number } | null>(null);
     const [chart_svg_width, set_chart_svg_width] = useState(0);
     const wrapper_ref = useRef<HTMLDivElement>(null);

@@ -7,7 +7,6 @@ import AuthSessionProvider from '@/providers/AuthSessionProvider';
 import WalletAdapterProvider from '@/providers/WalletAdapterProvider';
 import SessionSetter from '@/components/utility/SessionSetter';
 import WebSocketHost from '@/components/utility/WebSocketHost';
-import ScrollToTop from '@/components/utility/ScrollToTop';
 import { Toaster } from 'sonner';
 
 const inter = Inter({
@@ -93,7 +92,6 @@ export default function RootLayout({
                         />
                         <LenisProvider>
                             {children}
-                            <ScrollToTop />
                         </LenisProvider>
                     </WalletAdapterProvider>
                 </AuthSessionProvider>
