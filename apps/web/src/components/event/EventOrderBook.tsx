@@ -78,10 +78,10 @@ export default function EventOrderBook({
     const max_total = Math.max(max_bid_total, max_ask_total, 1);
 
     return (
-        <section className="rounded-[8px] overflow-hidden bg-dark-base">
+        <section className="rounded-lg overflow-hidden bg-dark-base">
             <header
                 onClick={() => set_is_open((v) => !v)}
-                className={cn("group flex items-center justify-between px-7 py-5 border-white/7 cursor-pointer select-none")}
+                className={cn("group flex items-center justify-between px-4 py-3 border-white/7 cursor-pointer select-none")}
             >
                 <button
                     type="button"
@@ -89,7 +89,7 @@ export default function EventOrderBook({
                         e.stopPropagation();
                         set_is_open((v) => !v);
                     }}
-                    className="flex items-center gap-3 text-[10px] tracking-[0.32em] uppercase text-white/70 group-hover:text-white cursor-pointer"
+                    className="flex items-center gap-2 text-[10px] tracking-[0.28em] uppercase text-white/70 group-hover:text-white cursor-pointer"
                 >
                     <span
                         className={`inline-block w-2.5 text-white/45 group-hover:text-white/70 transition-transform duration-200 ${is_open ? 'rotate-90' : ''
@@ -99,8 +99,8 @@ export default function EventOrderBook({
                     </span>
                     <span className="font-medium">Order Book</span>
                 </button>
-                <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2">
-                    <ToolTipComponent content="Recenter book">
+                <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5">
+                    <ToolTipComponent side='left' content="Recenter book">
                         <Button
                             type="button"
                             size="icon-sm"
@@ -118,7 +118,7 @@ export default function EventOrderBook({
                                 type="button"
                                 data-pressed={selectedOutcome === o ? 'true' : 'false'}
                                 onClick={() => onOutcomeChange(o)}
-                                className={`${o === Outcome.YES ? 'green-btn' : 'red-btn'} px-3.5 py-1.5 rounded text-[9.5px] tracking-[0.28em] uppercase font-medium`}
+                                className={`${o === Outcome.YES ? 'green-btn' : 'red-btn'} px-2.5 py-1 rounded text-[9.5px] tracking-[0.24em] uppercase font-medium`}
                             >
                                 {o}
                             </button>
@@ -128,12 +128,12 @@ export default function EventOrderBook({
             </header>
 
             <div
-                className={`overflow-hidden [overflow-anchor:none] transition-[max-height] duration-300 ease-in-out ${is_open ? 'max-h-130' : 'max-h-0'
+                className={`overflow-hidden [overflow-anchor:none] transition-[max-height] duration-300 ease-in-out ${is_open ? 'max-h-150' : 'max-h-0'
                     }`}
             >
                 <div>
-                    <div className="py-6">
-                        <div className="grid grid-cols-3 gap-x-10 pr-5 text-[9.5px] tracking-[0.32em] uppercase text-white/35 pb-4 border-b border-white/7">
+                    <div className="py-3">
+                        <div className="grid grid-cols-3 gap-x-3 pr-3 text-[9.5px] tracking-[0.24em] uppercase text-white/35 pb-2.5 border-b border-white/7">
                             <span className="text-right">Price</span>
                             <span className="text-right">Shares</span>
                             <span className="text-right">Total</span>
@@ -187,13 +187,13 @@ export default function EventOrderBook({
                                                 return (
                                                     <div
                                                         key={`ask-${lvl.price}`}
-                                                        className="relative grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
+                                                        className="relative grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                                     >
                                                         <div
-                                                            className="absolute inset-y-0 right-0 bg-rose-500/20 rounded-l-sm pointer-events-none"
+                                                            className="absolute inset-y-0 right-0 bg-rose-500/35 rounded-none pointer-events-none"
                                                             style={{ width: `${w}%` }}
                                                         />
-                                                        <span className="relative text-right font-medium text-rose-300">
+                                                        <span className="relative text-right font-medium text-rose-500">
                                                             {format_cents(lvl.price)}
                                                         </span>
                                                         <span className="relative text-right text-white font-light">
@@ -225,7 +225,7 @@ export default function EventOrderBook({
 
                                 <div className="space-y-0.5">
                                     {bids.length === 0 ? (
-                                        <div className="grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums">
+                                        <div className="grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums">
                                             <span className="col-span-3 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
                                                 No bids
                                             </span>
@@ -237,13 +237,13 @@ export default function EventOrderBook({
                                             return (
                                                 <div
                                                     key={`bid-${lvl.price}`}
-                                                    className="relative grid grid-cols-3 gap-x-10 pr-5 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
+                                                    className="relative grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                                 >
                                                     <div
-                                                        className="absolute inset-y-0 right-0 bg-emerald-500/20 rounded-l-sm pointer-events-none"
+                                                        className="absolute inset-y-0 right-0 bg-emerald-500/35 rounded-none pointer-events-none"
                                                         style={{ width: `${w}%` }}
                                                     />
-                                                    <span className="relative text-right font-medium text-emerald-300">
+                                                    <span className="relative text-right font-medium text-emerald-500">
                                                         {format_cents(lvl.price)}
                                                     </span>
                                                     <span className="relative text-right text-white font-light">

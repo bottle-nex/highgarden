@@ -20,7 +20,7 @@ export default function DashboardNavbar(): JSX.Element {
     const setDepositDropdown = useDepositDialogStore((s) => s.setOpen);
 
     return (
-        <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm">
+        <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm px-8">
             <div className="w-full h-16 flex items-center justify-between gap-8 px-8">
                 <div className="flex justify-center">
                     <SearchBar />

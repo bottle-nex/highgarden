@@ -74,7 +74,7 @@ export default function EventTradePanel({
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="rounded-2xl bg-dark-base p-1"
+            className="rounded-lg bg-dark-base p-1"
         >
             <div className="flex items-center justify-between px-5 pt-4">
                 <div className="flex gap-1">

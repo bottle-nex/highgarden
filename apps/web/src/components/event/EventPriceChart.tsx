@@ -221,7 +221,7 @@ export default function EventPriceChart({
     const areaColor = lineColor;
 
     return (
-        <section className="">
+        <section className="rounded-lg bg-dark-base flex flex-col">
             <div className="flex items-center justify-between px-5 pt-5 pb-3">
                 <div className="flex items-center gap-2 text-[10px] tracking-[0.25em] uppercase text-white/55">
                     <span className="w-1.5 h-1.5 rounded-full bg-yellow-400/80" />
@@ -328,8 +328,7 @@ export default function EventPriceChart({
 
             <div
                 ref={wrapper_ref}
-                className="relative w-full px-2 select-none outline-none"
-                style={{ aspectRatio: '600 / 260' }}
+                className="relative w-full flex-1 min-h-0 px-2 select-none outline-none"
             >
                 {status === 'loading' && points.length === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.25em] uppercase text-white/30">

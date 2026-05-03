@@ -118,25 +118,24 @@ function Body({ market }: { market: MarketDTO }) {
 
     return (
         <div className="space-y-8 [overflow-anchor:none]">
-            <EventBreadcrumb title={market.name} />
-            {/* <EventBreadcrumb title={market.noTokenId} /> */}
-            {/* <EventBreadcrumb title={market.yesTokenId} /> */}
             <EventTitleBlock market={market} />
             <ProbabilityHeadline marketId={market.id} delta24hPct={delta24h} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 xl:gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 xl:gap-3">
                 <div className="min-w-0 space-y-6">
-                    <EventPriceChart
-                        marketId={market.id}
-                        volumeLabel={format_usd(market.volume24hUsd)}
-                        closeLabel={format_close_label(market.endAt)}
-                        onLoaded={handle_chart_loaded}
-                    />
-                    <EventOrderBook
-                        marketId={market.id}
-                        selectedOutcome={selected_outcome}
-                        onOutcomeChange={set_selected_outcome}
-                    />
+                    <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">
+                        <EventPriceChart
+                            marketId={market.id}
+                            volumeLabel={format_usd(market.volume24hUsd)}
+                            closeLabel={format_close_label(market.endAt)}
+                            onLoaded={handle_chart_loaded}
+                        />
+                        <EventOrderBook
+                            marketId={market.id}
+                            selectedOutcome={selected_outcome}
+                            onOutcomeChange={set_selected_outcome}
+                        />
+                    </div>
                     <EventTabs description={market.description} />
                     <MarketComments market_id={market.id} />
                 </div>

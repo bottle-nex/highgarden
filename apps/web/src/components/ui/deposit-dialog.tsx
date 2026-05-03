@@ -229,7 +229,7 @@ function SendFromWalletPanel({
 
     if (!has_wallet) {
         return (
-            <div className="rounded-2xl border border-dark-faded/60 bg-dark-base/40 px-5 py-6 flex flex-col items-center gap-4">
+            <div className="rounded-lg border border-dark-faded/60 bg-dark-base/40 px-5 py-6 flex flex-col items-center gap-4">
                 <div className="size-11 rounded-full bg-dark-faded flex items-center justify-center">
                     <PiWallet className="size-5 text-light-alpha/70" />
                 </div>
@@ -399,7 +399,7 @@ function AmountInput({
                 placeholder="0.00"
                 value={value}
                 onChange={(e) => on_change(e.target.value)}
-                className="h-20 pl-9 pr-20 rounded-2xl bg-dark-base border-dark-faded text-2xl! font-semibold tabular-nums tracking-tight focus-visible:border-light-alpha/30"
+                className="h-20 pl-9 pr-20 rounded-lg bg-dark-base border-dark-faded text-2xl! font-semibold tabular-nums tracking-tight focus-visible:border-light-alpha/30"
             />
             <Button
                 type="button"
@@ -502,7 +502,7 @@ function ReceiveAddressPanel({
     return (
         <div className="space-y-3">
             <div className="flex justify-center">
-                <div className="rounded-2xl border border-dark-faded p-4 bg-dark-base">
+                <div className="rounded-lg border border-dark-faded p-4 bg-dark-base">
                     {address ? (
                         <QRCode
                             value={address}

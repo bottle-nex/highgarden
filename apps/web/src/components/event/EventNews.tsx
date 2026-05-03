@@ -72,14 +72,14 @@ export default function EventNews({ marketId }: Props): JSX.Element {
             )}
 
             {state.status === 'ready' && state.articles.length > 0 && (
-                <ul className="divide-y divide-white/5">
+                <ul className="">
                     {state.articles.map((a) => (
                         <li key={a.id}>
                             <a
                                 href={a.link}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-start gap-3 px-5 py-3 hover:bg-white/3 transition-colors group"
+                                className="flex items-start gap-3 px-5 py-3 hover:bg-white/3 transition-colors group rounded-lg"
                             >
                                 {a.publicationFavicon ? (
                                     // eslint-disable-next-line @next/next/no-img-element
