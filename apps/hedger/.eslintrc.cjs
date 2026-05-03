@@ -7,6 +7,9 @@ module.exports = {
     project: true,
     tsconfigRootDir: __dirname,
   },
+  globals: {
+    Bun: true,
+  },
   rules: {
     "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
   },

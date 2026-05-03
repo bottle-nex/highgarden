@@ -4,7 +4,7 @@ import LoggerFactory from "../log/logger";
 import RedisConnectionFactory from "./connection";
 import EventRepo from "../db/event.repo";
 
-export type OnJobFailed = (jobId: string, reason: string) => Promise<void> | void;
+export type OnJobFailed = (_jobId: string, _reason: string) => Promise<void> | void;
 
 export default class HedgeQueueEvents {
     private readonly log = LoggerFactory.for_category("queue-events");

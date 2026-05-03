@@ -73,7 +73,7 @@ export default class QuoteController {
     private static async resolve_market(
         market_id: string,
     ): Promise<
-        { market: ResolvedMarket } | { error: (res: Response) => void }
+        { market: ResolvedMarket } | { error: (_res: Response) => void }
     > {
         const row = await prisma.market.findUnique({
             where: { id: market_id },

@@ -5,7 +5,7 @@ import LoggerFactory from "../log/logger";
 import RedisConnectionFactory from "./connection";
 import type { HedgeJobData, HedgeJobResult } from "./types";
 
-export type HedgeJobProcessor = (job: Job<HedgeJobData>) => Promise<HedgeJobResult>;
+export type HedgeJobProcessor = (_job: Job<HedgeJobData>) => Promise<HedgeJobResult>;
 
 export default class HedgeWorker {
     private readonly log = LoggerFactory.for_category("worker");

@@ -51,7 +51,7 @@ export default class HedgeProcessor {
             await this.exposure.increment(ctx.market.id, ctx.fill.size);
         }
 
-        return this.execute_hedge(ctx, job);
+        return this.execute_hedge(ctx);
     }
 
     private async resolve_context(job: Job<HedgeJobData>): Promise<ResolvedContext> {
@@ -131,10 +131,7 @@ export default class HedgeProcessor {
         );
     }
 
-    private async execute_hedge(
-        ctx: ResolvedContext,
-        _job: Job<HedgeJobData>,
-    ): Promise<HedgeJobResult> {
+    private async execute_hedge(ctx: ResolvedContext): Promise<HedgeJobResult> {
         const target_price = await this.target_price_cents(ctx);
         this.announce_hedge_attempt(ctx, target_price);
         const initial = await this.orders.place_immediate({

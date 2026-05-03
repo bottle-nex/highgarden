@@ -6,8 +6,8 @@ import OrderFilledDecoder, { type OrderFilledEvent } from "./decoder";
 import CursorRepo from "../db/cursor.repo";
 
 export type OnOrderFilled = (
-    event: OrderFilledEvent,
-    context: { signature: string; slot: number; source: "live" },
+    _event: OrderFilledEvent,
+    _context: { signature: string; slot: number; source: "live" },
 ) => Promise<void> | void;
 
 export default class LiveListener {

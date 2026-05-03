@@ -1,17 +1,21 @@
 export class RetryableError extends Error {
     public readonly retryable = true;
+    public readonly cause_err?: unknown;
 
-    constructor(message: string, public readonly cause_err?: unknown) {
+    constructor(message: string, cause_err?: unknown) {
         super(message);
+        this.cause_err = cause_err;
         this.name = "RetryableError";
     }
 }
 
 export class UnrecoverableError extends Error {
     public readonly retryable = false;
+    public readonly cause_err?: unknown;
 
-    constructor(message: string, public readonly cause_err?: unknown) {
+    constructor(message: string, cause_err?: unknown) {
         super(message);
+        this.cause_err = cause_err;
         this.name = "UnrecoverableError";
     }
 }

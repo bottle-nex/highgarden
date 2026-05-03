@@ -34,7 +34,7 @@ export default class WalkBookExecutor {
     public async execute(input: WalkBookInput): Promise<WalkBookOutput> {
         const accumulator = this.empty_accumulator();
         await this.run_loop(input, accumulator);
-        return this.finalize_accumulator(accumulator, input);
+        return this.finalize_accumulator(accumulator);
     }
 
     private empty_accumulator() {
@@ -100,7 +100,6 @@ export default class WalkBookExecutor {
 
     private finalize_accumulator(
         acc: ReturnType<WalkBookExecutor["empty_accumulator"]>,
-        _input: WalkBookInput,
     ): WalkBookOutput {
         const avg = acc.filled > 0 ? Math.round(acc.usdc_paid / acc.filled) : null;
         return {

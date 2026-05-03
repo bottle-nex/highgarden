@@ -6,8 +6,8 @@ import OrderFilledDecoder, { type OrderFilledEvent } from "./decoder";
 import CursorRepo from "../db/cursor.repo";
 
 export type OnOrderFilledFromPoller = (
-    event: OrderFilledEvent,
-    context: { signature: string; slot: number; source: "poller" },
+    _event: OrderFilledEvent,
+    _context: { signature: string; slot: number; source: "poller" },
 ) => Promise<void> | void;
 
 export default class CatchUpPoller {
