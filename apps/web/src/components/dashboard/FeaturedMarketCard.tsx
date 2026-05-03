@@ -70,10 +70,10 @@ export default function FeaturedMarketCard({
                             )}
                         </div>
                         <div className="min-w-0 flex-1">
-                            <h2 className="text-xl text-white/85 font-medium leading-snug tracking-tight line-clamp-2">
+                            <h2 className="text-3xl text-white/85 font-medium leading-snug tracking-tight line-clamp-2 hover:underline">
                                 {market.title}
                             </h2>
-                            <p className="mt-2 text-[12px] text-white/50 leading-relaxed line-clamp-1">
+                            <p className="mt-2 text-[13px] text-white/50 leading-relaxed line-clamp-2">
                                 {market.description}
                             </p>
                         </div>

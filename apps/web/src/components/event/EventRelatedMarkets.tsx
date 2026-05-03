@@ -48,7 +48,7 @@ export default function EventRelatedMarkets({ excludeId }: Props): JSX.Element |
                     <Link
                         key={m.id}
                         href={`/event/${m.id}`}
-                        className="border border-white/10 rounded-[6px] p-5 bg-neutral-950/60 hover:border-white/20 transition-colors no-underline block"
+                        className="rounded-lg p-5 bg-dark-base no-underline block"
                     >
                         <h3 className="text-[14px] text-white/85 leading-snug line-clamp-2 min-h-[2.6em]">
                             {m.name}

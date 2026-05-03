@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MarketDTO } from '@solmarket/types';
 import { Outcome } from '@solmarket/types';
 import { fetch_market_by_id, fetch_market_orderbook } from '@/lib/api/markets';
@@ -17,7 +17,6 @@ import EventTradePanel from './EventTradePanel';
 import EventTabs from './EventTabs';
 import EventNews from './EventNews';
 import EventRelatedMarkets from './EventRelatedMarkets';
-import EventBreadcrumb from './EventBreadcrumb';
 import DashboardNavbar from '../dashboard/DashboardNavbar';
 import MarketComments from '../market/comments/MarketComments';
 
@@ -86,6 +85,19 @@ function Body({ market }: { market: MarketDTO }) {
 
     const [selected_outcome, set_selected_outcome] = useState<Outcome>(Outcome.YES);
     const [delta24h, set_delta24h] = useState<number | null>(null);
+    const [is_title_stuck, set_is_title_stuck] = useState(false);
+    const sticky_title_ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const el = sticky_title_ref.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => set_is_title_stuck(entry.intersectionRatio < 1),
+            { rootMargin: '-65px 0px 0px 0px', threshold: [1] },
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
 
     useEffect(() => {
         let cancelled = false;
@@ -119,7 +131,12 @@ function Body({ market }: { market: MarketDTO }) {
         <div className="space-y-6 [overflow-anchor:none]">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 xl:gap-3">
                 <div className="min-w-0 space-y-5">
-                    <EventTitleBlock market={market} />
+                    <div
+                        ref={sticky_title_ref}
+                        className="lg:sticky lg:top-16 lg:z-20 lg:-mx-2 lg:px-2 lg:py-3 lg:bg-dark-alpha/90 lg:backdrop-blur-sm"
+                    >
+                        <EventTitleBlock market={market} is_stuck={is_title_stuck} />
+                    </div>
                     <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">
                         <EventPriceChart
                             marketId={market.id}

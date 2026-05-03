@@ -42,7 +42,7 @@ export default function MarketGrid({
                             type="button"
                             onClick={() => setSort(key)}
                             className={cn(
-                                'px-3 py-1.5 rounded-xs  text-[9px] tracking-[0.22em] uppercase transition-colors cursor-pointer',
+                                'px-3 py-1.5 rounded-xs text-[9px] tracking-[0.22em] uppercase transition-colors cursor-pointer',
                                 isActive
                                     ? 'bg-white/10 text-white/80'
                                     : 'text-white/40 hover:text-white/65',

@@ -18,14 +18,14 @@ export default function MarketCard({
     return (
         <Link
             href={resolved_href}
-            className="group relative border border-gray-500/15 rounded-[6px] p-5 bg-dark-base/80 transition-colors cursor-pointer block no-underline"
+            className="group relative rounded-lg p-5 bg-dark-base transition-colors cursor-pointer block no-underline"
         >
             <div className="flex items-center justify-between text-[11px] tracking-[0.22em] uppercase">
                 <span className="text-white/55">{market.category}</span>
                 <span className="text-white/45">ENDS IN {market.endsIn}</span>
             </div>
 
-            <h3 className="mt-5 text-[15px] text-white/75 font-medium leading-snug min-h-12 line-clamp-2">
+            <h3 className="mt-5 text-[15px] text-white/75 font-medium leading-snug min-h-12 line-clamp-2 hover:underline">
                 {market.title}
             </h3>
 
