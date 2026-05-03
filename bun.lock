@@ -31,6 +31,8 @@
       "name": "contract",
       "dependencies": {
         "@coral-xyz/anchor": "^0.31.1",
+        "@solmarket/contract": "*",
+        "bs58": "^6.0.0",
       },
       "devDependencies": {
         "@solana/spl-token": "^0.4.14",

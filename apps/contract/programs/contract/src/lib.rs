@@ -10,7 +10,7 @@ pub mod utils;
 use instructions::*;
 use state::SignedQuote;
 
-declare_id!("6phzgYZv5a2k7iNKcoSjS9SaP8dzybtkVHjhcfHxWSL7");
+declare_id!("2LEm66V2Ys8JbVoQfYbZqCy6YGM1wuPUc843xRx76t3P");
 
 #[program]
 pub mod contract {

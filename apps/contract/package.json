@@ -9,7 +9,9 @@
     "mint": "npx ts-node --skip-project --compiler-options '{\"module\":\"commonjs\",\"target\":\"es2020\",\"esModuleInterop\":true}' scripts/mint-test-tokens.ts"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "^0.31.1"
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solmarket/contract": "*",
+    "bs58": "^6.0.0"
   },
   "devDependencies": {
     "@solana/spl-token": "^0.4.14",
