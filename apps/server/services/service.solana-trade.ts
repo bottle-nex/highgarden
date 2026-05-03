@@ -1,4 +1,5 @@
-import { AnchorProvider, BN, Wallet } from "@coral-xyz/anchor";
+import { AnchorProvider, BN } from "@coral-xyz/anchor";
+import NodeWallet from "@coral-xyz/anchor/dist/esm/nodewallet.js";
 import { Connection, Ed25519Program, Keypair, PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { prisma } from "@solmarket/database";
@@ -95,7 +96,7 @@ export default class SolanaTradeService {
 
     private build_client(user_keypair: Keypair): SolmarketClient {
         const connection = new Connection(ENV.SERVER_SOLANA_RPC_URL, "confirmed");
-        const provider = new AnchorProvider(connection, new Wallet(user_keypair), {
+        const provider = new AnchorProvider(connection, new NodeWallet(user_keypair), {
             commitment: "confirmed",
             preflightCommitment: "confirmed",
         });
