@@ -41,12 +41,12 @@ export default function ProbabilityHeadline({ marketId, delta24hPct }: Props): J
     const delta_value = delta24hPct === null ? '—' : `${Math.abs(delta24hPct).toFixed(1)}%`;
 
     return (
-        <div className="flex items-baseline gap-4">
-            <span ref={flash_ref} className="text-4xl font-medium text-yellow-300/90 tabular-nums">
+        <div className="flex items-baseline gap-2.5">
+            <span ref={flash_ref} className="text-2xl font-medium text-[#27A3FD]/90 tabular-nums leading-none">
                 {display}
             </span>
-            <span className="text-[11px] tracking-[0.25em] uppercase text-white/40">CHANCE</span>
-            <span className={` text-xs tabular-nums ${delta_color}`}>
+            <span className="text-[9px] tracking-[0.25em] uppercase text-white/40">CHANCE</span>
+            <span className={`text-[10px] tabular-nums ${delta_color}`}>
                 {delta_sign} {delta_value}
             </span>
         </div>

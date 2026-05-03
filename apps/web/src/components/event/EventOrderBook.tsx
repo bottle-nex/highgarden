@@ -1,12 +1,48 @@
 'use client';
 
 import { JSX, useCallback, useEffect, useRef, useState } from 'react';
-import { VscLayoutCentered } from 'react-icons/vsc';
 import { Outcome } from '@solmarket/types';
 import { useOrderBook } from '@/lib/socket/useOrderBook';
-import { Button } from '@/components/ui/button';
 import ToolTipComponent from '@/components/utility/ToolTipComponent';
 import { cn } from '@/lib/utils';
+import { TbReload } from 'react-icons/tb';
+
+type ViewMode = 'asks' | 'bids' | 'center';
+
+const VIEW_MODES: ReadonlyArray<{
+    key: ViewMode;
+    label: string;
+    leftColor: string;
+    rightColor: string;
+}> = [
+    { key: 'bids', label: 'Show bids only', leftColor: '#00c278', rightColor: '#5d606f' },
+    { key: 'asks', label: 'Show asks only', leftColor: '#5d606f', rightColor: '#fd4b4e' },
+    { key: 'center', label: 'Center on spread', leftColor: '#00c278', rightColor: '#fd4b4e' },
+];
+
+function BookViewIcon({
+    leftColor,
+    rightColor,
+}: {
+    leftColor: string;
+    rightColor: string;
+}): JSX.Element {
+    return (
+        <svg
+            className="h-5 w-5"
+            viewBox="0 0 25 25"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+        >
+            {[3, 7, 11, 15, 19].map((y) => (
+                <rect key={`l${y}`} x="3" y={y} width="8" height="2" fill={leftColor} />
+            ))}
+            {[3, 7, 11, 15, 19].map((y) => (
+                <rect key={`r${y}`} x="13" y={y} width="8" height="2" fill={rightColor} />
+            ))}
+        </svg>
+    );
+}
 
 interface Props {
     marketId: string;
@@ -44,7 +80,6 @@ export default function EventOrderBook({
     selectedOutcome,
     onOutcomeChange,
 }: Props): JSX.Element {
-    const [is_open, set_is_open] = useState(true);
     const book = useOrderBook(marketId, selectedOutcome);
     const scroll_ref = useRef<HTMLDivElement | null>(null);
     const spread_ref = useRef<HTMLDivElement | null>(null);
@@ -63,13 +98,28 @@ export default function EventOrderBook({
 
     const has_centered_ref = useRef<Outcome | null>(null);
     const has_data = book.isHydrated && (book.asks.length > 0 || book.bids.length > 0);
+    const [view_mode, set_view_mode] = useState<ViewMode>('center');
 
     useEffect(() => {
         if (!has_data) return;
+        if (view_mode !== 'center') return;
         if (has_centered_ref.current === selectedOutcome) return;
         has_centered_ref.current = selectedOutcome;
         requestAnimationFrame(() => center_book('auto'));
-    }, [has_data, selectedOutcome, center_book]);
+    }, [has_data, selectedOutcome, center_book, view_mode]);
+
+    const handle_view_change = useCallback(
+        (next: ViewMode) => {
+            set_view_mode(next);
+            if (next === 'center') {
+                has_centered_ref.current = null;
+                requestAnimationFrame(() => requestAnimationFrame(() => center_book()));
+            } else {
+                scroll_ref.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        },
+        [center_book],
+    );
 
     const bids = book.bids.slice(0, VISIBLE_LEVELS);
     const asks = book.asks.slice(0, VISIBLE_LEVELS);
@@ -80,45 +130,50 @@ export default function EventOrderBook({
     return (
         <section className="rounded-lg overflow-hidden bg-dark-base">
             <header
-                onClick={() => set_is_open((v) => !v)}
                 className={cn("group flex items-center justify-between px-4 py-3 border-white/7 cursor-pointer select-none")}
             >
                 <button
                     type="button"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        set_is_open((v) => !v);
-                    }}
-                    className="flex items-center gap-2 text-[10px] tracking-[0.28em] uppercase text-white/70 group-hover:text-white cursor-pointer"
+                    className="flex items-center gap-1.5 text-[14px] text-white/70 cursor-pointer"
                 >
-                    <span
-                        className={`inline-block w-2.5 text-white/45 group-hover:text-white/70 transition-transform duration-200 ${is_open ? 'rotate-90' : ''
-                            }`}
-                    >
-                        ▸
-                    </span>
-                    <span className="font-medium">Order Book</span>
+                    <TbReload className='size-4' />
+                    <span className="font-medium">Book</span>
                 </button>
                 <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5">
-                    <ToolTipComponent side='left' content="Recenter book">
-                        <Button
-                            type="button"
-                            size="icon-sm"
-                            onClick={() => center_book()}
-                            aria-label="Center order book"
-                            className="text-white/55 hover:text-white"
-                        >
-                            <VscLayoutCentered className="rotate-90" />
-                        </Button>
-                    </ToolTipComponent>
+                    <div className="flex items-center gap-0.5">
+                        {VIEW_MODES.map((m) => (
+                            <ToolTipComponent key={m.key} side="top" content={m.label}>
+                                <button
+                                    type="button"
+                                    aria-label={m.label}
+                                    aria-pressed={view_mode === m.key}
+                                    onClick={() => handle_view_change(m.key)}
+                                    className={cn(
+                                        'p-1 rounded transition-colors cursor-pointer',
+                                        view_mode === m.key
+                                            ? 'bg-white/8'
+                                            : 'opacity-60 hover:opacity-100 hover:bg-white/5',
+                                    )}
+                                >
+                                    <BookViewIcon
+                                        leftColor={m.leftColor}
+                                        rightColor={m.rightColor}
+                                    />
+                                </button>
+                            </ToolTipComponent>
+                        ))}
+                    </div>
                     <div className="flex gap-1 bg-white/2.5 border border-white/8 rounded-md p-0.75">
                         {[Outcome.YES, Outcome.NO].map((o) => (
                             <button
                                 key={o}
                                 type="button"
-                                data-pressed={selectedOutcome === o ? 'true' : 'false'}
                                 onClick={() => onOutcomeChange(o)}
-                                className={`${o === Outcome.YES ? 'green-btn' : 'red-btn'} px-2.5 py-1 rounded text-[9.5px] tracking-[0.24em] uppercase font-medium`}
+                                className={cn(
+                                    'px-2.5 py-1 rounded text-[9.5px] tracking-[0.24em] uppercase font-medium cursor-pointer transition-colors',
+                                    selectedOutcome === o
+                                        ? o === Outcome.YES ? 'bg-emerald-500/35 text-white' : 'bg-rose-500/35 text-white' : 'bg-transparent text-white/55 hover:text-white/80',
+                                )}
                             >
                                 {o}
                             </button>
@@ -128,12 +183,11 @@ export default function EventOrderBook({
             </header>
 
             <div
-                className={`overflow-hidden [overflow-anchor:none] transition-[max-height] duration-300 ease-in-out ${is_open ? 'max-h-150' : 'max-h-0'
-                    }`}
+                className={`overflow-hidden [overflow-anchor:none] transition-[max-height] duration-300 ease-in-out `}
             >
                 <div>
-                    <div className="py-3">
-                        <div className="grid grid-cols-3 gap-x-3 pr-3 text-[9.5px] tracking-[0.24em] uppercase text-white/35 pb-2.5 border-b border-white/7">
+                    <div className="pt-1">
+                        <div className="grid grid-cols-3 pr-3 gap-x-8 text-[11.5px] text-white/35 pb-2 border-b border-white/7">
                             <span className="text-right">Price</span>
                             <span className="text-right">Shares</span>
                             <span className="text-right">Total</span>
@@ -174,6 +228,7 @@ export default function EventOrderBook({
 
                         {book.isHydrated && (asks.length > 0 || bids.length > 0) && (
                             <div ref={scroll_ref} className="h-105 overflow-y-auto custom-scrollbar">
+                                {view_mode !== 'bids' && (
                                 <div className="pt-3.5 space-y-0.5">
                                     {asks.length === 0 ? (
                                         <div className="py-4 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
@@ -187,7 +242,7 @@ export default function EventOrderBook({
                                                 return (
                                                     <div
                                                         key={`ask-${lvl.price}`}
-                                                        className="relative grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
+                                                        className="relative grid grid-cols-3 gap-x-8 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                                     >
                                                         <div
                                                             className="absolute inset-y-0 right-0 bg-rose-500/35 rounded-none pointer-events-none"
@@ -208,12 +263,14 @@ export default function EventOrderBook({
                                             .reverse()
                                     )}
                                 </div>
+                                )}
 
+                                {view_mode === 'center' && (
                                 <div
                                     ref={spread_ref}
-                                    className="my-5 flex items-center justify-between px-1 py-2.5 border-y border-white/6"
+                                    className="my-5 flex items-center justify-between px-3 py-2.5 border-y border-white/6"
                                 >
-                                    <span className="text-[9.5px] tracking-[0.32em] uppercase text-white/45 font-medium">
+                                    <span className="text-[9.5px] tracking-[0.22em] uppercase text-white/45 font-medium">
                                         Spread
                                     </span>
                                     <span className="text-[13px] tabular-nums text-white/85 font-medium">
@@ -222,7 +279,9 @@ export default function EventOrderBook({
                                             : '0.00¢'}
                                     </span>
                                 </div>
+                                )}
 
+                                {view_mode !== 'asks' && (
                                 <div className="space-y-0.5">
                                     {bids.length === 0 ? (
                                         <div className="grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums">
@@ -257,6 +316,7 @@ export default function EventOrderBook({
                                         })
                                     )}
                                 </div>
+                                )}
                             </div>
                         )}
                     </div>

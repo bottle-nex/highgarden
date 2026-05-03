@@ -15,6 +15,7 @@ import {
 import { Outcome, type PriceHistoryPoint, type PriceHistoryRange } from '@solmarket/types';
 import { fetch_market_price_history } from '@/lib/api/markets';
 import { TbSettings } from 'react-icons/tb';
+import ProbabilityHeadline from './ProbabilityHeadline';
 
 const RANGES: ReadonlyArray<{ key: PriceHistoryRange; label: string }> = [
     { key: '1h', label: '1H' },
@@ -35,6 +36,7 @@ interface Props {
     marketId: string;
     volumeLabel: string;
     closeLabel: string;
+    delta24hPct: number | null;
     onLoaded?: (latestPct: number, delta24hPct: number | null) => void;
 }
 
@@ -53,7 +55,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | n
         <div
             style={{
                 background: 'rgba(6,6,8,0.94)',
-                border: '1px solid rgba(255,214,8,0.18)',
+                border: '1px solid rgba(39,163,253,0.18)',
                 borderRadius: 6,
                 padding: '8px 14px',
                 boxShadow: '0 4px 24px rgba(0,0,0,0.6)',
@@ -68,7 +70,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | n
                     fontSize: 9,
                     letterSpacing: '0.18em',
                     textTransform: 'uppercase',
-                    color: 'rgba(255,214,8,0.55)',
+                    color: 'rgba(39,163,253,0.55)',
                     marginBottom: 2,
                 }}
             >
@@ -92,6 +94,7 @@ export default function EventPriceChart({
     marketId,
     volumeLabel,
     closeLabel,
+    delta24hPct,
     onLoaded,
 }: Props): JSX.Element {
     const [range, set_range] = useState<PriceHistoryRange>('1d');
@@ -217,112 +220,71 @@ export default function EventPriceChart({
     }
 
     const isNo = selectedOutcome === Outcome.NO;
-    const lineColor = isNo ? 'rgba(244,63,94,' : 'rgba(255,214,8,';
+    const lineColor = isNo ? 'rgba(244,63,94,' : 'rgba(39,163,253,';
     const areaColor = lineColor;
 
     return (
-        <section className="rounded-lg bg-dark-base flex flex-col">
-            <div className="flex items-center justify-between px-5 pt-5 pb-3">
-                <div className="flex items-center gap-2 text-[10px] tracking-[0.25em] uppercase text-white/55">
-                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-400/80" />
-                    PRICE HISTORY
-                </div>
-                <div className="flex items-center gap-x-3">
-                    <div className="flex gap-1 bg-white/2.5 border border-white/8 rounded-md p-0.75">
-                        {[Outcome.YES, Outcome.NO].map((o) => (
-                            <button
-                                key={o}
-                                type="button"
-                                data-pressed={selectedOutcome === o ? 'true' : 'false'}
-                                onClick={() => onOutcomeChange(o)}
-                                className={`${o === Outcome.YES ? 'green-btn' : 'red-btn'} px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium`}
-                            >
-                                {o}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="flex gap-1 bg-white/[0.02] border border-white/10 rounded-md p-[3px]">
-                        {RANGES.map((r) => (
-                            <button
-                                key={r.key}
-                                type="button"
-                                onClick={() => set_range(r.key)}
-                                className={`relative px-3 py-1 rounded text-[9px] tracking-[0.2em] uppercase transition-colors cursor-pointer ${
-                                    range === r.key
-                                        ? 'text-white'
-                                        : 'text-white/45 hover:text-white/75'
-                                }`}
-                            >
-                                {range === r.key && (
-                                    <motion.span
-                                        layoutId="chart-range-pill"
-                                        className="absolute inset-0 rounded bg-white/[0.07]"
-                                        transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                                    />
-                                )}
-                                <span className="relative z-10">{r.label}</span>
-                            </button>
-                        ))}
-                    </div>
-                    <div
-                        ref={settings_ref}
-                        className="relative flex gap-1 bg-white/2 border border-white/10 rounded-md p-0.75"
+        <section className="rounded-lg bg-dark-base flex flex-col min-h-120">
+            <div className="flex items-center justify-between px-5 pt-4 pb-2">
+                <ProbabilityHeadline marketId={marketId} delta24hPct={delta24hPct} />
+                <div
+                    ref={settings_ref}
+                    className="relative flex gap-1 bg-dark-base border border-white/10 rounded-md p-0.75"
+                >
+                    <button
+                        aria-label="settings"
+                        type="button"
+                        onClick={() => set_settings_open((v) => !v)}
+                        className={`px-2 py-1 rounded transition-colors cursor-pointer flex items-center ${settings_open ? 'text-white/90 bg-white/[0.07]' : 'text-white/45 hover:text-white/75'}`}
                     >
-                        <button
-                            aria-label="settings"
-                            type="button"
-                            onClick={() => set_settings_open((v) => !v)}
-                            className={`px-2 py-1 rounded transition-colors cursor-pointer flex items-center ${settings_open ? 'text-white/90 bg-white/[0.07]' : 'text-white/45 hover:text-white/75'}`}
-                        >
-                            <TbSettings className="w-3.5 h-3.5" />
-                        </button>
-                        {settings_open && (
-                            <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-52 rounded-lg border border-white/10 bg-[rgba(10,10,14,0.97)] shadow-[0_8px_32px_rgba(0,0,0,0.7)] backdrop-blur-xl">
-                                <div className="px-4 py-3 border-b border-white/8">
-                                    <span className="text-[10px] tracking-[0.25em] uppercase text-white/55 font-medium">
-                                        Settings
-                                    </span>
-                                </div>
-                                <div className="px-4 py-2 flex flex-col gap-0.5">
-                                    {(
-                                        [
-                                            ['X-Axis', showXAxis, setShowXAxis],
-                                            ['Y-Axis', showYAxis, setShowYAxis],
-                                            [
-                                                'Horizontal Grid',
-                                                showHorizontalGrid,
-                                                setShowHorizontalGrid,
-                                            ],
-                                            [
-                                                'Vertical Grid',
-                                                showVerticalGrid,
-                                                setShowVerticalGrid,
-                                            ],
-                                        ] as [string, boolean, (v: boolean) => void][]
-                                    ).map(([label, value, setter]) => (
-                                        <div
-                                            key={label}
-                                            className="flex items-center justify-between py-2"
-                                        >
-                                            <span className="text-[11px] text-white/70">
-                                                {label}
-                                            </span>
-                                            <button
-                                                aria-label="settings"
-                                                type="button"
-                                                onClick={() => setter(!value)}
-                                                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer ${value ? 'bg-blue-500' : 'bg-white/15'}`}
-                                            >
-                                                <span
-                                                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${value ? 'translate-x-4.5' : 'translate-x-0.5'}`}
-                                                />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
+                        <TbSettings className="w-3.5 h-3.5" />
+                    </button>
+                    {settings_open && (
+                        <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-52 rounded-lg ring-1 ring-white/5 bg-dark-alpha shadow-xs shadow-black/10 backdrop-blur-xl">
+                            <div className="px-4 py-3 border-b border-white/8">
+                                <span className="text-[10px] tracking-[0.25em] uppercase text-white/55 font-medium">
+                                    Settings
+                                </span>
                             </div>
-                        )}
-                    </div>
+                            <div className="px-4 py-2 flex flex-col gap-0.5">
+                                {(
+                                    [
+                                        ['X-Axis', showXAxis, setShowXAxis],
+                                        ['Y-Axis', showYAxis, setShowYAxis],
+                                        [
+                                            'Horizontal Grid',
+                                            showHorizontalGrid,
+                                            setShowHorizontalGrid,
+                                        ],
+                                        [
+                                            'Vertical Grid',
+                                            showVerticalGrid,
+                                            setShowVerticalGrid,
+                                        ],
+                                    ] as [string, boolean, (v: boolean) => void][]
+                                ).map(([label, value, setter]) => (
+                                    <div
+                                        key={label}
+                                        className="flex items-center justify-between py-2"
+                                    >
+                                        <span className="text-[11px] text-white/70">
+                                            {label}
+                                        </span>
+                                        <button
+                                            aria-label="settings"
+                                            type="button"
+                                            onClick={() => setter(!value)}
+                                            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer ${value ? 'bg-blue-500' : 'bg-white/15'}`}
+                                        >
+                                            <span
+                                                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${value ? 'translate-x-4.5' : 'translate-x-0.5'}`}
+                                            />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -470,7 +432,7 @@ export default function EventPriceChart({
                             <Tooltip
                                 content={(props) => <ChartTooltip {...props} />}
                                 cursor={{
-                                    stroke: isNo ? 'rgba(244,63,94,0.25)' : 'rgba(255,214,8,0.3)',
+                                    stroke: isNo ? 'rgba(244,63,94,0.25)' : 'rgba(39,163,253,0.3)',
                                     strokeWidth: 1,
                                 }}
                                 isAnimationActive={false}
@@ -491,7 +453,7 @@ export default function EventPriceChart({
                                 fill="url(#evtPriceArea)"
                                 activeDot={{
                                     r: 4.5,
-                                    fill: isNo ? '#f43f5e' : '#ffd608',
+                                    fill: isNo ? '#f43f5e' : '#27A3FD',
                                     stroke: '#0E0D0D',
                                     strokeWidth: 2,
                                 }}
@@ -503,7 +465,46 @@ export default function EventPriceChart({
                 )}
             </div>
 
-            <div className="flex items-center justify-between px-5 py-4 border-t border-white/8  text-[10px] tracking-[0.22em] uppercase text-white/40">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-white/8">
+                <div className="flex gap-1 bg-white/2.5 border border-white/8 rounded-md p-0.75">
+                    {[Outcome.YES, Outcome.NO].map((o) => (
+                        <button
+                            key={o}
+                            type="button"
+                            data-pressed={selectedOutcome === o ? 'true' : 'false'}
+                            onClick={() => onOutcomeChange(o)}
+                            className={`${o === Outcome.YES ? 'green-btn' : 'red-btn'} px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium`}
+                        >
+                            {o}
+                        </button>
+                    ))}
+                </div>
+                <div className="flex gap-1 bg-white/2 border border-white/10 rounded-md p-0.75">
+                    {RANGES.map((r) => (
+                        <button
+                            key={r.key}
+                            type="button"
+                            onClick={() => set_range(r.key)}
+                            className={`relative px-3 py-1 rounded text-[9px] tracking-[0.2em] uppercase transition-colors cursor-pointer ${
+                                range === r.key
+                                    ? 'text-white'
+                                    : 'text-white/45 hover:text-white/75'
+                            }`}
+                        >
+                            {range === r.key && (
+                                <motion.span
+                                    layoutId="chart-range-pill"
+                                    className="absolute inset-0 rounded bg-white/[0.07]"
+                                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                                />
+                            )}
+                            <span className="relative z-10">{r.label}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/8 text-[9px] tracking-[0.22em] uppercase text-white/40">
                 <span>VOL {volumeLabel}</span>
                 <span>{closeLabel}</span>
             </div>

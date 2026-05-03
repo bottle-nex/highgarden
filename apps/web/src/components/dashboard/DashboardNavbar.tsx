@@ -27,19 +27,21 @@ export default function DashboardNavbar(): JSX.Element {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button
-                        type="button"
-                        className={cn(
-                            'h-9 px-4 rounded-sm text-[13px] tracking-wider bg-white text-black shadow-xs shadow-black/10 inset-shadow-2xs inset-shadow-black/10 transition-all transform duration-250',
+                    <CroppedButton
+                        size={'sm'}
+                       className={cn(
+                            'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
+                            'bg-white text-neutral-900',
+                            'transition-all duration-200',
                         )}
                     >
                         Portfolio
-                    </Button>
+                    </CroppedButton>
                     <CroppedButton
                         size={"sm"}
                         onClick={() => setDepositDropdown(!openDepositDropdown)}
                         className={cn(
-                            'px-5 text-[12px] font-[510] tracking-normal uppercase',
+                            'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
                             'bg-dark-faded text-white',
                             'transition-all duration-200',
                         )}

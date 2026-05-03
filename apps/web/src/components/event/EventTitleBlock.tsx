@@ -27,9 +27,9 @@ export default function EventTitleBlock({ market }: Props): JSX.Element {
     const show_image = !!market.imageUrl && !img_error;
 
     return (
-        <header className="flex items-start gap-5">
+        <header className="flex items-start gap-4 h-14">
             <div
-                className="shrink-0 w-16 h-16 rounded-md border border-white/10 overflow-hidden"
+                className="shrink-0 w-14 h-14 rounded-md border border-white/10 overflow-hidden"
                 style={show_image ? undefined : { background: placeholder_gradient(market.id) }}
                 aria-hidden
             >
@@ -39,15 +39,15 @@ export default function EventTitleBlock({ market }: Props): JSX.Element {
                         alt=""
                         className="w-full h-full object-cover"
                         onError={() => set_img_error(true)}
-                        width={64}
-                        height={64}
+                        width={52}
+                        height={52}
                     />
                 )}
             </div>
-            <div className="flex-1 min-w-0 space-y-2">
-                <h1 className="text-3xl text-white leading-snug font-medium">{market.name}</h1>
+            <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+                <h1 className="text-3xl text-white leading-none font-medium">{market.name}</h1>
                 {market.description && (
-                    <p className="text-sm text-white/55 leading-relaxed line-clamp-2 max-w-3xl">
+                    <p className="text-[14px] text-white/55 leading-[1.2] line-clamp-1 max-w-3xl">
                         {market.description}
                     </p>
                 )}
@@ -57,7 +57,7 @@ export default function EventTitleBlock({ market }: Props): JSX.Element {
                     <Button
                         type="button"
                         variant="outline"
-                        size="icon-lg"
+                        size="icon"
                         aria-label="Share"
                         onClick={handle_share}
                         className="rounded-md border-white/10 bg-dark-base hover:border-white/25 text-white/55 hover:text-white"
@@ -69,7 +69,7 @@ export default function EventTitleBlock({ market }: Props): JSX.Element {
                     <Button
                         type="button"
                         variant="outline"
-                        size="icon-lg"
+                        size="icon"
                         aria-label="Bookmark"
                         onClick={handle_bookmark}
                         className="rounded-md border-white/10 bg-dark-base hover:border-white/25 text-white/55 hover:text-white"

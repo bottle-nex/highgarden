@@ -11,7 +11,6 @@ import { enqueueBookUpdate } from '@/store/book/useOrderBookStore';
 import { SocketEventHandlers } from '@/lib/socket/socket-event-handlers';
 
 import EventTitleBlock from './EventTitleBlock';
-import ProbabilityHeadline from './ProbabilityHeadline';
 import EventPriceChart from './EventPriceChart';
 import EventOrderBook from './EventOrderBook';
 import EventTradePanel from './EventTradePanel';
@@ -117,17 +116,16 @@ function Body({ market }: { market: MarketDTO }) {
     }, []);
 
     return (
-        <div className="space-y-8 [overflow-anchor:none]">
-            <EventTitleBlock market={market} />
-            <ProbabilityHeadline marketId={market.id} delta24hPct={delta24h} />
-
+        <div className="space-y-6 [overflow-anchor:none]">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 xl:gap-3">
-                <div className="min-w-0 space-y-6">
+                <div className="min-w-0 space-y-5">
+                    <EventTitleBlock market={market} />
                     <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">
                         <EventPriceChart
                             marketId={market.id}
                             volumeLabel={format_usd(market.volume24hUsd)}
                             closeLabel={format_close_label(market.endAt)}
+                            delta24hPct={delta24h}
                             onLoaded={handle_chart_loaded}
                         />
                         <EventOrderBook
