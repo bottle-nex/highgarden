@@ -15,10 +15,10 @@ const VIEW_MODES: ReadonlyArray<{
     leftColor: string;
     rightColor: string;
 }> = [
-    { key: 'bids', label: 'Show bids only', leftColor: '#00c278', rightColor: '#5d606f' },
-    { key: 'asks', label: 'Show asks only', leftColor: '#5d606f', rightColor: '#fd4b4e' },
-    { key: 'center', label: 'Center on spread', leftColor: '#00c278', rightColor: '#fd4b4e' },
-];
+        { key: 'bids', label: 'Show bids only', leftColor: '#00c278', rightColor: '#5d606f' },
+        { key: 'asks', label: 'Show asks only', leftColor: '#5d606f', rightColor: '#fd4b4e' },
+        { key: 'center', label: 'Center on spread', leftColor: '#00c278', rightColor: '#fd4b4e' },
+    ];
 
 function BookViewIcon({
     leftColor,
@@ -67,8 +67,7 @@ function format_size(size: number): string {
     });
 }
 
-function format_total(price: number, size: number): string {
-    const usd = price * size;
+function format_total(usd: number): string {
     return `$${usd.toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
@@ -142,11 +141,11 @@ export default function EventOrderBook({
                 <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5">
                     <div className="flex items-center gap-0.5">
                         {VIEW_MODES.map((m) => (
-                            <ToolTipComponent key={m.key} side="top" content={m.label}>
+                            <ToolTipComponent key={m.key} side="top" duration={100} content={m.label}>
                                 <button
                                     type="button"
                                     aria-label={m.label}
-                                    aria-pressed={view_mode === m.key}
+                                    data-pressed={view_mode === m.key}
                                     onClick={() => handle_view_change(m.key)}
                                     className={cn(
                                         'p-1 rounded transition-colors cursor-pointer',
@@ -229,93 +228,95 @@ export default function EventOrderBook({
                         {book.isHydrated && (asks.length > 0 || bids.length > 0) && (
                             <div ref={scroll_ref} className="h-105 overflow-y-auto custom-scrollbar">
                                 {view_mode !== 'bids' && (
-                                <div className="pt-3.5 space-y-0.5">
-                                    {asks.length === 0 ? (
-                                        <div className="py-4 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
-                                            No asks
-                                        </div>
-                                    ) : (
-                                        asks
-                                            .map((lvl, i) => {
-                                                const cum = book.cumulativeAsks[i] ?? lvl.size;
+                                    <div className="pt-3.5 space-y-0.5">
+                                        {asks.length === 0 ? (
+                                            <div className="py-4 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
+                                                No asks
+                                            </div>
+                                        ) : (
+                                            asks
+                                                .map((lvl, i) => {
+                                                    const cum = book.cumulativeAsks[i] ?? lvl.size;
+                                                    const cum_usd = book.cumulativeAsksUsd[i] ?? lvl.price * lvl.size;
+                                                    const w = (cum / max_total) * 100;
+                                                    return (
+                                                        <div
+                                                            key={`ask-${lvl.price}`}
+                                                            className="relative grid grid-cols-3 gap-x-8 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
+                                                        >
+                                                            <div
+                                                                className="absolute inset-y-0 right-0 bg-rose-500/35 rounded-none pointer-events-none"
+                                                                style={{ width: `${w}%` }}
+                                                            />
+                                                            <span className="relative text-right font-medium text-rose-500">
+                                                                {format_cents(lvl.price)}
+                                                            </span>
+                                                            <span className="relative text-right text-white font-light">
+                                                                {format_size(lvl.size)}
+                                                            </span>
+                                                            <span className="relative text-right text-white/40 font-light">
+                                                                {format_total(cum_usd)}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })
+                                                .reverse()
+                                        )}
+                                    </div>
+                                )}
+
+                                {view_mode === 'center' && (
+                                    <div
+                                        ref={spread_ref}
+                                        className="my-5 flex items-center justify-between px-3 py-2.5 border-y border-white/6"
+                                    >
+                                        <span className="text-[9.5px] tracking-[0.22em] uppercase text-white/45 font-medium">
+                                            Spread
+                                        </span>
+                                        <span className="text-[13px] tabular-nums text-white/85 font-medium">
+                                            {book.spread !== null
+                                                ? `${(book.spread * 100).toFixed(2)}¢`
+                                                : '0.00¢'}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {view_mode !== 'asks' && (
+                                    <div className="space-y-0.5">
+                                        {bids.length === 0 ? (
+                                            <div className="grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums">
+                                                <span className="col-span-3 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
+                                                    No bids
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            bids.map((lvl, i) => {
+                                                const cum = book.cumulativeBids[i] ?? lvl.size;
+                                                const cum_usd = book.cumulativeBidsUsd[i] ?? lvl.price * lvl.size;
                                                 const w = (cum / max_total) * 100;
                                                 return (
                                                     <div
-                                                        key={`ask-${lvl.price}`}
-                                                        className="relative grid grid-cols-3 gap-x-8 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
+                                                        key={`bid-${lvl.price}`}
+                                                        className="relative grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                                     >
                                                         <div
-                                                            className="absolute inset-y-0 right-0 bg-rose-500/35 rounded-none pointer-events-none"
+                                                            className="absolute inset-y-0 right-0 bg-emerald-500/35 rounded-none pointer-events-none"
                                                             style={{ width: `${w}%` }}
                                                         />
-                                                        <span className="relative text-right font-medium text-rose-500">
+                                                        <span className="relative text-right font-medium text-emerald-500">
                                                             {format_cents(lvl.price)}
                                                         </span>
                                                         <span className="relative text-right text-white font-light">
                                                             {format_size(lvl.size)}
                                                         </span>
                                                         <span className="relative text-right text-white/40 font-light">
-                                                            {format_total(lvl.price, lvl.size)}
+                                                            {format_total(cum_usd)}
                                                         </span>
                                                     </div>
                                                 );
                                             })
-                                            .reverse()
-                                    )}
-                                </div>
-                                )}
-
-                                {view_mode === 'center' && (
-                                <div
-                                    ref={spread_ref}
-                                    className="my-5 flex items-center justify-between px-3 py-2.5 border-y border-white/6"
-                                >
-                                    <span className="text-[9.5px] tracking-[0.22em] uppercase text-white/45 font-medium">
-                                        Spread
-                                    </span>
-                                    <span className="text-[13px] tabular-nums text-white/85 font-medium">
-                                        {book.spread !== null
-                                            ? `${(book.spread * 100).toFixed(2)}¢`
-                                            : '0.00¢'}
-                                    </span>
-                                </div>
-                                )}
-
-                                {view_mode !== 'asks' && (
-                                <div className="space-y-0.5">
-                                    {bids.length === 0 ? (
-                                        <div className="grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums">
-                                            <span className="col-span-3 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
-                                                No bids
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        bids.map((lvl, i) => {
-                                            const cum = book.cumulativeBids[i] ?? lvl.size;
-                                            const w = (cum / max_total) * 100;
-                                            return (
-                                                <div
-                                                    key={`bid-${lvl.price}`}
-                                                    className="relative grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
-                                                >
-                                                    <div
-                                                        className="absolute inset-y-0 right-0 bg-emerald-500/35 rounded-none pointer-events-none"
-                                                        style={{ width: `${w}%` }}
-                                                    />
-                                                    <span className="relative text-right font-medium text-emerald-500">
-                                                        {format_cents(lvl.price)}
-                                                    </span>
-                                                    <span className="relative text-right text-white font-light">
-                                                        {format_size(lvl.size)}
-                                                    </span>
-                                                    <span className="relative text-right text-white/40 font-light">
-                                                        {format_total(lvl.price, lvl.size)}
-                                                    </span>
-                                                </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         )}

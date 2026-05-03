@@ -21,6 +21,8 @@ export interface UseOrderBookResult {
     mid: number | null;
     cumulativeBids: number[];
     cumulativeAsks: number[];
+    cumulativeBidsUsd: number[];
+    cumulativeAsksUsd: number[];
     isHydrated: boolean;
     status: OrderBookStatus | null;
 }
@@ -79,16 +81,24 @@ export function useOrderBook(
         const mid = bestBid !== null && bestAsk !== null ? (bestBid + bestAsk) / 2 : null;
 
         const cumulativeBids: number[] = [];
+        const cumulativeBidsUsd: number[] = [];
         let bid_total = 0;
+        let bid_total_usd = 0;
         for (const b of bids) {
             bid_total += b.size;
+            bid_total_usd += b.price * b.size;
             cumulativeBids.push(bid_total);
+            cumulativeBidsUsd.push(bid_total_usd);
         }
         const cumulativeAsks: number[] = [];
+        const cumulativeAsksUsd: number[] = [];
         let ask_total = 0;
+        let ask_total_usd = 0;
         for (const a of asks) {
             ask_total += a.size;
+            ask_total_usd += a.price * a.size;
             cumulativeAsks.push(ask_total);
+            cumulativeAsksUsd.push(ask_total_usd);
         }
 
         return {
@@ -100,6 +110,8 @@ export function useOrderBook(
             mid,
             cumulativeBids,
             cumulativeAsks,
+            cumulativeBidsUsd,
+            cumulativeAsksUsd,
             isHydrated: depth !== undefined,
             status,
         };
