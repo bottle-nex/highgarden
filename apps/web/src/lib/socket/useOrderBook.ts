@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Outcome, type OrderBookStatus } from '@solmarket/types';
 import {
     MAX_DEPTH_LEVELS,
@@ -25,6 +25,8 @@ export interface UseOrderBookResult {
     cumulativeAsksUsd: number[];
     isHydrated: boolean;
     status: OrderBookStatus | null;
+    refetch: () => void;
+    isRefetching: boolean;
 }
 
 const EMPTY: DepthLevel[] = [];
@@ -38,17 +40,18 @@ export function useOrderBook(
     );
     const hydrating = useRef<Set<string>>(new Set());
     const [status, set_status] = useState<OrderBookStatus | null>(null);
+    const [is_refetching, set_is_refetching] = useState(false);
 
-    useEffect(() => {
-        if (!marketId) return;
-        const key = `${marketId}:${outcome}`;
-        if (hydrating.current.has(key)) return;
-        hydrating.current.add(key);
-
-        let cancelled = false;
-        fetch_market_orderbook(marketId, outcome, MAX_DEPTH_LEVELS)
-            .then((snap) => {
-                if (cancelled || !snap) return;
+    const hydrate_book = useCallback(
+        async (is_cancelled?: () => boolean): Promise<void> => {
+            if (!marketId) return;
+            const key = `${marketId}:${outcome}`;
+            if (hydrating.current.has(key)) return;
+            hydrating.current.add(key);
+            set_is_refetching(true);
+            try {
+                const snap = await fetch_market_orderbook(marketId, outcome, MAX_DEPTH_LEVELS);
+                if (is_cancelled?.() || !snap) return;
                 set_status(snap.status);
                 useOrderBookDepthStore.getState().hydrate(snap);
                 SocketEventHandlers.seed_book(snap.tokenId, snap.bids, snap.asks);
@@ -62,15 +65,25 @@ export function useOrderBook(
                         updatedAt: new Date(snap.updatedAt).toISOString(),
                     });
                 }
-            })
-            .finally(() => {
+            } finally {
                 hydrating.current.delete(key);
-            });
+                set_is_refetching(false);
+            }
+        },
+        [marketId, outcome],
+    );
 
+    useEffect(() => {
+        let cancelled = false;
+        hydrate_book(() => cancelled);
         return () => {
             cancelled = true;
         };
-    }, [marketId, outcome]);
+    }, [hydrate_book]);
+
+    const refetch = useCallback((): void => {
+        void hydrate_book();
+    }, [hydrate_book]);
 
     return useMemo(() => {
         const bids = depth?.bids ?? EMPTY;
@@ -114,6 +127,8 @@ export function useOrderBook(
             cumulativeAsksUsd,
             isHydrated: depth !== undefined,
             status,
+            refetch,
+            isRefetching: is_refetching,
         };
-    }, [depth, status]);
+    }, [depth, status, refetch, is_refetching]);
 }

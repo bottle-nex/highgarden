@@ -53,7 +53,7 @@ export default function EventTitleBlock({ market }: Props): JSX.Element {
                 )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
-                <ToolTipComponent content="Share">
+                <ToolTipComponent side='top' content="Share">
                     <Button
                         type="button"
                         variant="outline"
@@ -65,7 +65,7 @@ export default function EventTitleBlock({ market }: Props): JSX.Element {
                         <PiShareFat />
                     </Button>
                 </ToolTipComponent>
-                <ToolTipComponent content="Bookmark">
+                <ToolTipComponent side='top' content="Bookmark">
                     <Button
                         type="button"
                         variant="outline"

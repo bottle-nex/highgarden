@@ -19,7 +19,7 @@ import {
 import { cn } from '@/lib/utils';
 import { CATEGORY_TABS } from '@/utils/constants';
 import { useCategoryStore } from '@/store/ui/useCategoryStore';
-import { GiDragonOrb } from 'react-icons/gi';
+import Applogo from '@/components/ui/Applogo';
 
 const CATEGORY_ICONS: Record<(typeof CATEGORY_TABS)[number], IconType> = {
     Trending: PiFlameFill,
@@ -44,19 +44,7 @@ export default function CategorySidebar(): JSX.Element {
     return (
         <aside className="sticky top-0 self-start h-screen w-60 shrink-0 border-r border-gray-500/15 bg-dark-alpha flex flex-col">
             <div className="h-16 px-3 flex items-center shrink-0">
-                <div className="flex gap-x-2 items-center">
-                    <div className="h-8 w-8 rounded-sm flex items-center justify-center shrink-0">
-                        <GiDragonOrb className="text-white size-7.5" />
-                    </div>
-
-
-                    <div className="h-8 w-full flex flex-col -space-y-0.5">
-                        <span className="text-gray-300 text-[14px] tracking-wider">Probexa</span>
-                        <span className="text-[11px] text-gray-600 tracking-wide">
-                            Solana markets
-                        </span>
-                    </div>
-                </div>
+                <Applogo />
             </div>
             <nav className="flex flex-col overflow-y-auto no-scrollbar flex-1 py-2 px-4">
                 {CATEGORY_TABS.map((tab) => {

@@ -12,7 +12,7 @@ interface ToolTipComponentProps {
 export default function ToolTipComponent({
     children,
     className,
-    duration = 300,
+    duration = 100,
     content,
     side = 'bottom',
 }: ToolTipComponentProps) {

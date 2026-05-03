@@ -1,11 +1,14 @@
 'use client';
 
 import { JSX, useCallback, useEffect, useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import { Outcome } from '@solmarket/types';
 import { useOrderBook } from '@/lib/socket/useOrderBook';
 import ToolTipComponent from '@/components/utility/ToolTipComponent';
 import { cn } from '@/lib/utils';
 import { TbReload } from 'react-icons/tb';
+
+const BAR_TRANSITION = { duration: 0.25, ease: [0.22, 1, 0.36, 1] as const };
 
 type ViewMode = 'asks' | 'bids' | 'center';
 
@@ -80,6 +83,7 @@ export default function EventOrderBook({
     onOutcomeChange,
 }: Props): JSX.Element {
     const book = useOrderBook(marketId, selectedOutcome);
+    const { refetch, isRefetching } = book;
     const scroll_ref = useRef<HTMLDivElement | null>(null);
     const spread_ref = useRef<HTMLDivElement | null>(null);
 
@@ -131,13 +135,17 @@ export default function EventOrderBook({
             <header
                 className={cn("group flex items-center justify-between px-4 py-3 border-white/7 cursor-pointer select-none")}
             >
-                <button
-                    type="button"
-                    className="flex items-center gap-1.5 text-[14px] text-white/70 cursor-pointer"
-                >
-                    <TbReload className='size-4' />
-                    <span className="font-medium">Book</span>
-                </button>
+                <ToolTipComponent side="top" duration={100} content="Refresh order book">
+                    <button
+                        type="button"
+                        onClick={refetch}
+                        disabled={isRefetching}
+                        className="flex items-center gap-1.5 text-[14px] text-white/70 cursor-pointer disabled:cursor-not-allowed"
+                    >
+                        <TbReload className={cn('size-4', isRefetching && 'animate-spin')} />
+                        <span className="font-medium">Book</span>
+                    </button>
+                </ToolTipComponent>
                 <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5">
                     <div className="flex items-center gap-0.5">
                         {VIEW_MODES.map((m) => (
@@ -244,9 +252,11 @@ export default function EventOrderBook({
                                                             key={`ask-${lvl.price}`}
                                                             className="relative grid grid-cols-3 gap-x-8 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                                         >
-                                                            <div
+                                                            <motion.div
                                                                 className="absolute inset-y-0 right-0 bg-rose-500/35 rounded-none pointer-events-none"
-                                                                style={{ width: `${w}%` }}
+                                                                initial={false}
+                                                                animate={{ width: `${w}%` }}
+                                                                transition={BAR_TRANSITION}
                                                             />
                                                             <span className="relative text-right font-medium text-rose-500">
                                                                 {format_cents(lvl.price)}
@@ -299,9 +309,11 @@ export default function EventOrderBook({
                                                         key={`bid-${lvl.price}`}
                                                         className="relative grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                                     >
-                                                        <div
+                                                        <motion.div
                                                             className="absolute inset-y-0 right-0 bg-emerald-500/35 rounded-none pointer-events-none"
-                                                            style={{ width: `${w}%` }}
+                                                            initial={false}
+                                                            animate={{ width: `${w}%` }}
+                                                            transition={BAR_TRANSITION}
                                                         />
                                                         <span className="relative text-right font-medium text-emerald-500">
                                                             {format_cents(lvl.price)}
