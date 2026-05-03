@@ -302,7 +302,7 @@ function SendFromWalletPanel({
                     }
                     if (parsed !== null) void deposit({ recipient, ui_amount: parsed });
                 }}
-                className="w-full h-12 rounded-full text-sm font-medium tracking-tight text-white hover:text-white hover:bg-dark-base border border-white/6 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.05)] disabled:cursor-not-allowed transition-all duration-200 bg-[#0394fc]"
+                className="w-full h-12 rounded-full text-[15px] font-semibold tracking-wide text-white hover:text-white border border-white/6 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.05)] disabled:cursor-not-allowed transition-all duration-200 bg-[#0394fc] hover:bg-[#21a3ff]"
             >
                 {submit_label}
             </Button>
@@ -399,7 +399,7 @@ function AmountInput({
                 placeholder="0.00"
                 value={value}
                 onChange={(e) => on_change(e.target.value)}
-                className="h-16 pl-9 pr-20 rounded-2xl bg-dark-base border-dark-faded text-2xl font-semibold tabular-nums tracking-tight focus-visible:border-light-alpha/30"
+                className="h-20 pl-9 pr-20 rounded-2xl bg-dark-base border-dark-faded text-2xl! font-semibold tabular-nums tracking-tight focus-visible:border-light-alpha/30"
             />
             <Button
                 type="button"

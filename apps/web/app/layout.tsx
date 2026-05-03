@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Poppins } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import LenisProvider from '@/providers/LenisProvider';
@@ -7,11 +7,11 @@ import AuthSessionProvider from '@/providers/AuthSessionProvider';
 import WalletAdapterProvider from '@/providers/WalletAdapterProvider';
 import SessionSetter from '@/components/utility/SessionSetter';
 import WebSocketHost from '@/components/utility/WebSocketHost';
+import ScrollToTop from '@/components/utility/ScrollToTop';
 import { Toaster } from 'sonner';
 
-const poppins = Poppins({
+const inter = Inter({
     subsets: ['latin'],
-    weight: ['300', '400', '500', '600', '700'],
     variable: '--font-sans',
 });
 
@@ -75,14 +75,26 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className={cn('h-full', 'antialiased', poppins.variable, 'font-sans')}>
-            <body className="min-h-full flex flex-col">
+        <html lang="en" className={cn('h-full', 'antialiased', inter.variable, 'font-sans')}>
+            <body className="min-h-full flex flex-col tracking-wide">
                 <AuthSessionProvider>
                     <WalletAdapterProvider>
                         <SessionSetter />
                         <WebSocketHost />
-                        <Toaster />
-                        <LenisProvider>{children}</LenisProvider>
+                        <Toaster
+                            position='top-center'
+                            theme='dark'
+                            toastOptions={{
+                                style: {
+                                    background: 'var(--color-dark-base)',
+                                    border: '0.5px solid var(--color-dark-faded)',
+                                },
+                            }}
+                        />
+                        <LenisProvider>
+                            {children}
+                            <ScrollToTop />
+                        </LenisProvider>
                     </WalletAdapterProvider>
                 </AuthSessionProvider>
             </body>

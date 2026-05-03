@@ -51,8 +51,8 @@ export default function EventNews({ marketId }: Props): JSX.Element {
     }, [marketId]);
 
     return (
-        <section className="border border-white/10 rounded-[6px] bg-neutral-950/60">
-            <header className="flex items-center justify-between px-5 py-4 border-b border-white/8">
+        <section>
+            <header className="flex items-center justify-between px-5 py-4">
                 <h3 className="text-[10px] tracking-[0.25em] uppercase text-white/55">
                     Related news
                 </h3>
@@ -86,16 +86,16 @@ export default function EventNews({ marketId }: Props): JSX.Element {
                                     <img
                                         src={a.publicationFavicon}
                                         alt=""
-                                        width={16}
-                                        height={16}
-                                        className="mt-1 size-4 shrink-0 rounded-sm opacity-80"
+                                        width={35}
+                                        height={35}
+                                        className="mt-0.5 size-8 shrink-0 rounded-sm opacity-80"
                                         loading="lazy"
                                     />
                                 ) : (
-                                    <span className="mt-1 size-4 shrink-0 rounded-sm bg-white/10" />
+                                    <span className="mt-0.5 size-5.5 shrink-0 rounded-sm bg-white/10" />
                                 )}
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-[13px] leading-snug text-white/80 line-clamp-2 group-hover:text-white">
+                                    <p className="text-[14px] leading-snug text-white/80 line-clamp-2 group-hover:text-white">
                                         {a.title}
                                     </p>
                                     <div className="mt-1 flex items-center gap-2 text-[11px] text-white/40">

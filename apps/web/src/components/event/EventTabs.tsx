@@ -13,7 +13,7 @@ export default function EventTabs({ description }: Props): JSX.Element {
     const [active, set_active] = useState<Tab>('RULES');
 
     return (
-        <section className="border border-white/10 rounded-[6px] bg-neutral-950/60">
+        <section className="">
             <header className="flex items-center gap-6 px-5 pt-5 border-b border-white/8">
                 {TABS.map((t) => (
                     <button

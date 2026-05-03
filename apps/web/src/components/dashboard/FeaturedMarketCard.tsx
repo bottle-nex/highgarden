@@ -33,7 +33,7 @@ export default function FeaturedMarketCard({
     return (
         <Link
             href={resolved_href}
-            className="relative bg-[#141B2190] ring-1 ring-gray-500/15 shadow-xs shadow-black/5 rounded-lg overflow-hidden group transition-colors no-underline h-full flex flex-col"
+            className="relative bg-dark-base shadow-xs shadow-black/5 rounded-lg overflow-hidden group transition-colors no-underline h-full flex flex-col"
         >
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-500/15  text-[10px] tracking-[0.22em] uppercase shrink-0">
                 <div className="flex items-center gap-3">

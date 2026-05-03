@@ -42,7 +42,7 @@ export default function CategorySidebar(): JSX.Element {
     const setActive = useCategoryStore((s) => s.setActiveCategory);
 
     return (
-        <aside className="sticky top-0 self-start h-screen w-54 shrink-0 border-r border-gray-500/15 bg-dark-alpha flex flex-col">
+        <aside className="sticky top-0 self-start h-screen w-60 shrink-0 border-r border-gray-500/15 bg-dark-alpha flex flex-col">
             <div className="h-16 px-3 flex items-center shrink-0">
                 <div className="flex gap-x-2 items-center">
                     <div className="h-8 w-8 rounded-sm flex items-center justify-center shrink-0">
@@ -58,7 +58,7 @@ export default function CategorySidebar(): JSX.Element {
                     </div>
                 </div>
             </div>
-            <nav className="flex flex-col overflow-y-auto no-scrollbar flex-1 p-2">
+            <nav className="flex flex-col overflow-y-auto no-scrollbar flex-1 py-2 px-4">
                 {CATEGORY_TABS.map((tab) => {
                     const isActive = tab === active;
                     const Icon = CATEGORY_ICONS[tab];
@@ -68,9 +68,9 @@ export default function CategorySidebar(): JSX.Element {
                             type="button"
                             onClick={() => setActive(tab)}
                             className={cn(
-                                'group relative flex items-center gap-2.5 px-3 py-2 text-[14px] tracking-wider transition-colors duration-200 whitespace-nowrap cursor-pointer text-left rounded-sm bg-linear-to-b from-[#13181d] to-[#12171c]',
+                                'group relative flex items-center gap-2.5 px-3 py-2 text-[14px] tracking-wider transition-colors duration-200 whitespace-nowrap cursor-pointer text-left rounded-sm',
                                 isActive
-                                    ? 'text-white/80 shadow-xs shadow-black/3 inset-shadow-xs inset-shadow-white/2'
+                                    ? 'text-white/80 shadow-xs shadow-black/3 inset-shadow-xs inset-shadow-white/2 bg-dark-base'
                                     : 'text-white/50 bg-none hover:text-white/80 ',
                             )}
                         >

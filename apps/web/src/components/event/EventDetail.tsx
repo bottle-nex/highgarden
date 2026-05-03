@@ -137,16 +137,18 @@ function Body({ market }: { market: MarketDTO }) {
                         selectedOutcome={selected_outcome}
                         onOutcomeChange={set_selected_outcome}
                     />
-                    <EventNews marketId={market.id} />
                     <EventTabs description={market.description} />
                     <MarketComments market_id={market.id} />
                 </div>
-                <div>
+                <div className="space-y-4 lg:space-y-0 lg:sticky lg:top-24 lg:h-[calc(100vh-6rem)] lg:flex lg:flex-col lg:gap-4">
                     <EventTradePanel
                         market={market}
                         selectedOutcome={selected_outcome}
                         onOutcomeChange={set_selected_outcome}
                     />
+                    <div className="custom-scrollbar lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
+                        <EventNews marketId={market.id} />
+                    </div>
                 </div>
             </div>
 

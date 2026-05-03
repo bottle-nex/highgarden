@@ -18,7 +18,7 @@ export default function YesNoStakeCard({ market }: { market: YesNoMarket }): JSX
     return (
         <Link
             href={href}
-            className="group bg-dark-base border border-white/10 rounded-[6px] overflow-hidden hover:border-white/20 transition-colors block no-underline"
+            className="group bg-dark-base rounded-[6px] overflow-hidden hover:border-white/20 transition-colors block no-underline"
         >
             <div className="flex items-center justify-between px-6 py-3.5 border-b border-white/8  text-[9px] tracking-[0.22em] uppercase">
                 <div className="flex items-center gap-3">

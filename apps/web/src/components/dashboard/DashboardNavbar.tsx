@@ -3,6 +3,7 @@ import { JSX, useState, useTransition } from 'react';
 import { cn } from '@/lib/utils';
 import SearchBar from './SearchBar';
 import { Button } from '../ui/button';
+import { CroppedButton } from '../ui/cropped-button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';
 import Image from 'next/image';
@@ -19,7 +20,7 @@ export default function DashboardNavbar(): JSX.Element {
     const setDepositDropdown = useDepositDialogStore((s) => s.setOpen);
 
     return (
-        <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm border-b border-gray-500/15">
+        <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm">
             <div className="w-full h-16 flex items-center justify-between gap-8 px-8">
                 <div className="flex justify-center">
                     <SearchBar />
@@ -34,18 +35,17 @@ export default function DashboardNavbar(): JSX.Element {
                     >
                         Portfolio
                     </Button>
-                    <Button
+                    <CroppedButton
+                        size={"sm"}
                         onClick={() => setDepositDropdown(!openDepositDropdown)}
                         className={cn(
-                            'h-9 px-5 rounded-sm text-[13px] font-medium tracking-tight',
-                            'bg-dark-base/85 text-neutral-200 hover:text-white hover:bg-dark-base',
-                            'border border-white/6',
-                            'shadow-[0_2px_10px_-2px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.05)]',
+                            'px-5 text-[12px] font-[510] tracking-normal uppercase',
+                            'bg-dark-faded text-white',
                             'transition-all duration-200',
                         )}
                     >
                         Deposit
-                    </Button>
+                    </CroppedButton>
                     <span
                         role="button"
                         tabIndex={0}

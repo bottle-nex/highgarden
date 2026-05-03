@@ -60,27 +60,26 @@ export default function BreakingNewsList({ limit = 3 }: { limit?: number }): JSX
                             href={item.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="py-3 flex items-center gap-3 hover:bg-white/3 transition-colors group px-2 rounded-sm"
+                            className="py-3 flex items-start gap-3 hover:bg-white/3 transition-colors group px-2 rounded-sm"
                         >
-                            <span className="text-[15px] tabular-nums text-white/35 shrink-0">
-                                {String(i + 1).padStart(2, '0')}
-                            </span>
+                            {item.publicationFavicon ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={item.publicationFavicon}
+                                    alt=""
+                                    width={28}
+                                    height={28}
+                                    className="mt-0.5 size-7 shrink-0 rounded-sm opacity-80"
+                                    loading="lazy"
+                                />
+                            ) : (
+                                <span className="mt-0.5 size-7 shrink-0 rounded-sm bg-white/10" />
+                            )}
                             <div className="flex-1 min-w-0">
                                 <p className="text-[13px] text-white/70 leading-snug line-clamp-2 group-hover:text-white/85 transition-colors">
                                     {item.title}
                                 </p>
                                 <div className="mt-1 flex items-center gap-2 text-[10px] tracking-widest uppercase text-white/35">
-                                    {item.publicationFavicon ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img
-                                            src={item.publicationFavicon}
-                                            alt=""
-                                            width={12}
-                                            height={12}
-                                            className="size-3 rounded-sm opacity-80"
-                                            loading="lazy"
-                                        />
-                                    ) : null}
                                     {item.publicationName && (
                                         <span className="truncate">{item.publicationName}</span>
                                     )}

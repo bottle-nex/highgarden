@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import type { MarketDTO } from '@solmarket/types';
 import { Outcome } from '@solmarket/types';
 import { selectDepth, useOrderBookDepthStore } from '@/store/book/useOrderBookDepthStore';
+import { CroppedButton } from '../ui/cropped-button';
+import { cn } from '@/lib/utils';
 
 interface Props {
     market: MarketDTO;
@@ -72,7 +74,7 @@ export default function EventTradePanel({
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="border border-gray-500/15 rounded-2xl bg-dark-base lg:sticky lg:top-24 p-1"
+            className="rounded-2xl bg-dark-base p-1"
         >
             <div className="flex items-center justify-between px-5 pt-4">
                 <div className="flex gap-1">
@@ -87,7 +89,7 @@ export default function EventTradePanel({
                             {tab === t && (
                                 <motion.span
                                     layoutId="trade-tab-pill"
-                                    className="absolute inset-0 rounded-full bg-gray-800/80"
+                                    className="absolute inset-0 rounded-full bg-dark-faded"
                                     transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                                 />
                             )}
@@ -209,9 +211,11 @@ export default function EventTradePanel({
                 <button
                     type="button"
                     onClick={handle_submit}
-                    className="w-full py-3 rounded-lg bg-blue-500 hover:bg-blue-500/95 active:translate-y-px text-[14px] font-bold text-white cursor-pointer disabled:opacity-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_1px_0_rgba(0,0,0,0.25)] transition-all transform duration-200"
+                    className={cn("w-full py-3 bg-neutral-300 rounded-lg text-black active:translate-y-px text-[14px] font-bold cursor-pointer transition-all transform duration-200 active:scale-[0.99]",
+                        "shadow-[inset_0_-2.5px_0_rgba(255,255,255,1)]"
+                    )}
                 >
-                    Trade
+                    Deposit
                 </button>
 
                 <p className="text-[10px] text-white/35 text-center">

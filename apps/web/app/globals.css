@@ -161,3 +161,12 @@ body {
     animation: flash-down-anim 350ms ease-out;
     border-radius: 4px;
 }
+
+.custom-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.custom-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}

@@ -1,11 +1,12 @@
 'use client';
 
-import { JSX, useCallback, useRef, useState } from 'react';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { VscLayoutCentered } from 'react-icons/vsc';
 import { Outcome } from '@solmarket/types';
 import { useOrderBook } from '@/lib/socket/useOrderBook';
 import { Button } from '@/components/ui/button';
 import ToolTipComponent from '@/components/utility/ToolTipComponent';
+import { cn } from '@/lib/utils';
 
 interface Props {
     marketId: string;
@@ -48,7 +49,7 @@ export default function EventOrderBook({
     const scroll_ref = useRef<HTMLDivElement | null>(null);
     const spread_ref = useRef<HTMLDivElement | null>(null);
 
-    const center_book = useCallback(() => {
+    const center_book = useCallback((behavior: ScrollBehavior = 'smooth') => {
         const container = scroll_ref.current;
         const spread = spread_ref.current;
         if (!container || !spread) return;
@@ -57,8 +58,18 @@ export default function EventOrderBook({
         const offset_within_container = spread_rect.top - container_rect.top + container.scrollTop;
         const target =
             offset_within_container - container.clientHeight / 2 + spread_rect.height / 2;
-        container.scrollTo({ top: target, behavior: 'smooth' });
+        container.scrollTo({ top: target, behavior });
     }, []);
+
+    const has_centered_ref = useRef<Outcome | null>(null);
+    const has_data = book.isHydrated && (book.asks.length > 0 || book.bids.length > 0);
+
+    useEffect(() => {
+        if (!has_data) return;
+        if (has_centered_ref.current === selectedOutcome) return;
+        has_centered_ref.current = selectedOutcome;
+        requestAnimationFrame(() => center_book('auto'));
+    }, [has_data, selectedOutcome, center_book]);
 
     const bids = book.bids.slice(0, VISIBLE_LEVELS);
     const asks = book.asks.slice(0, VISIBLE_LEVELS);
@@ -67,12 +78,10 @@ export default function EventOrderBook({
     const max_total = Math.max(max_bid_total, max_ask_total, 1);
 
     return (
-        <section className="border border-white/10 rounded-[8px] bg-dark-base overflow-hidden">
+        <section className="rounded-[8px] overflow-hidden bg-dark-base">
             <header
                 onClick={() => set_is_open((v) => !v)}
-                className={`group flex items-center justify-between px-7 py-5 border-white/7 cursor-pointer select-none transition-colors ${
-                    is_open ? 'border-b bg-dark-alpha' : 'bg-dark-base'
-                }`}
+                className={cn("group flex items-center justify-between px-7 py-5 border-white/7 cursor-pointer select-none")}
             >
                 <button
                     type="button"
@@ -83,9 +92,8 @@ export default function EventOrderBook({
                     className="flex items-center gap-3 text-[10px] tracking-[0.32em] uppercase text-white/70 group-hover:text-white cursor-pointer"
                 >
                     <span
-                        className={`inline-block w-2.5 text-white/45 group-hover:text-white/70 transition-transform duration-200 ${
-                            is_open ? 'rotate-90' : ''
-                        }`}
+                        className={`inline-block w-2.5 text-white/45 group-hover:text-white/70 transition-transform duration-200 ${is_open ? 'rotate-90' : ''
+                            }`}
                     >
                         ▸
                     </span>
@@ -96,7 +104,7 @@ export default function EventOrderBook({
                         <Button
                             type="button"
                             size="icon-sm"
-                            onClick={center_book}
+                            onClick={() => center_book()}
                             aria-label="Center order book"
                             className="text-white/55 hover:text-white"
                         >
@@ -120,9 +128,8 @@ export default function EventOrderBook({
             </header>
 
             <div
-                className={`overflow-hidden [overflow-anchor:none] transition-[max-height] duration-300 ease-in-out ${
-                    is_open ? 'max-h-130' : 'max-h-0'
-                }`}
+                className={`overflow-hidden [overflow-anchor:none] transition-[max-height] duration-300 ease-in-out ${is_open ? 'max-h-130' : 'max-h-0'
+                    }`}
             >
                 <div>
                     <div className="py-6">
@@ -166,7 +173,7 @@ export default function EventOrderBook({
                             )}
 
                         {book.isHydrated && (asks.length > 0 || bids.length > 0) && (
-                            <div ref={scroll_ref} className="h-105 overflow-y-auto">
+                            <div ref={scroll_ref} className="h-105 overflow-y-auto custom-scrollbar">
                                 <div className="pt-3.5 space-y-0.5">
                                     {asks.length === 0 ? (
                                         <div className="py-4 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">

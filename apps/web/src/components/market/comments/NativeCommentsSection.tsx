@@ -128,7 +128,7 @@ export default function NativeCommentsSection({ market_id }: Props): JSX.Element
                 {available && (
                     <div className="pb-6 mb-6 border-b border-white/7">
                         <textarea
-                            className="w-full min-h-[88px] resize-y rounded-md border border-white/10 bg-neutral-950/50 px-4 py-3 text-sm leading-relaxed text-white/85 placeholder:text-white/30 focus:border-white/25 focus:outline-none focus:ring-0 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="w-full min-h-22 resize-y rounded-md bg-dark-base px-4 py-3 text-sm leading-relaxed text-white/85 placeholder:text-white/30 focus:border-white/25 focus:outline-none focus:ring-0 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             placeholder={
                                 is_signed_in
                                     ? 'Share your take on this market...'
