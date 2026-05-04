@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { useRouter } from 'next/navigation';
 import { Button } from '../ui/button';
+import { APP_NAME } from '@/utils/constants';
 
 const NAV_ITEMS = ['SOLUTIONS', 'RESOURCES', 'DOCS', 'ENTERPRISE'] as const;
 
@@ -49,7 +50,7 @@ export default function LandingNavbar(): JSX.Element {
             >
                 <div className="flex-1 flex items-center">
                     <span className="text-white text-sm font-medium tracking-tight cursor-pointer">
-                        SOLMARKET
+                        {APP_NAME}
                     </span>
                 </div>
 
@@ -82,9 +83,9 @@ function GetStartedButton({ onClick }: { onClick: () => void }): JSX.Element {
         <Button
             type="button"
             onClick={onClick}
-            className="relative group/cta inline-flex items-center gap-x-3 bg-dark-base hover:bg-dark-base rounded-none h-10 px-4 cursor-pointer transition-colors duration-300"
+            className="relative group/cta inline-flex items-center gap-x-3 bg-alpha rounded-none h-10 px-4 cursor-pointer transition-colors duration-300"
         >
-            <span className=" text-[11px] tracking-[0.2em] uppercase text-white font-semibold">
+            <span className="text-[11px] tracking-[0.2em] uppercase text-white font-semibold">
                 GET STARTED
             </span>
             <span className=" text-white/80 text-xs -translate-y-px group-hover/cta:translate-x-0.5 transition-transform duration-300">
