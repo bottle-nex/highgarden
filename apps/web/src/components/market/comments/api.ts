@@ -42,22 +42,16 @@ export async function fetch_polymarket_comments(
     };
 }
 
-export async function post_native_comment(
-    market_id: string,
-    body: string,
-): Promise<CommentDTO> {
-    const res = await apiClient.post<CreateResponse>(
-        `${MARKETS_URL}/${market_id}/comments`,
-        { body },
-    );
+export async function post_native_comment(market_id: string, body: string): Promise<CommentDTO> {
+    const res = await apiClient.post<CreateResponse>(`${MARKETS_URL}/${market_id}/comments`, {
+        body,
+    });
     return res.data.data;
 }
 
 export async function report_comment(comment_id: string): Promise<{
     already_reported: boolean;
 }> {
-    const res = await apiClient.post<ReportResponse>(
-        `${API_URL}/comments/${comment_id}/report`,
-    );
+    const res = await apiClient.post<ReportResponse>(`${API_URL}/comments/${comment_id}/report`);
     return { already_reported: res.data.data.alreadyReported };
 }

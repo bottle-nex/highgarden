@@ -1,8 +1,8 @@
-import ScrollToTop from "@/components/utility/ScrollToTop"
-import { ReactNode } from "react"
+import ScrollToTop from '@/components/utility/ScrollToTop';
+import { ReactNode } from 'react';
 
 interface Props {
-    children: ReactNode
+    children: ReactNode;
 }
 
 export default function Layout({ children }: Props) {
@@ -11,5 +11,5 @@ export default function Layout({ children }: Props) {
             {children}
             <ScrollToTop />
         </div>
-    )
+    );
 }

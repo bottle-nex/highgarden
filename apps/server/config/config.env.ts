@@ -19,9 +19,7 @@ const env_schema = z.object({
         ),
     SERVER_SOLANA_RPC_URL: z.url().default("https://api.mainnet-beta.solana.com"),
     SERVER_USDC_MINT: z.string().default("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
-    SERVER_SOLANA_PROGRAM_ID: z
-        .string()
-        .default("2LEm66V2Ys8JbVoQfYbZqCy6YGM1wuPUc843xRx76t3P"),
+    SERVER_SOLANA_PROGRAM_ID: z.string().default("2LEm66V2Ys8JbVoQfYbZqCy6YGM1wuPUc843xRx76t3P"),
     SERVER_SOLANA_ADMIN_KEYPAIR: z.string().optional(),
     SERVER_QUOTE_SIGNER_KEYPAIR: z.string().optional(),
     SERVER_QUOTE_EXPIRY_SECONDS: z.coerce.number().default(5),

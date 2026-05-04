@@ -1,6 +1,11 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
-  "globalEnv": ["SERVER_POLYMARKET_GAMMA_URL", "AUTO_LISTER_INTERVAL_MS", "NODE_ENV", "ADMIN_EMAILS"],
+  "globalEnv": [
+    "SERVER_POLYMARKET_GAMMA_URL",
+    "AUTO_LISTER_INTERVAL_MS",
+    "NODE_ENV",
+    "ADMIN_EMAILS"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

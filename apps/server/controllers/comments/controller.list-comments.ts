@@ -74,11 +74,7 @@ export default class ListCommentsController {
                 };
             });
 
-            return ResponseWriter.success(
-                res,
-                { eventId: event_id, comments: dto },
-                "Comments",
-            );
+            return ResponseWriter.success(res, { eventId: event_id, comments: dto }, "Comments");
         } catch (err) {
             console.error("[comments/list]", err);
             return ResponseWriter.system_error(res);

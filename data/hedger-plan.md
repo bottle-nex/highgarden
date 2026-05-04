@@ -160,29 +160,29 @@ Each module exports pure functions where possible — the loops in `index.ts` or
 
 All env-overridable. Defaults are MVP-safe.
 
-| Constant                       | Default     | What it controls                                                                                          |
-| ------------------------------ | ----------- | --------------------------------------------------------------------------------------------------------- |
-| `UNHEDGED_DELTA_CAP_USD`       | `500`       | Max promised-but-unhedged USD per market. Beyond this, server's `/quote` endpoint returns `429`.          |
-| `HEDGE_QUEUE_NAME`             | `hedge-orders` | BullMQ queue name.                                                                                     |
-| `HEDGE_JOB_ATTEMPTS`           | `5`         | BullMQ retry attempts per job before it's moved to `failed` state.                                        |
-| `HEDGE_JOB_BACKOFF_TYPE`       | `exponential` | BullMQ backoff strategy.                                                                                |
-| `HEDGE_JOB_BACKOFF_DELAY_MS`   | `500`       | Base delay for exponential backoff. Attempts at 500ms, 1s, 2s, 4s, 8s.                                    |
-| `HEDGE_WORKER_CONCURRENCY`     | `5`         | Number of jobs a single worker processes in parallel.                                                     |
-| `HEDGE_WORKER_RATE_LIMIT_MAX`  | `30`        | Max jobs per `RATE_LIMIT_DURATION_MS` (Polymarket API rate-limit guardrail).                              |
-| `HEDGE_WORKER_RATE_LIMIT_MS`   | `1000`      | Window for the rate limiter.                                                                              |
-| `HEDGE_JOB_REMOVE_ON_COMPLETE_AGE_SEC` | `86400` | Keep completed jobs visible for 24h then drop. (Bull Board observability.)                            |
-| `HEDGE_JOB_REMOVE_ON_FAIL_AGE_SEC` | `2592000` | Keep failed jobs for 30 days for forensics.                                                            |
-| `SLIPPAGE_LIMIT_CENTS`         | `2`         | When walking the book for a partial fill, max additional cents above quoted price before stopping.        |
-| `POLLER_INTERVAL_MS`           | `10000`     | How often the catch-up poller asks Solana RPC for new signatures.                                         |
-| `RECONCILE_INTERVAL_MS`        | `60000`     | How often the reconciliation loop cross-checks Solana ↔ Polymarket ↔ Exposure.                            |
-| `RESOLVER_POLL_INTERVAL_MS`    | `60000`     | How often we ask Polymarket Gamma whether a market resolved.                                              |
-| `RESOLVER_DISPUTE_WINDOW_HOURS`| `48`        | Hours to wait after Polymarket resolution before posting to Solana (UMA dispute window).                  |
-| `LIVE_LISTENER_RECONNECT_MS`   | `2000`      | Backoff between WS reconnect attempts.                                                                    |
-| `OFFLINE_GRACE_PERIOD_SEC`     | `120`       | If the bot was offline > this long and finds pending fills, auto-pause those markets and alert.            |
-| `MAX_BACKFILL_SIGNATURES`      | `1000`      | Cap on signatures pulled per poll, to avoid unbounded scans.                                              |
-| `ADMIN_HTTP_PORT`              | `4000`      | HTTP port for `/admin/*`.                                                                                 |
-| `HEALTH_HTTP_PORT`             | `4001`      | HTTP port for `/healthz`.                                                                                 |
-| `LOG_LEVEL`                    | `info`      | Logger level.                                                                                             |
+| Constant                               | Default        | What it controls                                                                                   |
+| -------------------------------------- | -------------- | -------------------------------------------------------------------------------------------------- |
+| `UNHEDGED_DELTA_CAP_USD`               | `500`          | Max promised-but-unhedged USD per market. Beyond this, server's `/quote` endpoint returns `429`.   |
+| `HEDGE_QUEUE_NAME`                     | `hedge-orders` | BullMQ queue name.                                                                                 |
+| `HEDGE_JOB_ATTEMPTS`                   | `5`            | BullMQ retry attempts per job before it's moved to `failed` state.                                 |
+| `HEDGE_JOB_BACKOFF_TYPE`               | `exponential`  | BullMQ backoff strategy.                                                                           |
+| `HEDGE_JOB_BACKOFF_DELAY_MS`           | `500`          | Base delay for exponential backoff. Attempts at 500ms, 1s, 2s, 4s, 8s.                             |
+| `HEDGE_WORKER_CONCURRENCY`             | `5`            | Number of jobs a single worker processes in parallel.                                              |
+| `HEDGE_WORKER_RATE_LIMIT_MAX`          | `30`           | Max jobs per `RATE_LIMIT_DURATION_MS` (Polymarket API rate-limit guardrail).                       |
+| `HEDGE_WORKER_RATE_LIMIT_MS`           | `1000`         | Window for the rate limiter.                                                                       |
+| `HEDGE_JOB_REMOVE_ON_COMPLETE_AGE_SEC` | `86400`        | Keep completed jobs visible for 24h then drop. (Bull Board observability.)                         |
+| `HEDGE_JOB_REMOVE_ON_FAIL_AGE_SEC`     | `2592000`      | Keep failed jobs for 30 days for forensics.                                                        |
+| `SLIPPAGE_LIMIT_CENTS`                 | `2`            | When walking the book for a partial fill, max additional cents above quoted price before stopping. |
+| `POLLER_INTERVAL_MS`                   | `10000`        | How often the catch-up poller asks Solana RPC for new signatures.                                  |
+| `RECONCILE_INTERVAL_MS`                | `60000`        | How often the reconciliation loop cross-checks Solana ↔ Polymarket ↔ Exposure.                     |
+| `RESOLVER_POLL_INTERVAL_MS`            | `60000`        | How often we ask Polymarket Gamma whether a market resolved.                                       |
+| `RESOLVER_DISPUTE_WINDOW_HOURS`        | `48`           | Hours to wait after Polymarket resolution before posting to Solana (UMA dispute window).           |
+| `LIVE_LISTENER_RECONNECT_MS`           | `2000`         | Backoff between WS reconnect attempts.                                                             |
+| `OFFLINE_GRACE_PERIOD_SEC`             | `120`          | If the bot was offline > this long and finds pending fills, auto-pause those markets and alert.    |
+| `MAX_BACKFILL_SIGNATURES`              | `1000`         | Cap on signatures pulled per poll, to avoid unbounded scans.                                       |
+| `ADMIN_HTTP_PORT`                      | `4000`         | HTTP port for `/admin/*`.                                                                          |
+| `HEALTH_HTTP_PORT`                     | `4001`         | HTTP port for `/healthz`.                                                                          |
+| `LOG_LEVEL`                            | `info`         | Logger level.                                                                                      |
 
 ---
 
@@ -416,15 +416,15 @@ Subscribes to the program's logs in real time using `connection.onLogs(programId
 
    ```ts
    await hedgeQueue.add(
-     'hedge',
-     { event, source: 'live' },
+     "hedge",
+     { event, source: "live" },
      {
-       jobId: hex(event.nonce),                // dedup key
+       jobId: hex(event.nonce), // dedup key
        attempts: HEDGE_JOB_ATTEMPTS,
-       backoff: { type: 'exponential', delay: HEDGE_JOB_BACKOFF_DELAY_MS },
+       backoff: { type: "exponential", delay: HEDGE_JOB_BACKOFF_DELAY_MS },
        removeOnComplete: { age: HEDGE_JOB_REMOVE_ON_COMPLETE_AGE_SEC },
        removeOnFail: { age: HEDGE_JOB_REMOVE_ON_FAIL_AGE_SEC },
-     }
+     },
    );
    ```
 
@@ -493,18 +493,14 @@ The worker is a BullMQ `Worker` bound to the `hedge-orders` queue. It pulls jobs
 ### 8.1 Worker construction
 
 ```ts
-new Worker(
-  HEDGE_QUEUE_NAME,
-  async (job) => processHedge(job),
-  {
-    connection: redisConnection,
-    concurrency: HEDGE_WORKER_CONCURRENCY,
-    limiter: {
-      max: HEDGE_WORKER_RATE_LIMIT_MAX,
-      duration: HEDGE_WORKER_RATE_LIMIT_MS,
-    },
-  }
-);
+new Worker(HEDGE_QUEUE_NAME, async (job) => processHedge(job), {
+  connection: redisConnection,
+  concurrency: HEDGE_WORKER_CONCURRENCY,
+  limiter: {
+    max: HEDGE_WORKER_RATE_LIMIT_MAX,
+    duration: HEDGE_WORKER_RATE_LIMIT_MS,
+  },
+});
 ```
 
 A separate `QueueEvents` instance listens for `'failed'` (final failure after all attempts), which is where we trigger `admin_pause_market` and write the alert.
@@ -614,7 +610,7 @@ processHedge(job):
 ### 8.3 Direction logic (`hedger/direction.ts`)
 
 | Solana event side | Solana event outcome | Our exposure direction | Polymarket order |
-| ---               | ---                  | ---                    | ---              |
+| ----------------- | -------------------- | ---------------------- | ---------------- |
 | BUY               | YES                  | short YES              | BUY YES          |
 | BUY               | NO                   | short NO               | BUY NO           |
 | SELL              | YES                  | long YES               | SELL YES         |
@@ -645,7 +641,7 @@ The `OrderFilled` event carries the same 16-byte `nonce` the contract used in it
 
 ### 9.3 Layer 2 — `Hedge.clientOrderId` as a Polymarket dedup key
 
-`clientOrderId = "hedger-" + hex(nonce)` is deterministic. Even if a retry attempt runs after the previous attempt actually placed the order but crashed before recording the response, the retry's pre-flight check (`getOrder(clientOrderId)`) sees the existing order and reconciles instead of placing a new one. *(Verify that Polymarket's CLOB respects clientOrderId for dedup in the SDK; if not, fall back to "query by client ID then create only if absent.")*
+`clientOrderId = "hedger-" + hex(nonce)` is deterministic. Even if a retry attempt runs after the previous attempt actually placed the order but crashed before recording the response, the retry's pre-flight check (`getOrder(clientOrderId)`) sees the existing order and reconciles instead of placing a new one. _(Verify that Polymarket's CLOB respects clientOrderId for dedup in the SDK; if not, fall back to "query by client ID then create only if absent.")_
 
 ### 9.4 Layer 3 — `Hedge.status` as the FSM ratchet
 
@@ -737,30 +733,30 @@ Admin UI on `apps/web` calls `PATCH /admin/exposure/:marketPda { trackerEnabled:
 
 A minimal `Bun.serve()` instance on `HEDGER_ADMIN_PORT`. All requests require `Authorization: Bearer ${HEDGER_ADMIN_BEARER_TOKEN}`.
 
-| Method | Path                                | Purpose                                                                      |
-| ---    | ---                                 | ---                                                                          |
-| GET    | `/admin/status`                     | Snapshot: per-market exposure, recent fills, recent hedges, cursor lag.      |
-| GET    | `/admin/exposure`                   | All markets with `unhedgedUsd`, `trackerEnabled`, `paused`.                  |
-| GET    | `/admin/exposure/:marketPda`        | Single market detail.                                                        |
-| PATCH  | `/admin/exposure/:marketPda`        | Body: `{ trackerEnabled?: bool, paused?: bool }`. Updates DB + audit log.    |
-| POST   | `/admin/markets/:marketPda/pause`   | Builds + sends `admin_pause_market` tx on Solana. Mirrors flag in DB.        |
-| POST   | `/admin/markets/:marketPda/unpause` | Builds + sends `admin_unpause_market` tx. Mirrors in DB.                     |
-| GET    | `/admin/fills?market=&since=`       | Paginated fill history.                                                      |
-| GET    | `/admin/hedges?status=`             | Paginated hedge history (filter by status).                                  |
-| POST   | `/admin/hedges/:id/retry`           | Force a retry on a `FAILED` hedge. Audit-logged.                             |
-| GET    | `/admin/cursor`                     | `BotCursor` row (for "are we caught up?").                                   |
-| GET    | `/admin/events?since=`              | Recent `HedgerEvent` rows.                                                   |
-| POST   | `/admin/resolver/:marketPda/force`  | Force-trigger a resolution check (skips dispute window — staging only).      |
-| GET    | `/admin/queue/stats`                | BullMQ counts: waiting, active, completed, failed, delayed.                  |
-| GET    | `/admin/queue/failed`               | List of failed jobs from the DLQ.                                            |
-| POST   | `/admin/queue/:jobId/retry`         | Move a failed job back into the queue for another attempt.                   |
-| DELETE | `/admin/queue/:jobId`               | Remove a job from the failed set (after manual reconciliation).              |
-| GET    | `/admin/bull-board`                 | Mounted Bull Board UI (auth-gated) for full visual inspection.               |
+| Method | Path                                | Purpose                                                                   |
+| ------ | ----------------------------------- | ------------------------------------------------------------------------- |
+| GET    | `/admin/status`                     | Snapshot: per-market exposure, recent fills, recent hedges, cursor lag.   |
+| GET    | `/admin/exposure`                   | All markets with `unhedgedUsd`, `trackerEnabled`, `paused`.               |
+| GET    | `/admin/exposure/:marketPda`        | Single market detail.                                                     |
+| PATCH  | `/admin/exposure/:marketPda`        | Body: `{ trackerEnabled?: bool, paused?: bool }`. Updates DB + audit log. |
+| POST   | `/admin/markets/:marketPda/pause`   | Builds + sends `admin_pause_market` tx on Solana. Mirrors flag in DB.     |
+| POST   | `/admin/markets/:marketPda/unpause` | Builds + sends `admin_unpause_market` tx. Mirrors in DB.                  |
+| GET    | `/admin/fills?market=&since=`       | Paginated fill history.                                                   |
+| GET    | `/admin/hedges?status=`             | Paginated hedge history (filter by status).                               |
+| POST   | `/admin/hedges/:id/retry`           | Force a retry on a `FAILED` hedge. Audit-logged.                          |
+| GET    | `/admin/cursor`                     | `BotCursor` row (for "are we caught up?").                                |
+| GET    | `/admin/events?since=`              | Recent `HedgerEvent` rows.                                                |
+| POST   | `/admin/resolver/:marketPda/force`  | Force-trigger a resolution check (skips dispute window — staging only).   |
+| GET    | `/admin/queue/stats`                | BullMQ counts: waiting, active, completed, failed, delayed.               |
+| GET    | `/admin/queue/failed`               | List of failed jobs from the DLQ.                                         |
+| POST   | `/admin/queue/:jobId/retry`         | Move a failed job back into the queue for another attempt.                |
+| DELETE | `/admin/queue/:jobId`               | Remove a job from the failed set (after manual reconciliation).           |
+| GET    | `/admin/bull-board`                 | Mounted Bull Board UI (auth-gated) for full visual inspection.            |
 
 **Health endpoint** on a separate port (`HEALTH_HTTP_PORT`):
 
 | Method | Path       | Purpose                                                              |
-| ---    | ---        | ---                                                                  |
+| ------ | ---------- | -------------------------------------------------------------------- |
 | GET    | `/healthz` | Liveness: returns 200 if the process is alive.                       |
 | GET    | `/readyz`  | Readiness: 200 only if all loops have ticked at least once recently. |
 
@@ -841,7 +837,7 @@ Alertable events:
 Reusing the case taxonomy from [use-case.md §4](use-case.md):
 
 | Case | What happens                            | Handled in hedger by                                                                     |
-| ---  | ---                                     | ---                                                                                      |
+| ---- | --------------------------------------- | ---------------------------------------------------------------------------------------- |
 | A    | Quote expires before user confirms      | Not the hedger's problem — contract rejects the tx; no `OrderFilled` ever emits.         |
 | B    | Polymarket moves between quote and fill | Hedge fills at worse price. Loss eaten; logged. Mitigation: spread + reconciliation.     |
 | C    | Polymarket hedge partial fill           | `walk-book.ts` walks the book within `SLIPPAGE_LIMIT_CENTS`; residual goes to `PARTIAL`. |
@@ -857,20 +853,20 @@ Reusing the case taxonomy from [use-case.md §4](use-case.md):
 
 Hedger-specific failure modes not in the original list:
 
-| Case   | What happens                              | Handled by                                                                       |
-| ---    | ---                                       | ---                                                                              |
-| H1     | WebSocket drops a batch of events         | Catch-up poller re-fetches via RPC and pushes to queue. JobId dedups duplicates. |
-| H2     | Bot crashes mid-hedge                     | BullMQ stalled-job reclaim auto-resumes; processor's clientOrderId pre-check handles already-placed orders. |
-| H3     | Bot offline for an extended period        | `OFFLINE_GRACE_PERIOD_SEC` triggers auto-pause of affected markets on resume.    |
-| H4     | DB unreachable                            | Worker errors out, BullMQ retries the job, jobs queue up. Health endpoint red.  |
-| H5     | Polymarket WS user channel drops          | Reconciliation loop falls back to REST `getMyTrades`.                            |
-| H4b    | Redis unreachable                         | Producers can't enqueue, listener buffers locally up to N events then drops + alerts; poller catches up once Redis returns. |
-| H4c    | Polymarket rate-limited                   | BullMQ rate limiter throttles workers automatically; jobs queue up, no errors.  |
-| H6     | Two events with the same nonce            | Cannot happen — contract enforces uniqueness via `UsedNonce` PDA.                |
-| H7     | Reconciliation finds drift                | `Exposure` row rewritten from source-of-truth sum; `alert`-level event emitted. |
-| H8     | Admin accidentally disables the tracker   | Audit log. Does not affect existing positions, only future quote acceptance.     |
-| H9     | Resolver posts wrong outcome              | Mitigated by 48h wait. If still wrong, contract has no built-in undo — ops only. |
-| H10    | RPC node returns inconsistent data        | Use `commitment: 'confirmed'` everywhere; reconciliation catches drift.          |
+| Case | What happens                            | Handled by                                                                                                                  |
+| ---- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| H1   | WebSocket drops a batch of events       | Catch-up poller re-fetches via RPC and pushes to queue. JobId dedups duplicates.                                            |
+| H2   | Bot crashes mid-hedge                   | BullMQ stalled-job reclaim auto-resumes; processor's clientOrderId pre-check handles already-placed orders.                 |
+| H3   | Bot offline for an extended period      | `OFFLINE_GRACE_PERIOD_SEC` triggers auto-pause of affected markets on resume.                                               |
+| H4   | DB unreachable                          | Worker errors out, BullMQ retries the job, jobs queue up. Health endpoint red.                                              |
+| H5   | Polymarket WS user channel drops        | Reconciliation loop falls back to REST `getMyTrades`.                                                                       |
+| H4b  | Redis unreachable                       | Producers can't enqueue, listener buffers locally up to N events then drops + alerts; poller catches up once Redis returns. |
+| H4c  | Polymarket rate-limited                 | BullMQ rate limiter throttles workers automatically; jobs queue up, no errors.                                              |
+| H6   | Two events with the same nonce          | Cannot happen — contract enforces uniqueness via `UsedNonce` PDA.                                                           |
+| H7   | Reconciliation finds drift              | `Exposure` row rewritten from source-of-truth sum; `alert`-level event emitted.                                             |
+| H8   | Admin accidentally disables the tracker | Audit log. Does not affect existing positions, only future quote acceptance.                                                |
+| H9   | Resolver posts wrong outcome            | Mitigated by 48h wait. If still wrong, contract has no built-in undo — ops only.                                            |
+| H10  | RPC node returns inconsistent data      | Use `commitment: 'confirmed'` everywhere; reconciliation catches drift.                                                     |
 
 ---
 
@@ -915,6 +911,7 @@ Once deployed:
 Each phase is a self-contained merge. Keep them small.
 
 ### Phase 0 — scaffold
+
 - `apps/hedger/package.json` (Bun, `@solana/web3.js`, `@coral-xyz/anchor`, `@polymarket/clob-client`, `ethers`, `bullmq`, `ioredis`, `@bull-board/api` + `@bull-board/h3` for the dashboard, `pino`, `zod`).
 - `tsconfig.json` extending the shared config.
 - `index.ts` with a stub that just prints "hedger up" and exits.
@@ -923,11 +920,13 @@ Each phase is a self-contained merge. Keep them small.
 - DB migrations for the new tables in §6.
 
 ### Phase 1 — Solana wiring (no queue yet)
+
 - `solana/connection.ts`, IDL import, decoder.
 - `solana/listener.ts` — live `logsSubscribe`, decode, console.log only.
 - Confirm: send a manual `place_order` on devnet, see the hedger log the event.
 
 ### Phase 2 — Queue scaffold
+
 - `queue/connection.ts` (ioredis to `REDIS_URL`).
 - `queue/hedge-queue.ts` — `Queue` instance, exported `enqueue(event, source)` helper using `jobId = hex(nonce)`.
 - `queue/hedge-worker.ts` — `Worker` with a stub processor that just logs `job.id`.
@@ -935,6 +934,7 @@ Each phase is a self-contained merge. Keep them small.
 - Confirm: dispatch a fake event from a script → see the worker log it.
 
 ### Phase 3 — Fill persistence and cursor
+
 - `db/repo.ts` — `Fill` and `Hedge` repositories, idempotent inserts.
 - `solana/cursor.ts` — single-row cursor management.
 - `solana/poller.ts` — backfill from `lastProcessedSignature`, push to queue.
@@ -942,23 +942,27 @@ Each phase is a self-contained merge. Keep them small.
 - Confirm: stop the listener, place an order, restart → poller pushes the job → worker processes it once.
 
 ### Phase 4 — Polymarket client
+
 - `polymarket/client.ts` wrapper around the SDK.
 - One-shot `scripts/derive-polymarket-keys.ts`.
 - `polymarket/orders.ts` `placeIOC()` returning a typed result.
 - Confirm: place a $1 order on a real Polymarket market and see it fill.
 
 ### Phase 5 — Hedge processor (happy path)
+
 - `hedger/direction.ts` and `hedger/processor.ts` end-to-end (BullMQ handles retries).
 - `Exposure` increment/decrement.
 - Confirm: devnet fill → queue → worker → automatic Polymarket hedge.
 
 ### Phase 5b — FSM completeness + walk-book + recovery
+
 - Walk-book partial-fill handler.
 - `hedger/recovery.ts` boot routine.
 - `RetryableError` / `UnrecoverableError` distinction + handler in `queue/events.ts`.
 - Confirm: kill the bot mid-flight, restart, BullMQ stalled-reclaim picks it up, processor reconciles via clientOrderId.
 
 ### Phase 6 — Exposure tracker + admin endpoints + Bull Board
+
 - `exposure/cap-check.ts`, server reads it.
 - `admin/server.ts` with auth and the routes from §12.
 - Mount Bull Board at `/admin/bull-board` (auth-gated).
@@ -966,22 +970,26 @@ Each phase is a self-contained merge. Keep them small.
 - Confirm: Bull Board shows live job state.
 
 ### Phase 7 — Reconciliation
+
 - `reconcile/match.ts`, `reconcile/drift.ts`.
 - Polymarket user-channel WS subscription.
 - Confirm: forge a drift, watch reconciliation correct it.
 
 ### Phase 8 — Resolver
+
 - `resolver/poll.ts` Gamma polling.
 - `resolver/submit-solana.ts` calling `resolve_market`.
 - `resolver/redeem-polymarket.ts` redeeming on Polygon.
 - Confirm on a small test market or staging.
 
 ### Phase 9 — Health, logging, audit events
+
 - `health/server.ts` with `/healthz` and `/readyz`.
 - `HedgerEvent` writes everywhere they're listed in §14.3.
 - Structured-logger sweep.
 
 ### Phase 10 — Hardening + load test
+
 - Replay 1000 historical fills through the system.
 - Force every error path in §15 once.
 - Document runbook in `apps/hedger/README.md`.

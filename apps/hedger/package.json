@@ -1,40 +1,40 @@
 {
-    "name": "hedger",
-    "module": "index.ts",
-    "type": "module",
-    "private": true,
-    "scripts": {
-        "dev": "bun --hot index.ts",
-        "start": "bun index.ts",
-        "build": "bun build index.ts --outdir dist --target bun",
-        "typecheck": "tsc --noEmit",
-        "lint": "eslint . --max-warnings 0",
-        "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-        "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
-    },
-    "devDependencies": {
-        "@solmarket/eslint-config": "*",
-        "@solmarket/typescript-config": "*",
-        "@solmarket/database": "*",
-        "@solmarket/contract": "*",
-        "@solmarket/types": "*",
-        "@types/bun": "latest",
-        "eslint": "^8.57.0",
-        "prettier": "^3.2.5"
-    },
-    "peerDependencies": {
-        "typescript": "^5"
-    },
-    "dependencies": {
-        "@coral-xyz/anchor": "^0.31.1",
-        "@solana/web3.js": "^1.98.4",
-        "@polymarket/clob-client": "^4.21.0",
-        "bullmq": "^5.34.0",
-        "ioredis": "^5.10.1",
-        "ethers": "^5.7.2",
-        "pino": "^9.5.0",
-        "pino-pretty": "^11.3.0",
-        "zod": "^4.3.6",
-        "bs58": "^6.0.0"
-    }
+  "name": "hedger",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "start": "bun index.ts",
+    "build": "bun build index.ts --outdir dist --target bun",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "devDependencies": {
+    "@solmarket/eslint-config": "*",
+    "@solmarket/typescript-config": "*",
+    "@solmarket/database": "*",
+    "@solmarket/contract": "*",
+    "@solmarket/types": "*",
+    "@types/bun": "latest",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/web3.js": "^1.98.4",
+    "@polymarket/clob-client": "^4.21.0",
+    "bullmq": "^5.34.0",
+    "ioredis": "^5.10.1",
+    "ethers": "^5.7.2",
+    "pino": "^9.5.0",
+    "pino-pretty": "^11.3.0",
+    "zod": "^4.3.6",
+    "bs58": "^6.0.0"
+  }
 }

@@ -1,11 +1,6 @@
 'use client';
 
-import {
-    useLayoutEffect,
-    useRef,
-    useState,
-    type ButtonHTMLAttributes,
-} from 'react';
+import { useLayoutEffect, useRef, useState, type ButtonHTMLAttributes } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
@@ -46,8 +41,7 @@ export function CroppedButton({
 }: CroppedButtonProps) {
     const ref = useRef<HTMLButtonElement>(null);
     const [box, set_box] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
-    const [stroke_color, set_stroke_color] =
-        useState<string>('rgba(0, 0, 0, 0)');
+    const [stroke_color, set_stroke_color] = useState<string>('rgba(0, 0, 0, 0)');
 
     const ready = box.w > 0 && box.h > 0;
     const path_d = ready ? build_path(box.w, box.h, radius, cut, smooth) : '';
@@ -124,20 +118,10 @@ export function CroppedButton({
     );
 }
 
-function build_path(
-    w: number,
-    h: number,
-    r: number,
-    c: number,
-    k: number,
-): string {
+function build_path(w: number, h: number, r: number, c: number, k: number): string {
     const rad = clamp(r, 0, Math.min(w / 2, h / 2));
     const cut_size = clamp(c, 0, Math.min(w / 2, h / 2));
-    const sm = clamp(
-        k,
-        0,
-        Math.min(cut_size / 2, (w - cut_size) / 2, (h - cut_size) / 2),
-    );
+    const sm = clamp(k, 0, Math.min(cut_size / 2, (w - cut_size) / 2, (h - cut_size) / 2));
     const off = sm / Math.SQRT2;
 
     return [

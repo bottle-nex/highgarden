@@ -161,7 +161,7 @@ function ModeToggle({ mode, on_change }: { mode: Mode; on_change: (m: Mode) => v
         { value: 'address', label: 'Receive to address' },
     ];
     return (
-        <div className="flex p-1 rounded-full bg-dark-base/60 border border-dark-faded/60 mb-4 shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]">
+        <div className="flex p-1 rounded-full bg-dark-base/60 border border-dark-faded/30 mb-4 shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]">
             {options.map((o) => (
                 <button
                     key={o.value}
@@ -177,7 +177,7 @@ function ModeToggle({ mode, on_change }: { mode: Mode; on_change: (m: Mode) => v
                     {mode === o.value && (
                         <motion.span
                             layoutId="deposit-mode-pill"
-                            className="absolute inset-0 rounded-full bg-dark-alpha shadow-[inset_0_1px_rgba(255,255,255,0.03),0_1px_3px_rgba(0,0,0,0.25)]"
+                            className="absolute inset-0 rounded-full bg-dark-alpha border border-white/3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.01),0_1px_3px_rgba(0,0,0,0.05)]"
                             transition={{ type: 'spring', stiffness: 400, damping: 34 }}
                         />
                     )}

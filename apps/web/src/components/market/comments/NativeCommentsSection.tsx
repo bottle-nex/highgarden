@@ -1,18 +1,10 @@
 'use client';
 import { JSX, useCallback, useEffect, useState } from 'react';
-import {
-    PiChatCircleFill,
-    PiFlagBold,
-    PiPaperPlaneRightBold,
-} from 'react-icons/pi';
+import { PiChatCircleFill, PiFlagBold, PiPaperPlaneRightBold } from 'react-icons/pi';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import type { CommentDTO } from '@solmarket/types';
-import {
-    fetch_native_comments,
-    post_native_comment,
-    report_comment,
-} from './api';
+import { fetch_native_comments, post_native_comment, report_comment } from './api';
 import { initials_from, relative_time } from './utils';
 import CommentBody from './CommentBody';
 
@@ -163,9 +155,7 @@ export default function NativeCommentsSection({ market_id }: Props): JSX.Element
                                     )}
                                 />
                                 {!is_signed_in && (
-                                    <TooltipContent>
-                                        Sign in to join the discussion
-                                    </TooltipContent>
+                                    <TooltipContent>Sign in to join the discussion</TooltipContent>
                                 )}
                             </Tooltip>
                         </div>
@@ -242,9 +232,7 @@ function CommentRow({
                             {comment.author.walletShort}
                         </span>
                     )}
-                    <span className="text-[10.5px] tabular-nums text-white/30 leading-none">
-                        ·
-                    </span>
+                    <span className="text-[10.5px] tabular-nums text-white/30 leading-none">·</span>
                     <span className="text-[10.5px] tabular-nums text-white/35 leading-none">
                         {relative_time(comment.createdAt)}
                     </span>

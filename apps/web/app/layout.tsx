@@ -81,8 +81,8 @@ export default function RootLayout({
                         <SessionSetter />
                         <WebSocketHost />
                         <Toaster
-                            position='top-center'
-                            theme='dark'
+                            position="top-center"
+                            theme="dark"
                             toastOptions={{
                                 style: {
                                     background: 'var(--color-dark-base)',
@@ -90,9 +90,7 @@ export default function RootLayout({
                                 },
                             }}
                         />
-                        <LenisProvider>
-                            {children}
-                        </LenisProvider>
+                        <LenisProvider>{children}</LenisProvider>
                     </WalletAdapterProvider>
                 </AuthSessionProvider>
             </body>

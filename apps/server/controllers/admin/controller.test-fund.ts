@@ -12,7 +12,10 @@ function is_admin_email(email: string | null | undefined): boolean {
     if (!email) return false;
     const raw = process.env.ADMIN_EMAILS ?? "";
     if (!raw.trim()) return false;
-    const allow = raw.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+    const allow = raw
+        .split(",")
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean);
     return allow.includes(email.toLowerCase());
 }
 

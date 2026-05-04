@@ -17,7 +17,7 @@ interface Props {
     height?: number | string;
 }
 
-const LINE_RGBA = 'rgba(255,214,8,';
+const LINE_RGBA = 'rgba(39,163,253,';
 const AREA_RGBA = LINE_RGBA;
 
 function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | null {
@@ -27,7 +27,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | n
         <div
             style={{
                 background: 'rgba(6,6,8,0.94)',
-                border: '1px solid rgba(255,214,8,0.18)',
+                border: '1px solid rgba(39,163,253,0.18)',
                 borderRadius: 6,
                 padding: '8px 14px',
                 boxShadow: '0 4px 24px rgba(0,0,0,0.6)',
@@ -42,7 +42,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | n
                     fontSize: 9,
                     letterSpacing: '0.18em',
                     textTransform: 'uppercase',
-                    color: 'rgba(255,214,8,0.55)',
+                    color: 'rgba(39,163,253,0.55)',
                     marginBottom: 2,
                 }}
             >
@@ -199,7 +199,7 @@ export default function ProbabilityChart({ data, height = 240 }: Props): JSX.Ele
                     />
                     <Tooltip
                         content={(props) => <ChartTooltip {...props} />}
-                        cursor={{ stroke: 'rgba(255,214,8,0.3)', strokeWidth: 1 }}
+                        cursor={{ stroke: 'rgba(39,163,253,0.3)', strokeWidth: 1 }}
                         isAnimationActive={false}
                         wrapperStyle={{ transition: 'none', pointerEvents: 'none' }}
                         position={
@@ -218,7 +218,7 @@ export default function ProbabilityChart({ data, height = 240 }: Props): JSX.Ele
                         fill="url(#probArea)"
                         activeDot={{
                             r: 4.5,
-                            fill: '#ffd608',
+                            fill: '#27A3FD',
                             stroke: '#0E0D0D',
                             strokeWidth: 2,
                         }}

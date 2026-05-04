@@ -43,9 +43,7 @@ async function main() {
         await sleep(RATE_LIMIT_DELAY_MS);
     }
 
-    console.log(
-        `[backfill] done: updated=${updated} not_found=${not_found} failed=${failed}`,
-    );
+    console.log(`[backfill] done: updated=${updated} not_found=${not_found} failed=${failed}`);
     await prisma.$disconnect();
 }
 

@@ -101,10 +101,7 @@ export default function PolymarketCommentsSection({ market_id }: Props): JSX.Ele
 
 function PolymarketRow({ comment }: { comment: PolymarketCommentDTO }): JSX.Element {
     const display_name = comment.author.name || comment.author.pseudonym || 'anon';
-    const total_position = comment.positions.reduce(
-        (sum, p) => sum + p.positionUsd,
-        0,
-    );
+    const total_position = comment.positions.reduce((sum, p) => sum + p.positionUsd, 0);
 
     return (
         <div className="grid grid-cols-[36px_1fr] gap-4 py-4">
@@ -137,9 +134,7 @@ function PolymarketRow({ comment }: { comment: PolymarketCommentDTO }): JSX.Elem
                             {format_position_usd(total_position)}
                         </span>
                     )}
-                    <span className="text-[10.5px] tabular-nums text-white/30 leading-none">
-                        ·
-                    </span>
+                    <span className="text-[10.5px] tabular-nums text-white/30 leading-none">·</span>
                     <span className="text-[10.5px] tabular-nums text-white/35 leading-none">
                         {relative_time(comment.createdAt)}
                     </span>
@@ -148,7 +143,7 @@ function PolymarketRow({ comment }: { comment: PolymarketCommentDTO }): JSX.Elem
                 {comment.reactionCount > 0 && (
                     <div className="flex items-center gap-4 mt-2">
                         <span className="inline-flex items-center gap-1.5 text-[12px] text-white/55 tabular-nums">
-                            <PiHeartFill className="size-4 text-rose-500 opacity-90"  />
+                            <PiHeartFill className="size-4 text-rose-500 opacity-90" />
                             {comment.reactionCount}
                         </span>
                     </div>

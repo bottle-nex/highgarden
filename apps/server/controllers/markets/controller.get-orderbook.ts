@@ -81,7 +81,7 @@ export default class GetOrderBookController {
                             },
                         },
                     ])
-                    .catch(() => { });
+                    .catch(() => {});
             } else if (
                 (depth_view?.bids.length ?? 0) === 0 &&
                 (depth_view?.asks.length ?? 0) === 0

@@ -51,11 +51,11 @@ export default function YesNoStakeCard({ market }: { market: YesNoMarket }): JSX
                 </div>
 
                 <div className="mt-5 flex items-center gap-3">
-                    <div className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[4px] bg-[#13a876] text-white font-semibold text-[12px]">
+                    <div className="green-btn flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[4px] font-semibold text-[12px]">
                         <span className="tracking-[0.15em] uppercase">YES</span>
                         <span className="text-[12px] tabular-nums">{market.yesPrice}¢</span>
                     </div>
-                    <div className="red-btn flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[4px] bg-[#b81f40] text-white font-semibold text-[12px]">
+                    <div className="red-btn flex-1 flex items-center justify-center gap-2 py-2.5 rounded-[4px] font-semibold text-[12px]">
                         <span className="tracking-[0.15em] uppercase">NO</span>
                         <span className="text-[12px] tabular-nums">{market.noPrice}¢</span>
                     </div>

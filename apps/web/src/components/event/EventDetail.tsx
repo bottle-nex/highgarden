@@ -29,7 +29,7 @@ function format_usd(usd: number | null): string {
 
 function format_close_label(iso: string): string {
     const d = new Date(iso);
-    return `CLOSES ${d
+    return `Closes ${d
         .toLocaleDateString(undefined, {
             month: 'short',
             day: 'numeric',
@@ -83,7 +83,6 @@ function Body({ market }: { market: MarketDTO }) {
     useSubscribeEventHandlers();
     useMarketStream(market.id);
 
-    const [selected_outcome, set_selected_outcome] = useState<Outcome>(Outcome.YES);
     const [delta24h, set_delta24h] = useState<number | null>(null);
     const [is_title_stuck, set_is_title_stuck] = useState(false);
     const sticky_title_ref = useRef<HTMLDivElement>(null);
@@ -145,21 +144,13 @@ function Body({ market }: { market: MarketDTO }) {
                             delta24hPct={delta24h}
                             onLoaded={handle_chart_loaded}
                         />
-                        <EventOrderBook
-                            marketId={market.id}
-                            selectedOutcome={selected_outcome}
-                            onOutcomeChange={set_selected_outcome}
-                        />
+                        <EventOrderBook marketId={market.id} />
                     </div>
                     <EventTabs description={market.description} />
                     <MarketComments market_id={market.id} />
                 </div>
-                <div className="space-y-4 lg:space-y-0 lg:sticky lg:top-24 lg:h-[calc(100vh-6rem)] lg:flex lg:flex-col lg:gap-4">
-                    <EventTradePanel
-                        market={market}
-                        selectedOutcome={selected_outcome}
-                        onOutcomeChange={set_selected_outcome}
-                    />
+                <div className="space-y-4 lg:space-y-0 lg:sticky lg:top-24 lg:h-[calc(100vh-6rem)] lg:flex lg:flex-col lg:gap-3">
+                    <EventTradePanel market={market} />
                     <div className="custom-scrollbar lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
                         <EventNews marketId={market.id} />
                     </div>
