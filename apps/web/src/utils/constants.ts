@@ -66,6 +66,8 @@ export const CATEGORY_TABS = [
     'Mentions',
 ] as const;
 
+export const APP_NAME = 'HighGarden'
+
 export const featuredMarket: FeaturedMarket = {
     id: 'fm-001',
     title: 'US x IRAN permanent peace deal signed before July 2026?',

@@ -12,6 +12,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import OpacityBackground from '@/components/ui/opacity-background';
 import UtilityCard from '@/components/ui/utility-card';
 import { requestOtp } from '../actions/auth';
+import { CroppedButton } from '@/components/ui/cropped-button';
 
 type Step = 'email' | 'code';
 
@@ -75,10 +76,10 @@ function SignInInner() {
     }
 
     return (
-        <OpacityBackground onBackgroundClick={handleClose} escapeClosing className="bg-neutral-950">
+        <OpacityBackground onBackgroundClick={handleClose} escapeClosing className="bg-neutral-900">
             <UtilityCard
                 onClose={handleClose}
-                className="w-full max-w-88 rounded-none border-white/10 px-0 py-0 backdrop-blur-md"
+                className="w-full max-w-88 rounded-none border-white/10 px-0 py-0 backdrop-blur-md bg-neutral-950"
             >
                 <EdgeTicks />
 
@@ -110,9 +111,8 @@ function SignInInner() {
                                     transition={{ duration: 0.2 }}
                                     className="space-y-4"
                                 >
-                                    <Button
+                                    <CroppedButton
                                         type="button"
-                                        variant="outline"
                                         size="lg"
                                         className="w-full h-10 rounded-none border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white flex gap-x-2 items-center"
                                         onClick={handleGoogle}
@@ -122,7 +122,7 @@ function SignInInner() {
                                         <span className=" text-[11px] tracking-[0.15em] uppercase">
                                             Continue with Google
                                         </span>
-                                    </Button>
+                                    </CroppedButton>
 
                                     <Divider />
 
@@ -140,16 +140,16 @@ function SignInInner() {
                                             disabled={pending}
                                             className="h-9 rounded-none border-white/10 bg-white/5 px-3 text-sm text-white placeholder:text-white/25 focus-visible:border-white/40 focus-visible:ring-0"
                                         />
-                                        <Button
+                                        <CroppedButton
                                             type="submit"
                                             size="lg"
-                                            className="w-full rounded-none bg-white text-black hover:bg-white/90"
+                                            className="w-full bg-white text-black hover:bg-white/90"
                                             disabled={pending || !email}
                                         >
                                             <span className=" text-[11px] tracking-[0.2em] uppercase">
                                                 {pending ? 'Sending…' : 'Send code →'}
                                             </span>
-                                        </Button>
+                                        </CroppedButton>
                                     </form>
                                 </motion.div>
                             ) : (

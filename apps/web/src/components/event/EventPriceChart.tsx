@@ -16,6 +16,7 @@ import { Outcome, type PriceHistoryPoint, type PriceHistoryRange } from '@solmar
 import { fetch_market_price_history } from '@/lib/api/markets';
 import { TbSettings } from 'react-icons/tb';
 import ProbabilityHeadline from './ProbabilityHeadline';
+import { APP_NAME } from '@/utils/constants';
 
 const RANGES: ReadonlyArray<{ key: PriceHistoryRange; label: string }> = [
     { key: '1h', label: '1H' },
@@ -657,6 +658,15 @@ export default function EventPriceChart({
                         </AnimatePresence>
                     </div>
                 </div>
+            </div>
+
+            <div className="flex items-center justify-between px-4 py-2.5 text-[9px] tracking-[0.22em] text-white/40">
+                <div className="flex items-center gap-3 uppercase">
+                    <span>VOL {volumeLabel}</span>
+                    <span className="text-white/20">·</span>
+                    <span>{closeLabel}</span>
+                </div>
+                <span className='text-sm'>{APP_NAME}</span>
             </div>
         </section>
     );

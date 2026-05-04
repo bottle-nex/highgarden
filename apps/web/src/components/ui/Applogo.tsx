@@ -5,13 +5,7 @@ export default function Applogo(): JSX.Element {
     return (
         <div className="flex gap-x-2 items-center">
             <div className="h-10 w-10 rounded-sm flex items-center justify-center shrink-0">
-                <Image
-                    src="/images/icons/highgarden.png"
-                    alt="Highgarden"
-                    width={40}
-                    height={40}
-                    className="size-10 object-contain"
-                />
+                H
             </div>
 
             <div className="h-8 w-full flex flex-col -space-y-0.5">

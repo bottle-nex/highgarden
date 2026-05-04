@@ -98,10 +98,10 @@ function LogoutDialog({ onClose }: { onClose: () => void }) {
     }
 
     return (
-        <OpacityBackground onBackgroundClick={onClose} escapeClosing className="bg-neutral-950">
+        <OpacityBackground onBackgroundClick={onClose} escapeClosing className="bg-white/2">
             <UtilityCard
                 onClose={onClose}
-                className="w-full max-w-88 rounded-none border-white/10 px-0 py-0 backdrop-blur-md"
+                className="w-full max-w-88 rounded-none border-white/10 px-0 py-0 backdrop-blur-md bg-neutral-950"
             >
                 <EdgeTicks />
 
@@ -121,7 +121,7 @@ function LogoutDialog({ onClose }: { onClose: () => void }) {
                     </p>
 
                     <div className="mt-6 space-y-3">
-                        <Button
+                        <CroppedButton
                             type="button"
                             size="lg"
                             onClick={handleLogout}
@@ -131,17 +131,16 @@ function LogoutDialog({ onClose }: { onClose: () => void }) {
                             <span className=" text-[11px] tracking-[0.2em] uppercase">
                                 {pending ? 'Signing out…' : 'Logout →'}
                             </span>
-                        </Button>
-                        <Button
+                        </CroppedButton>
+                        <CroppedButton
                             type="button"
-                            variant="outline"
                             size="lg"
                             onClick={onClose}
                             disabled={pending}
                             className="w-full h-10 rounded-none border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white"
                         >
                             <span className=" text-[11px] tracking-[0.15em] uppercase">Cancel</span>
-                        </Button>
+                        </CroppedButton>
                     </div>
 
                     <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-4">
