@@ -8,11 +8,14 @@ import HotTopicsList from './HotTopicsList';
 import { hotTopics } from '@/utils/constants';
 import { useCategoryStore } from '@/store/ui/useCategoryStore';
 import type { Category } from '@/store/ui/useCategoryStore';
+import { is_tag_category } from '@/utils/category-tags';
 
 export default function CategorySection(): JSX.Element {
     const active = useCategoryStore((s) => s.activeCategory);
 
     if (active === 'Trending') return <TrendingSection />;
+    if (is_tag_category(active)) return <TagFilteredSection category={active} />;
+    // Breaking / New / Mentions aren't real tag filters yet.
     return <PlaceholderSection category={active} />;
 }
 
@@ -32,7 +35,7 @@ function TrendingSection(): JSX.Element {
 
             <LiveStakingSection />
 
-            <LiveMarketGrid />
+            <LiveMarketGrid excludeFeatured />
 
             <div className="flex items-center justify-center pt-6">
                 <button
@@ -42,6 +45,17 @@ function TrendingSection(): JSX.Element {
                     EXPLORE ALL MARKETS →
                 </button>
             </div>
+        </div>
+    );
+}
+
+function TagFilteredSection({ category }: { category: Category }): JSX.Element {
+    return (
+        <div className="space-y-8">
+            {/* `key` forces a fresh mount when the category changes so the
+                grid drops back to its loading state instead of flashing the
+                previous category's results. */}
+            <LiveMarketGrid key={category} category={category} />
         </div>
     );
 }

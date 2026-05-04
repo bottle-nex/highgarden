@@ -56,10 +56,7 @@ class TradingApi {
         }
     }
 
-    public async place_order(
-        market_id: string,
-        signed: SignedQuote,
-    ): Promise<PlaceOrderResult> {
+    public async place_order(market_id: string, signed: SignedQuote): Promise<PlaceOrderResult> {
         try {
             const { data } = await apiClient.post(`/markets/${market_id}/place-order`, signed);
             return data?.data as PlaceOrderResult;
@@ -108,10 +105,18 @@ class TradingApi {
             );
         }
         if (code === 'PLACE_ORDER_FAILED') {
-            return new TradingError('PLACE_ORDER_FAILED', raw, 'Trade could not be submitted. Please try again.');
+            return new TradingError(
+                'PLACE_ORDER_FAILED',
+                raw,
+                'Trade could not be submitted. Please try again.',
+            );
         }
         if (code === 'NETWORK') {
-            return new TradingError('NETWORK', raw, 'Network issue. Please check your connection and try again.');
+            return new TradingError(
+                'NETWORK',
+                raw,
+                'Network issue. Please check your connection and try again.',
+            );
         }
         return new TradingError('UNKNOWN', raw, 'Something went wrong. Please try again.');
     }

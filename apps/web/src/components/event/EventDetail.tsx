@@ -19,7 +19,6 @@ import EventNews from './EventNews';
 import EventRelatedMarkets from './EventRelatedMarkets';
 import DashboardNavbar from '../dashboard/DashboardNavbar';
 import MarketComments from '../market/comments/MarketComments';
-import EventBreadcrumb from './EventBreadcrumb';
 
 function format_usd(usd: number | null): string {
     if (usd === null) return '—';
@@ -135,7 +134,6 @@ function Body({ market }: { market: MarketDTO }) {
                         ref={sticky_title_ref}
                         className="lg:sticky lg:top-16 lg:z-20 lg:-mx-2 lg:px-2 lg:py-3 lg:bg-dark-alpha/90 lg:backdrop-blur-sm"
                     >
-                        <EventBreadcrumb title={market.id} />
                         <EventTitleBlock market={market} is_stuck={is_title_stuck} />
                     </div>
                     <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">

@@ -2,7 +2,6 @@
 import { JSX, useState, useTransition } from 'react';
 import { cn } from '@/lib/utils';
 import SearchBar from './SearchBar';
-import { Button } from '../ui/button';
 import { CroppedButton } from '../ui/cropped-button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';

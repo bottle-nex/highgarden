@@ -118,14 +118,14 @@ export default function FeaturedMarketCard({
                 <div className="mt-3 flex items-center gap-2 shrink-0">
                     <Button
                         className={cn(
-                            'green-btn flex-1 rounded-sm text-[12px] tracking-[0.2em] uppercase font-semibold py-5!',
+                            'green-btn flex-1 rounded-sm text-[12px] tracking-[0.2em] uppercase font-semibold py-5! text-neutral-300',
                         )}
                     >
                         BUY YES · 47¢
                     </Button>
                     <Button
                         className={cn(
-                            'red-btn flex-1 rounded-sm text-[12px] tracking-[0.2em] uppercase font-semibold py-5!',
+                            'red-btn flex-1 rounded-sm text-[12px] tracking-[0.2em] uppercase font-semibold py-5! text-neutral-300',
                         )}
                     >
                         BUY NO · 53¢

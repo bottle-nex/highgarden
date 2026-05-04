@@ -1,4 +1,4 @@
-import type { Fill } from "./marketplace.prisma";
+import type { Bookmark, Fill } from "./marketplace.prisma";
 
 export interface User {
   id: string;
@@ -8,4 +8,5 @@ export interface User {
   walletAddress: string | null;
 
   fills?: Fill[];
+  bookmarks?: Bookmark[];
 }

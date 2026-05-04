@@ -91,7 +91,7 @@ export function CroppedButton({
         <button
             ref={ref}
             type={type}
-            className={cn(cropped_button_variants({ size }), className, "active:scale-99")}
+            className={cn(cropped_button_variants({ size }), className, 'active:scale-99')}
             {...props}
         >
             {ready && (

@@ -9,6 +9,7 @@ model User {
   custodialPublicKey       String? @unique
   custodialSecretEncrypted String?
 
-  fills    Fill[]
-  comments Comment[]
+  fills     Fill[]
+  comments  Comment[]
+  bookmarks Bookmark[]
 }

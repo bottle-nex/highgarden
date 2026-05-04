@@ -15,13 +15,26 @@ model Market {
   endAt      DateTime
   resolvedAt DateTime?
 
-  quotes   Quote[]
-  fills    Fill[]
-  exposure Exposure?
-  listing  Listing?
+  quotes    Quote[]
+  fills     Fill[]
+  exposure  Exposure?
+  listing   Listing?
+  bookmarks Bookmark[]
 
   @@unique([id, polyMarketId])
   @@unique([id, solanaMarketPda])
+}
+
+model Bookmark {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  marketId  String
+  market    Market   @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, marketId])
+  @@index([userId, createdAt])
+  @@index([marketId])
 }
 
 model Listing {
@@ -39,7 +52,7 @@ model Listing {
 }
 
 model PolyMarket {
-  id         String  @id
+  id         String   @id
   slug       String?
   eventId    String?
   eventSlug  String?
@@ -48,10 +61,12 @@ model PolyMarket {
   tickSize   String
   negRisk    Boolean
   imageUrl   String?
+  tags       String[] @default([])
 
   market Market?
 
   @@index([eventId])
+  @@index([tags], type: Gin)
 }
 
 model Comment {

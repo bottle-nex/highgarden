@@ -29,6 +29,15 @@ export interface Market {
   fills?: Fill[];
   exposure?: Exposure | null;
   listing?: Listing | null;
+  bookmarks?: Bookmark[];
+}
+
+export interface Bookmark {
+  userId: string;
+  user?: User;
+  marketId: string;
+  market?: Market;
+  createdAt: Date;
 }
 
 export interface Listing {
@@ -53,6 +62,7 @@ export interface PolyMarket {
   tickSize: string;
   negRisk: boolean;
   imageUrl: string | null;
+  tags: string[];
 
   market?: Market | null;
 }

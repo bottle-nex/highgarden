@@ -4,6 +4,7 @@ import auth_router from "../auth/router.auth";
 import admin_router from "../admin/router.admin";
 import markets_router from "../markets/router.markets";
 import comments_router from "../comments/router.comments";
+import bookmarks_router from "../bookmarks/router.bookmarks";
 
 const v1_router: Router = Router();
 
@@ -16,5 +17,6 @@ v1_router.use("/users", user_router);
 v1_router.use("/admin", admin_router);
 v1_router.use("/markets", markets_router);
 v1_router.use("/comments", comments_router);
+v1_router.use("/bookmarks", bookmarks_router);
 
 export default v1_router;

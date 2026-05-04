@@ -12,9 +12,11 @@ const SORTS: SortKey[] = ['VOLUME', '24H Δ', 'ENDING SOON'];
 export default function MarketGrid({
     markets,
     get_href,
+    show_sort = true,
 }: {
     markets: Market[];
     get_href?: (m: Market) => string;
+    show_sort?: boolean;
 }): JSX.Element {
     const [sort, setSort] = useState<SortKey>('VOLUME');
 
@@ -33,26 +35,28 @@ export default function MarketGrid({
         <section>
             <SectionHeading title="ACTIVE MARKETS" subtitle={`${markets.length} LIVE`} />
 
-            <div className="mb-5 flex items-center gap-1 border border-gray-500/15 bg-dark-base p-1 rounded-sm w-fit">
-                {SORTS.map((key) => {
-                    const isActive = sort === key;
-                    return (
-                        <button
-                            key={key}
-                            type="button"
-                            onClick={() => setSort(key)}
-                            className={cn(
-                                'px-3 py-1.5 rounded-xs text-[9px] tracking-[0.22em] uppercase transition-colors cursor-pointer',
-                                isActive
-                                    ? 'bg-white/10 text-white/80'
-                                    : 'text-white/40 hover:text-white/65',
-                            )}
-                        >
-                            {key}
-                        </button>
-                    );
-                })}
-            </div>
+            {show_sort && (
+                <div className="mb-5 flex items-center gap-1 border border-gray-500/15 bg-dark-base p-1 rounded-sm w-fit">
+                    {SORTS.map((key) => {
+                        const isActive = sort === key;
+                        return (
+                            <button
+                                key={key}
+                                type="button"
+                                onClick={() => setSort(key)}
+                                className={cn(
+                                    'px-3 py-1.5 rounded-xs text-[9px] tracking-[0.22em] uppercase transition-colors cursor-pointer',
+                                    isActive
+                                        ? 'bg-white/10 text-white/80'
+                                        : 'text-white/40 hover:text-white/65',
+                                )}
+                            >
+                                {key}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-7">
                 {sorted.map((m) => (
