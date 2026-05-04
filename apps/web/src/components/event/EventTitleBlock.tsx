@@ -103,18 +103,18 @@ export default function EventTitleBlock({ market, is_stuck }: Props): JSX.Elemen
                                     {market.description}
                                 </p>
                             )}
-                            {market.tags.length > 0 && (
+                            {/* {market.tags.length > 0 && (
                                 <ul className="flex flex-wrap items-center gap-1">
-                                    {market.tags.slice(0, 6).map((tag) => (
+                                    {market.tags.slice(0, 5).map((tag) => (
                                         <li
                                             key={tag}
-                                            className="px-2 py-0.5 rounded-sm border border-white/10 bg-dark-base text-[10px] tracking-wider uppercase text-white/55"
+                                            className="px-2 py-1 rounded-sm border border-white/10 bg-dark-base text-[10px] tracking-wider uppercase text-white/55"
                                         >
                                             {tag}
                                         </li>
                                     ))}
                                 </ul>
-                            )}
+                            )} */}
                         </div>
                     </div>
                 )}

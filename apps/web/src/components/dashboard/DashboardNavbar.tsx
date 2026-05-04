@@ -24,7 +24,7 @@ export default function DashboardNavbar(): JSX.Element {
 
     return (
         <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm px-4">
-            <div className="w-full h-16 flex items-center justify-between gap-8 px-8">
+            <div className="w-full h-16 flex items-center justify-between gap-8 px-5">
                 <div className="flex justify-center">
                     <SearchBar />
                 </div>

@@ -146,7 +146,7 @@ function Body({ market }: { market: MarketDTO }) {
                         />
                         <EventOrderBook marketId={market.id} />
                     </div>
-                    <EventTabs description={market.description} />
+                    <EventTabs description={market.description} tags={market.tags} />
                     <MarketComments market_id={market.id} />
                 </div>
                 <div className="space-y-4 lg:space-y-0 lg:sticky lg:top-24 lg:h-[calc(100vh-6rem)] lg:flex lg:flex-col lg:gap-3">
