@@ -46,12 +46,12 @@ const CARDS: CardConfig[] = [
             'HOW FAST DO WINNINGS SETTLE TO MY WALLET?',
             'WHAT HAPPENS IF A MARKET IS DISPUTED?',
         ],
-        activeBg: 'bg-alpha',
+        activeBg: 'bg-[#ff4000]',
         activeInk: 'text-white',
-        accentText: 'text-alpha',
-        arrowBg: 'bg-alpha',
+        accentText: 'text-[#ff4000]',
+        arrowBg: 'bg-[#ff4000]',
         arrowInk: 'text-white',
-        questionHover: 'hover:bg-alpha hover:text-white',
+        questionHover: 'hover:bg-[#ff4000] hover:text-white',
     },
     {
         id: 'sanity',
@@ -78,7 +78,7 @@ export default function LandingFeatureCardsSection(): JSX.Element {
     const [activeId, setActiveId] = useState<CardId>('pricing');
 
     return (
-        <section className="w-full py-20">
+        <section className="w-full">
             <section className="max-w-340 mx-auto w-full grid grid-cols-2">
                 <div className="col-span-1">
                     <h1 className="text-5xl">

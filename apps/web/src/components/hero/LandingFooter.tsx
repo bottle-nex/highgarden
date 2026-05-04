@@ -206,7 +206,10 @@ function BottomBar(): JSX.Element {
                     PRIVACY
                 </a>
                 <span className="w-3 h-px bg-white/15" />
-                <a href="#" className="hover:text-white transition-colors duration-200">
+                <a
+                    href="/legal/terms"
+                    className="hover:text-white transition-colors duration-200"
+                >
                     TERMS
                 </a>
                 <span className="w-3 h-px bg-white/15" />

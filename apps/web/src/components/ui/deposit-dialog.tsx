@@ -616,7 +616,7 @@ function ReceiveAddressPanel({
 
 function NetworkWarning({ network_label }: { network_label: string }) {
     return (
-        <div className="mt-3 flex items-start gap-2 rounded-md border border-dark-faded/60 bg-dark-base/60 px-3 py-2.5">
+        <div className="mt-3 flex items-start gap-2 rounded-md border border-dark-faded/60 bg-dark-base px-3 py-2.5">
             <PiInfo className="size-4 mt-0.5 shrink-0 text-light-alpha/50" />
             <p className="text-[10.5px] leading-relaxed text-light-alpha/60">
                 Send USDC on{' '}

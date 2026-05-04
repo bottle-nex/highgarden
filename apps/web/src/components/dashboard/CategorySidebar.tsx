@@ -64,11 +64,19 @@ export default function CategorySidebar(): JSX.Element {
                             className={cn(
                                 'group relative flex items-center gap-2.5 px-3 py-2 text-[14px] tracking-wider transition-colors duration-200 whitespace-nowrap cursor-pointer text-left rounded-sm',
                                 isActive
-                                    ? 'text-white/80 shadow-xs shadow-black/3 inset-shadow-xs inset-shadow-white/2 bg-dark-base'
+                                    ? ''
                                     : 'text-white/50 bg-none hover:text-white/80 ',
                             )}
                         >
-                            <Icon className="size-4.25 shrink-0" aria-hidden />
+                            <span
+                                aria-hidden
+                                className={cn(
+                                    'h-px shrink-0 transition-all duration-300',
+                                    isActive
+                                        ? 'w-8 bg-foreground'
+                                        : 'w-3 bg-muted-foreground/40 group-hover:w-5 group-hover:bg-foreground',
+                                )}
+                            />
                             {tab}
                         </button>
                     );

@@ -56,6 +56,29 @@ export default function LandingCtaSection(): JSX.Element {
     const [activeSlide, setActiveSlide] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const isVisible = useInView(sectionRef, { amount: 0.15, once: false });
+    const [tint_opacity, set_tint_opacity] = useState(0);
+
+    useEffect(() => {
+        let raf_id = 0;
+        let last = -1;
+        const tick = () => {
+            const sec = sectionRef.current;
+            const next = sec?.nextElementSibling as HTMLElement | null;
+            if (next) {
+                const vh = window.innerHeight;
+                const top = next.getBoundingClientRect().top;
+                const progress = Math.min(1, Math.max(0, 1 - top / vh));
+                const next_opacity = Math.min(1, progress * 1.6);
+                if (Math.abs(next_opacity - last) > 0.005) {
+                    last = next_opacity;
+                    set_tint_opacity(next_opacity);
+                }
+            }
+            raf_id = window.requestAnimationFrame(tick);
+        };
+        raf_id = window.requestAnimationFrame(tick);
+        return () => window.cancelAnimationFrame(raf_id);
+    }, []);
 
     useEffect(() => {
         if (isVisible && videoRef.current) {
@@ -88,7 +111,7 @@ export default function LandingCtaSection(): JSX.Element {
     return (
         <section
             ref={sectionRef}
-            className="relative w-full h-screen shrink-0 overflow-hidden bg-neutral-950"
+            className="w-full h-screen shrink-0 overflow-hidden bg-neutral-950 sticky top-0"
         >
             {/* video background */}
             <video
@@ -103,6 +126,12 @@ export default function LandingCtaSection(): JSX.Element {
 
             {/* <div className="absolute inset-0 bg-neutral-950/55" /> */}
             {/* <div className="absolute inset-0 bg-linear-to-t from-black via-black/20 to-black/40" /> */}
+
+            {/* scroll-driven tint that darkens the CTA as the text section scrolls over it */}
+            <div
+                className="absolute inset-0 bg-black pointer-events-none z-20"
+                style={{ opacity: tint_opacity }}
+            />
 
             {/* content */}
             <motion.main
@@ -236,8 +265,8 @@ export default function LandingCtaSection(): JSX.Element {
                                             i === activeSlide
                                                 ? '100%'
                                                 : i < activeSlide
-                                                  ? '100%'
-                                                  : '0%',
+                                                    ? '100%'
+                                                    : '0%',
                                         opacity: i < activeSlide ? 0.2 : 1,
                                     }}
                                     transition={
