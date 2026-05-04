@@ -1,17 +1,22 @@
 'use client';
-import { JSX, useEffect, useRef, useState } from 'react';
+
+import { JSX, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import type { MarketDTO } from '@solmarket/types';
 import { Outcome } from '@solmarket/types';
 import { selectDepth, useOrderBookDepthStore } from '@/store/book/useOrderBookDepthStore';
 import { cn } from '@/lib/utils';
+import trading_api, { TradingError } from '@/lib/api/trading';
 
 interface Props {
     market: MarketDTO;
 }
 
-const QUICK_AMOUNTS = [1, 5, 10, 100] as const;
+type InputMode = 'USDC' | 'SHARES';
+
+const QUICK_AMOUNTS_USDC = [1, 5, 10, 100] as const;
+const QUICK_AMOUNTS_SHARES = [1, 5, 10, 50] as const;
 
 function format_cents(price: number | undefined): string {
     if (price === undefined || !Number.isFinite(price)) return '—';
@@ -22,6 +27,8 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
     const [selectedOutcome, setSelectedOutcome] = useState<Outcome>(Outcome.YES);
     const [tab, set_tab] = useState<'BUY' | 'SELL'>('BUY');
     const [amount, set_amount] = useState('');
+    const [input_mode, set_input_mode] = useState<InputMode>('USDC');
+    const [submitting, set_submitting] = useState(false);
 
     const yes_depth = useOrderBookDepthStore(selectDepth(market.id, Outcome.YES));
     const no_depth = useOrderBookDepthStore(selectDepth(market.id, Outcome.NO));
@@ -45,22 +52,67 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
         return () => clearTimeout(timer);
     }, [active_price]);
 
-    const usd = parseFloat(amount) || 0;
     const safe_price =
         active_price !== undefined && active_price > 0 && active_price < 1 ? active_price : 0.5;
-    const shares = usd > 0 ? usd / safe_price : 0;
 
-    const handle_submit = () => {
-        if (usd <= 0) {
-            toast.error('Enter an amount first');
+    const computed = useMemo(() => {
+        const raw = parseFloat(amount);
+        if (!Number.isFinite(raw) || raw <= 0) {
+            return { shares: 0, usd: 0 };
+        }
+        if (input_mode === 'USDC') {
+            const target_shares = Math.floor(raw / safe_price);
+            return { shares: target_shares, usd: target_shares * safe_price };
+        }
+        const target_shares = Math.floor(raw);
+        return { shares: target_shares, usd: target_shares * safe_price };
+    }, [amount, input_mode, safe_price]);
+
+    const disable_reason = useMemo<string | null>(() => {
+        if (!market.solanaMarketPda) return 'Trading not yet available on this market';
+        if (active_price === undefined) return 'Loading price…';
+        if (computed.shares <= 0) {
+            const min_dollars = safe_price.toFixed(2);
+            return input_mode === 'USDC'
+                ? `Minimum $${min_dollars} to buy 1 share`
+                : 'Enter at least 1 share';
+        }
+        return null;
+    }, [market.solanaMarketPda, active_price, computed.shares, safe_price, input_mode]);
+
+    const handle_submit = async () => {
+        if (submitting) return;
+        if (disable_reason) {
+            toast.error(disable_reason);
             return;
         }
-        if (tab === 'SELL') {
-            toast.info('Sell flow coming soon');
-            return;
+        set_submitting(true);
+        try {
+            const signed = await trading_api.request_quote(market.id, {
+                side: tab,
+                outcome: selectedOutcome === Outcome.YES ? 'YES' : 'NO',
+                size: computed.shares,
+            });
+            const result = await trading_api.place_order(market.id, signed);
+            const verb = tab === 'BUY' ? 'Bought' : 'Sold';
+            const outcome_label = selectedOutcome === Outcome.YES ? 'YES' : 'NO';
+            toast.success(
+                `${verb} ${computed.shares} ${outcome_label} for $${computed.usd.toFixed(2)}`,
+                { description: `Tx ${result.txSignature.slice(0, 8)}…${result.txSignature.slice(-6)}` },
+            );
+            set_amount('');
+        } catch (err: unknown) {
+            const msg =
+                err instanceof TradingError ? err.user_message : 'Something went wrong. Please try again.';
+            toast.error(msg);
+        } finally {
+            set_submitting(false);
         }
-        toast.info('Trade signing coming soon — wallet adapter is wired in the next pass.');
     };
+
+    const toggle_mode = () => set_input_mode((m) => (m === 'USDC' ? 'SHARES' : 'USDC'));
+    const button_label = build_button_label({ tab, submitting, disable_reason, computed, input_mode });
+    const quick_amounts = input_mode === 'USDC' ? QUICK_AMOUNTS_USDC : QUICK_AMOUNTS_SHARES;
 
     return (
         <motion.aside
@@ -130,9 +182,18 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
 
                 <div className="rounded-lg bg-white/2.5 px-4 py-3.5">
                     <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-[12px] font-medium text-white/55">Amount</span>
+                        <button
+                            type="button"
+                            onClick={toggle_mode}
+                            className="text-[12px] font-medium text-white/55 hover:text-white/85 cursor-pointer transition-colors"
+                            title="Switch input units"
+                        >
+                            Amount ({input_mode === 'USDC' ? 'USDC' : 'Shares'})
+                        </button>
                         <span className="text-[11px] font-medium text-white/35 tabular-nums">
-                            ≈ {shares > 0 ? shares.toFixed(2) : '0.00'} shares
+                            {input_mode === 'USDC'
+                                ? `≈ ${computed.shares} shares`
+                                : `≈ $${computed.usd.toFixed(2)}`}
                         </span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -141,14 +202,14 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                                 amount ? 'text-white' : 'text-white/40'
                             }`}
                         >
-                            $
+                            {input_mode === 'USDC' ? '$' : '#'}
                         </span>
                         <div className="relative flex-1 min-w-0 h-10">
                             <input
                                 type="number"
-                                inputMode="decimal"
+                                inputMode={input_mode === 'USDC' ? 'decimal' : 'numeric'}
                                 min={0}
-                                step="0.01"
+                                step={input_mode === 'USDC' ? '0.01' : '1'}
                                 placeholder="0"
                                 value={amount}
                                 onChange={(e) => set_amount(e.target.value)}
@@ -191,28 +252,38 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                 <div className="flex items-center gap-3">
                     <span className="text-[12px] font-medium text-white/55 shrink-0 w-20"></span>
                     <div className="grid grid-cols-4 gap-2 flex-1">
-                        {QUICK_AMOUNTS.map((v) => (
+                        {quick_amounts.map((v) => (
                             <button
                                 key={v}
                                 type="button"
                                 onClick={() => set_amount(String((parseFloat(amount) || 0) + v))}
                                 className="py-1.5 rounded-md bg-white/5 hover:bg-white/6 text-[12px] font-semibold tabular-nums text-white/50 hover:text-white/80 transition-colors duration-250 cursor-pointer"
                             >
-                                +${v}
+                                {input_mode === 'USDC' ? `+$${v}` : `+${v}`}
                             </button>
                         ))}
                     </div>
                 </div>
 
+                {disable_reason && (
+                    <p className="text-[11px] text-white/45 text-center -mt-1">
+                        {disable_reason}
+                    </p>
+                )}
+
                 <button
                     type="button"
                     onClick={handle_submit}
+                    disabled={!!disable_reason || submitting}
                     className={cn(
-                        'w-full py-3 bg-neutral-300 rounded-lg text-black active:translate-y-px text-[14px] font-bold cursor-pointer transition-all transform duration-200 active:scale-[0.99]',
+                        'w-full py-3 bg-neutral-300 rounded-lg text-black active:translate-y-px text-[14px] font-bold transition-all transform duration-200',
                         'shadow-[inset_0_-2.5px_0_rgba(255,255,255,1)]',
+                        disable_reason || submitting
+                            ? 'opacity-40 cursor-not-allowed'
+                            : 'cursor-pointer active:scale-[0.99]',
                     )}
                 >
-                    Deposit
+                    {button_label}
                 </button>
 
                 <p className="text-[10px] text-white/35 text-center">
@@ -222,4 +293,27 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
             </div>
         </motion.aside>
     );
+}
+
+interface ButtonLabelArgs {
+    tab: 'BUY' | 'SELL';
+    submitting: boolean;
+    disable_reason: string | null;
+    computed: { shares: number; usd: number };
+    input_mode: InputMode;
+}
+
+function build_button_label({
+    tab,
+    submitting,
+    disable_reason,
+    computed,
+    input_mode,
+}: ButtonLabelArgs): string {
+    if (submitting) return tab === 'BUY' ? 'Buying…' : 'Selling…';
+    if (disable_reason) return tab === 'BUY' ? 'Buy' : 'Sell';
+    if (input_mode === 'USDC') {
+        return `${tab === 'BUY' ? 'Buy' : 'Sell'} ${computed.shares} for $${computed.usd.toFixed(2)}`;
+    }
+    return `${tab === 'BUY' ? 'Buy' : 'Sell'} ${computed.shares} · $${computed.usd.toFixed(2)}`;
 }
