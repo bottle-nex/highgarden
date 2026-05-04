@@ -27,7 +27,7 @@ export function initials_from(name: string | null | undefined): string {
     return ((parts[0]?.charAt(0) ?? '') + (parts[1]?.charAt(0) ?? '')).toUpperCase();
 }
 
-export function format_position_usd(usd: number): string {
-    if (usd >= 1000) return `$${(usd / 1000).toFixed(1)}k`;
-    return `$${usd.toFixed(0)}`;
+export function format_position_size(shares: number): string {
+    if (shares >= 1000) return `${(shares / 1000).toFixed(1)}k`;
+    return `${shares.toFixed(0)}`;
 }

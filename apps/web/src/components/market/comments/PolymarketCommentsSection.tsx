@@ -3,8 +3,9 @@ import { JSX, useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { PiHeartFill } from 'react-icons/pi';
 import type { PolymarketCommentDTO } from '@solmarket/types';
+import { Button } from '@/components/ui/button';
 import { fetch_polymarket_comments } from './api';
-import { format_position_usd, initials_from, relative_time } from './utils';
+import { format_position_size, initials_from, relative_time } from './utils';
 import CommentBody from './CommentBody';
 
 interface Props {
@@ -12,7 +13,6 @@ interface Props {
 }
 
 const PAGE_SIZE = 30;
-const HOLDERS_ONLY = true;
 
 export default function PolymarketCommentsSection({ market_id }: Props): JSX.Element {
     const [comments, set_comments] = useState<PolymarketCommentDTO[]>([]);
@@ -21,6 +21,7 @@ export default function PolymarketCommentsSection({ market_id }: Props): JSX.Ele
     const [error, set_error] = useState<string | null>(null);
     const [has_more, set_has_more] = useState(false);
     const [available, set_available] = useState(true);
+    const [holders_only, set_holders_only] = useState(false);
 
     const load_initial = useCallback(async () => {
         set_loading(true);
@@ -29,7 +30,7 @@ export default function PolymarketCommentsSection({ market_id }: Props): JSX.Ele
             const result = await fetch_polymarket_comments(market_id, {
                 limit: PAGE_SIZE,
                 offset: 0,
-                holders_only: HOLDERS_ONLY,
+                holders_only,
             });
             set_comments(result.comments);
             set_offset(result.comments.length);
@@ -41,7 +42,7 @@ export default function PolymarketCommentsSection({ market_id }: Props): JSX.Ele
         } finally {
             set_loading(false);
         }
-    }, [market_id]);
+    }, [market_id, holders_only]);
 
     useEffect(() => {
         void load_initial();
@@ -52,7 +53,7 @@ export default function PolymarketCommentsSection({ market_id }: Props): JSX.Ele
             const result = await fetch_polymarket_comments(market_id, {
                 limit: PAGE_SIZE,
                 offset,
-                holders_only: HOLDERS_ONLY,
+                holders_only,
             });
             set_comments((prev) => [...prev, ...result.comments]);
             set_offset((prev) => prev + result.comments.length);
@@ -65,35 +66,68 @@ export default function PolymarketCommentsSection({ market_id }: Props): JSX.Ele
 
     if (!available) return <></>;
 
-    if (loading) return <></>;
-
-    if (error) {
-        return (
-            <div className="py-6 text-center text-[10px] tracking-[0.3em] uppercase text-rose-400/80">
-                {error}
-            </div>
-        );
-    }
-
-    if (comments.length === 0) return <></>;
-
     return (
         <section>
-            <div className="flex flex-col">
-                {comments.map((c) => (
-                    <PolymarketRow key={c.id} comment={c} />
-                ))}
+            <div className="mb-3 flex items-center gap-1">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => set_holders_only(false)}
+                    className={
+                        !holders_only
+                            ? 'text-white bg-white/5'
+                            : 'text-white/45 hover:text-white/80'
+                    }
+                >
+                    All
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => set_holders_only(true)}
+                    className={
+                        holders_only
+                            ? 'text-white bg-white/5'
+                            : 'text-white/45 hover:text-white/80'
+                    }
+                >
+                    Holders
+                </Button>
             </div>
-            {has_more && (
-                <div className="mt-6 flex justify-center">
-                    <button
-                        type="button"
-                        onClick={load_more}
-                        className="rounded-md border border-white/10 px-5 py-2 text-[10px] tracking-[0.3em] uppercase text-white/55 hover:text-white hover:border-white/25 transition-colors cursor-pointer"
-                    >
-                        Load more
-                    </button>
+
+            {loading ? (
+                <div className="py-6 text-center text-[10px] tracking-[0.3em] uppercase text-white/40">
+                    Loading…
                 </div>
+            ) : error ? (
+                <div className="py-6 text-center text-[10px] tracking-[0.3em] uppercase text-rose-400/80">
+                    {error}
+                </div>
+            ) : comments.length === 0 ? (
+                <div className="py-6 text-center text-[11px] text-white/40">
+                    {holders_only
+                        ? 'No comments from holders yet. Switch to All to see every comment.'
+                        : 'No comments yet.'}
+                </div>
+            ) : (
+                <>
+                    <div className="flex flex-col">
+                        {comments.map((c) => (
+                            <PolymarketRow key={c.id} comment={c} />
+                        ))}
+                    </div>
+                    {has_more && (
+                        <div className="mt-6 flex justify-center">
+                            <button
+                                type="button"
+                                onClick={load_more}
+                                className="rounded-md border border-white/10 px-5 py-2 text-[10px] tracking-[0.3em] uppercase text-white/55 hover:text-white hover:border-white/25 transition-colors cursor-pointer"
+                            >
+                                Load more
+                            </button>
+                        </div>
+                    )}
+                </>
             )}
         </section>
     );
@@ -101,7 +135,12 @@ export default function PolymarketCommentsSection({ market_id }: Props): JSX.Ele
 
 function PolymarketRow({ comment }: { comment: PolymarketCommentDTO }): JSX.Element {
     const display_name = comment.author.name || comment.author.pseudonym || 'anon';
-    const total_position = comment.positions.reduce((sum, p) => sum + p.positionUsd, 0);
+    const yes_total = comment.positions
+        .filter((p) => p.outcome === 'YES')
+        .reduce((sum, p) => sum + p.positionUsd, 0);
+    const no_total = comment.positions
+        .filter((p) => p.outcome === 'NO')
+        .reduce((sum, p) => sum + p.positionUsd, 0);
 
     return (
         <div className="grid grid-cols-[36px_1fr] gap-4 py-4">
@@ -129,9 +168,16 @@ function PolymarketRow({ comment }: { comment: PolymarketCommentDTO }): JSX.Elem
                             {comment.author.walletShort}
                         </span>
                     )}
-                    {total_position > 0 && (
-                        <span className="inline-flex items-center rounded-md bg-emerald-500/12 border border-emerald-400/15 px-2 py-0.5 text-[10px] tabular-nums tracking-[0.05em] text-emerald-300 leading-none font-medium">
-                            {format_position_usd(total_position)}
+                    {yes_total > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/12 px-2 py-1.5 text-[11px] tabular-nums tracking-wider text-emerald-300 leading-none font-medium">
+                            <span>{format_position_size(yes_total)}</span>
+                            <span className="uppercase">Yes</span>
+                        </span>
+                    )}
+                    {no_total > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-rose-500/12  px-2 py-1.5 text-[11px] tabular-nums tracking-wider text-rose-300 leading-none font-medium">
+                            <span>{format_position_size(no_total)}</span>
+                            <span className="uppercase">No</span>
                         </span>
                     )}
                     <span className="text-[10.5px] tabular-nums text-white/30 leading-none">·</span>

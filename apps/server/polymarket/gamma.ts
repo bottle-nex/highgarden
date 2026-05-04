@@ -43,8 +43,11 @@ export interface FetchEventsParams {
     ascending?: boolean;
 }
 
-export interface FetchEventCommentsParams {
-    event_id: string;
+export type CommentParentEntityType = "Event" | "Series";
+
+export interface FetchCommentsParams {
+    parent_entity_type: CommentParentEntityType;
+    parent_entity_id: string;
     limit?: number;
     offset?: number;
     holders_only?: boolean;
@@ -275,18 +278,17 @@ export class GammaClient {
         };
     }
 
-    async fetch_event_comments(params: FetchEventCommentsParams): Promise<GammaComment[]> {
+    async fetch_comments(params: FetchCommentsParams): Promise<GammaComment[]> {
         const url = new URL("/comments", this.base_url);
-        url.searchParams.set("parent_entity_type", "Event");
-        url.searchParams.set("parent_entity_id", params.event_id);
+        url.searchParams.set("parent_entity_type", params.parent_entity_type);
+        url.searchParams.set("parent_entity_id", params.parent_entity_id);
         url.searchParams.set("limit", String(params.limit ?? 30));
         url.searchParams.set("offset", String(params.offset ?? 0));
         url.searchParams.set("get_positions", "true");
+        url.searchParams.set("get_reports", "true");
         url.searchParams.set("order", "createdAt");
         url.searchParams.set("ascending", "false");
-        if (params.holders_only) {
-            url.searchParams.set("holders_only", "true");
-        }
+        url.searchParams.set("holders_only", params.holders_only ? "true" : "false");
 
         const res = await fetch(url);
         if (!res.ok) {
@@ -294,6 +296,26 @@ export class GammaClient {
         }
         const raw = (await res.json()) as RawGammaComment[];
         return raw.map(normalise_comment);
+    }
+
+    /**
+     * Polymarket anchors its comments thread on a *Series* (a recurring set
+     * of related events) rather than on an individual Event, so a single
+     * event by itself often shows almost no comments. This call resolves the
+     * series id by fetching the event detail and returning the first entry
+     * in its `series` array — `null` when the event is one-off and has no
+     * series.
+     */
+    async fetch_event_series_id(event_id: string): Promise<string | null> {
+        const url = new URL(`/events/${event_id}`, this.base_url);
+        const res = await fetch(url);
+        if (!res.ok) {
+            if (res.status === 404) return null;
+            throw new Error(`gamma event detail fetch failed: ${res.status} ${res.statusText}`);
+        }
+        const raw = (await res.json()) as { series?: Array<{ id: string | number }> };
+        const first = raw.series?.[0];
+        return first ? String(first.id) : null;
     }
 
     static pick_yes_no_token_ids(market: GammaMarket): {

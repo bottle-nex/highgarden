@@ -101,10 +101,19 @@ export interface CommentDTO {
   };
 }
 
+export type PolymarketCommentPositionOutcome = "YES" | "NO" | "OTHER";
+
 /** Position the commenter holds in this event (only present for holders). */
 export interface PolymarketCommentPositionDTO {
   tokenId: string;
   positionUsd: number;
+  /**
+   * Side this position is on, relative to the *current* market being viewed:
+   *   YES   — token matches the market's yesTokenId
+   *   NO    — token matches the market's noTokenId
+   *   OTHER — position belongs to a sibling market in the same series
+   */
+  outcome: PolymarketCommentPositionOutcome;
 }
 
 /** Read-only comment mirrored from Polymarket's gamma API. */
