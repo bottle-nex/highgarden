@@ -174,9 +174,7 @@ export class GammaClient {
             throw new Error(`gamma fetch failed: ${res.status} ${res.statusText}`);
         }
         const raw = (await res.json()) as RawGammaMarket[];
-        return raw
-            .map((m) => normalise(m, null, null))
-            .filter((m): m is GammaMarket => m !== null);
+        return raw.map((m) => normalise(m, null, null)).filter((m): m is GammaMarket => m !== null);
     }
 
     async fetch_events(params: FetchEventsParams = {}): Promise<GammaMarket[]> {
@@ -219,9 +217,7 @@ export class GammaClient {
 
         const res = await fetch(url);
         if (!res.ok) {
-            throw new Error(
-                `gamma related-events fetch failed: ${res.status} ${res.statusText}`,
-            );
+            throw new Error(`gamma related-events fetch failed: ${res.status} ${res.statusText}`);
         }
         const raw = (await res.json()) as RawGammaEvent[];
         if (raw.length === 0) return null;
@@ -248,9 +244,7 @@ export class GammaClient {
 
         const res = await fetch(url);
         if (!res.ok) {
-            throw new Error(
-                `gamma comments fetch failed: ${res.status} ${res.statusText}`,
-            );
+            throw new Error(`gamma comments fetch failed: ${res.status} ${res.statusText}`);
         }
         const raw = (await res.json()) as RawGammaComment[];
         return raw.map(normalise_comment);

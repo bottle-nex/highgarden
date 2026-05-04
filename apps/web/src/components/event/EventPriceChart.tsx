@@ -1,7 +1,7 @@
 'use client';
 
 import { JSX, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import {
     ResponsiveContainer,
     AreaChart,
@@ -99,6 +99,8 @@ export default function EventPriceChart({
 }: Props): JSX.Element {
     const [range, set_range] = useState<PriceHistoryRange>('1m');
     const [activeCoord, set_active_coord] = useState<{ x: number; y: number } | null>(null);
+    const [exit_opacity, set_exit_opacity] = useState(1);
+    const exit_raf_ref = useRef<number | null>(null);
     const [chart_svg_width, set_chart_svg_width] = useState(0);
     const wrapper_ref = useRef<HTMLDivElement>(null);
     const [snapshot, set_snapshot] = useState<{
@@ -113,6 +115,17 @@ export default function EventPriceChart({
     const [showHorizontalGrid, setShowHorizontalGrid] = useState(true);
     const [showVerticalGrid, setShowVerticalGrid] = useState(false);
     const settings_ref = useRef<HTMLDivElement>(null);
+    const [now_label, set_now_label] = useState<string>(() =>
+        new Date().toLocaleTimeString(undefined, { hour12: false }),
+    );
+
+    useEffect(() => {
+        const tick = () =>
+            set_now_label(new Date().toLocaleTimeString(undefined, { hour12: false }));
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, []);
 
     useEffect(() => {
         const el = wrapper_ref.current;
@@ -125,6 +138,76 @@ export default function EventPriceChart({
         const ro = new ResizeObserver(update);
         ro.observe(el);
         return () => ro.disconnect();
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (exit_raf_ref.current !== null) cancelAnimationFrame(exit_raf_ref.current);
+        };
+    }, []);
+
+    const cancel_exit_animation = (): void => {
+        if (exit_raf_ref.current !== null) {
+            cancelAnimationFrame(exit_raf_ref.current);
+            exit_raf_ref.current = null;
+        }
+        set_exit_opacity(1);
+    };
+
+    const start_exit_animation = (from: { x: number; y: number }): void => {
+        cancel_exit_animation();
+        if (chart_svg_width <= 0) {
+            set_active_coord(null);
+            return;
+        }
+        const start_x = from.x;
+        const target_x = chart_svg_width;
+        const start_t = performance.now();
+        const dur = 380;
+        const tick = (now: number): void => {
+            const elapsed = now - start_t;
+            const t = Math.min(1, elapsed / dur);
+            const eased = 1 - Math.pow(1 - t, 3);
+            const cur_x = start_x + (target_x - start_x) * eased;
+            set_active_coord({ x: cur_x, y: from.y });
+            set_exit_opacity(1 - eased);
+            if (t < 1) {
+                exit_raf_ref.current = requestAnimationFrame(tick);
+            } else {
+                set_active_coord(null);
+                set_exit_opacity(1);
+                exit_raf_ref.current = null;
+            }
+        };
+        exit_raf_ref.current = requestAnimationFrame(tick);
+    };
+
+    const active_coord_ref = useRef(activeCoord);
+    const start_exit_ref = useRef(start_exit_animation);
+
+    useEffect(() => {
+        active_coord_ref.current = activeCoord;
+    }, [activeCoord]);
+
+    useEffect(() => {
+        start_exit_ref.current = start_exit_animation;
+    });
+
+    useEffect(() => {
+        const handler = (e: PointerEvent): void => {
+            if (!active_coord_ref.current || exit_raf_ref.current !== null) return;
+            const el = wrapper_ref.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            const inside =
+                e.clientX >= r.left &&
+                e.clientX <= r.right &&
+                e.clientY >= r.top &&
+                e.clientY <= r.bottom;
+            if (!inside) start_exit_ref.current(active_coord_ref.current);
+        };
+        document.addEventListener('pointermove', handler);
+        return () => document.removeEventListener('pointermove', handler);
     }, []);
 
     const current_key = `${marketId}:${range}`;
@@ -225,72 +308,25 @@ export default function EventPriceChart({
 
     return (
         <section className="rounded-lg bg-dark-base flex flex-col min-h-120">
-            <div className="flex items-center justify-between px-5 pt-4 pb-2">
+            <div className="flex items-center justify-between px-5 pt-4 pb-2 gap-4">
                 <ProbabilityHeadline marketId={marketId} delta24hPct={delta24hPct} />
-                <div
-                    ref={settings_ref}
-                    className="relative flex gap-1 bg-dark-base border border-white/10 rounded-md p-0.75"
-                >
-                    <button
-                        aria-label="settings"
-                        type="button"
-                        onClick={() => set_settings_open((v) => !v)}
-                        className={`px-2 py-1 rounded transition-colors cursor-pointer flex items-center ${settings_open ? 'text-white/90 bg-white/[0.07]' : 'text-white/45 hover:text-white/75'}`}
-                    >
-                        <TbSettings className="w-3.5 h-3.5" />
-                    </button>
-                    {settings_open && (
-                        <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-52 rounded-lg ring-1 ring-white/5 bg-dark-alpha shadow-xs shadow-black/10 backdrop-blur-xl">
-                            <div className="px-4 py-3 border-b border-white/8">
-                                <span className="text-[10px] tracking-[0.25em] uppercase text-white/55 font-medium">
-                                    Settings
-                                </span>
-                            </div>
-                            <div className="px-4 py-2 flex flex-col gap-0.5">
-                                {(
-                                    [
-                                        ['X-Axis', showXAxis, setShowXAxis],
-                                        ['Y-Axis', showYAxis, setShowYAxis],
-                                        [
-                                            'Horizontal Grid',
-                                            showHorizontalGrid,
-                                            setShowHorizontalGrid,
-                                        ],
-                                        [
-                                            'Vertical Grid',
-                                            showVerticalGrid,
-                                            setShowVerticalGrid,
-                                        ],
-                                    ] as [string, boolean, (v: boolean) => void][]
-                                ).map(([label, value, setter]) => (
-                                    <div
-                                        key={label}
-                                        className="flex items-center justify-between py-2"
-                                    >
-                                        <span className="text-[11px] text-white/70">
-                                            {label}
-                                        </span>
-                                        <button
-                                            aria-label="settings"
-                                            type="button"
-                                            onClick={() => setter(!value)}
-                                            className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer ${value ? 'bg-blue-500' : 'bg-white/15'}`}
-                                        >
-                                            <span
-                                                className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${value ? 'translate-x-4.5' : 'translate-x-0.5'}`}
-                                            />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                <div className="flex items-center gap-3 text-[11px] tracking-widest text-neutral-400">
+                    <span>{volumeLabel} Vol</span>
+                    <span className="text-white/30">|</span>
+                    <span>{closeLabel}</span>
+                    <span className="text-white/30">|</span>
+                    <span className="tabular-nums text-white/55">{now_label}</span>
                 </div>
             </div>
 
             <div
                 ref={wrapper_ref}
                 className="relative w-full flex-1 min-h-0 px-2 select-none outline-none"
+                onMouseEnter={cancel_exit_animation}
+                onMouseLeave={() => {
+                    if (activeCoord) start_exit_animation(activeCoord);
+                    else set_active_coord(null);
+                }}
             >
                 {status === 'loading' && points.length === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.25em] uppercase text-white/30">
@@ -314,13 +350,13 @@ export default function EventPriceChart({
                             margin={{ top: 24, right: 16, bottom: 0, left: 0 }}
                             onMouseMove={(state) => {
                                 if (state.activeCoordinate) {
+                                    cancel_exit_animation();
                                     set_active_coord({
                                         x: state.activeCoordinate.x,
                                         y: state.activeCoordinate.y,
                                     });
                                 }
                             }}
-                            onMouseLeave={() => set_active_coord(null)}
                         >
                             <defs>
                                 <linearGradient
@@ -408,8 +444,8 @@ export default function EventPriceChart({
                                 tickFormatter={(v) => format_x_label(v as number, range)}
                                 hide={!showXAxis}
                                 tick={{
-                                    fill: 'rgba(255,255,255,0.18)',
-                                    fontSize: 9,
+                                    fill: '#a3a3a3',
+                                    fontSize: 10,
                                     fontFamily: 'var(--m-, monospace)',
                                 }}
                                 tickLine={false}
@@ -419,8 +455,8 @@ export default function EventPriceChart({
                                 domain={[yMin, yMax]}
                                 hide={!showYAxis}
                                 tick={{
-                                    fill: 'rgba(255,255,255,0.18)',
-                                    fontSize: 9,
+                                    fill: '#a3a3a3',
+                                    fontSize: 10,
                                     fontFamily: 'var(--m-, monospace)',
                                 }}
                                 tickFormatter={(v) => `${Math.round(v)}%`}
@@ -431,12 +467,13 @@ export default function EventPriceChart({
                             />
                             <Tooltip
                                 content={(props) => <ChartTooltip {...props} />}
-                                cursor={{
-                                    stroke: isNo ? 'rgba(244,63,94,0.25)' : 'rgba(39,163,253,0.3)',
-                                    strokeWidth: 1,
-                                }}
+                                cursor={false}
                                 isAnimationActive={false}
-                                wrapperStyle={{ transition: 'none', pointerEvents: 'none' }}
+                                wrapperStyle={{
+                                    transition: 'opacity 120ms',
+                                    opacity: exit_opacity,
+                                    pointerEvents: 'none',
+                                }}
                                 position={
                                     activeCoord
                                         ? { x: activeCoord.x + 14, y: activeCoord.y - 22 }
@@ -451,62 +488,175 @@ export default function EventPriceChart({
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 fill="url(#evtPriceArea)"
-                                activeDot={{
-                                    r: 4.5,
-                                    fill: isNo ? '#f43f5e' : '#27A3FD',
-                                    stroke: '#0E0D0D',
-                                    strokeWidth: 2,
-                                }}
+                                activeDot={false}
                                 animationDuration={600}
                                 animationEasing="ease-out"
                             />
                         </AreaChart>
                     </ResponsiveContainer>
                 )}
+                {activeCoord && chart_svg_width > 0 && (
+                    <div
+                        className="absolute inset-y-0 pointer-events-none"
+                        style={{ left: 8, right: 8, opacity: exit_opacity }}
+                    >
+                        <div
+                            className="absolute top-0 bottom-0 w-px"
+                            style={{
+                                left: activeCoord.x,
+                                background: isNo ? 'rgba(244,63,94,0.3)' : 'rgba(39,163,253,0.3)',
+                            }}
+                        />
+                        <div
+                            className="absolute rounded-full"
+                            style={{
+                                left: activeCoord.x,
+                                top: activeCoord.y,
+                                width: 9,
+                                height: 9,
+                                transform: 'translate(-50%, -50%)',
+                                background: isNo ? '#f43f5e' : '#27A3FD',
+                                boxShadow: '0 0 0 2px #0E0D0D',
+                            }}
+                        />
+                    </div>
+                )}
             </div>
 
             <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-white/8">
-                <div className="flex gap-1 bg-white/2.5 border border-white/8 rounded-md p-0.75">
-                    {[Outcome.YES, Outcome.NO].map((o) => (
-                        <button
-                            key={o}
-                            type="button"
-                            data-pressed={selectedOutcome === o ? 'true' : 'false'}
-                            onClick={() => onOutcomeChange(o)}
-                            className={`${o === Outcome.YES ? 'green-btn' : 'red-btn'} px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium`}
-                        >
-                            {o}
-                        </button>
-                    ))}
+                <div className="relative flex gap-1 bg-white/2.5 border border-white/8 rounded-md p-0.75">
+                    {[Outcome.YES, Outcome.NO].map((o) => {
+                        const is_selected = selectedOutcome === o;
+                        const is_yes = o === Outcome.YES;
+                        return (
+                            <button
+                                key={o}
+                                type="button"
+                                onClick={() => onOutcomeChange(o)}
+                                className={`relative px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium cursor-pointer transition-colors ${
+                                    is_selected ? 'text-white' : 'text-white/45 hover:text-white/75'
+                                }`}
+                            >
+                                {is_selected && (
+                                    <motion.span
+                                        layoutId="chart-outcome-pill"
+                                        className="absolute inset-0 rounded"
+                                        style={{
+                                            backgroundColor: is_yes
+                                                ? 'rgba(15, 122, 86, 0.9)'
+                                                : 'rgba(225, 29, 72, 0.8)',
+                                        }}
+                                        transition={{
+                                            type: 'spring',
+                                            stiffness: 400,
+                                            damping: 32,
+                                        }}
+                                    />
+                                )}
+                                <span className="relative z-10">{o}</span>
+                            </button>
+                        );
+                    })}
                 </div>
-                <div className="flex gap-1 bg-white/2 border border-white/10 rounded-md p-0.75">
-                    {RANGES.map((r) => (
+                <div className="flex items-center gap-1">
+                    <div className="flex gap-1">
+                        {RANGES.map((r) => (
+                            <button
+                                key={r.key}
+                                type="button"
+                                onClick={() => set_range(r.key)}
+                                className={`relative px-2 py-1 rounded text-[9px] tracking-[0.2em] uppercase transition-colors cursor-pointer ${
+                                    range === r.key
+                                        ? 'text-white'
+                                        : 'text-white/45 hover:text-white/75'
+                                }`}
+                            >
+                                {range === r.key && (
+                                    <motion.span
+                                        layoutId="chart-range-pill"
+                                        className="absolute inset-0 rounded bg-white/[0.07]"
+                                        transition={{
+                                            type: 'spring',
+                                            stiffness: 400,
+                                            damping: 32,
+                                        }}
+                                    />
+                                )}
+                                <span className="relative z-10">{r.label}</span>
+                            </button>
+                        ))}
+                    </div>
+                    <div ref={settings_ref} className="relative ml-1">
                         <button
-                            key={r.key}
+                            aria-label="settings"
                             type="button"
-                            onClick={() => set_range(r.key)}
-                            className={`relative px-3 py-1 rounded text-[9px] tracking-[0.2em] uppercase transition-colors cursor-pointer ${
-                                range === r.key
-                                    ? 'text-white'
-                                    : 'text-white/45 hover:text-white/75'
-                            }`}
+                            onClick={() => set_settings_open((v) => !v)}
+                            className={`px-2 py-1 rounded transition-colors cursor-pointer flex items-center ${settings_open ? 'text-white/90 bg-white/[0.07]' : 'text-white/45 hover:text-white/75'}`}
                         >
-                            {range === r.key && (
-                                <motion.span
-                                    layoutId="chart-range-pill"
-                                    className="absolute inset-0 rounded bg-white/[0.07]"
-                                    transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-                                />
+                            <TbSettings className="w-3.5 h-3.5" />
+                        </button>
+                        <AnimatePresence>
+                            {settings_open && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.85 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    transition={{
+                                        type: 'spring',
+                                        stiffness: 420,
+                                        damping: 28,
+                                        mass: 0.6,
+                                    }}
+                                    style={{ transformOrigin: 'bottom right' }}
+                                    className="absolute right-0 bottom-[calc(100%+6px)] z-50 w-52 rounded-lg ring-1 ring-white/5 bg-dark-alpha shadow-xs shadow-black/10 backdrop-blur-xl"
+                                >
+                                    <div className="px-4 py-3 border-b border-white/8">
+                                        <span className="text-[10px] tracking-[0.25em] uppercase text-white/55 font-medium">
+                                            Settings
+                                        </span>
+                                    </div>
+                                    <div className="px-4 py-2 flex flex-col gap-0.5">
+                                        {(
+                                            [
+                                                ['X-Axis', showXAxis, setShowXAxis],
+                                                ['Y-Axis', showYAxis, setShowYAxis],
+                                                [
+                                                    'Horizontal Grid',
+                                                    showHorizontalGrid,
+                                                    setShowHorizontalGrid,
+                                                ],
+                                                [
+                                                    'Vertical Grid',
+                                                    showVerticalGrid,
+                                                    setShowVerticalGrid,
+                                                ],
+                                            ] as [string, boolean, (v: boolean) => void][]
+                                        ).map(([label, value, setter]) => (
+                                            <div
+                                                key={label}
+                                                className="flex items-center justify-between py-2"
+                                            >
+                                                <span className="text-[11px] text-white/70">
+                                                    {label}
+                                                </span>
+                                                <button
+                                                    aria-label="settings"
+                                                    type="button"
+                                                    onClick={() => setter(!value)}
+                                                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors cursor-pointer ${value ? 'bg-blue-500' : 'bg-white/15'}`}
+                                                >
+                                                    <span
+                                                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${value ? 'translate-x-4.5' : 'translate-x-0.5'}`}
+                                                    />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
                             )}
-                            <span className="relative z-10">{r.label}</span>
-                        </button>
-                    ))}
+                        </AnimatePresence>
+                    </div>
                 </div>
-            </div>
-
-            <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/8 text-[9px] tracking-[0.22em] uppercase text-white/40">
-                <span>VOL {volumeLabel}</span>
-                <span>{closeLabel}</span>
             </div>
         </section>
     );

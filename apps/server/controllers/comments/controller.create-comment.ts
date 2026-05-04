@@ -41,10 +41,7 @@ export default class CreateCommentController {
             if (!market) return ResponseWriter.not_found(res, "market not found");
             const event_id = market.polymarket?.eventId;
             if (!event_id) {
-                return ResponseWriter.invalid_data(
-                    res,
-                    "comments unavailable for this market",
-                );
+                return ResponseWriter.invalid_data(res, "comments unavailable for this market");
             }
 
             const created = await prisma.comment.create({
@@ -62,8 +59,7 @@ export default class CreateCommentController {
                 },
             });
 
-            const username =
-                created.user.name || created.user.email.split("@")[0] || "user";
+            const username = created.user.name || created.user.email.split("@")[0] || "user";
             const wallet = created.user.walletAddress || created.user.custodialPublicKey;
             const dto: CommentDTO = {
                 id: created.id,

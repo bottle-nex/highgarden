@@ -1,18 +1,14 @@
 'use client';
-
 import { JSX, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import type { MarketDTO } from '@solmarket/types';
 import { Outcome } from '@solmarket/types';
 import { selectDepth, useOrderBookDepthStore } from '@/store/book/useOrderBookDepthStore';
-import { CroppedButton } from '../ui/cropped-button';
 import { cn } from '@/lib/utils';
 
 interface Props {
     market: MarketDTO;
-    selectedOutcome: Outcome;
-    onOutcomeChange: (o: Outcome) => void;
 }
 
 const QUICK_AMOUNTS = [1, 5, 10, 100] as const;
@@ -22,11 +18,8 @@ function format_cents(price: number | undefined): string {
     return `${(price * 100).toFixed(1)}¢`;
 }
 
-export default function EventTradePanel({
-    market,
-    selectedOutcome,
-    onOutcomeChange,
-}: Props): JSX.Element {
+export default function EventTradePanel({ market }: Props): JSX.Element {
+    const [selectedOutcome, setSelectedOutcome] = useState<Outcome>(Outcome.YES);
     const [tab, set_tab] = useState<'BUY' | 'SELL'>('BUY');
     const [amount, set_amount] = useState('');
 
@@ -83,8 +76,9 @@ export default function EventTradePanel({
                             key={t}
                             type="button"
                             onClick={() => set_tab(t)}
-                            className={`relative px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer ${tab === t ? 'text-white' : 'text-white/45 hover:text-white/75'
-                                }`}
+                            className={`relative px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer ${
+                                tab === t ? 'text-white' : 'text-white/45 hover:text-white/75'
+                            }`}
                         >
                             {tab === t && (
                                 <motion.span
@@ -105,10 +99,10 @@ export default function EventTradePanel({
             <div className="px-5 pt-4 pb-5 space-y-3.5">
                 <div ref={flash_ref} className="grid grid-cols-2 gap-2.5">
                     <button
-                        aria-label='yes'
+                        aria-label="yes"
                         type="button"
                         data-pressed={selectedOutcome === Outcome.YES ? 'true' : 'false'}
-                        onClick={() => onOutcomeChange(Outcome.YES)}
+                        onClick={() => setSelectedOutcome(Outcome.YES)}
                         className="green-btn flex items-center justify-between px-4 py-3 rounded-lg"
                     >
                         <span className="text-[12px] font-semibold tracking-[0.16em] uppercase">
@@ -119,10 +113,10 @@ export default function EventTradePanel({
                         </span>
                     </button>
                     <button
-                        aria-label='no'
+                        aria-label="no"
                         type="button"
                         data-pressed={selectedOutcome === Outcome.NO ? 'true' : 'false'}
-                        onClick={() => onOutcomeChange(Outcome.NO)}
+                        onClick={() => setSelectedOutcome(Outcome.NO)}
                         className="red-btn flex items-center justify-between px-4 py-3 rounded-lg"
                     >
                         <span className="text-[12px] font-semibold tracking-[0.16em] uppercase">
@@ -143,8 +137,9 @@ export default function EventTradePanel({
                     </div>
                     <div className="flex items-center gap-1">
                         <span
-                            className={`text-3xl font-bold leading-none transition-colors ${amount ? 'text-white' : 'text-white/40'
-                                }`}
+                            className={`text-3xl font-bold leading-none transition-colors ${
+                                amount ? 'text-white' : 'text-white/40'
+                            }`}
                         >
                             $
                         </span>
@@ -160,8 +155,9 @@ export default function EventTradePanel({
                                 className="absolute inset-0 w-full bg-transparent outline-none text-3xl font-bold tabular-nums text-transparent caret-transparent placeholder:text-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                             <div
-                                className={`absolute inset-0 flex items-center pointer-events-none text-3xl font-bold tabular-nums ${amount ? 'text-white' : 'text-white/20'
-                                    }`}
+                                className={`absolute inset-0 flex items-center pointer-events-none text-3xl font-bold tabular-nums ${
+                                    amount ? 'text-white' : 'text-white/20'
+                                }`}
                             >
                                 {(amount || '0').split('').map((char, idx) => (
                                     <span
@@ -211,8 +207,9 @@ export default function EventTradePanel({
                 <button
                     type="button"
                     onClick={handle_submit}
-                    className={cn("w-full py-3 bg-neutral-300 rounded-lg text-black active:translate-y-px text-[14px] font-bold cursor-pointer transition-all transform duration-200 active:scale-[0.99]",
-                        "shadow-[inset_0_-2.5px_0_rgba(255,255,255,1)]"
+                    className={cn(
+                        'w-full py-3 bg-neutral-300 rounded-lg text-black active:translate-y-px text-[14px] font-bold cursor-pointer transition-all transform duration-200 active:scale-[0.99]',
+                        'shadow-[inset_0_-2.5px_0_rgba(255,255,255,1)]',
                     )}
                 >
                     Deposit

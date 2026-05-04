@@ -24,9 +24,9 @@ function TrendingSection(): JSX.Element {
                     <LiveFeaturedMarket />
                 </div>
 
-                <aside className="grid grid-rows-2 gap-2 min-h-0 py-1">
+                <aside className="flex flex-col h-full justify-between min-h-0 py-1">
                     <BreakingNewsList limit={3} />
-                    <HotTopicsList topics={hotTopics.slice(0, 3)} />
+                    <HotTopicsList topics={hotTopics.slice(0, 4)} />
                 </aside>
             </div>
 

@@ -1,5 +1,5 @@
-import { JSX } from "react";
-import Image from "next/image";
+import { JSX } from 'react';
+import Image from 'next/image';
 
 export default function Applogo(): JSX.Element {
     return (
@@ -14,13 +14,10 @@ export default function Applogo(): JSX.Element {
                 />
             </div>
 
-
             <div className="h-8 w-full flex flex-col -space-y-0.5">
                 <span className="text-gray-300 text-[14px] tracking-wider">Highgarden</span>
-                <span className="text-[11px] text-gray-600 tracking-wide">
-                    Solana markets
-                </span>
+                <span className="text-[11px] text-gray-600 tracking-wide">Solana markets</span>
             </div>
         </div>
-    )
+    );
 }

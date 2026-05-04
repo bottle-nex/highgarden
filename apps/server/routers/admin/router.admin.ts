@@ -15,10 +15,7 @@ admin_router.get("/pending", ListPendingController.process);
 admin_router.get("/listings", ListListingsController.process);
 admin_router.get("/diagnostic", DiagnosticController.process);
 admin_router.post("/approve/:marketId", ApproveListingController.process);
-admin_router.post(
-    "/approve-and-list/:marketId",
-    ApproveAndListOnSolanaController.process,
-);
+admin_router.post("/approve-and-list/:marketId", ApproveAndListOnSolanaController.process);
 admin_router.post("/reject/:marketId", RejectListingController.process);
 admin_router.post("/lister/run", RunListerController.process);
 admin_router.post("/test-fund/:userId", requireAuth, TestFundController.process);

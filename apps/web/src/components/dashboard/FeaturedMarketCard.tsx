@@ -35,7 +35,7 @@ export default function FeaturedMarketCard({
             href={resolved_href}
             className="relative bg-dark-base shadow-xs shadow-black/5 rounded-lg overflow-hidden group transition-colors no-underline h-full flex flex-col"
         >
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-500/15  text-[10px] tracking-[0.22em] uppercase shrink-0">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-500/15  text-[10px] tracking-wide uppercase shrink-0">
                 <div className="flex items-center gap-3">
                     <span className="text-white/75">{market.category}</span>
                 </div>
@@ -118,16 +118,14 @@ export default function FeaturedMarketCard({
                 <div className="mt-3 flex items-center gap-2 shrink-0">
                     <Button
                         className={cn(
-                            'flex-1 h-9 rounded-sm bg-green-500/10 hover:bg-green-500/15 border border-green-500/25 text-[10px] tracking-[0.2em] uppercase text-green-400/70 font-semibold',
-                            "bg-[#13a876] text-white font-semibold text-[12px] py-5!"
+                            'green-btn flex-1 rounded-sm text-[12px] tracking-[0.2em] uppercase font-semibold py-5!',
                         )}
                     >
                         BUY YES · 47¢
                     </Button>
                     <Button
                         className={cn(
-                            'flex-1 h-9 rounded-sm bg-red-500/8 hover:bg-red-500/15 border border-red-500/20 text-[10px] tracking-[0.2em] uppercase text-red-400/70',
-                            "bg-[#b81f40] text-white font-semibold text-[12px] py-5"
+                            'red-btn flex-1 rounded-sm text-[12px] tracking-[0.2em] uppercase font-semibold py-5!',
                         )}
                     >
                         BUY NO · 53¢

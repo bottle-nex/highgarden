@@ -41,17 +41,12 @@ export default class QuoteController {
             const resolved = await QuoteController.resolve_market(market_id);
             if ("error" in resolved) return resolved.error(res);
 
-            const verdict = await QuoteController.exposure.can_quote(
-                market_id,
-                parsed.data.size,
-            );
+            const verdict = await QuoteController.exposure.can_quote(market_id, parsed.data.size);
             if (!verdict.ok) {
                 return ResponseWriter.error(
                     res,
                     verdict.reason,
-                    verdict.reason === "PAUSED"
-                        ? "market is paused"
-                        : "unhedged delta cap reached",
+                    verdict.reason === "PAUSED" ? "market is paused" : "unhedged delta cap reached",
                     undefined,
                     429,
                 );
@@ -72,9 +67,7 @@ export default class QuoteController {
 
     private static async resolve_market(
         market_id: string,
-    ): Promise<
-        { market: ResolvedMarket } | { error: (_res: Response) => void }
-    > {
+    ): Promise<{ market: ResolvedMarket } | { error: (_res: Response) => void }> {
         const row = await prisma.market.findUnique({
             where: { id: market_id },
             include: { polymarket: true, listing: true },

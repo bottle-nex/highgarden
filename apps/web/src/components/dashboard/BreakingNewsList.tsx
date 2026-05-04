@@ -54,7 +54,7 @@ export default function BreakingNewsList({ limit = 3 }: { limit?: number }): JSX
                         No news yet — approve some markets to populate the feed.
                     </li>
                 )}
-                {items?.map((item, i) => (
+                {items?.map((item) => (
                     <li key={item.id}>
                         <a
                             href={item.link}

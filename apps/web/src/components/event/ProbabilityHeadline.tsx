@@ -42,7 +42,10 @@ export default function ProbabilityHeadline({ marketId, delta24hPct }: Props): J
 
     return (
         <div className="flex items-baseline gap-2.5">
-            <span ref={flash_ref} className="text-2xl font-medium text-[#27A3FD]/90 tabular-nums leading-none">
+            <span
+                ref={flash_ref}
+                className="text-2xl font-medium text-[#27A3FD]/90 tabular-nums leading-none"
+            >
                 {display}
             </span>
             <span className="text-[9px] tracking-[0.25em] uppercase text-white/40">CHANCE</span>

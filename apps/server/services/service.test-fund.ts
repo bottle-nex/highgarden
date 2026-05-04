@@ -1,4 +1,11 @@
-import { Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
+import {
+    Connection,
+    Keypair,
+    PublicKey,
+    SystemProgram,
+    Transaction,
+    sendAndConfirmTransaction,
+} from "@solana/web3.js";
 import {
     createAssociatedTokenAccountIdempotentInstruction,
     createMintToInstruction,
@@ -31,8 +38,18 @@ export default class TestFundService {
         const admin = this.load_admin_keypair();
         const connection = new Connection(ENV.SERVER_SOLANA_RPC_URL, "confirmed");
 
-        const sol_sig = await this.maybe_send_sol(connection, admin, target_pubkey, input.solLamports);
-        const usdc_sig = await this.maybe_mint_usdc(connection, admin, target_pubkey, input.usdcAmount);
+        const sol_sig = await this.maybe_send_sol(
+            connection,
+            admin,
+            target_pubkey,
+            input.solLamports,
+        );
+        const usdc_sig = await this.maybe_mint_usdc(
+            connection,
+            admin,
+            target_pubkey,
+            input.usdcAmount,
+        );
 
         return {
             userPubkey: target_pubkey.toBase58(),
@@ -47,7 +64,9 @@ export default class TestFundService {
             select: { custodialPublicKey: true },
         });
         if (!row?.custodialPublicKey) {
-            throw new Error(`user ${user_id} has no custodial wallet — call /users/me/wallet first`);
+            throw new Error(
+                `user ${user_id} has no custodial wallet — call /users/me/wallet first`,
+            );
         }
         return new PublicKey(row.custodialPublicKey);
     }

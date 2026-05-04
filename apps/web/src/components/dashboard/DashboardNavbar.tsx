@@ -6,21 +6,25 @@ import { Button } from '../ui/button';
 import { CroppedButton } from '../ui/cropped-button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';
+import { useSearchPanelStore } from '@/store/ui/useSearchPanelStore';
 import Image from 'next/image';
 import { signOut } from 'next-auth/react';
 import { AnimatePresence } from 'motion/react';
 import OpacityBackground from '../ui/opacity-background';
 import UtilityCard from '../ui/utility-card';
 import DepositDialog from '../ui/deposit-dialog';
+import SearchPanel from './SearchPanel';
 
 export default function DashboardNavbar(): JSX.Element {
     const { session } = useUserSessionStore();
     const [logoutOpen, setLogoutOpen] = useState<boolean>(false);
     const openDepositDropdown = useDepositDialogStore((s) => s.open);
     const setDepositDropdown = useDepositDialogStore((s) => s.setOpen);
+    const searchOpen = useSearchPanelStore((s) => s.open);
+    const setSearchOpen = useSearchPanelStore((s) => s.setOpen);
 
     return (
-        <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm px-8">
+        <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm px-4">
             <div className="w-full h-16 flex items-center justify-between gap-8 px-8">
                 <div className="flex justify-center">
                     <SearchBar />
@@ -28,7 +32,7 @@ export default function DashboardNavbar(): JSX.Element {
 
                 <div className="flex items-center gap-2">
                     <CroppedButton
-                        size={"sm"}
+                        size={'sm'}
                         onClick={() => setDepositDropdown(!openDepositDropdown)}
                         className={cn(
                             'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
@@ -76,6 +80,9 @@ export default function DashboardNavbar(): JSX.Element {
             {openDepositDropdown && <DepositDialog onClose={() => setDepositDropdown(false)} />}
             <AnimatePresence>
                 {logoutOpen && <LogoutDialog onClose={() => setLogoutOpen(false)} />}
+            </AnimatePresence>
+            <AnimatePresence>
+                {searchOpen && <SearchPanel onClose={() => setSearchOpen(false)} />}
             </AnimatePresence>
         </header>
     );

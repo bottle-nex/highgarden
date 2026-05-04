@@ -20,41 +20,55 @@
 
 @layer components {
     .green-btn {
-        background-color: rgb(16 185 129 / 0.08);
-        color: rgb(52 211 153 / 0.85);
+        background-color: #127051;
+        color: #ffffff;
         cursor: pointer;
         transition:
             background-color 0.2s,
             color 0.2s;
     }
     .green-btn:hover {
+        background-color: #0e5e44;
+    }
+    .green-btn * {
+        color: inherit;
+    }
+    .green-btn[data-pressed='false'] {
+        background-color: rgb(16 185 129 / 0.08);
+        color: rgba(40, 205, 144, 0.85);
+    }
+    .green-btn[data-pressed='false']:hover {
         background-color: rgb(16 185 129 / 0.15);
     }
     .green-btn[data-pressed='true'] {
-        background-color: rgb(16 185 129 / 0.9);
-        color: rgb(255 255 255);
-    }
-    .green-btn[data-pressed='true'] * {
-        color: inherit;
+        background-color: #127051;
+        color: #ffffff;
     }
 
     .red-btn {
-        background-color: rgb(244 63 94 / 0.08);
-        color: rgb(251 113 133 / 0.85);
+        background-color: #B91F40;
+        color: #ffffff;
         cursor: pointer;
         transition:
             background-color 0.2s,
             color 0.2s;
     }
     .red-btn:hover {
+        background-color: #9e1a37;
+    }
+    .red-btn * {
+        color: inherit;
+    }
+    .red-btn[data-pressed='false'] {
+        background-color: rgb(244 63 94 / 0.08);
+        color: rgb(251 113 133 / 0.85);
+    }
+    .red-btn[data-pressed='false']:hover {
         background-color: rgb(244 63 94 / 0.15);
     }
     .red-btn[data-pressed='true'] {
-        background-color: rgb(225 29 72 / 0.8);
-        color: rgb(255 255 255);
-    }
-    .red-btn[data-pressed='true'] * {
-        color: inherit;
+        background-color: #B91F40;
+        color: #ffffff;
     }
 }
 

@@ -18,10 +18,10 @@ const VIEW_MODES: ReadonlyArray<{
     leftColor: string;
     rightColor: string;
 }> = [
-        { key: 'bids', label: 'Show bids only', leftColor: '#00c278', rightColor: '#5d606f' },
-        { key: 'asks', label: 'Show asks only', leftColor: '#5d606f', rightColor: '#fd4b4e' },
-        { key: 'center', label: 'Center on spread', leftColor: '#00c278', rightColor: '#fd4b4e' },
-    ];
+    { key: 'bids', label: 'Show bids only', leftColor: '#00c278', rightColor: '#5d606f' },
+    { key: 'asks', label: 'Show asks only', leftColor: '#5d606f', rightColor: '#fd4b4e' },
+    { key: 'center', label: 'Center on spread', leftColor: '#00c278', rightColor: '#fd4b4e' },
+];
 
 function BookViewIcon({
     leftColor,
@@ -31,12 +31,7 @@ function BookViewIcon({
     rightColor: string;
 }): JSX.Element {
     return (
-        <svg
-            className="h-5 w-5"
-            viewBox="0 0 25 25"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-        >
+        <svg className="h-5 w-5" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
             {[3, 7, 11, 15, 19].map((y) => (
                 <rect key={`l${y}`} x="3" y={y} width="8" height="2" fill={leftColor} />
             ))}
@@ -49,8 +44,6 @@ function BookViewIcon({
 
 interface Props {
     marketId: string;
-    selectedOutcome: Outcome;
-    onOutcomeChange: (o: Outcome) => void;
 }
 
 const VISIBLE_LEVELS = 10;
@@ -77,11 +70,8 @@ function format_total(usd: number): string {
     })}`;
 }
 
-export default function EventOrderBook({
-    marketId,
-    selectedOutcome,
-    onOutcomeChange,
-}: Props): JSX.Element {
+export default function EventOrderBook({ marketId }: Props): JSX.Element {
+    const [selectedOutcome, setSelectedOutcome] = useState<Outcome>(Outcome.YES);
     const book = useOrderBook(marketId, selectedOutcome);
     const { refetch, isRefetching } = book;
     const scroll_ref = useRef<HTMLDivElement | null>(null);
@@ -133,7 +123,9 @@ export default function EventOrderBook({
     return (
         <section className="rounded-lg overflow-hidden bg-dark-base">
             <header
-                className={cn("group flex items-center justify-between px-4 py-3 border-white/7 cursor-pointer select-none")}
+                className={cn(
+                    'group flex items-center justify-between px-4 py-3 border-white/7 cursor-pointer select-none',
+                )}
             >
                 <ToolTipComponent side="top" duration={100} content="Refresh order book">
                     <button
@@ -149,7 +141,12 @@ export default function EventOrderBook({
                 <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5">
                     <div className="flex items-center gap-0.5">
                         {VIEW_MODES.map((m) => (
-                            <ToolTipComponent key={m.key} side="top" duration={100} content={m.label}>
+                            <ToolTipComponent
+                                key={m.key}
+                                side="top"
+                                duration={100}
+                                content={m.label}
+                            >
                                 <button
                                     type="button"
                                     aria-label={m.label}
@@ -170,21 +167,42 @@ export default function EventOrderBook({
                             </ToolTipComponent>
                         ))}
                     </div>
-                    <div className="flex gap-1 bg-white/2.5 border border-white/8 rounded-md p-0.75">
-                        {[Outcome.YES, Outcome.NO].map((o) => (
-                            <button
-                                key={o}
-                                type="button"
-                                onClick={() => onOutcomeChange(o)}
-                                className={cn(
-                                    'px-2.5 py-1 rounded text-[9.5px] tracking-[0.24em] uppercase font-medium cursor-pointer transition-colors',
-                                    selectedOutcome === o
-                                        ? o === Outcome.YES ? 'bg-emerald-500/35 text-white' : 'bg-rose-500/35 text-white' : 'bg-transparent text-white/55 hover:text-white/80',
-                                )}
-                            >
-                                {o}
-                            </button>
-                        ))}
+                    <div className="relative flex gap-1 bg-white/2.5 border border-white/8 rounded-md p-0.75">
+                        {[Outcome.YES, Outcome.NO].map((o) => {
+                            const is_selected = selectedOutcome === o;
+                            const is_yes = o === Outcome.YES;
+                            return (
+                                <button
+                                    key={o}
+                                    type="button"
+                                    onClick={() => setSelectedOutcome(o)}
+                                    className={cn(
+                                        'relative px-2.5 py-1 rounded text-[9.5px] tracking-[0.24em] uppercase font-medium cursor-pointer transition-colors',
+                                        is_selected
+                                            ? 'text-white'
+                                            : 'text-white/55 hover:text-white/80',
+                                    )}
+                                >
+                                    {is_selected && (
+                                        <motion.span
+                                            layoutId="orderbook-outcome-pill"
+                                            className="absolute inset-0 rounded"
+                                            style={{
+                                                backgroundColor: is_yes
+                                                    ? 'rgba(16, 185, 129, 0.35)'
+                                                    : 'rgba(244, 63, 94, 0.35)',
+                                            }}
+                                            transition={{
+                                                type: 'spring',
+                                                stiffness: 400,
+                                                damping: 32,
+                                            }}
+                                        />
+                                    )}
+                                    <span className="relative z-10">{o}</span>
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
             </header>
@@ -234,7 +252,10 @@ export default function EventOrderBook({
                             )}
 
                         {book.isHydrated && (asks.length > 0 || bids.length > 0) && (
-                            <div ref={scroll_ref} className="h-105 overflow-y-auto custom-scrollbar">
+                            <div
+                                ref={scroll_ref}
+                                className="h-105 overflow-y-auto custom-scrollbar"
+                            >
                                 {view_mode !== 'bids' && (
                                     <div className="pt-3.5 space-y-0.5">
                                         {asks.length === 0 ? (
@@ -245,7 +266,9 @@ export default function EventOrderBook({
                                             asks
                                                 .map((lvl, i) => {
                                                     const cum = book.cumulativeAsks[i] ?? lvl.size;
-                                                    const cum_usd = book.cumulativeAsksUsd[i] ?? lvl.price * lvl.size;
+                                                    const cum_usd =
+                                                        book.cumulativeAsksUsd[i] ??
+                                                        lvl.price * lvl.size;
                                                     const w = (cum / max_total) * 100;
                                                     return (
                                                         <div
@@ -302,7 +325,9 @@ export default function EventOrderBook({
                                         ) : (
                                             bids.map((lvl, i) => {
                                                 const cum = book.cumulativeBids[i] ?? lvl.size;
-                                                const cum_usd = book.cumulativeBidsUsd[i] ?? lvl.price * lvl.size;
+                                                const cum_usd =
+                                                    book.cumulativeBidsUsd[i] ??
+                                                    lvl.price * lvl.size;
                                                 const w = (cum / max_total) * 100;
                                                 return (
                                                     <div

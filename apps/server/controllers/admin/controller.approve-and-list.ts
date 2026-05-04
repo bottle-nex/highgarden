@@ -59,10 +59,7 @@ export default class ApproveAndListOnSolanaController {
 
     private static async prepare(
         marketId: string,
-    ): Promise<
-        | { data: PreparedListing }
-        | { error: (_res: Response) => void }
-    > {
+    ): Promise<{ data: PreparedListing } | { error: (_res: Response) => void }> {
         const listing = await prisma.listing.findUnique({
             where: { marketId },
             include: { market: { include: { polymarket: true } } },
