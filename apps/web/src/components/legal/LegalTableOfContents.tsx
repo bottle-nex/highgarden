@@ -1,6 +1,6 @@
 'use client';
 
-import { JSX, useEffect, useState } from 'react';
+import { JSX, MouseEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { cn } from '@/lib/utils';
@@ -41,6 +41,17 @@ export default function LegalTableOfContents({ items }: Props): JSX.Element {
         return () => observer.disconnect();
     }, [items]);
 
+    const handle_click = (event: MouseEvent<HTMLAnchorElement>, id: string) => {
+        const target = document.getElementById(id);
+        if (!target) return;
+        event.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        set_active_id(id);
+        if (typeof window !== 'undefined') {
+            window.history.replaceState(null, '', `#${id}`);
+        }
+    };
+
     return (
         <aside className="lg:sticky lg:top-28 lg:self-start">
             <p className="mb-5 text-[10px] font-semibold uppercase tracking-[0.25em] text-white/40">
@@ -54,6 +65,7 @@ export default function LegalTableOfContents({ items }: Props): JSX.Element {
                         <Link
                             key={id}
                             href={`#${id}`}
+                            onClick={(event) => handle_click(event, id)}
                             className={cn(
                                 'group flex items-center gap-3 py-2 text-[13px] tracking-wide transition-colors duration-300',
                                 is_active

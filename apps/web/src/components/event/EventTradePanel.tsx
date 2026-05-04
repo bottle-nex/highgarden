@@ -8,6 +8,7 @@ import { Outcome } from '@solmarket/types';
 import { selectDepth, useOrderBookDepthStore } from '@/store/book/useOrderBookDepthStore';
 import { cn } from '@/lib/utils';
 import trading_api, { TradingError } from '@/lib/api/trading';
+import Link from 'next/link';
 
 interface Props {
     market: MarketDTO;
@@ -138,9 +139,8 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                             key={t}
                             type="button"
                             onClick={() => set_tab(t)}
-                            className={`relative px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer ${
-                                tab === t ? 'text-white' : 'text-white/45 hover:text-white/75'
-                            }`}
+                            className={`relative px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer ${tab === t ? 'text-white' : 'text-white/45 hover:text-white/75'
+                                }`}
                         >
                             {tab === t && (
                                 <motion.span
@@ -208,9 +208,8 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                     </div>
                     <div className="flex items-center gap-1">
                         <span
-                            className={`text-3xl font-bold leading-none transition-colors ${
-                                amount ? 'text-white' : 'text-white/40'
-                            }`}
+                            className={`text-3xl font-bold leading-none transition-colors ${amount ? 'text-white' : 'text-white/40'
+                                }`}
                         >
                             {input_mode === 'USDC' ? '$' : '#'}
                         </span>
@@ -226,9 +225,8 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                                 className="absolute inset-0 w-full bg-transparent outline-none text-3xl font-bold tabular-nums text-transparent caret-transparent placeholder:text-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             />
                             <div
-                                className={`absolute inset-0 flex items-center pointer-events-none text-3xl font-bold tabular-nums ${
-                                    amount ? 'text-white' : 'text-white/20'
-                                }`}
+                                className={`absolute inset-0 flex items-center pointer-events-none text-3xl font-bold tabular-nums ${amount ? 'text-white' : 'text-white/20'
+                                    }`}
                             >
                                 {(amount || '0').split('').map((char, idx) => (
                                     <span
@@ -296,7 +294,9 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
 
                 <p className="text-[10px] text-white/35 text-center">
                     By trading, you agree to the{' '}
-                    <span className="underline underline-offset-2">Terms of Use</span>.
+                    <Link href={"/legal/terms"}>
+                        <span className="underline underline-offset-2 text-blue-500 cursor-pointer">Terms of Use</span>.
+                    </Link>
                 </p>
             </div>
         </motion.aside>

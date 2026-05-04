@@ -1,11 +1,9 @@
 'use client';
-import { JSX, ReactNode } from 'react';
+import { JSX } from 'react';
 import { MdArrowOutward } from 'react-icons/md';
 import { cn } from '@/lib/utils';
-import { EdgeArrows } from './LandingFeatureCardsSection';
-
-const DOT_GRID =
-    'bg-[radial-gradient(rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:9px_9px]';
+import { doto } from './LandingTextContent';
+import { APP_NAME } from '@/utils/constants';
 
 const NAV_GROUPS = [
     {
@@ -37,187 +35,109 @@ const NAV_GROUPS = [
     },
 ] as const;
 
-const SOCIAL_TILES = [
-    { name: 'TWITTER', handle: '@solmarket', href: '#' },
-    { name: 'GITHUB', handle: '/solmarket', href: '#' },
-    { name: 'DISCORD', handle: 'solmarket.gg', href: '#' },
-    { name: 'MIRROR', handle: 'solmarket.xyz', href: '#' },
+const SOCIALS = [
+    { name: 'Twitter', href: '#' },
+    { name: 'GitHub', href: '#' },
+    { name: 'Discord', href: '#' },
+    { name: 'Mirror', href: '#' },
 ] as const;
 
 export default function LandingFooter(): JSX.Element {
     return (
-        <footer className="relative w-full bg-neutral-950 pt-32 pb-10 px-6 md:px-10 mt-20">
+        <footer className="relative w-full bg-neutral-950 mt-20 pt-24 pb-10 px-6 md:px-10">
             <div className="max-w-340 mx-auto w-full">
-                <div className="mt-10 grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-12">
-                    <Block
-                        className={cn(
-                            'md:col-span-7 md:row-span-2 min-h-80 flex flex-col justify-between p-8',
-                            DOT_GRID,
-                        )}
-                        index="00"
-                        label="EST. 2026"
-                    >
-                        <div className="mt-6  text-2xl md:text-8xl tracking-wide text-alpha font-semibold">
-                            SOLMARKET
-                        </div>
-                        <div className="mt-auto">
-                            <h2 className="text-4xl md:text-5xl leading-[1.05] max-w-xl font-medium tracking-tight text-white">
-                                Engineered to make future outcomes{' '}
-                                <span className="text-white/35">transparent, tradable,</span> and
-                                verifiable.
-                            </h2>
-                            <button
-                                type="button"
-                                className="mt-10 inline-flex items-center gap-x-4 group/cta cursor-pointer"
-                            >
-                                <span className=" text-xs tracking-[0.2em] uppercase text-white group-hover/cta:text-alpha transition-colors duration-300">
-                                    START PREDICTING
-                                </span>
-                                <span className="w-8 h-px bg-white/30 group-hover/cta:bg-alpha group-hover/cta:w-14 transition-all duration-300" />
-                                <span className=" text-white/40 group-hover/cta:text-alpha transition-colors duration-300">
-                                    &rarr;
-                                </span>
-                            </button>
-                        </div>
-                    </Block>
-
-                    <Block className="md:col-span-5 min-h-64 p-10" index="01" label="NAVIGATION">
-                        <div className="mt-8 grid grid-cols-3 gap-x-6">
-                            {NAV_GROUPS.map((group) => (
-                                <NavGroup key={group.label} {...group} />
-                            ))}
-                        </div>
-                    </Block>
-
-                    <Block
-                        className="md:col-span-5 min-h-56 p-10 flex flex-col"
-                        index="02"
-                        label="CHANNELS"
-                    >
-                        <div className="mt-8 grid grid-cols-2 gap-px bg-white/10 border border-white/10">
-                            {SOCIAL_TILES.map((s) => (
-                                <SocialTile key={s.name} {...s} />
-                            ))}
-                        </div>
-                    </Block>
+                <BrandRow />
+                <div className="my-16 h-px w-full bg-white/10" />
+                <NavGrid />
+                <div className="mt-16 pt-6 border-t border-white/10">
+                    <BottomBar />
                 </div>
-
-                <BottomBar />
             </div>
         </footer>
     );
 }
 
-interface BlockProps {
-    className?: string;
-    children: ReactNode;
-    index: string;
-    label: string;
-}
-
-function Block({ className, children, index, label }: BlockProps): JSX.Element {
+function BrandRow(): JSX.Element {
     return (
-        <div
-            className={cn(
-                'relative bg-neutral-950 border border-white/10 group/block',
-                'transition-colors duration-500 hover:border-white/20',
-                className,
-            )}
-        >
-            <div className="flex items-center justify-between  text-[10px] tracking-[0.2em] uppercase">
-                <span className="text-white/40 group-hover/block:text-white/60 transition-colors duration-500">
-                    INDEX / {index}
-                </span>
-                <span className="text-white/40 group-hover/block:text-alpha/80 transition-colors duration-500">
-                    {label}
-                </span>
-            </div>
-            {children}
-            <EdgeArrows borderColor="border-white/25 group-hover/block:border-white/50 transition-colors duration-500" />
+        <div className="flex flex-col gap-y-6">
+            <h2
+                className={cn(
+                    'font-black tracking-tighter leading-[0.9] text-light-base',
+                    'text-6xl sm:text-7xl md:text-8xl',
+                    doto.className,
+                )}
+            >
+                {APP_NAME}
+            </h2>
+            <p className="text-base md:text-lg text-light-base/65 leading-relaxed max-w-xl">
+                Engineered to make future outcomes transparent, tradable, and verifiable.
+            </p>
+            <a
+                href="#"
+                className="group/cta mt-2 inline-flex items-center gap-x-2 font-mono text-[11px] uppercase tracking-[0.25em] text-light-base hover:text-alpha transition-colors duration-300 w-fit"
+            >
+                <span>Start predicting</span>
+                <MdArrowOutward className="size-3.5 transition-transform duration-300 group-hover/cta:translate-x-0.5 group-hover/cta:-translate-y-0.5" />
+            </a>
         </div>
     );
 }
 
-interface NavGroupProps {
+function NavGrid(): JSX.Element {
+    return (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-y-10 md:gap-x-10">
+            {NAV_GROUPS.map((g) => (
+                <LinkColumn key={g.label} label={g.label} links={g.links} />
+            ))}
+            <LinkColumn label="CONNECT" links={SOCIALS} />
+        </div>
+    );
+}
+
+interface LinkColumnProps {
     label: string;
     links: readonly { name: string; href: string }[];
 }
 
-function NavGroup({ label, links }: NavGroupProps): JSX.Element {
+function LinkColumn({ label, links }: LinkColumnProps): JSX.Element {
     return (
-        <div className="flex flex-col gap-y-4">
-            <div className="flex items-center gap-x-2">
-                <span className="w-3 h-px bg-white/25" />
-                <span className=" text-[10px] tracking-[0.2em] uppercase text-white/40">
-                    {label}
-                </span>
-            </div>
-            <div className="flex flex-col gap-y-2">
-                {links.map((l) => (
-                    <a
-                        key={l.name}
-                        href={l.href}
-                        className="text-[13px] text-light-base/75 hover:text-white transition-colors duration-200 flex items-center gap-x-1 group/link w-fit"
-                    >
-                        <span>{l.name}</span>
-                        <MdArrowOutward className="opacity-0 -translate-x-1 group-hover/link:opacity-100 group-hover/link:translate-x-0 transition-all duration-200 text-white/40" />
-                    </a>
-                ))}
-            </div>
+        <div className="flex flex-col gap-y-3">
+            <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/40 mb-2">
+                {label}
+            </span>
+            {links.map((l) => (
+                <a
+                    key={l.name}
+                    href={l.href}
+                    className="text-[15px] text-light-base/75 hover:text-light-base transition-colors duration-200 w-fit"
+                >
+                    {l.name}
+                </a>
+            ))}
         </div>
-    );
-}
-
-function SocialTile({
-    name,
-    handle,
-    href,
-}: {
-    name: string;
-    handle: string;
-    href: string;
-}): JSX.Element {
-    return (
-        <a
-            href={href}
-            className="relative bg-neutral-950 hover:bg-dark-alpha p-5 flex flex-col justify-between gap-y-6 min-h-28 transition-colors duration-300 group/tile overflow-hidden"
-        >
-            <div className="flex items-start justify-between">
-                <span className=" text-[10px] tracking-[0.2em] uppercase text-white/40 group-hover/tile:text-alpha transition-colors duration-300">
-                    {name}
-                </span>
-                <MdArrowOutward className="size-3.5 text-white/30 group-hover/tile:text-white group-hover/tile:translate-x-0.5 group-hover/tile:-translate-y-0.5 transition-all duration-300" />
-            </div>
-            <div className=" text-[11px] tracking-wider text-white/80">{handle}</div>
-        </a>
     );
 }
 
 function BottomBar(): JSX.Element {
     return (
-        <div className="mt-12 pt-6 border-t border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-y-4  text-[10px] tracking-[0.2em] uppercase text-white/40">
-            <div className="flex items-center gap-x-3">
-                <span className="text-white/60">© SOLMARKET 2026</span>
-                <span className="w-6 h-px bg-white/15" />
-                <span>ALL RIGHTS RESERVED</span>
-            </div>
-            <div className="flex items-center gap-x-5">
-                <a href="#" className="hover:text-white transition-colors duration-200">
-                    PRIVACY
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-3 font-mono text-[10px] uppercase tracking-[0.25em] text-white/40">
+            <span>
+                © {APP_NAME} 2026 <span className="mx-2 text-white/20">·</span> All rights
+                reserved
+            </span>
+            <div className="flex items-center gap-x-6">
+                <a href="#" className="hover:text-light-base transition-colors duration-200">
+                    Privacy
                 </a>
-                <span className="w-3 h-px bg-white/15" />
                 <a
                     href="/legal/terms"
-                    className="hover:text-white transition-colors duration-200"
+                    className="hover:text-light-base transition-colors duration-200"
                 >
-                    TERMS
+                    Terms
                 </a>
-                <span className="w-3 h-px bg-white/15" />
-                <a href="#" className="hover:text-white transition-colors duration-200">
-                    DISCLOSURES
+                <a href="#" className="hover:text-light-base transition-colors duration-200">
+                    Disclosures
                 </a>
-                <span className="hidden md:inline w-6 h-px bg-white/15" />
-                <span className="hidden md:inline text-white/60">EN · USD</span>
             </div>
         </div>
     );

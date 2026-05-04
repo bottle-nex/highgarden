@@ -1,6 +1,8 @@
 // import LandingBentoSection from '@/components/hero/LandingBentoSection';
 import LandingCtaSection from '@/components/hero/LandingCtaSection';
 import LandingFeatureCardsSection from '@/components/hero/LandingFeatureCardsSection';
+import LandingFooter from '@/components/hero/LandingFooter';
+import LandingMagicLanes from '@/components/hero/LandingMagicLanes';
 import LandingTextContent from '@/components/hero/LandingTextContent';
 // import LandingFeatureCardsSection from '@/components/hero/LandingFeatureCardsSection';
 // import LandingFooter from '@/components/hero/LandingFooter';
@@ -14,7 +16,7 @@ export default function Home() {
             <LandingCtaSection />
             <LandingTextContent />
             <LandingFeatureCardsSection />
-
+            <LandingMagicLanes />
 
 
 
@@ -22,8 +24,8 @@ export default function Home() {
 
 
             {/* <LandingInteractiveSection />
-            <LandingBentoSection />
-            <LandingFooter /> */}
+            <LandingBentoSection /> */}
+            <LandingFooter />
         </div>
     );
 }

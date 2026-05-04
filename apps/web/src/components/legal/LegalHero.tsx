@@ -2,6 +2,8 @@
 
 import { JSX } from 'react';
 import { motion } from 'motion/react';
+import { cn } from '@/lib/utils';
+import { doto } from '../hero/LandingTextContent';
 
 type Props = {
     eyebrow: string;
@@ -50,8 +52,12 @@ export default function LegalHero({
             </motion.div>
 
             <motion.h1
-                className="mt-6 text-4xl font-medium leading-[1.05] tracking-tight text-white md:text-6xl lg:text-7xl"
-                variants={item}
+                initial={{ opacity: 0, y: 60 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={cn(
+                    "mt-6 max-w-5xl text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-black leading-[0.95] text-white",
+                    doto.className
+                )}
             >
                 {title}
             </motion.h1>

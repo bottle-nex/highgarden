@@ -4,6 +4,8 @@ import { JSX, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { IoIosArrowRoundForward } from 'react-icons/io';
+import { doto } from './LandingTextContent';
+import { RandomRevealText } from '../ui/random-reveal-text';
 
 type CardId = 'marketing' | 'sanity' | 'pricing';
 
@@ -46,12 +48,12 @@ const CARDS: CardConfig[] = [
             'HOW FAST DO WINNINGS SETTLE TO MY WALLET?',
             'WHAT HAPPENS IF A MARKET IS DISPUTED?',
         ],
-        activeBg: 'bg-[#ff4000]',
-        activeInk: 'text-white',
-        accentText: 'text-[#ff4000]',
-        arrowBg: 'bg-[#ff4000]',
-        arrowInk: 'text-white',
-        questionHover: 'hover:bg-[#ff4000] hover:text-white',
+        activeBg: 'bg-neutral-200',
+        activeInk: 'text-neutral-900',
+        accentText: 'text-neutral-200',
+        arrowBg: 'bg-neutral-200',
+        arrowInk: 'text-neutral-900',
+        questionHover: 'hover:bg-neutral-200 hover:text-neutral-900',
     },
     {
         id: 'sanity',
@@ -62,12 +64,12 @@ const CARDS: CardConfig[] = [
             'WHAT HAPPENS WHEN A MARKET RESOLVES?',
             'HOW IS MY USDC CUSTODIED ON SOLANA?',
         ],
-        activeBg: 'bg-[#ff4000]',
-        activeInk: 'text-black',
-        accentText: 'text-[#ff4000]',
-        arrowBg: 'bg-[#ff4000]',
-        arrowInk: 'text-black',
-        questionHover: 'hover:bg-[#ff4000] hover:text-black',
+        activeBg: 'bg-[#114cff]',
+        activeInk: 'text-white',
+        accentText: 'text-[#114cff]',
+        arrowBg: 'bg-[#114cff]',
+        arrowInk: 'text-white',
+        questionHover: 'hover:bg-[#114cff] hover:text-white',
     },
 ];
 
@@ -78,41 +80,48 @@ export default function LandingFeatureCardsSection(): JSX.Element {
     const [activeId, setActiveId] = useState<CardId>('pricing');
 
     return (
-        <section className="w-full">
-            <section className="max-w-340 mx-auto w-full grid grid-cols-2">
-                <div className="col-span-1">
-                    <h1 className="text-5xl">
-                        One prediction market. Every edge Solana gives you.
-                    </h1>
+        <section className="relative z-30 w-full bg-neutral-950 py-32">
+            <div className="max-w-7xl mx-auto w-full px-6">
+                <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-[0.25em] text-neutral-500">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#ff4000]" />
+                    <span>{'// Why SolMarket'}</span>
                 </div>
-                <div className="col-span-1">
-                    <p className="text-2xl">
-                        SolMarket fuses Polymarket-grade liquidity with sub-second Solana execution,
-                        so you can trade real-world outcomes without bridging, waiting, or paying
-                        Polygon gas.
-                    </p>
+                <h1
+                    className={cn(
+                        'mt-6 w-full text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-white leading-[0.95]',
+                        doto.className,
+                    )}
+                >
+                    One prediction market. Every edge Solana gives you.
+                </h1>
+                <p className="mt-8 max-w-3xl text-lg md:text-xl text-neutral-400 leading-snug">
+                    SolMarket fuses Polymarket-grade liquidity with sub-second Solana execution,
+                    so you can trade real-world outcomes without bridging, waiting, or paying
+                    Polygon gas.
+                </p>
+            </div>
+            <div className="max-w-7xl mx-auto w-full px-6 mt-16">
+                <div className="grid w-full grid-cols-1 gap-0 md:grid-cols-3">
+                    {CARDS.map((card) => {
+                        const isActive = activeId === card.id;
+                        const stateClasses = isActive
+                            ? `${card.activeBg} ${card.activeInk}`
+                            : `${INACTIVE_BG} text-neutral-500`;
+                        return (
+                            <div
+                                key={card.id}
+                                onClick={() => setActiveId(card.id)}
+                                className={`group relative aspect-square overflow-hidden text-left  uppercase tracking-wider transition-colors duration-300 ease-in-out ${stateClasses}`}
+                            >
+                                {isActive ? (
+                                    <ActiveCard card={card} />
+                                ) : (
+                                    <InactiveCard label={card.label} />
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
-            </section>
-            <div className="grid w-full grid-cols-1 gap-0 md:grid-cols-3 mt-20">
-                {CARDS.map((card) => {
-                    const isActive = activeId === card.id;
-                    const stateClasses = isActive
-                        ? `${card.activeBg} ${card.activeInk}`
-                        : `${INACTIVE_BG} text-neutral-500`;
-                    return (
-                        <div
-                            key={card.id}
-                            onClick={() => setActiveId(card.id)}
-                            className={`group relative aspect-square overflow-hidden text-left  uppercase tracking-wider transition-colors duration-300 ease-in-out ${stateClasses}`}
-                        >
-                            {isActive ? (
-                                <ActiveCard card={card} />
-                            ) : (
-                                <InactiveCard label={card.label} />
-                            )}
-                        </div>
-                    );
-                })}
             </div>
         </section>
     );
@@ -124,7 +133,7 @@ function InactiveCard({ label }: { label: string }): JSX.Element {
         <div
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className="flex h-full w-full flex-col p-20"
+            className="flex h-full w-full flex-col p-8"
         >
             <div className="h-2.25" aria-hidden />
             <div className="relative mt-2 flex flex-1 items-center justify-center bg-neutral-950 p-3">
@@ -141,7 +150,7 @@ function InactiveCard({ label }: { label: string }): JSX.Element {
 
 function ActiveCard({ card }: { card: CardConfig }): JSX.Element {
     return (
-        <div className="flex h-full w-full flex-col p-20 relative">
+        <div className="flex h-full w-full flex-col p-8 relative">
             <div className="flex items-center justify-between text-[10px]">
                 <span>AGENT CONTEXT</span>
                 <span className="flex items-center gap-1">
