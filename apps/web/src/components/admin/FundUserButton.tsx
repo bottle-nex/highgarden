@@ -166,8 +166,71 @@ function announce_success(result: FundUserResult): void {
     if (result.usdcTxSignature) parts.push('USDC minted');
     const summary = parts.length > 0 ? parts.join(' + ') : 'no transfers';
     toast.success(`Funded ${result.email}: ${summary}`, {
-        description: short_pubkey(result.userPubkey),
+        duration: 15000,
+        description: <FundSuccessDetails result={result} />,
     });
+}
+
+function FundSuccessDetails({ result }: { result: FundUserResult }) {
+    return (
+        <div className="space-y-2 mt-1">
+            <div className="text-[11px] text-white/60">
+                <span className="text-white/40">Wallet</span>{' '}
+                <span className="font-mono">{short_pubkey(result.userPubkey)}</span>
+                <button
+                    type="button"
+                    onClick={() => copy_to_clipboard(result.userPubkey, 'Wallet copied')}
+                    className="ml-2 text-[10px] tracking-[0.16em] uppercase text-white/55 hover:text-white"
+                >
+                    Copy
+                </button>
+            </div>
+            {result.solTxSignature && (
+                <TxSignatureRow label="SOL tx" signature={result.solTxSignature} />
+            )}
+            {result.usdcTxSignature && (
+                <TxSignatureRow label="USDC tx" signature={result.usdcTxSignature} />
+            )}
+        </div>
+    );
+}
+
+function TxSignatureRow({ label, signature }: { label: string; signature: string }) {
+    const explorer = `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
+    return (
+        <div className="flex items-center justify-between gap-2 text-[11px] text-white/60">
+            <span className="shrink-0">
+                <span className="text-white/40">{label}</span>{' '}
+                <span className="font-mono tabular-nums">
+                    {signature.slice(0, 8)}…{signature.slice(-6)}
+                </span>
+            </span>
+            <span className="flex items-center gap-1.5 shrink-0">
+                <button
+                    type="button"
+                    onClick={() => copy_to_clipboard(signature, `${label} copied`)}
+                    className="text-[10px] tracking-[0.16em] uppercase px-1.5 py-0.5 rounded bg-white/8 hover:bg-white/14 text-white/70 hover:text-white transition-colors"
+                >
+                    Copy
+                </button>
+                <a
+                    href={explorer}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] tracking-[0.16em] uppercase px-1.5 py-0.5 rounded bg-white/8 hover:bg-white/14 text-white/70 hover:text-white transition-colors"
+                >
+                    Explorer ↗
+                </a>
+            </span>
+        </div>
+    );
+}
+
+function copy_to_clipboard(text: string, success_message: string): void {
+    navigator.clipboard
+        .writeText(text)
+        .then(() => toast.success(success_message))
+        .catch(() => toast.error('Could not copy. Select the text manually.'));
 }
 
 function announce_error(err: unknown): void {

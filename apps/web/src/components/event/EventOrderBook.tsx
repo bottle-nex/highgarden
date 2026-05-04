@@ -119,6 +119,10 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
     const max_bid_total = book.cumulativeBids[bids.length - 1] ?? 0;
     const max_ask_total = book.cumulativeAsks[asks.length - 1] ?? 0;
     const max_total = Math.max(max_bid_total, max_ask_total, 1);
+    let max_level_size = 0;
+    for (const b of bids) if (b.size > max_level_size) max_level_size = b.size;
+    for (const a of asks) if (a.size > max_level_size) max_level_size = a.size;
+    if (max_level_size === 0) max_level_size = 1;
 
     return (
         <section className="rounded-lg overflow-hidden bg-dark-base">
@@ -269,16 +273,23 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                                                     const cum_usd =
                                                         book.cumulativeAsksUsd[i] ??
                                                         lvl.price * lvl.size;
-                                                    const w = (cum / max_total) * 100;
+                                                    const cum_w = (cum / max_total) * 100;
+                                                    const size_w = (lvl.size / max_level_size) * 100;
                                                     return (
                                                         <div
                                                             key={`ask-${lvl.price}`}
                                                             className="relative grid grid-cols-3 gap-x-8 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                                         >
                                                             <motion.div
-                                                                className="absolute inset-y-0 right-0 bg-rose-500/35 rounded-none pointer-events-none"
+                                                                className="absolute inset-y-0 right-0 bg-rose-500/25 rounded-none pointer-events-none"
                                                                 initial={false}
-                                                                animate={{ width: `${w}%` }}
+                                                                animate={{ width: `${cum_w}%` }}
+                                                                transition={BAR_TRANSITION}
+                                                            />
+                                                            <motion.div
+                                                                className="absolute inset-y-0 right-0 bg-rose-500/25 rounded-none pointer-events-none"
+                                                                initial={false}
+                                                                animate={{ width: `${size_w}%` }}
                                                                 transition={BAR_TRANSITION}
                                                             />
                                                             <span className="relative text-right font-medium text-rose-500">
@@ -287,7 +298,7 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                                                             <span className="relative text-right text-white font-light">
                                                                 {format_size(lvl.size)}
                                                             </span>
-                                                            <span className="relative text-right text-white/40 font-light">
+                                                            <span className="relative text-right text-white/60 font-light">
                                                                 {format_total(cum_usd)}
                                                             </span>
                                                         </div>
@@ -328,16 +339,23 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                                                 const cum_usd =
                                                     book.cumulativeBidsUsd[i] ??
                                                     lvl.price * lvl.size;
-                                                const w = (cum / max_total) * 100;
+                                                const cum_w = (cum / max_total) * 100;
+                                                const size_w = (lvl.size / max_level_size) * 100;
                                                 return (
                                                     <div
                                                         key={`bid-${lvl.price}`}
                                                         className="relative grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                                     >
                                                         <motion.div
-                                                            className="absolute inset-y-0 right-0 bg-emerald-500/35 rounded-none pointer-events-none"
+                                                            className="absolute inset-y-0 right-0 bg-emerald-500/25 rounded-none pointer-events-none"
                                                             initial={false}
-                                                            animate={{ width: `${w}%` }}
+                                                            animate={{ width: `${cum_w}%` }}
+                                                            transition={BAR_TRANSITION}
+                                                        />
+                                                        <motion.div
+                                                            className="absolute inset-y-0 right-0 bg-emerald-500/25 rounded-none pointer-events-none"
+                                                            initial={false}
+                                                            animate={{ width: `${size_w}%` }}
                                                             transition={BAR_TRANSITION}
                                                         />
                                                         <span className="relative text-right font-medium text-emerald-500">
@@ -346,7 +364,7 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                                                         <span className="relative text-right text-white font-light">
                                                             {format_size(lvl.size)}
                                                         </span>
-                                                        <span className="relative text-right text-white/40 font-light">
+                                                        <span className="relative text-right text-white/60 font-light">
                                                             {format_total(cum_usd)}
                                                         </span>
                                                     </div>
