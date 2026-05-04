@@ -56,6 +56,23 @@ export async function rejectListing(marketId: string, reason?: string | null): P
     await apiClient.post(`/admin/reject/${marketId}`, reason ? { reason } : {});
 }
 
+export interface FundUserResult {
+    email: string;
+    userId: string;
+    userPubkey: string;
+    solTxSignature: string | null;
+    usdcTxSignature: string | null;
+}
+
+export async function fundUserByEmail(args: {
+    email: string;
+    solLamports?: number;
+    usdcAmount?: number;
+}): Promise<FundUserResult> {
+    const { data } = await apiClient.post('/admin/fund-by-email', args);
+    return data?.data as FundUserResult;
+}
+
 export async function runAutoLister(): Promise<AutoListerResult> {
     const { data } = await apiClient.post('/admin/lister/run');
     return (

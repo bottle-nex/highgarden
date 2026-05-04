@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { fetchAdminListings, type AdminListingApi } from '@/lib/api/admin';
 import AdminListings, { type AdminListingRow } from './AdminListings';
 import RunListerButton from './RunListerButton';
+import FundUserButton from './FundUserButton';
 
 function toRow(l: AdminListingApi): AdminListingRow {
     return {
@@ -59,7 +60,10 @@ export default function AdminPanel() {
                         book.
                     </p>
                 </div>
-                <RunListerButton onComplete={refresh} />
+                <div className="flex items-center gap-2">
+                    <RunListerButton onComplete={refresh} />
+                    <FundUserButton />
+                </div>
             </div>
 
             {loading ? (
