@@ -126,7 +126,23 @@ export class AutoLister {
 
         const { yes_token_id, no_token_id } = GammaClient.pick_yes_no_token_ids(market);
 
-        // Always keep PolyMarket metadata (imageUrl, slug, eventId, etc.) up to date.
+        // Always keep PolyMarket metadata (imageUrl, slug, eventId, tags, ...)
+        // up to date. Don't blow away tags if upstream returns an empty list
+        // for a row that previously had them — empty is much more often "the
+        // /markets endpoint just didn't include the field" than "this market
+        // truly has no tags".
+        const update_data: Record<string, unknown> = {
+            slug: market.slug || null,
+            eventId: market.event_id,
+            eventSlug: market.event_slug,
+            yesTokenId: yes_token_id,
+            noTokenId: no_token_id,
+            tickSize: market.minimum_tick_size,
+            negRisk: market.neg_risk,
+            imageUrl: market.image_url,
+        };
+        if (market.tags.length > 0) update_data.tags = market.tags;
+
         await this.db.polyMarket.upsert({
             where: { id: market.id },
             create: {
@@ -139,17 +155,9 @@ export class AutoLister {
                 tickSize: market.minimum_tick_size,
                 negRisk: market.neg_risk,
                 imageUrl: market.image_url,
+                tags: market.tags,
             },
-            update: {
-                slug: market.slug || null,
-                eventId: market.event_id,
-                eventSlug: market.event_slug,
-                yesTokenId: yes_token_id,
-                noTokenId: no_token_id,
-                tickSize: market.minimum_tick_size,
-                negRisk: market.neg_risk,
-                imageUrl: market.image_url,
-            },
+            update: update_data,
         });
 
         const existing = await this.db.market.findFirst({

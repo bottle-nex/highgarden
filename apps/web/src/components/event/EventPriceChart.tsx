@@ -1,5 +1,4 @@
 'use client';
-
 import { JSX, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
@@ -16,7 +15,6 @@ import { Outcome, type PriceHistoryPoint, type PriceHistoryRange } from '@solmar
 import { fetch_market_price_history } from '@/lib/api/markets';
 import { TbSettings } from 'react-icons/tb';
 import ProbabilityHeadline from './ProbabilityHeadline';
-import { APP_NAME } from '@/utils/constants';
 
 const RANGES: ReadonlyArray<{ key: PriceHistoryRange; label: string }> = [
     { key: '1h', label: '1H' },
@@ -350,13 +348,37 @@ export default function EventPriceChart({
                             data={points}
                             margin={{ top: 24, right: 16, bottom: 0, left: 0 }}
                             onMouseMove={(state) => {
-                                if (state.activeCoordinate) {
-                                    cancel_exit_animation();
-                                    set_active_coord({
-                                        x: state.activeCoordinate.x,
-                                        y: state.activeCoordinate.y,
-                                    });
-                                }
+                                if (!state.activeCoordinate) return;
+                                // activeTooltipIndex is `number | string | null
+                                // | undefined` — for numeric x-scales recharts
+                                // hands it back as a string, so coerce.
+                                const raw_idx = state.activeTooltipIndex;
+                                const idx =
+                                    typeof raw_idx === 'number'
+                                        ? raw_idx
+                                        : typeof raw_idx === 'string'
+                                          ? parseInt(raw_idx, 10)
+                                          : NaN;
+                                const point =
+                                    Number.isInteger(idx) && idx >= 0 ? points[idx] : undefined;
+                                if (!point) return;
+                                // recharts gives activeCoordinate.y as the
+                                // cursor's y, not the line's y at the active x.
+                                // Snap y to the curve by mapping the active
+                                // point's pct through the same y-scale recharts
+                                // uses (top margin = 24, no bottom margin /
+                                // x-axis space since it's hidden).
+                                const wrapper_h = wrapper_ref.current?.clientHeight ?? 0;
+                                const top_margin = 24;
+                                const plot_h = Math.max(1, wrapper_h - top_margin);
+                                const y_range = Math.max(1e-6, yMax - yMin);
+                                const y_on_line =
+                                    top_margin + ((yMax - point.pct) / y_range) * plot_h;
+                                cancel_exit_animation();
+                                set_active_coord({
+                                    x: state.activeCoordinate.x,
+                                    y: y_on_line,
+                                });
                             }}
                         >
                             <defs>
@@ -658,15 +680,6 @@ export default function EventPriceChart({
                         </AnimatePresence>
                     </div>
                 </div>
-            </div>
-
-            <div className="flex items-center justify-between px-4 py-2.5 text-[9px] tracking-[0.22em] text-white/40">
-                <div className="flex items-center gap-3 uppercase">
-                    <span>VOL {volumeLabel}</span>
-                    <span className="text-white/20">·</span>
-                    <span>{closeLabel}</span>
-                </div>
-                <span className='text-sm'>{APP_NAME}</span>
             </div>
         </section>
     );

@@ -24,6 +24,9 @@ export interface GammaMarket {
     tokens: GammaToken[];
     event_id: string | null;
     event_slug: string | null;
+    /** Polymarket tag labels (e.g. "Politics", "Crypto"). Always lowercase
+     *  duplicates removed; never null — empty array means "no tags". */
+    tags: string[];
 }
 
 export interface FetchMarketsParams {
@@ -82,6 +85,12 @@ export interface GammaComment {
  * fields we actually read. Field names mirror the upstream camelCase. Kept
  * private to this file.
  */
+interface RawGammaTag {
+    id?: string | number;
+    label?: string | null;
+    slug?: string | null;
+}
+
 interface RawGammaMarket {
     id: string | number;
     slug?: string;
@@ -100,6 +109,7 @@ interface RawGammaMarket {
     clobTokenIds?: string;
     outcomes?: string;
     image?: string;
+    tags?: RawGammaTag[];
 }
 
 interface RawGammaEvent {
@@ -107,6 +117,7 @@ interface RawGammaEvent {
     slug?: string;
     title?: string;
     markets?: RawGammaMarket[];
+    tags?: RawGammaTag[];
 }
 
 interface RawGammaCommentPosition {
@@ -174,7 +185,9 @@ export class GammaClient {
             throw new Error(`gamma fetch failed: ${res.status} ${res.statusText}`);
         }
         const raw = (await res.json()) as RawGammaMarket[];
-        return raw.map((m) => normalise(m, null, null)).filter((m): m is GammaMarket => m !== null);
+        return raw
+            .map((m) => normalise(m, null, null, []))
+            .filter((m): m is GammaMarket => m !== null);
     }
 
     async fetch_events(params: FetchEventsParams = {}): Promise<GammaMarket[]> {
@@ -199,8 +212,9 @@ export class GammaClient {
         for (const event of raw) {
             const event_id = String(event.id);
             const event_slug = event.slug ?? null;
+            const event_tags = extract_tag_labels(event.tags);
             for (const m of event.markets ?? []) {
-                const normalised = normalise(m, event_id, event_slug);
+                const normalised = normalise(m, event_id, event_slug, event_tags);
                 if (normalised) flattened.push(normalised);
             }
         }
@@ -210,6 +224,7 @@ export class GammaClient {
     async fetch_event_id_for_market(market_id: string): Promise<{
         event_id: string;
         event_slug: string | null;
+        tags: string[];
     } | null> {
         const url = new URL("/events", this.base_url);
         url.searchParams.set("related_markets", market_id);
@@ -226,6 +241,37 @@ export class GammaClient {
         return {
             event_id: String(first.id),
             event_slug: first.slug ?? null,
+            tags: extract_tag_labels(first.tags),
+        };
+    }
+
+    /**
+     * Fetch a single event's full payload by id. The `/events?related_markets=`
+     * variant returns a stripped response that often only contains a generic
+     * "All" tag, so for the backfill / single-event refresh path we hit the
+     * canonical id-filtered endpoint which carries the real tag list.
+     */
+    async fetch_event_by_id(event_id: string): Promise<{
+        event_id: string;
+        event_slug: string | null;
+        tags: string[];
+    } | null> {
+        const url = new URL("/events", this.base_url);
+        url.searchParams.set("id", event_id);
+        url.searchParams.set("limit", "1");
+
+        const res = await fetch(url);
+        if (!res.ok) {
+            throw new Error(`gamma event-by-id fetch failed: ${res.status} ${res.statusText}`);
+        }
+        const raw = (await res.json()) as RawGammaEvent[];
+        if (raw.length === 0) return null;
+        const first = raw[0];
+        if (!first) return null;
+        return {
+            event_id: String(first.id),
+            event_slug: first.slug ?? null,
+            tags: extract_tag_labels(first.tags),
         };
     }
 
@@ -272,6 +318,7 @@ function normalise(
     raw: RawGammaMarket,
     event_id: string | null,
     event_slug: string | null,
+    event_tags: string[],
 ): GammaMarket | null {
     if (
         !raw.enableOrderBook ||
@@ -301,6 +348,12 @@ function normalise(
         return null;
     }
 
+    // Tags can sit on the event (when fetched via /events) or on the market
+    // row itself (some /markets responses include them). Merge both so we
+    // never drop tags that the upstream put in the less common spot.
+    const market_tags = extract_tag_labels(raw.tags);
+    const tags = dedupe_strings([...event_tags, ...market_tags]);
+
     return {
         id: String(raw.id),
         slug: raw.slug ?? "",
@@ -315,7 +368,30 @@ function normalise(
         tokens,
         event_id,
         event_slug,
+        tags,
     };
+}
+
+function extract_tag_labels(raw_tags: RawGammaTag[] | null | undefined): string[] {
+    if (!Array.isArray(raw_tags)) return [];
+    const out: string[] = [];
+    for (const t of raw_tags) {
+        const label = typeof t?.label === "string" ? t.label.trim() : "";
+        if (label.length > 0) out.push(label);
+    }
+    return out;
+}
+
+function dedupe_strings(values: string[]): string[] {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const v of values) {
+        const k = v.toLowerCase();
+        if (seen.has(k)) continue;
+        seen.add(k);
+        out.push(v);
+    }
+    return out;
 }
 
 function normalise_comment(raw: RawGammaComment): GammaComment {

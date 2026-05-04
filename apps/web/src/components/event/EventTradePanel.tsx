@@ -98,12 +98,16 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
             const outcome_label = selectedOutcome === Outcome.YES ? 'YES' : 'NO';
             toast.success(
                 `${verb} ${computed.shares} ${outcome_label} for $${computed.usd.toFixed(2)}`,
-                { description: `Tx ${result.txSignature.slice(0, 8)}…${result.txSignature.slice(-6)}` },
+                {
+                    description: `Tx ${result.txSignature.slice(0, 8)}…${result.txSignature.slice(-6)}`,
+                },
             );
             set_amount('');
         } catch (err: unknown) {
             const msg =
-                err instanceof TradingError ? err.user_message : 'Something went wrong. Please try again.';
+                err instanceof TradingError
+                    ? err.user_message
+                    : 'Something went wrong. Please try again.';
             toast.error(msg);
         } finally {
             set_submitting(false);
@@ -111,7 +115,13 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
     };
 
     const toggle_mode = () => set_input_mode((m) => (m === 'USDC' ? 'SHARES' : 'USDC'));
-    const button_label = build_button_label({ tab, submitting, disable_reason, computed, input_mode });
+    const button_label = build_button_label({
+        tab,
+        submitting,
+        disable_reason,
+        computed,
+        input_mode,
+    });
     const quick_amounts = input_mode === 'USDC' ? QUICK_AMOUNTS_USDC : QUICK_AMOUNTS_SHARES;
 
     return (
@@ -266,9 +276,7 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                 </div>
 
                 {disable_reason && (
-                    <p className="text-[11px] text-white/45 text-center -mt-1">
-                        {disable_reason}
-                    </p>
+                    <p className="text-[11px] text-white/45 text-center -mt-1">{disable_reason}</p>
                 )}
 
                 <button

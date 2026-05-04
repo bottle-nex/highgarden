@@ -1,21 +1,31 @@
 'use client';
 import { JSX, useCallback, useEffect, useState } from 'react';
-import { PiChatCircleFill, PiFlagBold, PiPaperPlaneRightBold } from 'react-icons/pi';
+import { PiChatCircleFill, PiFlagBold } from 'react-icons/pi';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { CroppedButton } from '@/components/ui/cropped-button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import type { CommentDTO } from '@solmarket/types';
 import { fetch_native_comments, post_native_comment, report_comment } from './api';
 import { initials_from, relative_time } from './utils';
 import CommentBody from './CommentBody';
+import { cn } from '@/lib/utils';
 
-interface Props {
+interface NativeCommentsSectionProps {
     market_id: string;
+}
+
+interface CommentRowProps {
+    comment: CommentDTO;
+    reported: boolean;
+    on_report: () => void;
 }
 
 const PAGE_SIZE = 30;
 const MAX_BODY = 2000;
 
-export default function NativeCommentsSection({ market_id }: Props): JSX.Element {
+export default function NativeCommentsSection({
+    market_id,
+}: NativeCommentsSectionProps): JSX.Element {
     const session = useUserSessionStore((state) => state.session);
     const is_signed_in = !!session?.user?.token;
     const [comments, set_comments] = useState<CommentDTO[]>([]);
@@ -120,7 +130,7 @@ export default function NativeCommentsSection({ market_id }: Props): JSX.Element
                 {available && (
                     <div className="pb-6 mb-6 border-b border-white/7">
                         <textarea
-                            className="w-full min-h-22 resize-y rounded-md bg-dark-base px-4 py-3 text-sm leading-relaxed text-white/85 placeholder:text-white/30 focus:border-white/25 focus:outline-none focus:ring-0 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="w-full min-h-22 resize-none rounded-md bg-dark-base px-4 py-3 text-sm leading-relaxed text-white/85 placeholder:text-white/30 focus:border-white/25 focus:outline-none focus:ring-0 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                             placeholder={
                                 is_signed_in
                                     ? 'Share your take on this market...'
@@ -139,25 +149,48 @@ export default function NativeCommentsSection({ market_id }: Props): JSX.Element
                             >
                                 {body.length} / {MAX_BODY}
                             </span>
-                            <Tooltip>
-                                <TooltipTrigger
-                                    render={(props) => (
-                                        <button
-                                            {...props}
-                                            type="button"
-                                            disabled={!can_submit}
-                                            onClick={submit}
-                                            className="inline-flex items-center gap-2 rounded-md bg-yellow-300/90 px-4 py-2 text-[10.5px] tracking-[0.22em] uppercase font-semibold text-neutral-950 transition-opacity hover:bg-yellow-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                                        >
-                                            <PiPaperPlaneRightBold className="size-3" />
-                                            {posting ? 'Posting' : 'Post'}
-                                        </button>
+                            {is_signed_in ? (
+                                <CroppedButton
+                                    size="sm"
+                                    type="button"
+                                    disabled={!can_submit}
+                                    onClick={submit}
+                                    className={cn(
+                                        'px-4 text-[12px] font-[510] tracking-normal uppercase',
+                                        'bg-white text-neutral-900',
+                                        'transition-all duration-200',
                                     )}
-                                />
-                                {!is_signed_in && (
+                                >
+                                    {posting ? 'Posting' : 'Post'}
+                                </CroppedButton>
+                            ) : (
+                                // Wrap in a span trigger when signed out so the
+                                // tooltip ref attaches to a real DOM node;
+                                // CroppedButton isn't forwardRef-aware, which
+                                // is why nesting it directly in TooltipTrigger
+                                // breaks its clip-path measurement.
+                                <Tooltip>
+                                    <TooltipTrigger
+                                        render={(props: React.HTMLAttributes<HTMLSpanElement>) => (
+                                            <span {...props} className="inline-flex">
+                                                <CroppedButton
+                                                    size="sm"
+                                                    type="button"
+                                                    disabled
+                                                    className={cn(
+                                                        'px-6! text-[12px] font-[510] tracking-normal uppercase',
+                                                        'bg-white text-neutral-900',
+                                                        'transition-all duration-200',
+                                                    )}
+                                                >
+                                                    Post
+                                                </CroppedButton>
+                                            </span>
+                                        )}
+                                    />
                                     <TooltipContent>Sign in to join the discussion</TooltipContent>
-                                )}
-                            </Tooltip>
+                                </Tooltip>
+                            )}
                         </div>
                     </div>
                 )}
@@ -208,15 +241,7 @@ export default function NativeCommentsSection({ market_id }: Props): JSX.Element
     );
 }
 
-function CommentRow({
-    comment,
-    reported,
-    on_report,
-}: {
-    comment: CommentDTO;
-    reported: boolean;
-    on_report: () => void;
-}): JSX.Element {
+function CommentRow({ comment, reported, on_report }: CommentRowProps): JSX.Element {
     return (
         <div className="grid grid-cols-[36px_1fr] gap-4 py-4">
             <div className="flex size-9 items-center justify-center rounded-full bg-linear-to-br from-white/10 to-white/5 border border-white/10 text-[12px] font-semibold text-white/70 select-none">

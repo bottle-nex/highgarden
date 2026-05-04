@@ -19,6 +19,7 @@ export interface MarketEntry {
     noTokenId: string;
     tickSize: string;
     negRisk: boolean;
+    tags: string[];
     // From Listing relation
     volume24hUsd: number | null;
     liquidityUsd: number | null;
@@ -41,6 +42,7 @@ function toMarketEntry(
         noTokenId: m.polymarket?.noTokenId ?? '',
         tickSize: m.polymarket?.tickSize ?? '0.01',
         negRisk: m.polymarket?.negRisk ?? false,
+        tags: m.polymarket?.tags ?? [],
         volume24hUsd: m.listing?.volume24hUsd ?? null,
         liquidityUsd: m.listing?.liquidityUsd ?? null,
     };
@@ -61,6 +63,7 @@ function dto_to_market_entry(m: MarketDTO): MarketEntry {
         noTokenId: m.noTokenId,
         tickSize: m.tickSize,
         negRisk: m.negRisk,
+        tags: m.tags ?? [],
         volume24hUsd: m.volume24hUsd,
         liquidityUsd: m.liquidityUsd,
     };

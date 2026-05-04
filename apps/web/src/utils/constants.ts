@@ -52,8 +52,6 @@ export interface HotTopic {
 
 export const CATEGORY_TABS = [
     'Trending',
-    'Breaking',
-    'New',
     'Politics',
     'Sports',
     'Crypto',
@@ -66,7 +64,7 @@ export const CATEGORY_TABS = [
     'Mentions',
 ] as const;
 
-export const APP_NAME = 'HighGarden'
+export const APP_NAME = 'HighGarden';
 
 export const featuredMarket: FeaturedMarket = {
     id: 'fm-001',

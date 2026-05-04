@@ -77,6 +77,14 @@ export interface MarketDTO {
   imageUrl: string | null;
   eventId: string | null;
   eventSlug: string | null;
+  /** Polymarket tag labels, e.g. ["Crypto", "Bitcoin"]. Empty array if untagged. */
+  tags: string[];
+}
+
+/** Toggle/list response for bookmarks. */
+export interface BookmarkStatusDTO {
+  marketId: string;
+  bookmarked: boolean;
 }
 
 /** Native comment posted by a solmarket user. */

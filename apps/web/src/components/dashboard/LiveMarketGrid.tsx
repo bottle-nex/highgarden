@@ -7,6 +7,8 @@ import MarketGrid from './MarketGrid';
 import SectionHeading from './SectionHeading';
 import { fetchPublicMarkets } from '@/lib/api/markets';
 import type { Market as CardMarket } from '@/utils/constants';
+import type { Category } from '@/store/ui/useCategoryStore';
+import { category_to_tags } from '@/utils/category-tags';
 
 function format_volume(usd: number | null): string {
     if (usd === null) return '—';
@@ -28,7 +30,10 @@ function dto_to_card(m: MarketDTO): CardMarket {
     return {
         id: m.id,
         title: m.name,
-        category: 'MARKET',
+        // Use the first Polymarket tag as the chip label (uppercased to match
+        // the rest of the card's typography). Falls back to "MARKET" so the
+        // card never renders an empty pill.
+        category: m.tags[0]?.toUpperCase() ?? 'MARKET',
         // Neutral 50/50 until live book wiring lands.
         yesPrice: 50,
         noPrice: 50,
@@ -43,12 +48,26 @@ type State =
     | { status: 'error'; message: string }
     | { status: 'ready'; markets: MarketDTO[] };
 
-export default function LiveMarketGrid() {
+interface Props {
+    /** When set, the grid asks the server for markets carrying this category's
+     *  tag. Acts as the page heading too. Trending / Breaking / New collapse
+     *  to the unfiltered list. */
+    category?: Category;
+    /** When true, the featured market (highest-volume) is excluded — the
+     *  trending dashboard shows it separately above the grid. */
+    excludeFeatured?: boolean;
+}
+
+export default function LiveMarketGrid({ category, excludeFeatured = false }: Props = {}) {
+    const tag_filter = category ? category_to_tags(category) : null;
+    // Stable string key so refetches only fire on real filter changes, not on
+    // every render (arrays would trigger useEffect each time).
+    const tag_key = tag_filter ? tag_filter.join('|') : '';
     const [state, set_state] = useState<State>({ status: 'loading' });
 
     useEffect(() => {
         let cancelled = false;
-        fetchPublicMarkets()
+        fetchPublicMarkets(tag_filter ?? undefined)
             .then((markets) => {
                 if (!cancelled) set_state({ status: 'ready', markets });
             })
@@ -63,11 +82,14 @@ export default function LiveMarketGrid() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [tag_key]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const heading_title = category ? `${category.toUpperCase()} MARKETS` : 'ACTIVE MARKETS';
+    const heading_subtitle = category && tag_filter ? 'TAGGED' : 'APPROVED';
 
     if (state.status === 'loading') {
         return (
-            <Section>
+            <Section title={heading_title} subtitle={heading_subtitle}>
                 <Frame>Loading markets…</Frame>
             </Section>
         );
@@ -75,32 +97,37 @@ export default function LiveMarketGrid() {
 
     if (state.status === 'error') {
         return (
-            <Section>
+            <Section title={heading_title} subtitle={heading_subtitle}>
                 <Frame tone="error">Couldn&apos;t load markets — {state.message}.</Frame>
             </Section>
         );
     }
 
-    // Sort by 24h volume desc, drop the highest (it's shown as the featured
-    // card), then cap to 9 cards so the grid stays at most 3×3.
+    // Sort by 24h volume desc. On the trending dashboard the highest-volume
+    // market is shown separately as the featured card — drop it from the grid
+    // there. Other category views render the full list.
     const sorted = [...state.markets].sort((a, b) => (b.volume24hUsd ?? 0) - (a.volume24hUsd ?? 0));
-    const grid_markets = sorted.slice(1, 10);
+    const grid_markets = excludeFeatured ? sorted.slice(1, 10) : sorted.slice(0, 12);
 
     if (grid_markets.length === 0) {
         return (
-            <Section>
+            <Section title={heading_title} subtitle={heading_subtitle}>
                 <Frame>
                     {state.markets.length === 0 ? (
-                        <>
-                            No markets approved yet. Visit{' '}
-                            <Link
-                                href="/admin"
-                                className="text-white underline-offset-2 hover:underline"
-                            >
-                                /admin
-                            </Link>{' '}
-                            to approve some from the curator dashboard.
-                        </>
+                        category ? (
+                            <>No approved markets tagged {category} yet.</>
+                        ) : (
+                            <>
+                                No markets approved yet. Visit{' '}
+                                <Link
+                                    href="/admin"
+                                    className="text-white underline-offset-2 hover:underline"
+                                >
+                                    /admin
+                                </Link>{' '}
+                                to approve some from the curator dashboard.
+                            </>
+                        )
                     ) : (
                         'Only one market approved — see the featured card above.'
                     )}
@@ -114,10 +141,18 @@ export default function LiveMarketGrid() {
     );
 }
 
-function Section({ children }: { children: React.ReactNode }) {
+function Section({
+    children,
+    title = 'ACTIVE MARKETS',
+    subtitle = 'APPROVED',
+}: {
+    children: React.ReactNode;
+    title?: string;
+    subtitle?: string;
+}) {
     return (
         <section>
-            <SectionHeading title="ACTIVE MARKETS" subtitle="APPROVED" />
+            <SectionHeading title={title} subtitle={subtitle} />
             {children}
         </section>
     );

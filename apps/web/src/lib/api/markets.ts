@@ -9,8 +9,9 @@ import type {
 } from '@solmarket/types';
 import { apiClient } from '../client.axios';
 
-export async function fetchPublicMarkets(): Promise<MarketDTO[]> {
-    const { data } = await apiClient.get('/markets');
+export async function fetchPublicMarkets(tags?: string[]): Promise<MarketDTO[]> {
+    const params = tags && tags.length > 0 ? { tag: tags.join(',') } : undefined;
+    const { data } = await apiClient.get('/markets', { params });
     return data?.data ?? [];
 }
 

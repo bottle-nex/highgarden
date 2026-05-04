@@ -44,6 +44,7 @@ export default class GetMarketByIdController {
                 imageUrl: p.imageUrl,
                 eventId: p.eventId,
                 eventSlug: p.eventSlug,
+                tags: p.tags,
             };
 
             return ResponseWriter.success(res, dto, "Market");
