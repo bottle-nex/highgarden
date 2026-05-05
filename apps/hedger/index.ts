@@ -1,6 +1,7 @@
 import EnvService from "./config/env";
 EnvService.parse_env();
 
+import { prisma } from "@solmarket/database";
 import LoggerFactory from "./log/logger";
 import HealthServer from "./health/server";
 import CursorRepo from "./db/cursor.repo";
@@ -11,11 +12,13 @@ import HedgeWorker from "./queue/hedge-worker";
 import HedgeQueueEvents from "./queue/queue-events";
 import RedisConnectionFactory from "./queue/connection";
 import EventRepo from "./db/event.repo";
+import ExposureRepo from "./db/exposure.repo";
 import HedgeProcessor from "./hedger/processor";
 import BootRecovery from "./hedger/recovery";
 import ResolverPoller from "./resolver/poll";
 import ReconcileLoop from "./reconcile/loop";
 import HedgerAdminServer from "./admin/server";
+import HedgerAdminTxSubmitter from "./solana/admin-tx";
 import type { OrderFilledEvent } from "./solana/decoder";
 import type { HedgeJobData, HedgeJobResult } from "./queue/types";
 import type { Job } from "bullmq";
@@ -31,10 +34,13 @@ class HedgerApp {
   private readonly resolver = new ResolverPoller();
   private readonly reconcile = new ReconcileLoop();
   private readonly admin = new HedgerAdminServer({ producer: this.producer });
+  private readonly admin_tx = new HedgerAdminTxSubmitter();
+  private readonly exposure = new ExposureRepo();
   private listener: LiveListener | null = null;
   private poller: CatchUpPoller | null = null;
   private worker: HedgeWorker | null = null;
   private queue_events: HedgeQueueEvents | null = null;
+  private warned_pause_disabled = false;
 
   public async start(): Promise<void> {
     await this.cursor.load();
@@ -120,6 +126,68 @@ class HedgerApp {
 
   private async on_job_failed(job_id: string, reason: string): Promise<void> {
     this.log.error({ jobId: job_id, reason }, "queue declared job failed");
+    await this.mark_hedge_failed(job_id, reason);
+    await this.maybe_pause_market(job_id, reason);
+  }
+
+  private async mark_hedge_failed(job_id: string, reason: string): Promise<void> {
+    try {
+      const hedge = await prisma.hedge.findUnique({ where: { bullJobId: job_id } });
+      if (!hedge) return;
+      if (hedge.status === "FAILED") return;
+      await prisma.hedge.update({
+        where: { id: hedge.id },
+        data: { status: "FAILED", lastError: reason, completedAt: new Date() },
+      });
+    } catch (err) {
+      this.log.error({ err, jobId: job_id }, "mark_hedge_failed threw");
+    }
+  }
+
+  private async maybe_pause_market(job_id: string, reason: string): Promise<void> {
+    if (!this.admin_tx.is_configured()) {
+      if (!this.warned_pause_disabled) {
+        this.log.warn(
+          "auto-pause disabled — set HEDGER_SOLANA_ADMIN_KEYPAIR to enable pausing markets after permanent hedge failures",
+        );
+        this.warned_pause_disabled = true;
+      }
+      return;
+    }
+    try {
+      const ctx = await this.lookup_pause_context(job_id);
+      if (!ctx) return;
+      const sig = await this.admin_tx.pause_market(ctx.solanaMarketPda);
+      await this.exposure.set_paused(ctx.marketId, true);
+      this.log.warn(
+        { jobId: job_id, marketId: ctx.marketId, marketPda: ctx.solanaMarketPda, txSig: sig },
+        ">>> AUTO-PAUSE: market paused after permanent job failure",
+      );
+      await this.events.record_alert("queue", "market auto-paused after job failure", {
+        jobId: job_id,
+        marketId: ctx.marketId,
+        marketPda: ctx.solanaMarketPda,
+        reason,
+        pauseTxSig: sig,
+      });
+    } catch (err) {
+      this.log.error({ err, jobId: job_id }, "auto-pause failed");
+    }
+  }
+
+  private async lookup_pause_context(
+    job_id: string,
+  ): Promise<{ marketId: string; solanaMarketPda: string } | null> {
+    const hedge = await prisma.hedge.findUnique({
+      where: { bullJobId: job_id },
+      include: { fill: { include: { market: true } } },
+    });
+    const market = hedge?.fill?.market;
+    if (!market?.solanaMarketPda) {
+      this.log.warn({ jobId: job_id }, "could not resolve market PDA for auto-pause");
+      return null;
+    }
+    return { marketId: market.id, solanaMarketPda: market.solanaMarketPda };
   }
 }
 

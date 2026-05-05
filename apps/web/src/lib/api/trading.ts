@@ -24,6 +24,12 @@ export interface PlaceOrderResult {
     userPubkey: string;
 }
 
+export interface ClaimResult {
+    txSignature: string;
+    marketPda: string;
+    userPubkey: string;
+}
+
 export type TradingErrorReason =
     | 'OUT_OF_CAPACITY'
     | 'MARKET_NOT_LISTED'
@@ -31,6 +37,9 @@ export type TradingErrorReason =
     | 'INSUFFICIENT_SHARES'
     | 'NOT_AUTHORIZED'
     | 'PLACE_ORDER_FAILED'
+    | 'CLAIM_FAILED'
+    | 'MARKET_NOT_RESOLVED'
+    | 'NO_WINNING_SHARES'
     | 'NETWORK'
     | 'UNKNOWN';
 
@@ -60,6 +69,15 @@ class TradingApi {
         try {
             const { data } = await apiClient.post(`/markets/${market_id}/place-order`, signed);
             return data?.data as PlaceOrderResult;
+        } catch (err: unknown) {
+            throw this.translate_error(err);
+        }
+    }
+
+    public async claim(market_id: string): Promise<ClaimResult> {
+        try {
+            const { data } = await apiClient.post(`/markets/${market_id}/claim`);
+            return data?.data as ClaimResult;
         } catch (err: unknown) {
             throw this.translate_error(err);
         }
@@ -110,6 +128,23 @@ class TradingApi {
                 raw,
                 'Trade could not be submitted. Please try again.',
             );
+        }
+        if (code === 'MARKET_NOT_RESOLVED' || lower.includes('marketnotresolved')) {
+            return new TradingError(
+                'MARKET_NOT_RESOLVED',
+                raw,
+                'Market is not resolved yet. Try again after the result is final.',
+            );
+        }
+        if (lower.includes('nowinningshares') || lower.includes('no winning shares')) {
+            return new TradingError(
+                'NO_WINNING_SHARES',
+                raw,
+                'Nothing to claim — you don’t hold winning shares for this market.',
+            );
+        }
+        if (code === 'CLAIM_FAILED') {
+            return new TradingError('CLAIM_FAILED', raw, 'Claim could not be submitted. Please try again.');
         }
         if (code === 'NETWORK') {
             return new TradingError(

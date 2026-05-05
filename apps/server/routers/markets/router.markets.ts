@@ -11,6 +11,7 @@ import ListCommentsController from "../../controllers/comments/controller.list-c
 import CreateCommentController from "../../controllers/comments/controller.create-comment";
 import QuoteController from "../../controllers/markets/controller.quote";
 import PlaceOrderController from "../../controllers/markets/controller.place-order";
+import ClaimController from "../../controllers/markets/controller.claim";
 import { requireAuth } from "../../middleware/middleware.auth";
 
 const markets_router: Router = Router();
@@ -29,5 +30,6 @@ markets_router.get("/:id/comments", ListCommentsController.process);
 markets_router.post("/:id/comments", requireAuth, CreateCommentController.process);
 markets_router.post("/:id/quote", requireAuth, QuoteController.process);
 markets_router.post("/:id/place-order", requireAuth, PlaceOrderController.process);
+markets_router.post("/:id/claim", requireAuth, ClaimController.process);
 
 export default markets_router;

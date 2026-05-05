@@ -32,6 +32,9 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
     const [input_mode, set_input_mode] = useState<InputMode>('USDC');
     const [submitting, set_submitting] = useState(false);
     const requireAuth = useRequireAuth();
+    const [claiming, set_claiming] = useState(false);
+
+    const is_resolved = market.status === 'RESOLVED';
 
     const yes_depth = useOrderBookDepthStore(selectDepth(market.id, Outcome.YES));
     const no_depth = useOrderBookDepthStore(selectDepth(market.id, Outcome.NO));
@@ -131,6 +134,24 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
     });
     const quick_amounts = input_mode === 'USDC' ? QUICK_AMOUNTS_USDC : QUICK_AMOUNTS_SHARES;
 
+    const handle_claim = async () => {
+        if (claiming) return;
+        set_claiming(true);
+        try {
+            const result = await trading_api.claim(market.id);
+            const short = `${result.txSignature.slice(0, 8)}…${result.txSignature.slice(-6)}`;
+            toast.success('Claim submitted', { description: `Tx ${short}` });
+        } catch (err: unknown) {
+            const msg =
+                err instanceof TradingError
+                    ? err.user_message
+                    : 'Something went wrong. Please try again.';
+            toast.error(msg);
+        } finally {
+            set_claiming(false);
+        }
+    };
+
     return (
         <motion.aside
             initial={{ opacity: 0, x: 20 }}
@@ -138,6 +159,39 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
             transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="rounded-lg bg-dark-base p-1"
         >
+            {is_resolved && (
+                <div className="px-5 py-6 space-y-4">
+                    <div>
+                        <div className="text-[10px] tracking-[0.2em] uppercase text-white/45">
+                            Resolved
+                        </div>
+                        <div className="text-[13px] text-white/85 mt-1">
+                            This market has been resolved.
+                        </div>
+                        <p className="text-[11px] text-white/45 mt-2">
+                            If you held winning shares, you can claim your USDC payout now.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handle_claim}
+                        disabled={claiming}
+                        className={cn(
+                            'w-full py-3 rounded-lg text-[14px] font-bold transition-all transform duration-200',
+                            'bg-emerald-400 text-emerald-950 active:translate-y-px',
+                            'shadow-[inset_0_-2.5px_0_rgba(0,0,0,0.18)]',
+                            claiming
+                                ? 'opacity-40 cursor-not-allowed'
+                                : 'cursor-pointer active:scale-[0.99]',
+                        )}
+                    >
+                        {claiming ? 'Claiming…' : 'Claim payout'}
+                    </button>
+                </div>
+            )}
+
+            {!is_resolved && (
+            <>
             <div className="flex items-center justify-between px-5 pt-4">
                 <div className="flex gap-1">
                     {(['BUY', 'SELL'] as const).map((t) => (
@@ -311,6 +365,8 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                     </Link>
                 </p>
             </div>
+            </>
+            )}
         </motion.aside>
     );
 }
