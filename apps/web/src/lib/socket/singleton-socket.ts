@@ -4,27 +4,52 @@ import { useStreamStore } from '@/store/stream/useStreamStore';
 export default class SingletonSocket {
     private static client: WebSocketClient | null = null;
     private static refcount = 0;
+    // The token associated with the live socket — used to detect a session
+    // change (sign-in / sign-out) and force a reconnect with the new identity.
+    private static current_token: string | null = null;
     // Deferred close — guards against React StrictMode's mount→cleanup→mount cycle
     // and back-to-back consumer swaps from tearing the live socket down.
     private static destroy_timeout: ReturnType<typeof setTimeout> | null = null;
     private static readonly destroy_grace_ms = 250;
 
-    private static get_ws_url(token: string): string {
+    private static get_ws_url(token: string | null): string {
         const backend = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8080';
         const url = new URL(backend);
         url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
         url.pathname = '/ws';
-        url.searchParams.set('token', token);
+        // Authed users include their JWT; guests connect without one and the
+        // server accepts them as anonymous, allowing only public market data.
+        if (token) url.searchParams.set('token', token);
         return url.toString();
     }
 
-    public static acquire(token: string): WebSocketClient {
+    public static acquire(token: string | null): WebSocketClient {
         if (this.destroy_timeout) {
             clearTimeout(this.destroy_timeout);
             this.destroy_timeout = null;
         }
+        // Token changed (sign-in/out) while a socket was live — tear down the
+        // old connection and open a fresh one with the new identity. We carry
+        // over the OLD client's active subscriptions to the NEW client so the
+        // replay-on-open path re-subscribes everything the user was watching.
+        // Without this, a sign-in mid-page leaves the new socket connected but
+        // with no SUBSCRIBE messages flowing, because React effects' cleanup-
+        // then-setup ordering doesn't reliably re-issue subscribes after the
+        // singleton swap.
+        if (this.client && this.current_token !== token) {
+            const carry_over = Array.from(this.client.get_active_subscriptions());
+            this.client.close(1000, 'session changed');
+            this.client = null;
+            useStreamStore.getState().reset();
+            this.current_token = token;
+            this.client = new WebSocketClient(this.get_ws_url(token));
+            if (carry_over.length > 0) {
+                this.client.seed_active_subscriptions(carry_over);
+            }
+        }
         this.refcount++;
         if (!this.client) {
+            this.current_token = token;
             this.client = new WebSocketClient(this.get_ws_url(token));
         }
         return this.client;
@@ -41,6 +66,7 @@ export default class SingletonSocket {
             if (this.refcount === 0 && this.client) {
                 this.client.close();
                 this.client = null;
+                this.current_token = null;
                 // Stream-store state (refcounts, status) is bound to the lifetime
                 // of the WS singleton — reset only here, not on per-hook cleanup.
                 useStreamStore.getState().reset();

@@ -2,13 +2,7 @@
 
 import { JSX, useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import {
-    Area,
-    AreaChart,
-    CartesianGrid,
-    ResponsiveContainer,
-    YAxis,
-} from 'recharts';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, YAxis } from 'recharts';
 import { Outcome } from '@solmarket/types';
 import { TbSettings } from 'react-icons/tb';
 import ProbabilityHeadline from '@/components/event/ProbabilityHeadline';
@@ -115,10 +109,7 @@ export default function LandingDummyPriceChart({ volumeLabel, closeLabel }: Prop
 
             <div className="relative w-full flex-1 min-h-0 px-2 select-none outline-none">
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                        data={points}
-                        margin={{ top: 24, right: 16, bottom: 0, left: 0 }}
-                    >
+                    <AreaChart data={points} margin={{ top: 24, right: 16, bottom: 0, left: 0 }}>
                         <defs>
                             <linearGradient id="landingDummyLine" x1="0" y1="0" x2="1" y2="0">
                                 <stop offset="0" stopColor={`${lineColor}0.5)`} />
@@ -175,9 +166,7 @@ export default function LandingDummyPriceChart({ volumeLabel, closeLabel }: Prop
                                 type="button"
                                 onClick={() => set_selected_outcome(o)}
                                 className={`relative px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium transition-colors ${
-                                    is_selected
-                                        ? 'text-white'
-                                        : 'text-white/45'
+                                    is_selected ? 'text-white' : 'text-white/45'
                                 }`}
                             >
                                 {is_selected && (

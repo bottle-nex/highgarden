@@ -27,9 +27,9 @@ const sections: LegalSectionInput[] = [
                     outcomes on real-world events, settled in USDC on Solana.
                 </p>
                 <p>
-                    By connecting a wallet, signing a transaction, or otherwise interacting with
-                    the Services, you agree to be bound by these Terms. If you do not agree, do
-                    not use the Services.
+                    By connecting a wallet, signing a transaction, or otherwise interacting with the
+                    Services, you agree to be bound by these Terms. If you do not agree, do not use
+                    the Services.
                 </p>
             </>
         ),
@@ -48,10 +48,10 @@ const sections: LegalSectionInput[] = [
                 </p>
                 <p>
                     You represent that you are not located in, organized under the laws of, or a
-                    resident of any jurisdiction listed in the section titled
-                    &ldquo;Prohibited Jurisdictions&rdquo; and that you are not subject to any
-                    sanctions list maintained by the U.S. Office of Foreign Assets Control (OFAC),
-                    the European Union, the United Kingdom, or the United Nations.
+                    resident of any jurisdiction listed in the section titled &ldquo;Prohibited
+                    Jurisdictions&rdquo; and that you are not subject to any sanctions list
+                    maintained by the U.S. Office of Foreign Assets Control (OFAC), the European
+                    Union, the United Kingdom, or the United Nations.
                 </p>
             </>
         ),
@@ -63,16 +63,15 @@ const sections: LegalSectionInput[] = [
         body: (
             <>
                 <p>
-                    The Services are non-custodial. Trades, deposits, and withdrawals are
-                    initiated from a Solana wallet that you control. {APP_NAME} does not store,
-                    hold, or have access to your private keys, seed phrases, or signing
-                    credentials at any time.
+                    The Services are non-custodial. Trades, deposits, and withdrawals are initiated
+                    from a Solana wallet that you control. {APP_NAME} does not store, hold, or have
+                    access to your private keys, seed phrases, or signing credentials at any time.
                 </p>
                 <p>
                     You are solely responsible for the security of your wallet and any device you
-                    use to access the Services. Any transaction signed by your wallet is
-                    presumed to be authorized by you. {APP_NAME} cannot reverse, cancel, or
-                    refund a transaction once it is confirmed on the Solana blockchain.
+                    use to access the Services. Any transaction signed by your wallet is presumed to
+                    be authorized by you. {APP_NAME} cannot reverse, cancel, or refund a transaction
+                    once it is confirmed on the Solana blockchain.
                 </p>
             </>
         ),
@@ -84,10 +83,10 @@ const sections: LegalSectionInput[] = [
         body: (
             <>
                 <p>
-                    Each market on {APP_NAME} is governed by a public rule set that defines the
-                    YES condition, the NO condition, and the source of truth used to determine
-                    the final outcome. The rules are visible on the market page before any trade
-                    is placed and are immutable for the lifetime of the market.
+                    Each market on {APP_NAME} is governed by a public rule set that defines the YES
+                    condition, the NO condition, and the source of truth used to determine the final
+                    outcome. The rules are visible on the market page before any trade is placed and
+                    are immutable for the lifetime of the market.
                 </p>
                 <p>
                     Markets resolve when the source of truth confirms the outcome. In rare cases
@@ -97,9 +96,9 @@ const sections: LegalSectionInput[] = [
                 </p>
                 <p>
                     Resolution decisions are final. You acknowledge that the interpretation of
-                    real-world events for the purposes of market resolution can be a judgment
-                    call, and you accept the resolution mechanism described on each market page
-                    as a condition of participating.
+                    real-world events for the purposes of market resolution can be a judgment call,
+                    and you accept the resolution mechanism described on each market page as a
+                    condition of participating.
                 </p>
             </>
         ),
@@ -113,16 +112,16 @@ const sections: LegalSectionInput[] = [
                 <p>
                     Trades on {APP_NAME} are settled in USDC on Solana. Solana network fees
                     (&ldquo;gas&rdquo;) are paid by you in SOL at the time of signing.
-                    {APP_NAME} may charge a protocol fee on filled orders or on settlement
-                    payouts; the current fee schedule is published on the Services and may be
-                    updated from time to time with reasonable notice.
+                    {APP_NAME} may charge a protocol fee on filled orders or on settlement payouts;
+                    the current fee schedule is published on the Services and may be updated from
+                    time to time with reasonable notice.
                 </p>
                 <p>
-                    Settlement of a winning position is performed by smart contract once the
-                    market is resolved. You are responsible for claiming or withdrawing your
-                    settled USDC to your wallet. {APP_NAME} does not guarantee delivery of funds
-                    to addresses that are sanctioned, blacklisted by the USDC issuer, or
-                    otherwise subject to enforcement action.
+                    Settlement of a winning position is performed by smart contract once the market
+                    is resolved. You are responsible for claiming or withdrawing your settled USDC
+                    to your wallet. {APP_NAME} does not guarantee delivery of funds to addresses
+                    that are sanctioned, blacklisted by the USDC issuer, or otherwise subject to
+                    enforcement action.
                 </p>
             </>
         ),
@@ -134,17 +133,17 @@ const sections: LegalSectionInput[] = [
         body: (
             <>
                 <p>
-                    Prediction markets are speculative. You can lose the entire amount you stake
-                    on any position. Prices reflect market sentiment, not the actual probability
-                    of an outcome, and can move sharply against you. Do not trade with funds you
-                    cannot afford to lose.
+                    Prediction markets are speculative. You can lose the entire amount you stake on
+                    any position. Prices reflect market sentiment, not the actual probability of an
+                    outcome, and can move sharply against you. Do not trade with funds you cannot
+                    afford to lose.
                 </p>
                 <p>
-                    Additional risks include, without limitation: smart contract risk, oracle
-                    risk, network congestion or downtime on Solana, depeg or freezing of USDC,
-                    wallet compromise, regulatory changes affecting the legality of prediction
-                    markets in your jurisdiction, and resolution disputes. {APP_NAME} does not
-                    provide investment, legal, tax, or financial advice.
+                    Additional risks include, without limitation: smart contract risk, oracle risk,
+                    network congestion or downtime on Solana, depeg or freezing of USDC, wallet
+                    compromise, regulatory changes affecting the legality of prediction markets in
+                    your jurisdiction, and resolution disputes. {APP_NAME} does not provide
+                    investment, legal, tax, or financial advice.
                 </p>
             </>
         ),
@@ -158,13 +157,12 @@ const sections: LegalSectionInput[] = [
                 <p>
                     When using the Services, you agree not to: (a) engage in market manipulation,
                     wash trading, spoofing, or any conduct designed to create false or misleading
-                    appearances of trading activity; (b) trade on the basis of material
-                    non-public information that the source of truth has not yet released;
-                    (c) attempt to interfere with, disrupt, or compromise the Services, the
-                    underlying smart contracts, or the Solana network; (d) use the Services to
-                    launder funds, evade sanctions, or finance illegal activity; or (e) misuse,
-                    scrape, or reverse-engineer the Services beyond what is permitted by
-                    applicable law.
+                    appearances of trading activity; (b) trade on the basis of material non-public
+                    information that the source of truth has not yet released; (c) attempt to
+                    interfere with, disrupt, or compromise the Services, the underlying smart
+                    contracts, or the Solana network; (d) use the Services to launder funds, evade
+                    sanctions, or finance illegal activity; or (e) misuse, scrape, or
+                    reverse-engineer the Services beyond what is permitted by applicable law.
                 </p>
             </>
         ),
@@ -176,18 +174,18 @@ const sections: LegalSectionInput[] = [
         body: (
             <>
                 <p>
-                    The Services are not offered to, and may not be used by, persons located in
-                    or residents of: the United States of America, the United Kingdom, Canada,
-                    France, Singapore, Hong Kong, mainland China, North Korea, Iran, Syria, Cuba,
-                    Russia, Belarus, the Crimea, Donetsk, and Luhansk regions, or any other
-                    jurisdiction where the use of prediction markets or the trading of related
-                    financial instruments is prohibited by applicable law (the &ldquo;Prohibited
+                    The Services are not offered to, and may not be used by, persons located in or
+                    residents of: the United States of America, the United Kingdom, Canada, France,
+                    Singapore, Hong Kong, mainland China, North Korea, Iran, Syria, Cuba, Russia,
+                    Belarus, the Crimea, Donetsk, and Luhansk regions, or any other jurisdiction
+                    where the use of prediction markets or the trading of related financial
+                    instruments is prohibited by applicable law (the &ldquo;Prohibited
                     Jurisdictions&rdquo;).
                 </p>
                 <p>
-                    {APP_NAME} reserves the right to update the list of Prohibited Jurisdictions
-                    at any time and to deny access to wallets that, in its reasonable judgment,
-                    appear to originate from a Prohibited Jurisdiction.
+                    {APP_NAME} reserves the right to update the list of Prohibited Jurisdictions at
+                    any time and to deny access to wallets that, in its reasonable judgment, appear
+                    to originate from a Prohibited Jurisdiction.
                 </p>
             </>
         ),
@@ -206,8 +204,8 @@ const sections: LegalSectionInput[] = [
                 </p>
                 <p>
                     Nothing in these Terms grants you any right or license to use the
-                    {APP_NAME} brand or to imply endorsement, partnership, or affiliation
-                    without prior written permission.
+                    {APP_NAME} brand or to imply endorsement, partnership, or affiliation without
+                    prior written permission.
                 </p>
             </>
         ),
@@ -219,12 +217,12 @@ const sections: LegalSectionInput[] = [
         body: (
             <>
                 <p>
-                    The Services may rely on or link to third parties, including the Solana
-                    network, RPC providers, wallet providers, oracle providers, the USDC issuer,
-                    and the Polymarket-mirrored liquidity layer. {APP_NAME} does not control
-                    these third parties and is not responsible for their availability, accuracy,
-                    fees, or terms of service. Your use of any third-party service is at your own
-                    risk and subject to the terms of that third party.
+                    The Services may rely on or link to third parties, including the Solana network,
+                    RPC providers, wallet providers, oracle providers, the USDC issuer, and the
+                    Polymarket-mirrored liquidity layer. {APP_NAME} does not control these third
+                    parties and is not responsible for their availability, accuracy, fees, or terms
+                    of service. Your use of any third-party service is at your own risk and subject
+                    to the terms of that third party.
                 </p>
             </>
         ),
@@ -244,11 +242,10 @@ const sections: LegalSectionInput[] = [
                     COMPONENTS.
                 </p>
                 <p>
-                    TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, {APP_NAME}, ITS
-                    AFFILIATES, AND ITS PERSONNEL WILL NOT BE LIABLE FOR ANY INDIRECT,
-                    INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF
-                    PROFITS, REVENUES, DATA, OR DIGITAL ASSETS, ARISING OUT OF OR IN CONNECTION
-                    WITH YOUR USE OF THE SERVICES.
+                    TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, {APP_NAME}, ITS AFFILIATES,
+                    AND ITS PERSONNEL WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+                    CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, REVENUES, DATA, OR
+                    DIGITAL ASSETS, ARISING OUT OF OR IN CONNECTION WITH YOUR USE OF THE SERVICES.
                 </p>
             </>
         ),
@@ -261,15 +258,14 @@ const sections: LegalSectionInput[] = [
             <>
                 <p>
                     These Terms are governed by the laws of the British Virgin Islands, without
-                    regard to conflict-of-laws principles. Any dispute arising out of or relating
-                    to these Terms or the Services will be resolved by final and binding
-                    arbitration administered under the rules of the International Chamber of
-                    Commerce, seated in the British Virgin Islands, in the English language.
+                    regard to conflict-of-laws principles. Any dispute arising out of or relating to
+                    these Terms or the Services will be resolved by final and binding arbitration
+                    administered under the rules of the International Chamber of Commerce, seated in
+                    the British Virgin Islands, in the English language.
                 </p>
                 <p>
                     You agree to bring any claim only in your individual capacity and not as a
-                    plaintiff or class member in any purported class or representative
-                    proceeding.
+                    plaintiff or class member in any purported class or representative proceeding.
                 </p>
             </>
         ),
@@ -282,10 +278,10 @@ const sections: LegalSectionInput[] = [
             <>
                 <p>
                     {APP_NAME} may modify these Terms at any time. Material changes will be
-                    indicated by updating the &ldquo;Effective&rdquo; date at the top of this
-                    page and, where appropriate, by additional notice on the Services. Your
-                    continued use of the Services after the effective date of an updated version
-                    constitutes acceptance of the revised Terms.
+                    indicated by updating the &ldquo;Effective&rdquo; date at the top of this page
+                    and, where appropriate, by additional notice on the Services. Your continued use
+                    of the Services after the effective date of an updated version constitutes
+                    acceptance of the revised Terms.
                 </p>
             </>
         ),

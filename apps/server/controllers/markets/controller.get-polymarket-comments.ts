@@ -117,8 +117,7 @@ export default class GetPolymarketCommentsController {
             let series_id: string | null = null;
             const cached_series_id = await services.redis.get(series_cache_key);
             if (cached_series_id !== null) {
-                series_id =
-                    cached_series_id === SERIES_ID_NULL_SENTINEL ? null : cached_series_id;
+                series_id = cached_series_id === SERIES_ID_NULL_SENTINEL ? null : cached_series_id;
             } else {
                 series_id = await gamma.fetch_event_series_id(event_id);
                 await services.redis.set(

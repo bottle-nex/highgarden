@@ -77,13 +77,7 @@ function HeadingStatRow({ stat }: { stat: StatRow }): JSX.Element {
     );
 }
 
-function StatRow({
-    stat,
-    is_last = false,
-}: {
-    stat: StatRow;
-    is_last?: boolean;
-}): JSX.Element {
+function StatRow({ stat, is_last = false }: { stat: StatRow; is_last?: boolean }): JSX.Element {
     const ref = useRef<HTMLDivElement>(null);
     const in_view = useInView(ref, { margin: center_band_margin, once: true });
 
@@ -101,13 +95,7 @@ function StatRow({
     );
 }
 
-function StatBlock({
-    stat,
-    in_view,
-}: {
-    stat: StatRow;
-    in_view: boolean;
-}): JSX.Element {
+function StatBlock({ stat, in_view }: { stat: StatRow; in_view: boolean }): JSX.Element {
     return (
         <motion.div
             initial={{ y: '100%' }}

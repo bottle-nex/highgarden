@@ -281,7 +281,7 @@ export default function EventPriceChart({
         const latest = points[points.length - 1]!.pct;
         let delta: number | null = null;
         if (range === '1d' && points.length >= 2) {
-            delta = latest - points[0]!.pct
+            delta = latest - points[0]!.pct;
         }
         onLoaded?.(latest, delta);
     }, [status, points, range, onLoaded]);

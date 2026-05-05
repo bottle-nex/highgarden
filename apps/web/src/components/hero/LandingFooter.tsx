@@ -122,8 +122,7 @@ function BottomBar(): JSX.Element {
     return (
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-3 font-mono text-[10px] uppercase tracking-[0.25em] text-white/40">
             <span>
-                © {APP_NAME} 2026 <span className="mx-2 text-white/20">·</span> All rights
-                reserved
+                © {APP_NAME} 2026 <span className="mx-2 text-white/20">·</span> All rights reserved
             </span>
             <div className="flex items-center gap-x-6">
                 <a href="#" className="hover:text-light-base transition-colors duration-200">

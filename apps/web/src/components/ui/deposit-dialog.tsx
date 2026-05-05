@@ -17,11 +17,60 @@ import ConnectWalletButton from '@/components/wallet/ConnectWalletButton';
 import { PiSignOut, PiWallet } from 'react-icons/pi';
 import { cn } from '@/lib/utils';
 
+type Mode = 'wallet' | 'address';
+
 interface DepositDialogProps {
     onClose: () => void;
 }
 
-type Mode = 'wallet' | 'address';
+interface DialogHeaderProps {
+    balance_text: string;
+    onClose: () => void;
+}
+
+interface ModeToggleProps {
+    mode: Mode;
+    on_change: (next: Mode) => void;
+}
+
+interface SendFromWalletPanelProps {
+    recipient: string;
+    on_deposit_success: () => void;
+}
+
+interface ConnectedWalletRowProps {
+    wallet_balance: number | null;
+    balance_loading: boolean;
+}
+
+interface AmountInputProps {
+    value: string;
+    on_change: (next: string) => void;
+    on_max: () => void;
+    max_disabled: boolean;
+}
+
+interface PresetChipsProps {
+    disabled: boolean;
+    on_pick: (amount: number) => void;
+}
+
+interface StatusLineProps {
+    insufficient: boolean;
+    error: string | null;
+    success_signature: string | null;
+}
+
+interface ReceiveAddressPanelProps {
+    address: string;
+    loading: boolean;
+    error: string | null;
+    on_retry: () => void;
+}
+
+interface NetworkWarningProps {
+    network_label: string;
+}
 
 const usd_fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
@@ -112,7 +161,7 @@ export default function DepositDialog({ onClose }: DepositDialogProps): JSX.Elem
 // Header
 // ────────────────────────────────────────────────────────────────────────────
 
-function DialogHeader({ balance_text, onClose }: { balance_text: string; onClose: () => void }) {
+function DialogHeader({ balance_text, onClose }: DialogHeaderProps) {
     return (
         <div className="relative flex flex-col items-center pb-4 text-center">
             <h2 className="text-xl font-semibold tracking-tight">
@@ -155,7 +204,7 @@ function DialogHeader({ balance_text, onClose }: { balance_text: string; onClose
 // Mode toggle
 // ────────────────────────────────────────────────────────────────────────────
 
-function ModeToggle({ mode, on_change }: { mode: Mode; on_change: (m: Mode) => void }) {
+function ModeToggle({ mode, on_change }: ModeToggleProps) {
     const options: Array<{ value: Mode; label: string }> = [
         { value: 'wallet', label: 'Send from wallet' },
         { value: 'address', label: 'Receive to address' },
@@ -192,13 +241,7 @@ function ModeToggle({ mode, on_change }: { mode: Mode; on_change: (m: Mode) => v
 // Send-from-wallet panel
 // ────────────────────────────────────────────────────────────────────────────
 
-function SendFromWalletPanel({
-    recipient,
-    on_deposit_success,
-}: {
-    recipient: string;
-    on_deposit_success: () => void;
-}) {
+function SendFromWalletPanel({ recipient, on_deposit_success }: SendFromWalletPanelProps) {
     const { publicKey } = useWallet();
     const {
         ui_amount: wallet_balance,
@@ -312,13 +355,7 @@ function SendFromWalletPanel({
 
 // ── helpers for SendFromWalletPanel ──────────────────────────────────────────
 
-function ConnectedWalletRow({
-    wallet_balance,
-    balance_loading,
-}: {
-    wallet_balance: number | null;
-    balance_loading: boolean;
-}) {
+function ConnectedWalletRow({ wallet_balance, balance_loading }: ConnectedWalletRowProps) {
     const { wallet, publicKey, disconnect } = useWallet();
     const wallet_name = wallet?.adapter.name ?? 'Wallet';
     const wallet_icon = wallet?.adapter.icon;
@@ -377,17 +414,7 @@ function ConnectedWalletRow({
     );
 }
 
-function AmountInput({
-    value,
-    on_change,
-    on_max,
-    max_disabled,
-}: {
-    value: string;
-    on_change: (v: string) => void;
-    on_max: () => void;
-    max_disabled: boolean;
-}) {
+function AmountInput({ value, on_change, on_max, max_disabled }: AmountInputProps) {
     return (
         <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-light text-light-alpha/40 pointer-events-none">
@@ -416,13 +443,7 @@ function AmountInput({
 
 const PRESETS = [10, 50, 100] as const;
 
-function PresetChips({
-    disabled,
-    on_pick,
-}: {
-    disabled: boolean;
-    on_pick: (amount: number) => void;
-}) {
+function PresetChips({ disabled, on_pick }: PresetChipsProps) {
     return (
         <div className="grid grid-cols-3 gap-2">
             {PRESETS.map((amt) => (
@@ -441,15 +462,7 @@ function PresetChips({
     );
 }
 
-function StatusLine({
-    insufficient,
-    error,
-    success_signature,
-}: {
-    insufficient: boolean;
-    error: string | null;
-    success_signature: string | null;
-}) {
+function StatusLine({ insufficient, error, success_signature }: StatusLineProps) {
     if (!insufficient && !error && !success_signature) return null;
     return (
         <div className="px-1 text-xs">
@@ -478,17 +491,7 @@ function parse_amount(raw: string): number | null {
 // Receive-to-address panel (QR + copy)
 // ────────────────────────────────────────────────────────────────────────────
 
-function ReceiveAddressPanel({
-    address,
-    loading,
-    error,
-    on_retry,
-}: {
-    address: string;
-    loading: boolean;
-    error: string | null;
-    on_retry: () => void;
-}) {
+function ReceiveAddressPanel({ address, loading, error, on_retry }: ReceiveAddressPanelProps) {
     const handle_copy = async () => {
         if (!address) return;
         try {
@@ -614,7 +617,7 @@ function ReceiveAddressPanel({
 //     );
 // }
 
-function NetworkWarning({ network_label }: { network_label: string }) {
+function NetworkWarning({ network_label }: NetworkWarningProps) {
     return (
         <div className="mt-3 flex items-start gap-2 rounded-md border border-dark-faded/60 bg-dark-base px-3 py-2.5">
             <PiInfo className="size-4 mt-0.5 shrink-0 text-light-alpha/50" />

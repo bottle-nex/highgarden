@@ -63,9 +63,7 @@ export default function CategorySidebar(): JSX.Element {
                             }}
                             className={cn(
                                 'group relative flex items-center gap-2.5 px-3 py-2 text-[14px] tracking-wider transition-colors duration-200 whitespace-nowrap cursor-pointer text-left rounded-sm',
-                                isActive
-                                    ? ''
-                                    : 'text-white/50 bg-none hover:text-white/80 ',
+                                isActive ? '' : 'text-white/50 bg-none hover:text-white/80 ',
                             )}
                         >
                             <span

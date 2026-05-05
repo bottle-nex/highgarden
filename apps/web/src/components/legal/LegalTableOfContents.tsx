@@ -68,9 +68,7 @@ export default function LegalTableOfContents({ items }: Props): JSX.Element {
                             onClick={(event) => handle_click(event, id)}
                             className={cn(
                                 'group flex items-center gap-3 py-2 text-[13px] tracking-wide transition-colors duration-300',
-                                is_active
-                                    ? 'text-white'
-                                    : 'text-white/45 hover:text-white/80',
+                                is_active ? 'text-white' : 'text-white/45 hover:text-white/80',
                             )}
                         >
                             <span

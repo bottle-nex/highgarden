@@ -2,8 +2,10 @@
 
 import { JSX, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import { AnimatePresence, motion } from 'motion/react';
 import type { MarketDTO } from '@solmarket/types';
-import MarketGrid from '@/components/dashboard/MarketGrid';
+import MarketCard from '@/components/dashboard/MarketCard';
 import SectionHeading from '@/components/dashboard/SectionHeading';
 import { fetch_bookmarked_markets } from '@/lib/api/bookmarks';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
@@ -50,7 +52,32 @@ export default function BookmarkedMarkets(): JSX.Element {
     // Re-fetch whenever the user toggles a bookmark on this page so the list
     // stays in sync with the optimistic store update.
     const id_count = useBookmarksStore((s) => s.ids.size);
+    const toggle_bookmark = useBookmarksStore((s) => s.toggle);
     const [state, set_state] = useState<State>({ status: 'loading' });
+    const [removing_id, set_removing_id] = useState<string | null>(null);
+
+    const handle_remove = async (market_id: string) => {
+        if (removing_id) return;
+        // Mark the card as "removing" so it pulses while the API call is in
+        // flight. We deliberately keep the card in `state.markets` until the
+        // request resolves — the pulse runs for exactly the loading duration,
+        // then the card is dropped and AnimatePresence runs the exit anim.
+        set_removing_id(market_id);
+        try {
+            await toggle_bookmark(market_id);
+            set_state((prev) => {
+                if (prev.status !== 'ready') return prev;
+                return {
+                    status: 'ready',
+                    markets: prev.markets.filter((m) => m.id !== market_id),
+                };
+            });
+        } catch {
+            toast.error('Could not remove bookmark');
+        } finally {
+            set_removing_id(null);
+        }
+    };
 
     useEffect(() => {
         if (!session?.user) return;
@@ -124,11 +151,65 @@ export default function BookmarkedMarkets(): JSX.Element {
     }
 
     return (
-        <MarketGrid
-            markets={state.markets.map(dto_to_card)}
-            get_href={(m) => `/event/${m.id}`}
-            show_sort={false}
-        />
+        <Section>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-7">
+                <AnimatePresence initial={false}>
+                    {state.markets.map((m) => {
+                        const card_market = dto_to_card(m);
+                        const is_removing = removing_id === m.id;
+                        return (
+                            <motion.div
+                                key={m.id}
+                                layout
+                                initial={{ opacity: 1, scale: 1 }}
+                                animate={
+                                    is_removing
+                                        ? {
+                                              // Slow, ease-in-out opacity sweep
+                                              // keeps cycling for as long as
+                                              // the API call is pending.
+                                              opacity: [1, 0.4, 1],
+                                              transition: {
+                                                  duration: 1.6,
+                                                  repeat: Infinity,
+                                                  ease: 'easeInOut',
+                                              },
+                                          }
+                                        : { opacity: 1, scale: 1, transition: { duration: 0.2 } }
+                                }
+                                exit={{
+                                    opacity: 0,
+                                    scale: 0.96,
+                                    transition: { duration: 0.45, ease: [0.32, 0.72, 0, 1] },
+                                }}
+                            >
+                                <MarketCard
+                                    market={card_market}
+                                    href={`/event/${m.id}`}
+                                    overlay={
+                                        <button
+                                            type="button"
+                                            disabled={is_removing}
+                                            onClick={(e) => {
+                                                // The card itself is a <Link>;
+                                                // stop the click from bubbling
+                                                // up and navigating away.
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                void handle_remove(m.id);
+                                            }}
+                                            className="red-btn rounded-sm px-2.5 py-1 text-[10px] font-semibold tracking-wider uppercase text-white disabled:opacity-60 cursor-pointer"
+                                        >
+                                            {is_removing ? 'Removing' : 'Remove'}
+                                        </button>
+                                    }
+                                />
+                            </motion.div>
+                        );
+                    })}
+                </AnimatePresence>
+            </div>
+        </Section>
     );
 }
 

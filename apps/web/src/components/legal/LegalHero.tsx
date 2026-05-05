@@ -55,8 +55,8 @@ export default function LegalHero({
                 initial={{ opacity: 0, y: 60 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={cn(
-                    "mt-6 max-w-5xl text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-black leading-[0.95] text-white",
-                    doto.className
+                    'mt-6 max-w-5xl text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-black leading-[0.95] text-white',
+                    doto.className,
                 )}
             >
                 {title}

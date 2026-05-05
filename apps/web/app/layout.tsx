@@ -7,6 +7,7 @@ import AuthSessionProvider from '@/providers/AuthSessionProvider';
 import WalletAdapterProvider from '@/providers/WalletAdapterProvider';
 import SessionSetter from '@/components/utility/SessionSetter';
 import WebSocketHost from '@/components/utility/WebSocketHost';
+import SignInModal from '@/components/auth/SignInModal';
 import { Toaster } from 'sonner';
 
 const inter = Inter({
@@ -80,6 +81,7 @@ export default function RootLayout({
                     <WalletAdapterProvider>
                         <SessionSetter />
                         <WebSocketHost />
+                        <SignInModal />
                         <Toaster
                             position="top-center"
                             theme="dark"

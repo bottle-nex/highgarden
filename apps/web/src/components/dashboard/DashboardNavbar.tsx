@@ -1,11 +1,13 @@
 'use client';
 import { JSX, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import SearchBar from './SearchBar';
 import { CroppedButton } from '../ui/cropped-button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';
 import { useSearchPanelStore } from '@/store/ui/useSearchPanelStore';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 import Image from 'next/image';
 import { signOut } from 'next-auth/react';
 import { AnimatePresence } from 'motion/react';
@@ -15,12 +17,17 @@ import DepositDialog from '../ui/deposit-dialog';
 import SearchPanel from './SearchPanel';
 
 export default function DashboardNavbar(): JSX.Element {
+    const router = useRouter();
     const { session } = useUserSessionStore();
+    const setOpenSigninModal = useUserSessionStore((s) => s.setOpenSigninModal);
     const [logoutOpen, setLogoutOpen] = useState<boolean>(false);
     const openDepositDropdown = useDepositDialogStore((s) => s.open);
     const setDepositDropdown = useDepositDialogStore((s) => s.setOpen);
     const searchOpen = useSearchPanelStore((s) => s.open);
     const setSearchOpen = useSearchPanelStore((s) => s.setOpen);
+    const requireAuth = useRequireAuth();
+
+    const is_signed_in = !!session?.user;
 
     return (
         <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm px-4">
@@ -32,7 +39,7 @@ export default function DashboardNavbar(): JSX.Element {
                 <div className="flex items-center gap-2">
                     <CroppedButton
                         size={'sm'}
-                        onClick={() => setDepositDropdown(!openDepositDropdown)}
+                        onClick={() => requireAuth(() => setDepositDropdown(!openDepositDropdown))}
                         className={cn(
                             'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
                             'bg-dark-faded text-white',
@@ -43,6 +50,7 @@ export default function DashboardNavbar(): JSX.Element {
                     </CroppedButton>
                     <CroppedButton
                         size={'sm'}
+                        onClick={() => requireAuth(() => router.push('/portfolio'))}
                         className={cn(
                             'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
                             'bg-white text-neutral-900',
@@ -51,28 +59,42 @@ export default function DashboardNavbar(): JSX.Element {
                     >
                         Portfolio
                     </CroppedButton>
-                    <span
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setLogoutOpen(true)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                setLogoutOpen(true);
-                            }
-                        }}
-                        className="cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/30 rounded-full"
-                    >
-                        {session?.user?.image && (
-                            <Image
-                                src={session?.user?.image}
-                                alt="User Avatar"
-                                width={32}
-                                height={32}
-                                className="rounded-full"
-                            />
-                        )}
-                    </span>
+                    {is_signed_in ? (
+                        <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setLogoutOpen(true)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setLogoutOpen(true);
+                                }
+                            }}
+                            className="cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/30 rounded-full"
+                        >
+                            {session?.user?.image && (
+                                <Image
+                                    src={session?.user?.image}
+                                    alt="User Avatar"
+                                    width={32}
+                                    height={32}
+                                    className="rounded-full"
+                                />
+                            )}
+                        </span>
+                    ) : (
+                        <CroppedButton
+                            size={'sm'}
+                            onClick={() => setOpenSigninModal(true)}
+                            className={cn(
+                                'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
+                                'bg-transparent border border-white/15 text-white hover:bg-white/5',
+                                'transition-all duration-200',
+                            )}
+                        >
+                            Sign in
+                        </CroppedButton>
+                    )}
                 </div>
             </div>
 
