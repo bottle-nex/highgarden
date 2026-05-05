@@ -25,7 +25,7 @@ export default class PolymarketBookService {
     asks: { price: string; size: string }[];
   }): BookTopOfBook {
     const top_bid = summary.bids[summary.bids.length - 1];
-    const top_ask = summary.asks[0];
+    const top_ask = summary.asks[summary.asks.length - 1];
     return {
       bestBidCents: top_bid ? Math.round(Number(top_bid.price) * 100) : null,
       bestAskCents: top_ask ? Math.round(Number(top_ask.price) * 100) : null,

@@ -6,6 +6,7 @@ import { prisma } from "@solmarket/database";
 import { SolmarketClient } from "@solmarket/contract";
 import { ENV } from "../config/config.env";
 import { decrypt_secret_key } from "./service.crypto";
+import chalk from "chalk";
 
 export interface PlaceOrderInput {
     userId: string;
@@ -33,20 +34,27 @@ export interface PlaceOrderResult {
 
 export default class SolanaTradeService {
     public async place_order(input: PlaceOrderInput): Promise<PlaceOrderResult> {
-        const user_keypair = await this.load_custodial_keypair(input.userId);
+        console.log(chalk.red("input came is : "), input);
+        const user_keypair: Keypair = await this.load_custodial_keypair(input.userId);
         const market_pda = await this.load_market_pda(input.marketDbId);
         this.assert_quote_market(input.signedQuote, market_pda);
 
         const client = this.build_client(user_keypair);
         const ed25519_ix = this.build_ed25519_ix(input.signedQuote);
         const user_usdc = this.derive_user_usdc(user_keypair.publicKey);
-
+        console.log(chalk.yellow("user usdc is : "), user_usdc);
         const sig = await this.send_place_order(client, {
             user: user_keypair,
             user_usdc,
             quote: input.signedQuote,
             ed25519_ix,
         });
+
+        console.log(chalk.green("final payload is : "), {
+            txSignature: sig,
+            marketPda: market_pda.toBase58(),
+            userPubkey: user_keypair.publicKey.toBase58(),
+        })
 
         return {
             txSignature: sig,

@@ -11,7 +11,7 @@
  * The same wallet always derives the same creds (it's deterministic), so
  * if you ever lose them you can re-run this against the same private key.
  */
-import { ClobClient, Chain } from "@polymarket/clob-client";
+import { ClobClient, Chain } from "@polymarket/clob-client-v2";
 import { Wallet, providers } from "ethers";
 import EnvService, { ENV } from "../config/env";
 
@@ -38,14 +38,12 @@ class PolymarketKeyDeriver {
             ? new providers.JsonRpcProvider(ENV.HEDGER_POLYGON_RPC_URL)
             : undefined;
         const wallet = new Wallet(ENV.HEDGER_POLYMARKET_PRIVATE_KEY!, provider);
-        return new ClobClient(
-            ENV.HEDGER_POLYMARKET_REST_URL,
-            Chain.POLYGON,
-            wallet,
-            undefined, // no creds yet — that's what we're deriving
-            undefined,
-            ENV.HEDGER_POLYMARKET_FUNDER_ADDRESS,
-        );
+        return new ClobClient({
+            host: ENV.HEDGER_POLYMARKET_REST_URL,
+            chain: Chain.POLYGON,
+            signer: wallet,
+            funderAddress: ENV.HEDGER_POLYMARKET_FUNDER_ADDRESS,
+        });
     }
 
     private print_credentials(creds: { key: string; secret: string; passphrase: string }): void {

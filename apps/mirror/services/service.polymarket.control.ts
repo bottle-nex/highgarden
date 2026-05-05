@@ -2,7 +2,6 @@ import Redis from "ioredis";
 import { ENV } from "../config/config.env";
 import { REDIS_CHANNELS, type ControlMessage } from "@solmarket/polymarket-contracts";
 import type MarketSocket from "../socket/socket.market";
-import chalk from "chalk";
 
 const PERIODIC_CONVERGE_MS = 60_000;
 const RETRY_AFTER_FAILURE_MS = 2_000;
@@ -92,15 +91,6 @@ export default class PolymarketControlListener {
         const to_add = desired.filter((id) => !current_set.has(id));
         const to_remove = current.filter((id) => !desired_set.has(id));
 
-        console.log(
-            chalk.cyan("[poly:control] converge"),
-            chalk.gray(
-                `desired=${desired.length} current=${current.length} to_add=${to_add.length} to_remove=${to_remove.length}`,
-            ),
-            to_add.length > 0 ? chalk.green(`+${to_add.join(",")}`) : "",
-            to_remove.length > 0 ? chalk.red(`-${to_remove.join(",")}`) : "",
-        );
-
         for (const id of to_add) this.market.subscribe(id);
         for (const id of to_remove) this.market.unsubscribe(id);
 
@@ -132,10 +122,10 @@ export default class PolymarketControlListener {
             return;
         }
         if (parsed.action === "subscribe") {
-            console.log(chalk.green("subscribe event: "), parsed.token_id);
+            console.log("subscribe event: ", parsed.token_id);
             this.market.subscribe(parsed.token_id);
         } else {
-            console.log(chalk.red("unsubscribe event: "), parsed.token_id);
+            console.log("unsubscribe event: ", parsed.token_id);
             this.market.unsubscribe(parsed.token_id);
         }
     }

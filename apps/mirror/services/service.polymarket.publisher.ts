@@ -1,6 +1,5 @@
 import type Redis from "ioredis";
 import { REDIS_CHANNELS, type MarketEvent, type UserEvent } from "@solmarket/polymarket-contracts";
-import chalk from "chalk";
 
 export default class PolymarketPublisher {
     private redis!: Redis;
@@ -12,7 +11,7 @@ export default class PolymarketPublisher {
         const payload = JSON.stringify(event);
         switch (event.event_type) {
             case "book": {
-                console.log(chalk.blue("book received for: "), event.asset_id);
+                console.log("book received for: ", event.asset_id);
                 await this.redis.publish(REDIS_CHANNELS.market_book(event.asset_id), payload);
                 return;
             }

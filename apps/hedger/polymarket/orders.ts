@@ -1,4 +1,4 @@
-import { OrderType, Side as PolySide } from "@polymarket/clob-client";
+import { OrderType, Side as PolySide } from "@polymarket/clob-client-v2";
 import LoggerFactory from "../log/logger";
 import PolymarketClientFactory from "./client";
 import type { Side as DbSide } from "@solmarket/database";
@@ -102,6 +102,19 @@ export default class PolymarketOrderService {
       throw new RetryableError(r.errorMsg ?? "polymarket order rejected");
     }
 
+    this.log.debug(
+      {
+        side: input.side,
+        priceCentsCap: input.priceCents,
+        requestedShares: input.sizeShares,
+        makingAmount: r.makingAmount,
+        takingAmount: r.takingAmount,
+        status: r.status,
+        orderID: r.orderID,
+      },
+      "polymarket order response (raw amounts)",
+    );
+
     const filled_shares = this.compute_filled_shares(r, input);
     const avg_price_cents = this.compute_avg_price(r, input, filled_shares);
     const fully_filled = filled_shares >= input.sizeShares;
@@ -115,12 +128,17 @@ export default class PolymarketOrderService {
     };
   }
 
+  // Polymarket order semantics (per @polymarket/order-utils):
+  //   BUY  → maker side = USDC,   taker side = shares
+  //   SELL → maker side = shares, taker side = USDC
+  // The response's makingAmount/takingAmount report the FILLED portion of each
+  // side, in human units (e.g. "1.0" for 1 share, "0.17" for 17¢).
   private compute_filled_shares(
     resp: { takingAmount?: string; makingAmount?: string },
     input: PlaceMarketOrderInput,
   ): number {
-    const num =
-      input.side === "BUY" ? Number(resp.makingAmount ?? 0) : Number(resp.takingAmount ?? 0);
+    const shares_str = input.side === "BUY" ? resp.takingAmount : resp.makingAmount;
+    const num = Number(shares_str ?? 0);
     return Number.isFinite(num) && num > 0 ? Math.floor(num) : 0;
   }
 
@@ -130,8 +148,8 @@ export default class PolymarketOrderService {
     filled_shares: number,
   ): number | null {
     if (filled_shares === 0) return null;
-    const usdc =
-      input.side === "BUY" ? Number(resp.takingAmount ?? 0) : Number(resp.makingAmount ?? 0);
+    const usdc_str = input.side === "BUY" ? resp.makingAmount : resp.takingAmount;
+    const usdc = Number(usdc_str ?? 0);
     if (!Number.isFinite(usdc) || usdc <= 0) return input.priceCents;
     return Math.round((usdc / filled_shares) * 100);
   }

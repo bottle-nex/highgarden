@@ -3,7 +3,6 @@ import type { SocketState } from "@solmarket/polymarket-contracts";
 import { POLY_WS } from "../config/config.polymarket";
 import type PolymarketPublisher from "../services/service.polymarket.publisher";
 import type TokenIndex from "../services/service.token-index";
-import chalk from "chalk";
 
 export abstract class SocketBase {
     protected ws: WebSocket | null = null;
@@ -34,13 +33,11 @@ export abstract class SocketBase {
 
     public async connect(): Promise<void> {
         console.log(
-            chalk.blue(`[poly:${this.name}] connect()`),
-            chalk.gray(`state=${this.state} stopped=${this.stopped}`),
+            `[poly:${this.name}] connect()`,
+            `state=${this.state} stopped=${this.stopped}`,
         );
         if (this.state === "open" || this.state === "connecting") {
-            console.log(
-                chalk.gray(`[poly:${this.name}] connect() skipped — already ${this.state}`),
-            );
+            console.log(`[poly:${this.name}] connect() skipped — already ${this.state}`);
             return;
         }
         this.stopped = false;
@@ -93,7 +90,7 @@ export abstract class SocketBase {
     }
 
     private on_open(): void {
-        console.log(chalk.green(`[poly:${this.name}] ws opened`));
+        console.log(`[poly:${this.name}] ws opened`);
         this.set_state("open");
         this.reconnect_delay = POLY_WS.reconnect_initial_ms;
 
@@ -101,16 +98,14 @@ export abstract class SocketBase {
         if (frame) {
             const ids = (frame as { assets_ids?: string[] }).assets_ids ?? [];
             console.log(
-                chalk.green(`[poly:${this.name}] sending subscribe frame`),
-                chalk.gray(`tokens=${ids.length}`),
+                `[poly:${this.name}] sending subscribe frame`,
+                `tokens=${ids.length}`,
                 ids,
             );
             this.ws!.send(JSON.stringify(frame));
         } else {
             console.log(
-                chalk.yellow(
-                    `[poly:${this.name}] no tokens in registry at open — skipping subscribe frame`,
-                ),
+                `[poly:${this.name}] no tokens in registry at open — skipping subscribe frame`,
             );
         }
 
@@ -133,8 +128,6 @@ export abstract class SocketBase {
     }
 
     private on_message(data: unknown): void {
-        // console.log(chalk.magenta("unparsed data from clob client: "), data);
-
         if (typeof data !== "string") return;
         if (data === "PONG" || data === "pong") return;
 
@@ -144,7 +137,7 @@ export abstract class SocketBase {
         } catch {
             return;
         }
-        console.log(chalk.cyanBright("parsed data is : "), parsed);
+        console.log("parsed data is : ", parsed);
 
         let log_data_1;
         let log_data_2;
@@ -158,9 +151,8 @@ export abstract class SocketBase {
             }
         }
 
-        console.log(chalk.yellow("message received from clob client: "), log_data_1);
-        console.log(chalk.yellow("message received from clob client: "), log_data_2);
-        // console.log(chalk.yellow("message received from clob client"));
+        console.log("message received from clob client: ", log_data_1);
+        console.log("message received from clob client: ", log_data_2);
 
         const items = Array.isArray(parsed) ? parsed : [parsed];
         for (const item of items) {

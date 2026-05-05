@@ -28,7 +28,7 @@
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
     "@solana/web3.js": "^1.98.4",
-    "@polymarket/clob-client": "^4.21.0",
+    "@polymarket/clob-client-v2": "^1.0.3",
     "bullmq": "^5.34.0",
     "ioredis": "^5.10.1",
     "ethers": "^5.7.2",

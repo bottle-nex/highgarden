@@ -2,7 +2,6 @@ import Redis from "ioredis";
 import { REDIS_CHANNELS } from "@solmarket/polymarket-contracts";
 import type MirrorControlPublisher from "../services/service.mirror-control";
 import type BookCache from "./../services/service.book-cache";
-import chalk from "chalk";
 
 export default class RedisSubscriber {
     private sub: Redis;
@@ -63,19 +62,11 @@ export default class RedisSubscriber {
 
     public unsubscribe(token_id: string): void {
         const prev = this.refs.get(token_id) ?? 0;
-        console.log(
-            chalk.yellow("[ws:sub] unsubscribe"),
-            chalk.gray(`prev_refs=${prev}`),
-            token_id,
-        );
+        console.log("[ws:sub] unsubscribe", `prev_refs=${prev}`, token_id);
         if (prev <= 0) return;
 
         const next = prev - 1;
-        console.log(
-            chalk.yellow("[ws:sub] refs after "),
-            chalk.gray(`next_refs=${next}`),
-            token_id,
-        );
+        console.log("[ws:sub] refs after ", `next_refs=${next}`, token_id);
         if (next > 0) {
             this.refs.set(token_id, next);
             return;
@@ -100,14 +91,14 @@ export default class RedisSubscriber {
             this.channel_to_token.set(ch, token_id);
         }
         this.sub.subscribe(...channels).catch((err) => {
-            console.error(chalk.red("[ws:server] redis subscribe failed"), token_id, err);
+            console.error("[ws:server] redis subscribe failed", token_id, err);
         });
-        console.log(chalk.green("[ws:server] tracking begin"), token_id);
+        console.log("[ws:server] tracking begin", token_id);
         Promise.all([
             this.mirror_control.subscribe([token_id]),
             this.book_cache.track([token_id]),
         ]).catch((err) => {
-            console.error(chalk.red("[ws:server] mirror arm failed"), token_id, err);
+            console.error("[ws:server] mirror arm failed", token_id, err);
         });
     }
 
@@ -117,14 +108,14 @@ export default class RedisSubscriber {
             this.channel_to_token.delete(ch);
         }
         this.sub.unsubscribe(...channels).catch((err) => {
-            console.error(chalk.red("[ws:server] redis unsubscribe failed"), token_id, err);
+            console.error("[ws:server] redis unsubscribe failed", token_id, err);
         });
-        console.log(chalk.yellow("[ws:server] tracking end"), token_id);
+        console.log("[ws:server] tracking end", token_id);
         Promise.all([
             this.mirror_control.unsubscribe([token_id]),
             this.book_cache.untrack([token_id]),
         ]).catch((err) => {
-            console.error(chalk.red("[ws:server] mirror disarm failed"), token_id, err);
+            console.error("[ws:server] mirror disarm failed", token_id, err);
         });
     }
 

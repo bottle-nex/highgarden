@@ -8,7 +8,6 @@ import { SERVER_MESSAGE_TYPE, CLIENT_MESSAGE_TYPE } from "@solmarket/types";
 import type { ServerMessage, ClientMessage, CustomWebSocketFields } from "@solmarket/types";
 import type MirrorControlPublisher from "../services/service.mirror-control";
 import type BookCache from "../services/service.book-cache";
-import chalk from "chalk";
 
 export interface CustomWebSocket extends WebSocket, CustomWebSocketFields {}
 
@@ -71,7 +70,7 @@ export default class SocketServer {
             // configured to (NODE_ENV != production).
             const origin = req.headers.origin;
             if (!this.is_origin_allowed(origin)) {
-                console.warn(chalk.yellow("[ws] origin rejected"), origin ?? "<none>");
+                console.warn("[ws] origin rejected", origin ?? "<none>");
                 socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
                 socket.destroy();
                 return;
@@ -82,7 +81,7 @@ export default class SocketServer {
             const ip = this.client_ip(req);
             const current = this.ip_conn_count.get(ip) ?? 0;
             if (current >= MAX_CONNECTIONS_PER_IP) {
-                console.warn(chalk.yellow("[ws] ip cap hit"), ip, `count=${current}`);
+                console.warn("[ws] ip cap hit", ip, `count=${current}`);
                 socket.write("HTTP/1.1 429 Too Many Requests\r\n\r\n");
                 socket.destroy();
                 return;
@@ -108,7 +107,7 @@ export default class SocketServer {
         this.wss.on("connection", (raw_ws: WebSocket) => {
             const ws = raw_ws as CustomWebSocket;
             const label = this.label_for(ws);
-            console.log(chalk.bgGreen("socket connected"), label, chalk.gray(ws.id));
+            console.log("socket connected", label, ws.id);
 
             // Single-session-per-email is enforced for AUTHED users only;
             // guests have no identity and each connection is independent.
@@ -123,17 +122,12 @@ export default class SocketServer {
             });
 
             ws.on("close", () => {
-                console.log(chalk.bgRed("socket disconnected"), label, chalk.gray(ws.id));
+                console.log("socket disconnected", label, ws.id);
                 this.on_client_close(ws);
             });
 
             ws.on("error", (err) => {
-                console.log(
-                    chalk.bgRed("socket disconnected with error"),
-                    label,
-                    chalk.gray(ws.id),
-                    err,
-                );
+                console.log("socket disconnected with error", label, ws.id, err);
                 ws.close();
             });
         });
@@ -196,7 +190,7 @@ export default class SocketServer {
         if (!old_ws_id || old_ws_id === new_ws_id) return;
 
         const old_ws = this.socket_mapping.get(old_ws_id);
-        console.log(chalk.yellow("[ws] evicting old socket for"), email, chalk.gray(old_ws_id));
+        console.log("[ws] evicting old socket for", email, old_ws_id);
 
         this.cleanup_socket(old_ws_id, email);
         old_ws?.close(1000, "replaced by new connection");
@@ -255,7 +249,7 @@ export default class SocketServer {
         // tokens.
         if (subs.size >= MAX_SUBSCRIPTIONS_PER_SOCKET) {
             console.warn(
-                chalk.yellow("[ws] subscription cap hit"),
+                "[ws] subscription cap hit",
                 this.label_for(ws),
                 `cap=${MAX_SUBSCRIPTIONS_PER_SOCKET}`,
             );
@@ -279,7 +273,7 @@ export default class SocketServer {
         }
         clients.add(ws.id);
 
-        console.log(chalk.green("→ subscribe  "), this.label_for(ws), token_id);
+        console.log("→ subscribe  ", this.label_for(ws), token_id);
 
         this.subscriber.subscribe(token_id);
         this.fetch_and_send_book(ws, token_id);
@@ -305,7 +299,7 @@ export default class SocketServer {
             }
         }
 
-        console.log(chalk.yellow("← unsubscribe"), this.label_for(ws), token_id);
+        console.log("← unsubscribe", this.label_for(ws), token_id);
 
         this.subscriber.unsubscribe(token_id);
         this.send(ws, { type: SERVER_MESSAGE_TYPE.UNSUBSCRIBED, token_id });
@@ -339,12 +333,7 @@ export default class SocketServer {
                         this.token_clients.delete(token_id);
                     }
                 }
-                console.log(
-                    chalk.yellow("← unsubscribe"),
-                    chalk.gray("[disconnect]"),
-                    label,
-                    token_id,
-                );
+                console.log("← unsubscribe", "[disconnect]", label, token_id);
                 this.subscriber.unsubscribe(token_id);
             }
         }
@@ -364,28 +353,28 @@ export default class SocketServer {
      */
     private fetch_and_send_book(ws: CustomWebSocket, token_id: string): void {
         const label = this.label_for(ws);
-        console.log(chalk.cyan("[ws:book] fetching"), label, token_id);
+        console.log("[ws:book] fetching", label, token_id);
         void (async () => {
             try {
                 const snapshot = await this.get_book_snapshot(token_id);
                 if (!snapshot) return;
                 if (ws.readyState !== ws.OPEN) {
                     console.warn(
-                        chalk.yellow("[ws:book] ws closed before send"),
+                        "[ws:book] ws closed before send",
                         token_id,
-                        chalk.gray(`ws_state=${ws.readyState}`),
+                        `ws_state=${ws.readyState}`,
                     );
                     return;
                 }
                 console.log(
-                    chalk.cyan("→ book fetch "),
+                    "→ book fetch ",
                     label,
                     token_id,
-                    chalk.gray(`bids=${snapshot.bids.length} asks=${snapshot.asks.length}`),
+                    `bids=${snapshot.bids.length} asks=${snapshot.asks.length}`,
                 );
                 this.send(ws, { type: SERVER_MESSAGE_TYPE.MARKET, event: snapshot });
             } catch (err) {
-                console.warn(chalk.yellow("[ws:book] fetch error"), token_id, err);
+                console.warn("[ws:book] fetch error", token_id, err);
             }
         })();
     }
@@ -425,9 +414,9 @@ export default class SocketServer {
 
     private async do_fetch_book_snapshot(token_id: string): Promise<BookSnapshotPayload | null> {
         const res = await fetch(`https://clob.polymarket.com/book?token_id=${token_id}`);
-        console.log(chalk.cyan("[ws:book] response"), token_id, chalk.gray(`status=${res.status}`));
+        console.log("[ws:book] response", token_id, `status=${res.status}`);
         if (!res.ok) {
-            console.warn(chalk.yellow("[ws:book] fetch failed"), token_id, res.status);
+            console.warn("[ws:book] fetch failed", token_id, res.status);
             return null;
         }
         const data = (await res.json()) as Record<string, unknown>;
