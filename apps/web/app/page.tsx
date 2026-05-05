@@ -12,7 +12,7 @@ import LandingNavbar from '@/components/navbar/LandingNavbar';
 
 export default function Home() {
     return (
-        <div className="min-h-screen w-screen bg-neutral-950 flex flex-col">
+        <div className="min-h-screen w-screen bg-dark-alpha flex flex-col">
             <LandingNavbar />
             <LandingCtaSection />
             <LandingTextContent />

@@ -1,15 +1,17 @@
 'use client';
-import { JSX, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { IoIosArrowRoundForward } from 'react-icons/io';
 import { doto } from './LandingTextContent';
+import { motion } from 'framer-motion';
 
 type CardId = 'marketing' | 'sanity' | 'pricing';
 
 interface CardConfig {
     id: CardId;
     label: string;
+    cordinates: Array<{ x: number; y: number }>;
     context: string;
     questions: string[];
     activeBg: string;
@@ -25,6 +27,20 @@ const CARDS: CardConfig[] = [
         id: 'marketing',
         label: 'TRADER DESK',
         context: 'MARKETS, LIQUIDITY',
+        cordinates: [
+            {
+                x: 20,
+                y: 80,
+            },
+            {
+                x: 40,
+                y: 20,
+            },
+            {
+                x: 60,
+                y: 80,
+            }
+        ],
         questions: [
             'WHY IS THE BOOK ALREADY DEEP ON DAY ONE?',
             'HOW TIGHT ARE THE SPREADS ON SOLMARKET?',
@@ -41,6 +57,20 @@ const CARDS: CardConfig[] = [
         id: 'pricing',
         label: 'FEES & SETTLEMENT',
         context: 'FEES, PAYOUTS',
+        cordinates: [
+            {
+                x: 20,
+                y: 20,
+            },
+            {
+                x: 40,
+                y: 60,
+            },
+            {
+                x: 60,
+                y: 40,
+            }
+        ],
         questions: [
             'WHAT FEES DO I PAY TO TRADE A MARKET?',
             'HOW FAST DO WINNINGS SETTLE TO MY WALLET?',
@@ -57,6 +87,20 @@ const CARDS: CardConfig[] = [
         id: 'sanity',
         label: 'HOW IT WORKS',
         context: 'PROTOCOL, DOCS',
+        cordinates: [
+            {
+                x: 60,
+                y: 20,
+            },
+            {
+                x: 40,
+                y: 70,
+            },
+            {
+                x: 80,
+                y: 80,
+            }
+        ],
         questions: [
             'HOW DOES SOLMARKET MIRROR POLYMARKET LIQUIDITY?',
             'WHAT HAPPENS WHEN A MARKET RESOLVES?',
@@ -76,12 +120,25 @@ const INACTIVE_BG =
 
 export default function LandingFeatureCardsSection(): JSX.Element {
     const [activeId, setActiveId] = useState<CardId>('pricing');
+    const active_card = CARDS.find((c) => c.id === activeId) ?? CARDS[0];
+
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setActiveId((prev) => {
+                if (prev === 'marketing') return 'pricing';
+                if (prev === 'pricing') return 'sanity';
+                return 'marketing';
+            });
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [])
 
     return (
         <section className="relative z-30 w-full bg-neutral-950 py-32">
             <div className="max-w-7xl mx-auto w-full px-6">
                 <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-[0.25em] text-neutral-500">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#ff4000]" />
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-alpha" />
                     <span>{'// Why SolMarket'}</span>
                 </div>
                 <h1
@@ -99,24 +156,61 @@ export default function LandingFeatureCardsSection(): JSX.Element {
                 </p>
             </div>
             <div className="max-w-7xl mx-auto w-full px-6 mt-16">
-                <div className="grid w-full grid-cols-1 gap-0 md:grid-cols-3">
-                    {CARDS.map((card) => {
+                <div className="relative grid w-full grid-cols-1 gap-0 md:grid-cols-3">
+                    <svg
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 z-30 hidden h-full w-full md:block"
+                        preserveAspectRatio="none"
+                        viewBox="0 0 300 100"
+                    >
+                        <motion.polyline
+                            key={activeId}
+                            fill="none"
+                            stroke="white"
+                            strokeWidth="0.6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            pathLength={1}
+                            strokeDasharray="1"
+                            initial={{ strokeDashoffset: 1 }}
+                            animate={{ strokeDashoffset: 0 }}
+                            transition={{ duration: 2.5, ease: 'easeInOut' }}
+                            points={CARDS.map(
+                                (_, i) =>
+                                    `${i * 100 + active_card.cordinates[i].x},${active_card.cordinates[i].y}`,
+                            ).join(' ')}
+                        />
+                    </svg>
+                    {CARDS.map((card, index) => {
                         const isActive = activeId === card.id;
                         const stateClasses = isActive
                             ? `${card.activeBg} ${card.activeInk}`
                             : `${INACTIVE_BG} text-neutral-500`;
                         return (
-                            <div
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.5, delay: index * 0.8 }}
                                 key={card.id}
                                 onClick={() => setActiveId(card.id)}
                                 className={`group relative aspect-square overflow-hidden text-left  uppercase tracking-wider transition-colors duration-300 ease-in-out ${stateClasses}`}
                             >
+                                <span
+                                    aria-hidden
+                                    className={cn("pointer-events-none absolute z-20 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2",
+                                        isActive ? "bg-alpha" : "bg-white"
+                                    )}
+                                    style={{
+                                        left: `${active_card.cordinates[index].x}%`,
+                                        top: `${active_card.cordinates[index].y}%`,
+                                    }}
+                                />
                                 {isActive ? (
                                     <ActiveCard card={card} />
                                 ) : (
                                     <InactiveCard label={card.label} />
                                 )}
-                            </div>
+                            </motion.div>
                         );
                     })}
                 </div>
@@ -128,21 +222,24 @@ export default function LandingFeatureCardsSection(): JSX.Element {
 function InactiveCard({ label }: { label: string }): JSX.Element {
     const [isHovered, setIsHovered] = useState<boolean>(false);
     return (
-        <div
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            className="flex h-full w-full flex-col p-8"
-        >
-            <div className="h-2.25" aria-hidden />
-            <div className="relative mt-2 flex flex-1 items-center justify-center bg-neutral-950 p-3">
-                <span className="text-sm text-neutral-500">{label}</span>
-                <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-neutral-600">
-                    [ CLICK TO SEE ]
-                </span>
-                {isHovered && <EdgeArrows borderColor="border-white/70" />}
+        <section className='relative h-full w-full'>
+
+            <div
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+                className="flex h-full w-full flex-col p-8"
+            >
+                <div className="h-2.25" aria-hidden />
+                <div className="relative mt-2 flex flex-1 items-center justify-center bg-neutral-950 p-3">
+                    <span className="text-sm text-neutral-500">{label}</span>
+                    <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-neutral-600">
+                        [ CLICK TO SEE ]
+                    </span>
+                    {isHovered && <EdgeArrows borderColor="border-white/70" />}
+                </div>
+                <div className="mt-2 h-2.25" aria-hidden />
             </div>
-            <div className="mt-2 h-2.25" aria-hidden />
-        </div>
+        </section>
     );
 }
 
