@@ -48,7 +48,7 @@ export default function LandingTextContent(): JSX.Element {
                 <div className="mx-auto max-w-6xl px-6 pt-28">
                     <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-[0.25em] text-black/70">
                         <span className="inline-block h-1.5 w-1.5 rounded-full bg-black animate-pulse" />
-                        <span>Live on Arcium · Encrypted execution</span>
+                        <span>Live on Solana mainnet · 1:1 USDC settlement</span>
                     </div>
                     <motion.h1
                         style={{ y: heading_y }}
@@ -57,7 +57,7 @@ export default function LandingTextContent(): JSX.Element {
                             doto.className,
                         )}
                     >
-                        Explore the first application live on Arcium.
+                        The fastest prediction market built for Solana.
                     </motion.h1>
                 </div>
 
@@ -71,7 +71,7 @@ export default function LandingTextContent(): JSX.Element {
                 <div className="mx-auto w-full max-w-6xl px-6 pt-28 pb-28">
                     <div className="flex flex-col items-center text-center gap-6">
                         <span className="text-xs font-mono uppercase tracking-[0.3em] text-black/60">
-                            Now in private beta
+                            Mainnet · Live now
                         </span>
                         <h2
                             className={cn(
@@ -82,7 +82,7 @@ export default function LandingTextContent(): JSX.Element {
                             {APP_NAME}
                         </h2>
                         <p className="text-2xl md:text-3xl lg:text-4xl text-black/80 max-w-2xl tracking-tight font-medium">
-                            <RandomRevealText text="Incognito mode for Solana." />
+                            <RandomRevealText text="Polymarket depth. Solana speed." />
                         </p>
                         <CroppedButton size={'lg'} className="bg-black text-white mt-6">
                             <span>Start trading</span>

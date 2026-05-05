@@ -39,7 +39,6 @@ const SOCIALS = [
     { name: 'Twitter', href: '#' },
     { name: 'GitHub', href: '#' },
     { name: 'Discord', href: '#' },
-    { name: 'Mirror', href: '#' },
 ] as const;
 
 export default function LandingFooter(): JSX.Element {

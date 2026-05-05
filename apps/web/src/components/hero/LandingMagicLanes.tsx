@@ -13,9 +13,9 @@ interface StatRow {
 }
 
 const stats: StatRow[] = [
-    { value: '30', label: 'APPS DEPLOYED', align: 'right' },
-    { value: '300', label: 'HACKATHON SUBMISSIONS', align: 'center' },
-    { value: '1000', label: 'TRANSACTIONS PROCESSED', align: 'left' },
+    { value: '25M', label: 'USDC TRADED', align: 'right' },
+    { value: '5K', label: 'MARKETS RESOLVED', align: 'center' },
+    { value: '12K', label: 'ACTIVE TRADERS', align: 'left' },
 ];
 
 const row_align_class: Record<Alignment, string> = {
@@ -68,8 +68,8 @@ function HeadingStatRow({ stat }: { stat: StatRow }): JSX.Element {
                     style={{ willChange: 'transform' }}
                     className="max-w-xl text-3xl md:text-4xl lg:text-5xl tracking-tight leading-[1.05] font-medium text-black"
                 >
-                    <span className="text-[#ff4000]">Battle Tested:</span>{' '}
-                    <span>Public Testnet started a revolution</span>
+                    <span className="text-[#ff4000]">Battle tested:</span>{' '}
+                    <span>day-one depth, settled in milliseconds.</span>
                 </motion.h2>
             </div>
             <StatBlock stat={stat} in_view={in_view} />

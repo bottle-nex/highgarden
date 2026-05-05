@@ -4,6 +4,7 @@ import LandingFeatureCardsSection from '@/components/hero/LandingFeatureCardsSec
 import LandingFooter from '@/components/hero/LandingFooter';
 import LandingMagicLanes from '@/components/hero/LandingMagicLanes';
 import LandingTextContent from '@/components/hero/LandingTextContent';
+import AppFaq from '@/components/faq/AppFaq';
 // import LandingFeatureCardsSection from '@/components/hero/LandingFeatureCardsSection';
 // import LandingFooter from '@/components/hero/LandingFooter';
 // import LandingInteractiveSection from '@/components/hero/LandingInteractiveSection';
@@ -17,6 +18,14 @@ export default function Home() {
             <LandingTextContent />
             <LandingFeatureCardsSection />
             <LandingMagicLanes />
+
+            <section className="relative z-30 w-full bg-neutral-950 px-6 pt-24 md:px-10">
+                <div className="mx-auto w-full max-w-7xl">
+                    <AppFaq />
+                </div>
+            </section>
+
+
 
             {/* <LandingInteractiveSection />
             <LandingBentoSection /> */}

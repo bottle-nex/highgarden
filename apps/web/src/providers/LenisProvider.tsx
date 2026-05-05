@@ -1,3 +1,5 @@
+'use client';
+
 import { ReactLenis } from 'lenis/react';
 
 interface LenisProviderProps {
@@ -9,11 +11,11 @@ export default function LenisProvider({ children }: LenisProviderProps) {
         <ReactLenis
             root
             options={{
-                lerp: 0.075,
-                duration: 1.3,
+                lerp: 0.08,
                 smoothWheel: true,
-                wheelMultiplier: 1.15,
-                touchMultiplier: 1.4,
+                wheelMultiplier: 0.9,
+                touchMultiplier: 1.5,
+                syncTouch: false,
                 orientation: 'vertical',
                 gestureOrientation: 'vertical',
                 autoRaf: true,
