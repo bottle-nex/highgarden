@@ -13,6 +13,7 @@ import RedisConnectionFactory from "./queue/connection";
 import EventRepo from "./db/event.repo";
 import HedgeProcessor from "./hedger/processor";
 import BootRecovery from "./hedger/recovery";
+import ResolverPoller from "./resolver/poll";
 import type { OrderFilledEvent } from "./solana/decoder";
 import type { HedgeJobData, HedgeJobResult } from "./queue/types";
 import type { Job } from "bullmq";
@@ -25,6 +26,7 @@ class HedgerApp {
   private readonly producer = new HedgeQueueProducer();
   private readonly recovery = new BootRecovery();
   private readonly processor = new HedgeProcessor();
+  private readonly resolver = new ResolverPoller();
   private listener: LiveListener | null = null;
   private poller: CatchUpPoller | null = null;
   private worker: HedgeWorker | null = null;
@@ -36,6 +38,7 @@ class HedgerApp {
     await this.start_health();
     await this.start_queue_machinery();
     await this.start_solana_inputs();
+    this.resolver.start();
     await this.events.record({
       level: "INFO",
       category: "boot",
@@ -46,6 +49,7 @@ class HedgerApp {
 
   public async stop(): Promise<void> {
     this.log.info("shutting down");
+    this.resolver.stop();
     await this.stop_solana_inputs();
     await this.stop_queue_machinery();
     await this.health.stop();
