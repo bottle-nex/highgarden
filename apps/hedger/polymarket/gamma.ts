@@ -12,6 +12,10 @@ export interface GammaResolution {
     outcomes: string[];
     /** Final prices array as strings, e.g. ["1","0"]. Empty when not resolved. */
     outcomePrices: string[];
+    /** CTF condition ID (bytes32 hex). Required for redeemPositions. */
+    conditionId: string | null;
+    /** True for Polymarket NegRisk multi-outcome markets — redemption uses a different contract. */
+    negRisk: boolean;
 }
 
 interface RawGammaMarket {
@@ -24,6 +28,8 @@ interface RawGammaMarket {
     endDate?: string;
     umaEndDate?: string;
     resolvedBy?: string | null;
+    conditionId?: string | null;
+    negRisk?: boolean;
 }
 
 export default class HedgerGammaClient {
@@ -69,6 +75,8 @@ export default class HedgerGammaClient {
             resolvedAt: this.derive_resolved_at(raw),
             outcomes,
             outcomePrices: outcome_prices,
+            conditionId: raw.conditionId ?? null,
+            negRisk: !!raw.negRisk,
         };
     }
 

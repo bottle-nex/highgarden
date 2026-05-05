@@ -6,6 +6,7 @@ import EventRepo from "../db/event.repo";
 import HedgerGammaClient, { type GammaResolution } from "../polymarket/gamma";
 import ResolverStateRepo, { type ResolverStateRow } from "../db/resolver-state.repo";
 import SolanaResolutionSubmitter from "./submit-solana";
+import PolymarketRedeemer, { type RedeemOutcome } from "../polymarket/redeem";
 
 interface MarketCandidate {
     marketId: string;
@@ -20,9 +21,11 @@ export default class ResolverPoller {
     private readonly state = new ResolverStateRepo();
     private readonly events = new EventRepo();
     private readonly submitter = new SolanaResolutionSubmitter();
+    private readonly redeemer = new PolymarketRedeemer();
     private interval_handle: ReturnType<typeof setInterval> | null = null;
     private running = false;
     private warned_unconfigured = false;
+    private warned_redeemer_unconfigured = false;
 
     public start(): void {
         if (this.interval_handle) return;
@@ -50,11 +53,99 @@ export default class ResolverPoller {
         try {
             await this.poll_gamma_for_pending();
             await this.submit_solana_for_resolved();
+            await this.redeem_polygon_for_resolved();
         } catch (err) {
             this.log.error({ err }, "resolver tick failed");
         } finally {
             this.running = false;
         }
+    }
+
+    private async redeem_polygon_for_resolved(): Promise<void> {
+        if (!this.redeemer.is_configured()) {
+            if (!this.warned_redeemer_unconfigured) {
+                this.log.warn(
+                    "polygon redeem disabled — set HEDGER_POLYGON_RPC_URL + HEDGER_POLYMARKET_PRIVATE_KEY to enable",
+                );
+                this.warned_redeemer_unconfigured = true;
+            }
+            return;
+        }
+        const ready = await this.state.list_awaiting_redemption();
+        for (const row of ready) {
+            await this.redeem_one_safely(row);
+        }
+    }
+
+    private async redeem_one_safely(row: ResolverStateRow): Promise<void> {
+        try {
+            await this.redeem_one(row);
+        } catch (err) {
+            this.log.error(
+                { err, marketId: row.marketId },
+                "polygon redeem failed",
+            );
+            await this.events.record_alert(
+                "resolver",
+                "polymarket redemption failed",
+                {
+                    marketId: row.marketId,
+                    error: (err as Error)?.message ?? String(err),
+                },
+            );
+        }
+    }
+
+    private async redeem_one(row: ResolverStateRow): Promise<void> {
+        const market = await prisma.market.findUnique({
+            where: { id: row.marketId },
+            select: { polyMarketId: true, name: true },
+        });
+        if (!market) return;
+
+        const outcome = await this.redeemer.redeem({ polymarketMarketId: market.polyMarketId });
+        await this.handle_redeem_outcome(row.marketId, market.polyMarketId, market.name, outcome);
+    }
+
+    private async handle_redeem_outcome(
+        market_id: string,
+        polymarket_market_id: string,
+        name: string,
+        outcome: RedeemOutcome,
+    ): Promise<void> {
+        if (outcome.kind === "submitted") {
+            await this.state.record_redeemed(market_id, outcome.txHash, new Date());
+            this.log.info(
+                {
+                    marketId: market_id,
+                    polyMarketId: polymarket_market_id,
+                    name,
+                    txHash: outcome.txHash,
+                },
+                ">>> RESOLVER: polygon redemption confirmed",
+            );
+            await this.events.record({
+                level: "INFO",
+                category: "resolver",
+                message: "polygon redemption confirmed",
+                payload: {
+                    marketId: market_id,
+                    polyMarketId: polymarket_market_id,
+                    txHash: outcome.txHash,
+                },
+            });
+            return;
+        }
+        if (outcome.kind === "skipped_neg_risk" || outcome.kind === "skipped_no_condition_id") {
+            await this.state.mark_redeem_skipped(market_id, outcome.kind);
+            await this.events.record_alert("resolver", "redemption skipped — manual action required", {
+                marketId: market_id,
+                polyMarketId: polymarket_market_id,
+                reason: outcome.kind,
+            });
+            return;
+        }
+        // skipped_not_resolved → silent retry next tick
     }
 
     private async poll_gamma_for_pending(): Promise<void> {

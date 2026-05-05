@@ -82,4 +82,38 @@ export default class ResolverStateRepo {
             },
         });
     }
+
+    public async list_awaiting_redemption(): Promise<ResolverStateRow[]> {
+        return prisma.resolverState.findMany({
+            where: {
+                stage: "SOLANA_RESOLVED",
+                polymarketRedeemTxHash: null,
+            },
+        });
+    }
+
+    public async record_redeemed(
+        market_id: string,
+        tx_hash: string,
+        redeemed_at: Date,
+    ): Promise<ResolverStateRow> {
+        return prisma.resolverState.update({
+            where: { marketId: market_id },
+            data: {
+                stage: "REDEEMED",
+                polymarketRedeemTxHash: tx_hash,
+                polymarketRedeemedAt: redeemed_at,
+            },
+        });
+    }
+
+    public async mark_redeem_skipped(
+        market_id: string,
+        reason: string,
+    ): Promise<ResolverStateRow> {
+        return prisma.resolverState.update({
+            where: { marketId: market_id },
+            data: { notes: `redeem_skipped: ${reason}` },
+        });
+    }
 }
