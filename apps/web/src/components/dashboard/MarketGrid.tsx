@@ -1,5 +1,5 @@
 'use client';
-import { JSX, useMemo, useState } from 'react';
+import { JSX, useMemo, useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { Market } from '@/utils/constants';
 import MarketCard from './MarketCard';
@@ -13,10 +13,14 @@ export default function MarketGrid({
     markets,
     get_href,
     show_sort = true,
+    get_overlay,
 }: {
     markets: Market[];
     get_href?: (m: Market) => string;
     show_sort?: boolean;
+    /** Optional per-card overlay (e.g. a hover-revealed Remove button on the
+     *  bookmarks page). Returning `null`/`undefined` disables the slot. */
+    get_overlay?: (m: Market) => ReactNode;
 }): JSX.Element {
     const [sort, setSort] = useState<SortKey>('VOLUME');
 
@@ -60,7 +64,12 @@ export default function MarketGrid({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-7">
                 {sorted.map((m) => (
-                    <MarketCard key={m.id} market={m} href={get_href?.(m)} />
+                    <MarketCard
+                        key={m.id}
+                        market={m}
+                        href={get_href?.(m)}
+                        overlay={get_overlay?.(m)}
+                    />
                 ))}
             </div>
         </section>

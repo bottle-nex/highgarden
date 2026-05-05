@@ -1,5 +1,5 @@
 'use client';
-import { JSX } from 'react';
+import { JSX, type ReactNode } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import type { Market } from '@/utils/constants';
@@ -8,9 +8,13 @@ import { getMarketById } from '@/utils/constants';
 export default function MarketCard({
     market,
     href,
+    overlay,
 }: {
     market: Market;
     href?: string;
+    /** Optional content rendered absolutely-positioned in the card's top-right
+     *  corner, revealed on hover. Use for per-card actions like "Remove". */
+    overlay?: ReactNode;
 }): JSX.Element {
     const isUp = market.change24h >= 0;
     const detail = getMarketById(market.id);
@@ -20,6 +24,11 @@ export default function MarketCard({
             href={resolved_href}
             className="group relative rounded-lg p-5 bg-dark-base transition-colors cursor-pointer block no-underline"
         >
+            {overlay && (
+                <div className="absolute right-3 top-3 z-10 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                    {overlay}
+                </div>
+            )}
             <div className="flex items-center justify-between text-[11px] tracking-[0.22em] uppercase">
                 <span className="text-white/55">{market.category}</span>
                 <span className="text-white/45">ENDS IN {market.endsIn}</span>
