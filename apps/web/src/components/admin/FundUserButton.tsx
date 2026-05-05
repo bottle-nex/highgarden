@@ -36,7 +36,9 @@ export default function FundUserButton() {
 
     const reset = () => setForm(EMPTY_FORM);
 
-    const validate = (): { ok: true; payload: { email: string; solLamports?: number; usdcAmount?: number } } | { ok: false; reason: string } => {
+    const validate = ():
+        | { ok: true; payload: { email: string; solLamports?: number; usdcAmount?: number } }
+        | { ok: false; reason: string } => {
         const email = form.email.trim();
         if (!email || !email.includes('@')) return { ok: false, reason: 'Enter a valid email' };
         const sol = form.sol.trim() === '' ? undefined : Number(form.sol);
@@ -246,9 +248,10 @@ function announce_error(err: unknown): void {
         INVALID_DATA: 'Invalid input. Check the values.',
         FUND_FAILED: 'Funding transaction failed. See server logs.',
     };
-    const msg = code && friendly_messages[code]
-        ? friendly_messages[code]
-        : e.response?.data?.message ?? 'Funding failed';
+    const msg =
+        code && friendly_messages[code]
+            ? friendly_messages[code]
+            : (e.response?.data?.message ?? 'Funding failed');
     toast.error(msg);
 }
 

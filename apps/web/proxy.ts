@@ -19,6 +19,10 @@ export default withAuth(
     },
 );
 
+// Only protect routes that require an authenticated user at the edge.
+// `/dashboard`, `/event/*`, `/market/*`, `/legal/*`, and the landing page
+// are publicly browsable — auth-required actions on those pages open the
+// in-page sign-in modal (see useRequireAuth) instead of a redirect.
 export const config = {
-    matcher: ['/((?!_next/static|_next/image|favicon.ico|images|videos|signin|api/auth|$).*)'],
+    matcher: ['/admin/:path*', '/portfolio/:path*', '/bookmarks/:path*'],
 };

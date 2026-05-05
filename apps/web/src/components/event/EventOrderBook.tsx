@@ -274,7 +274,8 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                                                         book.cumulativeAsksUsd[i] ??
                                                         lvl.price * lvl.size;
                                                     const cum_w = (cum / max_total) * 100;
-                                                    const size_w = (lvl.size / max_level_size) * 100;
+                                                    const size_w =
+                                                        (lvl.size / max_level_size) * 100;
                                                     return (
                                                         <div
                                                             key={`ask-${lvl.price}`}

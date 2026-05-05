@@ -18,11 +18,6 @@ export default function Home() {
             <LandingFeatureCardsSection />
             <LandingMagicLanes />
 
-
-
-
-
-
             {/* <LandingInteractiveSection />
             <LandingBentoSection /> */}
             <LandingFooter />

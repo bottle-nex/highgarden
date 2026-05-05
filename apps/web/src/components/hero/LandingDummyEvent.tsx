@@ -6,10 +6,7 @@ import EventTitleBlock from '@/components/event/EventTitleBlock';
 import EventOrderBook from '@/components/event/EventOrderBook';
 import EventTradePanel from '@/components/event/EventTradePanel';
 import LandingDummyPriceChart from './LandingDummyPriceChart';
-import {
-    LANDING_DEMO_MARKET_ID,
-    useLandingDummyMarketFeed,
-} from './useLandingDummyMarketFeed';
+import { LANDING_DEMO_MARKET_ID, useLandingDummyMarketFeed } from './useLandingDummyMarketFeed';
 
 function build_dummy_market(): MarketDTO {
     const close = new Date('2027-12-31T20:00:00Z').toISOString();

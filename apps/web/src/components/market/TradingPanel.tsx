@@ -2,6 +2,7 @@
 import { JSX, useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import type { MarketDetail } from '@/utils/constants';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 import s from './TradingPanel.module.css';
 
 export default function TradingPanel({ market }: { market: MarketDetail }): JSX.Element {
@@ -10,6 +11,7 @@ export default function TradingPanel({ market }: { market: MarketDetail }): JSX.
         isYesNo ? 'YES' : (market.outcomes[0]?.label ?? ''),
     );
     const [amount, setAmount] = useState('');
+    const requireAuth = useRequireAuth();
 
     const selectedOutcome = useMemo(
         () => market.outcomes.find((o) => o.label === selectedSide),
@@ -126,6 +128,7 @@ export default function TradingPanel({ market }: { market: MarketDetail }): JSX.
 
                 <button
                     type="button"
+                    onClick={() => requireAuth()}
                     className={`${s.tradeBtn} ${
                         isYesNo
                             ? selectedSide === 'YES'

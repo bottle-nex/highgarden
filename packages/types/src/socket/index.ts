@@ -75,9 +75,12 @@ export interface UserSocketPayload {
   name?: string;
 }
 
+// `user` is null for guest (unauthenticated) socket connections. Public
+// market-data channels are open to anyone; user-specific channels (when added)
+// must reject when `user` is null.
 export interface CustomWebSocketFields {
   id: string;
-  user: UserSocketPayload;
+  user: UserSocketPayload | null;
 }
 
 // ─── Close-code helpers ───────────────────────────────────────────────────────

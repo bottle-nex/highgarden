@@ -21,14 +21,13 @@ export function useWebSocket() {
     // — keeping it out of useState avoids setState-in-effect cascades.
     const status = useStreamStore((s) => s.status);
 
+    // The socket connects for both authed and guest users — public market data
+    // is available to anyone. The singleton handles swapping connections when
+    // the token changes (sign-in / sign-out).
     const client: WebSocketClient | null =
-        token && status !== 'idle' && status !== 'closed'
-            ? SingletonSocket.get_current_client()
-            : null;
+        status !== 'idle' && status !== 'closed' ? SingletonSocket.get_current_client() : null;
 
     useEffect(() => {
-        if (!token) return;
-
         const ws = SingletonSocket.acquire(token);
         useStreamStore.getState().setStatus('connecting');
 

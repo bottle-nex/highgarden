@@ -86,9 +86,7 @@ export default function PolymarketCommentsSection({ market_id }: Props): JSX.Ele
                     size="sm"
                     onClick={() => set_holders_only(true)}
                     className={
-                        holders_only
-                            ? 'text-white bg-white/5'
-                            : 'text-white/45 hover:text-white/80'
+                        holders_only ? 'text-white bg-white/5' : 'text-white/45 hover:text-white/80'
                     }
                 >
                     Holders

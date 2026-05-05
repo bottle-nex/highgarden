@@ -120,7 +120,17 @@ export default class WebSocketClient {
 
     public send(msg: ClientMessage): void {
         if (msg.type === CLIENT_MESSAGE_TYPE.SUBSCRIBE) {
+            // Dedupe: if this token is already in our subscription set, the
+            // server already has the subscription (either from replay-on-open
+            // or a prior wire send). Re-sending would trigger an "already
+            // subscribed" error from the server, which is harmless but ugly.
+            // We still ensure it's in active_subscriptions so a future
+            // (re)connect's replay picks it up.
+            const newly_added = !this.active_subscriptions.has(msg.token_id);
             this.active_subscriptions.add(msg.token_id);
+            if (!newly_added && this.is_connected && this.ws.readyState === WebSocket.OPEN) {
+                return;
+            }
         } else if (msg.type === CLIENT_MESSAGE_TYPE.UNSUBSCRIBE) {
             this.active_subscriptions.delete(msg.token_id);
         }
@@ -135,6 +145,20 @@ export default class WebSocketClient {
             // so we don't queue them here — that would risk duplicate sends.
             this.message_queue.push(msg);
         }
+    }
+
+    /**
+     * Carry-over support: read & seed the active subscription set without
+     * touching the wire. Used by SingletonSocket on a session swap (sign-in
+     * / sign-out) to migrate subscriptions from the closing client to the
+     * fresh one — replay_subscriptions will re-subscribe them on open.
+     */
+    public get_active_subscriptions(): ReadonlySet<string> {
+        return this.active_subscriptions;
+    }
+
+    public seed_active_subscriptions(token_ids: Iterable<string>): void {
+        for (const id of token_ids) this.active_subscriptions.add(id);
     }
 
     private replay_subscriptions(): void {

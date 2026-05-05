@@ -79,6 +79,8 @@ export default function LandingNavbar(): JSX.Element {
 }
 
 function GetStartedButton({ onClick }: { onClick: () => void }): JSX.Element {
+    const session = useUserSessionStore((s) => s.session);
+
     return (
         <Button
             type="button"
@@ -86,7 +88,7 @@ function GetStartedButton({ onClick }: { onClick: () => void }): JSX.Element {
             className="relative group/cta inline-flex items-center gap-x-3 bg-alpha rounded-none h-10 px-4 cursor-pointer transition-colors duration-300"
         >
             <span className="text-[11px] tracking-[0.2em] uppercase text-white font-semibold">
-                GET STARTED
+                {session && session.user?.email ? 'Get Started' : 'Sign up'}
             </span>
             <span className=" text-white/80 text-xs -translate-y-px group-hover/cta:translate-x-0.5 transition-transform duration-300">
                 &rarr;

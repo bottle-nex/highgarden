@@ -42,43 +42,41 @@ export function useOrderBook(
     const [status, set_status] = useState<OrderBookStatus | null>(null);
     const [is_refetching, set_is_refetching] = useState(false);
 
-    const hydrate_book = useCallback(
-        async (is_cancelled?: () => boolean): Promise<void> => {
-            if (!marketId) return;
-            const key = `${marketId}:${outcome}`;
-            if (hydrating.current.has(key)) return;
-            hydrating.current.add(key);
-            set_is_refetching(true);
-            try {
-                const snap = await fetch_market_orderbook(marketId, outcome, MAX_DEPTH_LEVELS);
-                if (is_cancelled?.() || !snap) return;
-                set_status(snap.status);
-                useOrderBookDepthStore.getState().hydrate(snap);
-                SocketEventHandlers.seed_book(snap.tokenId, snap.bids, snap.asks);
-                if (snap.bestBid !== null && snap.bestAsk !== null) {
-                    enqueueBookUpdate({
-                        marketId: snap.marketId,
-                        outcome: snap.outcome,
-                        bestBid: snap.bestBid,
-                        bestAsk: snap.bestAsk,
-                        quotedPrice: snap.bestAsk,
-                        updatedAt: new Date(snap.updatedAt).toISOString(),
-                    });
-                }
-            } finally {
-                hydrating.current.delete(key);
-                set_is_refetching(false);
+    const hydrate_book = useCallback(async (): Promise<void> => {
+        if (!marketId) return;
+        const key = `${marketId}:${outcome}`;
+        // Dedupe truly-concurrent calls (e.g. user spamming the refresh
+        // button). NOTE: do NOT use a per-call cancellation flag to gate the
+        // global-store write — under React 18 StrictMode the first effect's
+        // cancel flag is set before its fetch resolves, which would drop a
+        // perfectly-good snapshot and leave the orderbook stuck on "Loading".
+        if (hydrating.current.has(key)) return;
+        hydrating.current.add(key);
+        set_is_refetching(true);
+        try {
+            const snap = await fetch_market_orderbook(marketId, outcome, MAX_DEPTH_LEVELS);
+            if (!snap) return;
+            set_status(snap.status);
+            useOrderBookDepthStore.getState().hydrate(snap);
+            SocketEventHandlers.seed_book(snap.tokenId, snap.bids, snap.asks);
+            if (snap.bestBid !== null && snap.bestAsk !== null) {
+                enqueueBookUpdate({
+                    marketId: snap.marketId,
+                    outcome: snap.outcome,
+                    bestBid: snap.bestBid,
+                    bestAsk: snap.bestAsk,
+                    quotedPrice: snap.bestAsk,
+                    updatedAt: new Date(snap.updatedAt).toISOString(),
+                });
             }
-        },
-        [marketId, outcome],
-    );
+        } finally {
+            hydrating.current.delete(key);
+            set_is_refetching(false);
+        }
+    }, [marketId, outcome]);
 
     useEffect(() => {
-        let cancelled = false;
-        hydrate_book(() => cancelled);
-        return () => {
-            cancelled = true;
-        };
+        void hydrate_book();
     }, [hydrate_book]);
 
     const refetch = useCallback((): void => {

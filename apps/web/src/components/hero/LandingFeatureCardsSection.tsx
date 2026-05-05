@@ -1,11 +1,9 @@
 'use client';
-
 import { JSX, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { IoIosArrowRoundForward } from 'react-icons/io';
 import { doto } from './LandingTextContent';
-import { RandomRevealText } from '../ui/random-reveal-text';
 
 type CardId = 'marketing' | 'sanity' | 'pricing';
 
@@ -95,9 +93,9 @@ export default function LandingFeatureCardsSection(): JSX.Element {
                     One prediction market. Every edge Solana gives you.
                 </h1>
                 <p className="mt-8 max-w-3xl text-lg md:text-xl text-neutral-400 leading-snug">
-                    SolMarket fuses Polymarket-grade liquidity with sub-second Solana execution,
-                    so you can trade real-world outcomes without bridging, waiting, or paying
-                    Polygon gas.
+                    SolMarket fuses Polymarket-grade liquidity with sub-second Solana execution, so
+                    you can trade real-world outcomes without bridging, waiting, or paying Polygon
+                    gas.
                 </p>
             </div>
             <div className="max-w-7xl mx-auto w-full px-6 mt-16">

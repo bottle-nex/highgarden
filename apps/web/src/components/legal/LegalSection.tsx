@@ -11,13 +11,7 @@ type Props = {
     children: ReactNode;
 };
 
-export default function LegalSection({
-    id,
-    index,
-    title,
-    eyebrow,
-    children,
-}: Props): JSX.Element {
+export default function LegalSection({ id, index, title, eyebrow, children }: Props): JSX.Element {
     const number = String(index).padStart(2, '0');
 
     return (
