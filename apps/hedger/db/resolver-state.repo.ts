@@ -54,4 +54,32 @@ export default class ResolverStateRepo {
             update: { notes: note },
         });
     }
+
+    public async list_awaiting_solana_submission(
+        max_resolved_at: Date,
+    ): Promise<ResolverStateRow[]> {
+        return prisma.resolverState.findMany({
+            where: {
+                stage: "POLYMARKET_RESOLVED",
+                polymarketResolvedAt: { lte: max_resolved_at },
+                solanaResolveTxSig: null,
+                winningOutcome: { not: null },
+            },
+        });
+    }
+
+    public async record_solana_resolved(
+        market_id: string,
+        tx_signature: string,
+        resolved_at: Date,
+    ): Promise<ResolverStateRow> {
+        return prisma.resolverState.update({
+            where: { marketId: market_id },
+            data: {
+                stage: "SOLANA_RESOLVED",
+                solanaResolveTxSig: tx_signature,
+                solanaResolvedAt: resolved_at,
+            },
+        });
+    }
 }

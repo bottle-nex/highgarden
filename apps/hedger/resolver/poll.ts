@@ -5,6 +5,7 @@ import LoggerFactory from "../log/logger";
 import EventRepo from "../db/event.repo";
 import HedgerGammaClient, { type GammaResolution } from "../polymarket/gamma";
 import ResolverStateRepo, { type ResolverStateRow } from "../db/resolver-state.repo";
+import SolanaResolutionSubmitter from "./submit-solana";
 
 interface MarketCandidate {
     marketId: string;
@@ -18,8 +19,10 @@ export default class ResolverPoller {
     private readonly gamma = new HedgerGammaClient();
     private readonly state = new ResolverStateRepo();
     private readonly events = new EventRepo();
+    private readonly submitter = new SolanaResolutionSubmitter();
     private interval_handle: ReturnType<typeof setInterval> | null = null;
     private running = false;
+    private warned_unconfigured = false;
 
     public start(): void {
         if (this.interval_handle) return;
@@ -45,15 +48,115 @@ export default class ResolverPoller {
         if (this.running) return;
         this.running = true;
         try {
-            const candidates = await this.list_pending_candidates();
-            for (const candidate of candidates) {
-                await this.check_one_safely(candidate);
-            }
+            await this.poll_gamma_for_pending();
+            await this.submit_solana_for_resolved();
         } catch (err) {
             this.log.error({ err }, "resolver tick failed");
         } finally {
             this.running = false;
         }
+    }
+
+    private async poll_gamma_for_pending(): Promise<void> {
+        const candidates = await this.list_pending_candidates();
+        for (const candidate of candidates) {
+            await this.check_one_safely(candidate);
+        }
+    }
+
+    private async submit_solana_for_resolved(): Promise<void> {
+        if (!this.submitter.is_configured()) {
+            if (!this.warned_unconfigured) {
+                this.log.warn(
+                    "HEDGER_SOLANA_ORACLE_SIGNER_KEYPAIR is not set — skipping Solana resolution submission",
+                );
+                this.warned_unconfigured = true;
+            }
+            return;
+        }
+        const cutoff = this.dispute_window_cutoff();
+        const ready = await this.state.list_awaiting_solana_submission(cutoff);
+        for (const row of ready) {
+            await this.submit_one_safely(row);
+        }
+    }
+
+    private dispute_window_cutoff(): Date {
+        const hours = ENV.HEDGER_RESOLVER_DISPUTE_WINDOW_HOURS;
+        return new Date(Date.now() - hours * 60 * 60 * 1000);
+    }
+
+    private async submit_one_safely(row: ResolverStateRow): Promise<void> {
+        try {
+            await this.submit_one(row);
+        } catch (err) {
+            this.log.error(
+                { err, marketId: row.marketId },
+                "solana resolution submit failed",
+            );
+            await this.events.record_alert(
+                "resolver",
+                "solana resolve_market submission failed",
+                {
+                    marketId: row.marketId,
+                    error: (err as Error)?.message ?? String(err),
+                },
+            );
+        }
+    }
+
+    private async submit_one(row: ResolverStateRow): Promise<void> {
+        const market = await prisma.market.findUnique({
+            where: { id: row.marketId },
+            select: { id: true, name: true, solanaMarketPda: true, polyMarketId: true },
+        });
+        if (!market?.solanaMarketPda) {
+            this.log.warn(
+                { marketId: row.marketId },
+                "market missing solanaMarketPda — cannot submit",
+            );
+            return;
+        }
+        if (!row.winningOutcome) {
+            this.log.warn(
+                { marketId: row.marketId },
+                "ResolverState has no winningOutcome — refusing to submit",
+            );
+            return;
+        }
+
+        const result = await this.submitter.submit({
+            marketPda: market.solanaMarketPda,
+            winningOutcome: row.winningOutcome,
+        });
+        await this.state.record_solana_resolved(
+            row.marketId,
+            result.signature,
+            result.submittedAt,
+        );
+
+        this.log.info(
+            {
+                marketId: row.marketId,
+                polyMarketId: market.polyMarketId,
+                marketPda: market.solanaMarketPda,
+                winningOutcome: row.winningOutcome,
+                txSig: result.signature,
+            },
+            ">>> RESOLVER: resolve_market submitted to Solana",
+        );
+
+        await this.events.record({
+            level: "INFO",
+            category: "resolver",
+            message: "resolve_market tx confirmed",
+            payload: {
+                marketId: row.marketId,
+                polyMarketId: market.polyMarketId,
+                winningOutcome: row.winningOutcome,
+                txSig: result.signature,
+            },
+        });
     }
 
     private async list_pending_candidates(): Promise<MarketCandidate[]> {
