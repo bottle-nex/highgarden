@@ -52,7 +52,6 @@ export default function CategorySidebar(): JSX.Element {
             <nav className="flex flex-col overflow-y-auto no-scrollbar flex-1 py-2 px-4">
                 {CATEGORY_TABS.map((tab) => {
                     const isActive = !on_bookmarks_route && tab === active;
-                    const Icon = CATEGORY_ICONS[tab];
                     return (
                         <button
                             key={tab}
