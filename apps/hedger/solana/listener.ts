@@ -88,7 +88,7 @@ export default class LiveListener {
     if (this.stopped || this.reconnect_handle) return;
     this.reconnect_handle = setTimeout(() => {
       this.reconnect_handle = null;
-      void this.cursor.record_live_disconnected().catch(() => {});
+      void this.cursor.record_live_disconnected().catch(() => { });
       void this.subscribe();
     }, ENV.HEDGER_LIVE_LISTENER_RECONNECT_MS);
   }
