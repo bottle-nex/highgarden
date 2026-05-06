@@ -1,5 +1,5 @@
-import { Queue, Worker, QueueEvents, type Job } from "bullmq";
-import { AnchorProvider, Wallet, type Wallet as AnchorWallet } from "@coral-xyz/anchor";
+import { Queue, Worker, QueueEvents } from "bullmq";
+import { AnchorProvider, type Wallet as AnchorWallet } from "@coral-xyz/anchor";
 import NodeWallet from "@coral-xyz/anchor/dist/esm/nodewallet.js";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { prisma } from "@solmarket/database";
