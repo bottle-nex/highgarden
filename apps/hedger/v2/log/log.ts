@@ -19,5 +19,5 @@ const root = pino({ level: ENV.HEDGER_LOG_LEVEL });
  * `.error`, etc. with the standard `(obj, msg)` form.
  */
 export function logger_for(category: string): pino.Logger {
-  return root.child({ category });
+    return root.child({ category });
 }

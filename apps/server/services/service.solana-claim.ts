@@ -77,19 +77,14 @@ export default class SolanaClaimService {
         return keypair;
     }
 
-    private async load_resolved_market(
-        market_db_id: string,
-    ): Promise<{ solanaMarketPda: string }> {
+    private async load_resolved_market(market_db_id: string): Promise<{ solanaMarketPda: string }> {
         const row = await prisma.market.findUnique({
             where: { id: market_db_id },
             select: { solanaMarketPda: true, status: true },
         });
         if (!row) throw new ClaimError("MARKET_NOT_FOUND", "market not found");
         if (!row.solanaMarketPda) {
-            throw new ClaimError(
-                "MARKET_NOT_LISTED_ON_SOLANA",
-                "market has no on-chain PDA",
-            );
+            throw new ClaimError("MARKET_NOT_LISTED_ON_SOLANA", "market has no on-chain PDA");
         }
         // We don't strictly enforce row.status === RESOLVED here — the on-chain
         // contract will reject with MarketNotResolved if it isn't, and that

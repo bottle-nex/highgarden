@@ -54,9 +54,7 @@ export default function EngineerCard({ engineer, index }: Props): JSX.Element {
                 <span>{engineer.role}</span>
             </div>
 
-            <h3 className="mt-3 text-xl font-medium tracking-tight text-white">
-                {engineer.name}
-            </h3>
+            <h3 className="mt-3 text-xl font-medium tracking-tight text-white">{engineer.name}</h3>
 
             <p className="mt-3 text-[13px] leading-[1.7] text-white/65">{engineer.bio}</p>
 
@@ -100,7 +98,8 @@ export default function EngineerCard({ engineer, index }: Props): JSX.Element {
 }
 
 function CardCorners(): JSX.Element {
-    const base = 'pointer-events-none absolute w-2 h-2 border-white/40 transition-colors duration-300 group-hover/card:border-alpha';
+    const base =
+        'pointer-events-none absolute w-2 h-2 border-white/40 transition-colors duration-300 group-hover/card:border-alpha';
     return (
         <>
             <span className={cn(base, '-top-px -left-px border-t border-l')} />

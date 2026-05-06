@@ -25,22 +25,22 @@ import { ENV } from "./envs/env";
  *     "127.0.0.1" as belt-and-suspenders.
  */
 export function make_redis_options(): RedisOptions {
-  const url = new URL(ENV.HEDGER_REDIS_URL);
+    const url = new URL(ENV.HEDGER_REDIS_URL);
 
-  const opts: RedisOptions = {
-    maxRetriesPerRequest: null,
-    enableReadyCheck: true,
-    family: 4,
-    host: normalize_host(url.hostname),
-    port: url.port ? Number(url.port) : 6379,
-  };
-  if (url.password) opts.password = decodeURIComponent(url.password);
-  if (url.username) opts.username = decodeURIComponent(url.username);
-  if (ENV.HEDGER_REDIS_TLS) opts.tls = {};
+    const opts: RedisOptions = {
+        maxRetriesPerRequest: null,
+        enableReadyCheck: true,
+        family: 4,
+        host: normalize_host(url.hostname),
+        port: url.port ? Number(url.port) : 6379,
+    };
+    if (url.password) opts.password = decodeURIComponent(url.password);
+    if (url.username) opts.username = decodeURIComponent(url.username);
+    if (ENV.HEDGER_REDIS_TLS) opts.tls = {};
 
-  return opts;
+    return opts;
 }
 
 function normalize_host(hostname: string): string {
-  return hostname === "localhost" ? "127.0.0.1" : hostname;
+    return hostname === "localhost" ? "127.0.0.1" : hostname;
 }

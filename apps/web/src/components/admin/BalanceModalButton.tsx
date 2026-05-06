@@ -190,9 +190,7 @@ function BalanceRow({
                 <span className="text-sm font-semibold tabular-nums text-white">
                     {format_amount(amount, decimals)}
                 </span>
-                <span className="text-[9px] tracking-[0.18em] uppercase text-white/40">
-                    {unit}
-                </span>
+                <span className="text-[9px] tracking-[0.18em] uppercase text-white/40">{unit}</span>
             </span>
         </button>
     );

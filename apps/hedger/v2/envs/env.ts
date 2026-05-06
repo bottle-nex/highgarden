@@ -9,65 +9,61 @@ import { z } from "zod";
  * it. An unused env var in this schema is dead code — strip it out.
  */
 const schema = z.object({
-  // shared infra
-  DATABASE_URL: z.string(),
-  HEDGER_REDIS_URL: z.string(),
-  // z.coerce.boolean turns ANY non-empty string (including "false") into
-  // true, so parse the literal "true"/"false" string explicitly.
-  HEDGER_REDIS_TLS: z
-    .enum(["true", "false"])
-    .default("false")
-    .transform((s) => s === "true"),
-  HEDGER_LOG_LEVEL: z
-    .enum(["fatal", "error", "warn", "info", "debug", "trace"])
-    .default("info"),
+    // shared infra
+    DATABASE_URL: z.string(),
+    HEDGER_REDIS_URL: z.string(),
+    // z.coerce.boolean turns ANY non-empty string (including "false") into
+    // true, so parse the literal "true"/"false" string explicitly.
+    HEDGER_REDIS_TLS: z
+        .enum(["true", "false"])
+        .default("false")
+        .transform((s) => s === "true"),
+    HEDGER_LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
 
-  // solana RPC + program
-  HEDGER_SOLANA_RPC_URL: z.string().url(),
-  HEDGER_SOLANA_RPC_WS_URL: z.string().url(),
-  HEDGER_SOLANA_PROGRAM_ID: z.string(),
-  HEDGER_SOLANA_COMMITMENT: z
-    .enum(["processed", "confirmed", "finalized"])
-    .default("confirmed"),
-  HEDGER_SOLANA_ADMIN_KEYPAIR: z.string().optional(),
-  HEDGER_SOLANA_ORACLE_SIGNER_KEYPAIR: z.string().optional(),
+    // solana RPC + program
+    HEDGER_SOLANA_RPC_URL: z.string().url(),
+    HEDGER_SOLANA_RPC_WS_URL: z.string().url(),
+    HEDGER_SOLANA_PROGRAM_ID: z.string(),
+    HEDGER_SOLANA_COMMITMENT: z.enum(["processed", "confirmed", "finalized"]).default("confirmed"),
+    HEDGER_SOLANA_ADMIN_KEYPAIR: z.string().optional(),
+    HEDGER_SOLANA_ORACLE_SIGNER_KEYPAIR: z.string().optional(),
 
-  // polymarket REST + CLOB + Polygon
-  HEDGER_POLYMARKET_REST_URL: z.string().url(),
-  HEDGER_POLYMARKET_GAMMA_URL: z.string().url(),
-  HEDGER_POLYMARKET_PRIVATE_KEY: z.string().optional(),
-  HEDGER_POLYMARKET_FUNDER_ADDRESS: z.string().optional(),
-  HEDGER_POLYMARKET_API_KEY: z.string().optional(),
-  HEDGER_POLYMARKET_API_SECRET: z.string().optional(),
-  HEDGER_POLYMARKET_API_PASSPHRASE: z.string().optional(),
-  HEDGER_POLYGON_RPC_URL: z.string().url().optional(),
+    // polymarket REST + CLOB + Polygon
+    HEDGER_POLYMARKET_REST_URL: z.string().url(),
+    HEDGER_POLYMARKET_GAMMA_URL: z.string().url(),
+    HEDGER_POLYMARKET_PRIVATE_KEY: z.string().optional(),
+    HEDGER_POLYMARKET_FUNDER_ADDRESS: z.string().optional(),
+    HEDGER_POLYMARKET_API_KEY: z.string().optional(),
+    HEDGER_POLYMARKET_API_SECRET: z.string().optional(),
+    HEDGER_POLYMARKET_API_PASSPHRASE: z.string().optional(),
+    HEDGER_POLYGON_RPC_URL: z.string().url().optional(),
 
-  // ingester loop tuning
-  HEDGER_POLLER_INTERVAL_MS: z.coerce.number().default(10_000),
-  HEDGER_LIVE_LISTENER_RECONNECT_MS: z.coerce.number().default(2_000),
-  HEDGER_MAX_BACKFILL_SIGNATURES: z.coerce.number().default(1_000),
+    // ingester loop tuning
+    HEDGER_POLLER_INTERVAL_MS: z.coerce.number().default(10_000),
+    HEDGER_LIVE_LISTENER_RECONNECT_MS: z.coerce.number().default(2_000),
+    HEDGER_MAX_BACKFILL_SIGNATURES: z.coerce.number().default(1_000),
 
-  // hedger queue tuning
-  HEDGER_JOB_ATTEMPTS: z.coerce.number().default(5),
-  HEDGER_JOB_BACKOFF_DELAY_MS: z.coerce.number().default(500),
-  HEDGER_WORKER_CONCURRENCY: z.coerce.number().default(5),
-  HEDGER_WORKER_RATE_LIMIT_MAX: z.coerce.number().default(30),
-  HEDGER_WORKER_RATE_LIMIT_MS: z.coerce.number().default(1_000),
-  HEDGER_SLIPPAGE_LIMIT_CENTS: z.coerce.number().default(2),
-  HEDGER_UNHEDGED_DELTA_CAP_USD: z.coerce.number().default(500),
+    // hedger queue tuning
+    HEDGER_JOB_ATTEMPTS: z.coerce.number().default(5),
+    HEDGER_JOB_BACKOFF_DELAY_MS: z.coerce.number().default(500),
+    HEDGER_WORKER_CONCURRENCY: z.coerce.number().default(5),
+    HEDGER_WORKER_RATE_LIMIT_MAX: z.coerce.number().default(30),
+    HEDGER_WORKER_RATE_LIMIT_MS: z.coerce.number().default(1_000),
+    HEDGER_SLIPPAGE_LIMIT_CENTS: z.coerce.number().default(2),
+    HEDGER_UNHEDGED_DELTA_CAP_USD: z.coerce.number().default(500),
 
-  // resolver loop tuning
-  HEDGER_RESOLVER_POLL_INTERVAL_MS: z.coerce.number().default(60_000),
-  HEDGER_RESOLVER_DISPUTE_WINDOW_HOURS: z.coerce.number().default(48),
+    // resolver loop tuning
+    HEDGER_RESOLVER_POLL_INTERVAL_MS: z.coerce.number().default(60_000),
+    HEDGER_RESOLVER_DISPUTE_WINDOW_HOURS: z.coerce.number().default(48),
 
-  // reconciler loop tuning
-  HEDGER_RECONCILE_INTERVAL_MS: z.coerce.number().default(60_000),
+    // reconciler loop tuning
+    HEDGER_RECONCILE_INTERVAL_MS: z.coerce.number().default(60_000),
 
-  // health + admin endpoints
-  HEDGER_HEALTH_PORT: z.coerce.number().default(4001),
-  HEDGER_OFFLINE_GRACE_PERIOD_SEC: z.coerce.number().default(120),
-  HEDGER_ADMIN_PORT: z.coerce.number().default(4000),
-  HEDGER_ADMIN_BEARER_TOKEN: z.string().min(16).optional(),
+    // health + admin endpoints
+    HEDGER_HEALTH_PORT: z.coerce.number().default(4001),
+    HEDGER_OFFLINE_GRACE_PERIOD_SEC: z.coerce.number().default(120),
+    HEDGER_ADMIN_PORT: z.coerce.number().default(4000),
+    HEDGER_ADMIN_BEARER_TOKEN: z.string().min(16).optional(),
 });
 
 /**

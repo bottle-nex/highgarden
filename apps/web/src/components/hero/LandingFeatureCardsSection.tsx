@@ -39,7 +39,7 @@ const CARDS: CardConfig[] = [
             {
                 x: 60,
                 y: 80,
-            }
+            },
         ],
         questions: [
             'WHY IS THE BOOK ALREADY DEEP ON DAY ONE?',
@@ -69,7 +69,7 @@ const CARDS: CardConfig[] = [
             {
                 x: 60,
                 y: 40,
-            }
+            },
         ],
         questions: [
             'WHAT FEES DO I PAY TO TRADE A MARKET?',
@@ -99,7 +99,7 @@ const CARDS: CardConfig[] = [
             {
                 x: 80,
                 y: 80,
-            }
+            },
         ],
         questions: [
             'HOW DOES SOLMARKET MIRROR POLYMARKET LIQUIDITY?',
@@ -122,7 +122,6 @@ export default function LandingFeatureCardsSection(): JSX.Element {
     const [activeId, setActiveId] = useState<CardId>('pricing');
     const active_card = CARDS.find((c) => c.id === activeId) ?? CARDS[0];
 
-
     useEffect(() => {
         const interval = setInterval(() => {
             setActiveId((prev) => {
@@ -132,7 +131,7 @@ export default function LandingFeatureCardsSection(): JSX.Element {
             });
         }, 5000);
         return () => clearInterval(interval);
-    }, [])
+    }, []);
 
     return (
         <section className="relative z-30 w-full bg-dark-alpha py-32">
@@ -197,8 +196,9 @@ export default function LandingFeatureCardsSection(): JSX.Element {
                             >
                                 <span
                                     aria-hidden
-                                    className={cn("pointer-events-none absolute z-20 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2",
-                                        isActive ? "bg-alpha" : "bg-white"
+                                    className={cn(
+                                        'pointer-events-none absolute z-20 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2',
+                                        isActive ? 'bg-alpha' : 'bg-white',
                                     )}
                                     style={{
                                         left: `${active_card.cordinates[index].x}%`,
@@ -222,8 +222,7 @@ export default function LandingFeatureCardsSection(): JSX.Element {
 function InactiveCard({ label }: { label: string }): JSX.Element {
     const [isHovered, setIsHovered] = useState<boolean>(false);
     return (
-        <section className='relative h-full w-full'>
-
+        <section className="relative h-full w-full">
             <div
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}

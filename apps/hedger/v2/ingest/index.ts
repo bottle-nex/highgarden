@@ -1,7 +1,7 @@
 import { logger_for } from "../log/log";
 import type SolanaClient from "../clients/solana";
 import type HealthServer from "../health";
-import Cursor from "./cursor";
+import Cursor from "../db/cursor";
 import OrderFilledDecoder from "./decoder";
 import Listener, { type FillHandler } from "./listener";
 import Poller from "./poller";
@@ -53,13 +53,7 @@ export default class FillIngester {
             this.on_fill,
             this.health,
         );
-        this.poller = new Poller(
-            this.solana,
-            this.decoder,
-            this.cursor,
-            this.on_fill,
-            this.health,
-        );
+        this.poller = new Poller(this.solana, this.decoder, this.cursor, this.on_fill, this.health);
         await this.listener.start();
         this.poller.start();
         this.log.info("ingester up");

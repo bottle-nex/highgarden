@@ -8,24 +8,24 @@
 
 ## Status at a glance
 
-| Phase | Plan section | Status |
-| --- | --- | --- |
-| 0 — Scaffold | §17 build order | ✅ shipped |
-| 1 — Solana wiring (live listener) | §3 / §7.1 | ✅ shipped |
-| 2 — Queue scaffold | §3 / §7 / §8 | ✅ shipped |
-| 3 — Catch-up poller + cursor | §3 / §7.2 | ✅ shipped |
-| 4 — Polymarket client wrapper | §3 / §13 | ✅ shipped (dry-run mode active) |
-| 5 — Hedge processor + FSM | §8 | ✅ shipped |
-| 5b — Walk-book + recovery | §8 / §10 | ✅ shipped |
-| 6 — Exposure + admin endpoints | §11 / §12 | ✅ shipped |
-| 7 — Reconciliation loop | §7.3 | ✅ shipped |
-| 8 — Resolver (Gamma → Solana → Polygon redeem) | §7.4 | ✅ PRs 1–3 shipped; max-attempts (PR 4 redeem retry cap) ⚠️ pending |
-| Auto-pause on permanent failure | §15 (D) | ✅ shipped |
-| Bull Board dashboard | §17 Phase 6 | ❌ not built (admin endpoints cover the basics) |
-| `cancel_market` + `refund` (Polymarket-broken markets) | §15 (H) extended | ❌ not built; Phase 9 — see build-log §8 |
-| `close_used_nonce` + auto-close `UserPosition` (rent recovery) | §1.6 of build-log | ❌ not built |
-| Tests (`bun test`) | §16 | ❌ not built |
-| Production deploy config (Dockerfile, etc.) | — | ❌ not built |
+| Phase                                                          | Plan section      | Status                                                              |
+| -------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------- |
+| 0 — Scaffold                                                   | §17 build order   | ✅ shipped                                                          |
+| 1 — Solana wiring (live listener)                              | §3 / §7.1         | ✅ shipped                                                          |
+| 2 — Queue scaffold                                             | §3 / §7 / §8      | ✅ shipped                                                          |
+| 3 — Catch-up poller + cursor                                   | §3 / §7.2         | ✅ shipped                                                          |
+| 4 — Polymarket client wrapper                                  | §3 / §13          | ✅ shipped (dry-run mode active)                                    |
+| 5 — Hedge processor + FSM                                      | §8                | ✅ shipped                                                          |
+| 5b — Walk-book + recovery                                      | §8 / §10          | ✅ shipped                                                          |
+| 6 — Exposure + admin endpoints                                 | §11 / §12         | ✅ shipped                                                          |
+| 7 — Reconciliation loop                                        | §7.3              | ✅ shipped                                                          |
+| 8 — Resolver (Gamma → Solana → Polygon redeem)                 | §7.4              | ✅ PRs 1–3 shipped; max-attempts (PR 4 redeem retry cap) ⚠️ pending |
+| Auto-pause on permanent failure                                | §15 (D)           | ✅ shipped                                                          |
+| Bull Board dashboard                                           | §17 Phase 6       | ❌ not built (admin endpoints cover the basics)                     |
+| `cancel_market` + `refund` (Polymarket-broken markets)         | §15 (H) extended  | ❌ not built; Phase 9 — see build-log §8                            |
+| `close_used_nonce` + auto-close `UserPosition` (rent recovery) | §1.6 of build-log | ❌ not built                                                        |
+| Tests (`bun test`)                                             | §16               | ❌ not built                                                        |
+| Production deploy config (Dockerfile, etc.)                    | —                 | ❌ not built                                                        |
 
 ---
 

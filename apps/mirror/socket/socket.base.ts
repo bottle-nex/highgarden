@@ -32,10 +32,7 @@ export abstract class SocketBase {
     protected abstract handle_message(msg: unknown): void;
 
     public async connect(): Promise<void> {
-        console.log(
-            `[poly:${this.name}] connect()`,
-            `state=${this.state} stopped=${this.stopped}`,
-        );
+        console.log(`[poly:${this.name}] connect()`, `state=${this.state} stopped=${this.stopped}`);
         if (this.state === "open" || this.state === "connecting") {
             console.log(`[poly:${this.name}] connect() skipped — already ${this.state}`);
             return;
@@ -97,11 +94,7 @@ export abstract class SocketBase {
         const frame = this.get_subscribe_frame();
         if (frame) {
             const ids = (frame as { assets_ids?: string[] }).assets_ids ?? [];
-            console.log(
-                `[poly:${this.name}] sending subscribe frame`,
-                `tokens=${ids.length}`,
-                ids,
-            );
+            console.log(`[poly:${this.name}] sending subscribe frame`, `tokens=${ids.length}`, ids);
             this.ws!.send(JSON.stringify(frame));
         } else {
             console.log(

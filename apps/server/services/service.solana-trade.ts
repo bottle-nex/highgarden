@@ -54,7 +54,7 @@ export default class SolanaTradeService {
             txSignature: sig,
             marketPda: market_pda.toBase58(),
             userPubkey: user_keypair.publicKey.toBase58(),
-        })
+        });
 
         return {
             txSignature: sig,

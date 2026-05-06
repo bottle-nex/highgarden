@@ -63,15 +63,15 @@ function AboutMission({ index }: { index: number }): JSX.Element {
 
             <div className="grid max-w-3xl gap-y-5 text-[14px] leading-[1.75] text-white/65">
                 <p>
-                    Prediction markets work when the price is honest, the settlement is
-                    automatic, and the cost of being wrong is exactly the cost of being wrong —
-                    no spreads hidden in the UI, no custodian holding the payout. That gets
-                    harder, not easier, when liquidity is thin and the rails are slow.
+                    Prediction markets work when the price is honest, the settlement is automatic,
+                    and the cost of being wrong is exactly the cost of being wrong — no spreads
+                    hidden in the UI, no custodian holding the payout. That gets harder, not easier,
+                    when liquidity is thin and the rails are slow.
                 </p>
                 <p>
-                    {APP_NAME} is the version we wanted to use. Day-one liquidity mirrored from
-                    the deepest existing books, settlement in Solana USDC, fees and latency the
-                    chain was designed for, and rules that are public before any trade is placed.
+                    {APP_NAME} is the version we wanted to use. Day-one liquidity mirrored from the
+                    deepest existing books, settlement in Solana USDC, fees and latency the chain
+                    was designed for, and rules that are public before any trade is placed.
                     Everything you see is one Solana program away from final.
                 </p>
             </div>

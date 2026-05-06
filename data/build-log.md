@@ -84,18 +84,19 @@ on-chain signing and Polymarket trading on their behalf.
 
 Cost per `place_order` (signed by user's custodial wallet, on Solana mainnet):
 
-| Cost | Value (≈ $160/SOL) |
-| --- | --- |
-| Tx fee | ~0.000005 SOL ≈ $0.0008 |
-| `UsedNonce` PDA rent | ~0.00089 SOL ≈ $0.14 |
-| `UserPosition` PDA rent (first time per user/market) | ~0.0013 SOL ≈ $0.21 |
+| Cost                                                 | Value (≈ $160/SOL)      |
+| ---------------------------------------------------- | ----------------------- |
+| Tx fee                                               | ~0.000005 SOL ≈ $0.0008 |
+| `UsedNonce` PDA rent                                 | ~0.00089 SOL ≈ $0.14    |
+| `UserPosition` PDA rent (first time per user/market) | ~0.0013 SOL ≈ $0.21     |
 
-**Verdict on 1¢ spread**: sufficient *only if* (a) users self-fund SOL, OR
+**Verdict on 1¢ spread**: sufficient _only if_ (a) users self-fund SOL, OR
 (b) we add `close_used_nonce` instruction + auto-close `UserPosition` on claim
 to recover rent. Without rent reclamation, platform loses money on small
 trades when funding user SOL itself.
 
 Recommended (not yet built):
+
 1. Add `close = user` to `claim`'s `user_position` constraint — recovers $0.21.
 2. Add `close_used_nonce(nonce)` instruction (permissionless after expiry) —
    recovers $0.14 per trade.
@@ -118,15 +119,15 @@ Recommended (not yet built):
 
 > All of these are PUBLIC; safe to share.
 
-| Item | Value |
-| --- | --- |
-| Program ID | `2LEm66V2Ys8JbVoQfYbZqCy6YGM1wuPUc843xRx76t3P` |
-| Deployer / Upgrade authority | `FnrBZ9UVbxXBStmygpRzTwc67Au6VzhNdWYKLUJv8fLh` |
-| `Config.admin` pubkey | `5hwmDe6bfAN5ARF3qAAbpBQc66eSf2pEgYZxhUuRXu8H` |
+| Item                          | Value                                          |
+| ----------------------------- | ---------------------------------------------- |
+| Program ID                    | `2LEm66V2Ys8JbVoQfYbZqCy6YGM1wuPUc843xRx76t3P` |
+| Deployer / Upgrade authority  | `FnrBZ9UVbxXBStmygpRzTwc67Au6VzhNdWYKLUJv8fLh` |
+| `Config.admin` pubkey         | `5hwmDe6bfAN5ARF3qAAbpBQc66eSf2pEgYZxhUuRXu8H` |
 | `Config.oracle_signer` pubkey | `8YMV4iS4QspGT8JFEKMRAjzjuEA62R1TZvjrPMGv1S8D` |
-| `Config.quote_signer` pubkey | `FqTSLPX99S5Gw3gjzRqW76Y9dYHg12BvaPNguMqh7THG` |
-| Devnet USDC test mint | `A8ZDMQpYKot1UfG19RGm3HAfkJRMDVuWkGVBrEzvXbUK` |
-| Cluster | devnet |
+| `Config.quote_signer` pubkey  | `FqTSLPX99S5Gw3gjzRqW76Y9dYHg12BvaPNguMqh7THG` |
+| Devnet USDC test mint         | `A8ZDMQpYKot1UfG19RGm3HAfkJRMDVuWkGVBrEzvXbUK` |
+| Cluster                       | devnet                                         |
 
 **Old, abandoned program**: `6phzgYZv5a2k7iNKcoSjS9SaP8dzybtkVHjhcfHxWSL7` —
 program data still on devnet; lost admin made redeployment necessary. Can be
@@ -134,6 +135,7 @@ closed with `solana program close <id> --url devnet` to recover ~2.7 SOL of
 deploy rent.
 
 **Keypair files on operator's local disk** (back up to password manager):
+
 - `~/.config/solana/solmarket-admin.json`
 - `~/.config/solana/solmarket-oracle.json`
 - `~/.config/solana/solmarket-quote.json`
@@ -141,6 +143,7 @@ deploy rent.
 - `apps/contract/target/deploy/contract-keypair.json` (program keypair)
 
 Helper script for converting JSON-array → base58:
+
 - `apps/contract/scripts/keypair-to-base58.ts`
 
 ---
@@ -150,6 +153,7 @@ Helper script for converting JSON-array → base58:
 ### Phase 0 — Hedger scaffold
 
 **Files:**
+
 - `apps/hedger/package.json`, `tsconfig.json`, `.env`, `.env.example`
 - `apps/hedger/config/env.ts` — zod-validated env loader, prefix `HEDGER_*`
 - `apps/hedger/config/constants.ts` — non-env tunables (queue name, etc.)
@@ -162,6 +166,7 @@ Helper script for converting JSON-array → base58:
 ### Phase 1 — Solana live listener
 
 **Files:**
+
 - `apps/hedger/solana/connection.ts` — `Connection` + `programId` factory
 - `apps/hedger/solana/decoder.ts` — Anchor `BorshCoder` + `EventParser` for
   `OrderFilled` events; normalizes nonce into `Buffer`, size into `bigint`
@@ -172,6 +177,7 @@ Helper script for converting JSON-array → base58:
 ### Phase 2 — Queue scaffold
 
 **Files:**
+
 - `apps/hedger/queue/connection.ts` — `RedisConnectionFactory` (per-component
   options object so each BullMQ instance gets its own connection)
 - `apps/hedger/queue/types.ts` — `OrderFilledPayload`, `HedgeJobData`,
@@ -186,12 +192,14 @@ Helper script for converting JSON-array → base58:
 ### Phase 3 — Catch-up poller
 
 **Files:**
+
 - `apps/hedger/solana/poller.ts` — `getSignaturesForAddress` since cursor,
   decode each tx's logs, push to queue. JobId dedup ensures idempotent.
 
 ### Phase 4 — Polymarket client wrapper
 
 **Files:**
+
 - `apps/hedger/polymarket/client.ts` — `PolymarketClientFactory`,
   `is_dry_run()` gate (lazy logger to avoid module-load-order issues)
 - `apps/hedger/polymarket/orders.ts` — `PolymarketOrderService.place_immediate`
@@ -204,6 +212,7 @@ Helper script for converting JSON-array → base58:
 ### Phase 5 — Hedge processor (FSM)
 
 **Files:**
+
 - `apps/hedger/db/user.repo.ts` — `find_by_custodial_pubkey`
 - `apps/hedger/db/market.repo.ts` — `find_by_solana_pda` + `polymarket` join
 - `apps/hedger/db/fill.repo.ts` — idempotent insert keyed by `nonce`
@@ -220,6 +229,7 @@ Helper script for converting JSON-array → base58:
 ### Phase 5b — Walk-book + boot recovery
 
 **Files:**
+
 - `apps/hedger/hedger/walk-book.ts` — partial-fill walker with
   `HEDGER_SLIPPAGE_LIMIT_CENTS` cap
 - `apps/hedger/hedger/recovery.ts` — boot scan: resets stuck `HEDGING` rows
@@ -228,6 +238,7 @@ Helper script for converting JSON-array → base58:
 ### Phase 6 — Admin endpoints + health
 
 **Files:**
+
 - `apps/hedger/health/server.ts` — `/healthz`, `/readyz` on
   `HEDGER_HEALTH_PORT` (default 4001)
 - `apps/hedger/admin/server.ts` — bearer-auth admin server on
@@ -244,6 +255,7 @@ Helper script for converting JSON-array → base58:
 ### Phase 7 — Reconciliation
 
 **Files:**
+
 - `apps/hedger/reconcile/loop.ts` — periodic UMA dispute reversal detection,
   stuck-hedge sweep, exposure drift correction (every
   `HEDGER_RECONCILE_INTERVAL_MS`, default 60s)
@@ -251,6 +263,7 @@ Helper script for converting JSON-array → base58:
 ### Phase 8 — Resolver (PRs 1–3)
 
 **PR 1 — Gamma poller (read-only):**
+
 - `apps/hedger/polymarket/gamma.ts` — `HedgerGammaClient.fetch_resolution`,
   surfaces `closed`, `outcomes`, `outcomePrices`, `conditionId`, `negRisk`
 - `apps/hedger/db/resolver-state.repo.ts` — `ResolverStateRepo`
@@ -258,6 +271,7 @@ Helper script for converting JSON-array → base58:
   writes `polymarketResolvedAt` + `winningOutcome` when a market resolves
 
 **PR 2 — Solana resolution submission:**
+
 - `apps/hedger/resolver/submit-solana.ts` — `SolanaResolutionSubmitter`,
   loads `HEDGER_SOLANA_ORACLE_SIGNER_KEYPAIR`, calls `resolve_market`
 - Resolver poller's `tick()` extended: after Gamma poll, scans
@@ -265,6 +279,7 @@ Helper script for converting JSON-array → base58:
   submits to Solana, flips state to `SOLANA_RESOLVED`
 
 **PR 3 — Polygon redeem:**
+
 - `apps/hedger/polymarket/polygon-rpc.ts` — `PolygonRpcFactory`,
   ethers v5 `JsonRpcProvider` + `Wallet`
 - `apps/hedger/polymarket/conditional-tokens.ts` — Polygon mainnet addresses
@@ -282,6 +297,7 @@ Helper script for converting JSON-array → base58:
 ### Auto-pause on permanent failure
 
 **Files:**
+
 - `apps/hedger/solana/admin-tx.ts` — `HedgerAdminTxSubmitter.pause_market`
   using `HEDGER_SOLANA_ADMIN_KEYPAIR`
 - `apps/hedger/index.ts` `on_job_failed` extended:
@@ -293,6 +309,7 @@ Helper script for converting JSON-array → base58:
 ### Server-side trade flow
 
 **Files:**
+
 - `apps/server/services/service.solana-trade.ts` — `SolanaTradeService.place_order`:
   decrypts user's custodial seed, reconstructs `Keypair.fromSeed`, asserts
   derived pubkey matches stored, builds tx with Ed25519 verify + `place_order`
@@ -321,6 +338,7 @@ Helper script for converting JSON-array → base58:
 ### Server env additions
 
 Added to `apps/server/config/config.env.ts`:
+
 - `SERVER_SOLANA_PROGRAM_ID` (default `2LEm66V2Ys8JbVoQfYbZqCy6YGM1wuPUc843xRx76t3P`)
 - `SERVER_SOLANA_ADMIN_KEYPAIR` (optional — needed for create_market + test-fund)
 - `SERVER_QUOTE_SIGNER_KEYPAIR` (optional — needed for /quote)
@@ -331,6 +349,7 @@ Added to `apps/server/config/config.env.ts`:
 ### Frontend wiring
 
 **Files:**
+
 - `apps/web/src/lib/api/trading.ts` — new `TradingApi` class with
   `request_quote`, `place_order`, `claim`. `TradingError` translates server
   error codes → user-friendly messages.
@@ -369,6 +388,7 @@ Added to `apps/server/config/config.env.ts`:
 ### Field additions to existing models
 
 `Hedge`:
+
 - `bullJobId String? @unique` — ties DB row to BullMQ job
 - `clientOrderId String? @unique` — `hedger-${nonceHex}`
 - `polymarketTokenId String?`
@@ -377,11 +397,13 @@ Added to `apps/server/config/config.env.ts`:
 - `completedAt DateTime?`
 
 `Exposure`:
+
 - `trackerEnabled Boolean @default(true)` — toggleable cap bypass
 - `paused Boolean @default(false)` — mirror of contract market.paused
 - `lastIncrementAt`, `lastDecrementAt DateTime?`
 
 `User` (added by friend's seed-management code, not by us):
+
 - `custodialPublicKey String? @unique`
 - `custodialSecretEncrypted String?`
 
@@ -467,6 +489,7 @@ SERVER_UNHEDGED_DELTA_CAP_USD=500
 Trade tx: `5jTgYiqGQM7p1vn5ieqntkgJ1aGnZjkf4AeNBiSbPHZ7YmDthCdJdarwYZHGL7RYdyeNEYw8dNdxfdLC5Vfs3mHG`
 
 Sequence:
+
 1. `POST /api/v1/markets/:id/quote` body
    `{ "side": "BUY", "outcome": "YES", "size": 10 }`
    → returns SignedQuote `{ market, side, outcome, price: 51, size: 10, …, nonceHex, signatureBase64, signerPubkey }`
@@ -753,6 +776,7 @@ with 7 plain functions) were not refactored — "don't change other components".
 
 Default to Bun (`bun`, `bun:test`, `bun.serve`, `Bun.redis`, `Bun.sql`) per
 project CLAUDE.md, with two pragmatic exceptions:
+
 - `apps/server` uses Express because it was already there.
 - `apps/hedger` uses ioredis because BullMQ requires it.
 

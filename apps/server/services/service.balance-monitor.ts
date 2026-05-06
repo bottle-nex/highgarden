@@ -139,10 +139,7 @@ export default class BalanceMonitorService {
         };
     }
 
-    private async fetch_pusd(
-        provider: providers.JsonRpcProvider,
-        funder: string,
-    ): Promise<number> {
+    private async fetch_pusd(provider: providers.JsonRpcProvider, funder: string): Promise<number> {
         const pusd = new Contract(PUSD_ADDRESS_POLYGON, ERC20_BALANCE_OF_ABI, provider);
         const raw = await pusd.balanceOf(funder);
         // pUSD has 6 decimals (verified via polygonscan).

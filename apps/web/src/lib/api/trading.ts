@@ -144,7 +144,11 @@ class TradingApi {
             );
         }
         if (code === 'CLAIM_FAILED') {
-            return new TradingError('CLAIM_FAILED', raw, 'Claim could not be submitted. Please try again.');
+            return new TradingError(
+                'CLAIM_FAILED',
+                raw,
+                'Claim could not be submitted. Please try again.',
+            );
         }
         if (code === 'NETWORK') {
             return new TradingError(

@@ -1,8 +1,5 @@
 import SolanaClient from "./clients/solana";
 import PolymarketClient from "./clients/polymarket";
-import UserRepo from "./repos/user";
-import MarketRepo from "./repos/market";
-import HedgeRepo from "./repos/hedge";
 import FillIngester from "./ingest";
 import Hedger from "./hedger";
 import Resolver from "./resolver";
@@ -18,18 +15,20 @@ import { logger_for } from "./log/log";
  * `readonly` on every field is deliberate: once `init_services` returns
  * the graph, nothing should swap a service out at runtime — that would
  * break the dependency arrows wired in here.
+ *
+ * DB access lives in `apps/hedger/v2/db/*` as static-method classes
+ * (`User`, `Market`, `Resolver`, `Fill`, `Hedge`, `Exposure`, plus the
+ * stateful `Cursor`). They are *not* listed here because they aren't
+ * instances — call sites import the class and dispatch statically.
  */
 export interface Services {
-  readonly solana: SolanaClient;
-  readonly poly: PolymarketClient;
-  readonly users: UserRepo;
-  readonly markets: MarketRepo;
-  readonly hedges: HedgeRepo;
-  readonly hedger: Hedger;
-  readonly ingester: FillIngester;
-  readonly resolver: Resolver;
-  readonly reconciler: Reconciler;
-  readonly health: HealthServer;
+    readonly solana: SolanaClient;
+    readonly poly: PolymarketClient;
+    readonly hedger: Hedger;
+    readonly ingester: FillIngester;
+    readonly resolver: Resolver;
+    readonly reconciler: Reconciler;
+    readonly health: HealthServer;
 }
 
 /**
@@ -56,39 +55,27 @@ export interface Services {
  *      via the reconciler's future re-enqueue path.
  */
 export function init_services(): Services {
-  const log = logger_for("init");
-  log.info("constructing services");
+    const log = logger_for("init");
+    log.info("constructing services");
 
-  const solana = new SolanaClient();
-  const poly = new PolymarketClient();
+    const solana = new SolanaClient();
+    const poly = new PolymarketClient();
+    const health = new HealthServer();
 
-  const users = new UserRepo();
-  const markets = new MarketRepo();
-  const hedges = new HedgeRepo();
+    const hedger = new Hedger(solana, poly);
+    const ingester = new FillIngester(solana, (ev, ctx) => hedger.on_fill(ev, ctx), health);
+    const resolver = new Resolver(solana, poly);
+    const reconciler = new Reconciler(hedger, poly);
 
-  const health = new HealthServer();
-
-  const hedger = new Hedger(solana, poly, hedges, markets, users);
-  const ingester = new FillIngester(
-    solana,
-    (ev, ctx) => hedger.on_fill(ev, ctx),
-    health,
-  );
-  const resolver = new Resolver(solana, poly, markets, hedges);
-  const reconciler = new Reconciler(hedger, poly, markets, hedges);
-
-  return {
-    solana,
-    poly,
-    users,
-    markets,
-    hedges,
-    hedger,
-    ingester,
-    resolver,
-    reconciler,
-    health,
-  };
+    return {
+        solana,
+        poly,
+        hedger,
+        ingester,
+        resolver,
+        reconciler,
+        health,
+    };
 }
 
 /**
@@ -107,11 +94,11 @@ export function init_services(): Services {
  * because the next start will re-run boot recovery.
  */
 export async function start_services(s: Services): Promise<void> {
-  await s.hedger.start();
-  await s.ingester.start();
-  s.resolver.start();
-  s.reconciler.start();
-  s.health.start();
+    await s.hedger.start();
+    await s.ingester.start();
+    s.resolver.start();
+    s.reconciler.start();
+    s.health.start();
 }
 
 /**
@@ -130,17 +117,17 @@ export async function start_services(s: Services): Promise<void> {
  * step hangs.
  */
 export async function stop_services(s: Services): Promise<void> {
-  const log = logger_for("init");
-  const safe = async (label: string, fn: () => Promise<void> | void): Promise<void> => {
-    try {
-      await fn();
-    } catch (err) {
-      log.error({ err, label }, "stop step failed");
-    }
-  };
-  await safe("resolver", () => s.resolver.stop());
-  await safe("reconciler", () => s.reconciler.stop());
-  await safe("ingester", () => s.ingester.stop());
-  await safe("hedger", () => s.hedger.stop());
-  await safe("health", () => s.health.stop());
+    const log = logger_for("init");
+    const safe = async (label: string, fn: () => Promise<void> | void): Promise<void> => {
+        try {
+            await fn();
+        } catch (err) {
+            log.error({ err, label }, "stop step failed");
+        }
+    };
+    await safe("resolver", () => s.resolver.stop());
+    await safe("reconciler", () => s.reconciler.stop());
+    await safe("ingester", () => s.ingester.stop());
+    await safe("hedger", () => s.hedger.stop());
+    await safe("health", () => s.health.stop());
 }

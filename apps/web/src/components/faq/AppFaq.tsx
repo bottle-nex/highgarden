@@ -92,9 +92,9 @@ export default function AppFaq({ index }: Props): JSX.Element {
                     </h2>
 
                     <p className="mt-6 max-w-md text-[14px] leading-[1.75] text-white/55">
-                        The short version of how {APP_NAME} works — wallets, settlement, fees,
-                        and the rules every market ships with. For anything not covered here,
-                        the Terms of Service has the long form.
+                        The short version of how {APP_NAME} works — wallets, settlement, fees, and
+                        the rules every market ships with. For anything not covered here, the Terms
+                        of Service has the long form.
                     </p>
 
                     <a
@@ -125,7 +125,9 @@ export default function AppFaq({ index }: Props): JSX.Element {
                                     <span
                                         className={cn(
                                             'flex-1 pr-2 text-left text-base md:text-xl font-medium tracking-tight whitespace-normal transition-colors duration-200',
-                                            is_open ? 'text-white' : 'text-white/85 group-hover/faq:text-white',
+                                            is_open
+                                                ? 'text-white'
+                                                : 'text-white/85 group-hover/faq:text-white',
                                         )}
                                     >
                                         {faq.question}
@@ -133,9 +135,7 @@ export default function AppFaq({ index }: Props): JSX.Element {
                                     <span
                                         className={cn(
                                             'flex size-7 shrink-0 items-center justify-center text-alpha transition-all duration-300',
-                                            is_open
-                                                ? 'rotate-45'
-                                                : 'border-white/15',
+                                            is_open ? 'rotate-45' : 'border-white/15',
                                         )}
                                         aria-hidden
                                     >

@@ -9,7 +9,10 @@ import {
     type BalanceSnapshot,
 } from '@/lib/api/admin';
 
-const SEVERITY_CLASSES: Record<BalanceSeverity, { bg: string; ring: string; dot: string; label: string }> = {
+const SEVERITY_CLASSES: Record<
+    BalanceSeverity,
+    { bg: string; ring: string; dot: string; label: string }
+> = {
     ok: {
         bg: 'bg-emerald-500/5',
         ring: 'border border-emerald-500/15',
@@ -63,13 +66,26 @@ interface CardProps {
     threshold: { warn: number; critical: number };
 }
 
-function Card({ title, chain, amount, unit, decimals, severity, address, threshold }: CardProps): React.ReactElement {
+function Card({
+    title,
+    chain,
+    amount,
+    unit,
+    decimals,
+    severity,
+    address,
+    threshold,
+}: CardProps): React.ReactElement {
     const c = SEVERITY_CLASSES[severity];
     return (
         <div className={`${c.bg} ${c.ring} rounded-md p-4 space-y-2 min-w-0`}>
             <div className="flex items-center justify-between">
-                <span className="text-[10px] tracking-[0.2em] uppercase text-white/45">{chain}</span>
-                <span className={`flex items-center gap-1.5 text-[10px] tracking-[0.16em] uppercase ${c.label}`}>
+                <span className="text-[10px] tracking-[0.2em] uppercase text-white/45">
+                    {chain}
+                </span>
+                <span
+                    className={`flex items-center gap-1.5 text-[10px] tracking-[0.16em] uppercase ${c.label}`}
+                >
                     <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
                     {severity === 'unknown' ? 'unconfigured' : severity}
                 </span>
@@ -79,7 +95,9 @@ function Card({ title, chain, amount, unit, decimals, severity, address, thresho
                 <span className="text-2xl font-semibold tabular-nums text-white">
                     {format_amount(amount, decimals)}
                 </span>
-                <span className="text-[11px] uppercase tracking-[0.18em] text-white/45">{unit}</span>
+                <span className="text-[11px] uppercase tracking-[0.18em] text-white/45">
+                    {unit}
+                </span>
             </div>
             <div className="text-[10px] text-white/35 tabular-nums">
                 warn ≤ {threshold.warn} · crit ≤ {threshold.critical}

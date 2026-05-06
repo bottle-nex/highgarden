@@ -31,10 +31,7 @@ export default class MarketSocket extends SocketBase {
         if (this.idle_close_timer) {
             clearTimeout(this.idle_close_timer);
             this.idle_close_timer = null;
-            console.log(
-                "[poly:market] close timer cancelled — new subscriber arrived",
-                token_id,
-            );
+            console.log("[poly:market] close timer cancelled — new subscriber arrived", token_id);
         }
 
         const { firstRef } = this.registry.acquire(token_id);

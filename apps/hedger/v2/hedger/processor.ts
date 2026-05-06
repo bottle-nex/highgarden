@@ -4,17 +4,13 @@ import { ENV } from "../envs/env";
 import { logger_for } from "../log/log";
 import { RetryableError } from "../errors";
 import type { HedgeJobData, HedgeJobResult } from "./types";
-import type UserRepo from "../repos/user";
-import type { CustodialUser } from "../repos/user";
-import type MarketRepo from "../repos/market";
-import type { MarketMetadata } from "../repos/market";
-import type HedgeRepo from "../repos/hedge";
-import type { FillRow, HedgeRow } from "../repos/hedge";
+import User, { type CustodialUser } from "../db/user";
+import Market, { type MarketMetadata } from "../db/market";
+import Fill, { type FillRow } from "../db/fill";
+import Hedge, { type HedgeRow } from "../db/hedge";
+import Exposure from "../db/exposure";
 import type PolymarketClient from "../clients/polymarket";
-import type {
-    PlaceMarketOrderResult,
-    BookTop,
-} from "../clients/polymarket";
+import type { PlaceMarketOrderResult, BookTop } from "../clients/polymarket";
 import chalk from "chalk";
 
 /**
@@ -71,20 +67,9 @@ interface WalkAccumulator {
 export default class HedgeProcessor {
     private readonly log = logger_for("processor");
     private readonly poly: PolymarketClient;
-    private readonly hedges: HedgeRepo;
-    private readonly markets: MarketRepo;
-    private readonly users: UserRepo;
 
-    constructor(
-        poly: PolymarketClient,
-        hedges: HedgeRepo,
-        markets: MarketRepo,
-        users: UserRepo,
-    ) {
+    constructor(poly: PolymarketClient) {
         this.poly = poly;
-        this.hedges = hedges;
-        this.markets = markets;
-        this.users = users;
     }
 
     /**
@@ -103,7 +88,7 @@ export default class HedgeProcessor {
         this.log.info({ jobId: job.id, attemptsMade: job.attemptsMade }, "processing job");
 
         const ctx = await this.resolve_context(job);
-        console.log(chalk.bgGreen("context returned is : ", ctx));
+        console.debug(chalk.bgGreen("context returned is :"), ctx);
         if (this.is_terminal(ctx.hedge)) {
             return {
                 status: "SKIPPED",
@@ -111,11 +96,10 @@ export default class HedgeProcessor {
             };
         }
 
-        // await this.hedges.hedge_mark_hedging(ctx.hedge.id, job.attemptsMade + 1);
+        await Hedge.mark_hedging(ctx.hedge.id, job.attemptsMade + 1);
         if (job.attemptsMade === 0) {
-            await this.hedges.exposure_increment(ctx.market.id, ctx.fill.size);
+            await Exposure.increment(ctx.market.id, ctx.fill.size);
         }
-
         return this.execute_hedge(ctx);
     }
 
@@ -133,9 +117,12 @@ export default class HedgeProcessor {
         const market = await this.lookup_market(data.event.market);
         const fill = await this.upsert_fill(data, user.id, market.id);
 
-        console.log(chalk.cyan("-------------------------->", {
-            data, user, market, fill,
-        }));
+        console.debug(chalk.bgCyan("-------------------------->"), {
+            data,
+            user,
+            market,
+            fill,
+        });
 
         const direction = this.pick_direction({
             solana_side: data.event.side,
@@ -143,18 +130,14 @@ export default class HedgeProcessor {
             yes_token_id: market.yesTokenId,
             no_token_id: market.noTokenId,
         });
-        console.log(chalk.cyan("direction-------------------------->", {
-            direction
-        }));
+        console.debug(chalk.bgCyan("direction-------------------------->"), { direction });
         const hedge = await this.upsert_hedge(fill.id, job.id!, direction, fill.size);
-        console.log(chalk.cyan("hedge-------------------------->", {
-            hedge
-        }));
+        console.debug(chalk.bgRed("hedge-------------------------->"), { hedge });
         return { user, market, fill, hedge, direction };
     }
 
     private async lookup_user(custodial_pubkey: string): Promise<CustodialUser> {
-        const user = await this.users.find_by_custodial_pubkey(custodial_pubkey);
+        const user = await User.find_by_custodial_pubkey(custodial_pubkey);
         if (!user) {
             throw new RetryableError(`no User row with custodialPublicKey=${custodial_pubkey}`);
         }
@@ -162,7 +145,7 @@ export default class HedgeProcessor {
     }
 
     private async lookup_market(solana_pda: string): Promise<MarketMetadata> {
-        const market = await this.markets.find_by_solana_pda(solana_pda);
+        const market = await Market.find_by_pda(solana_pda);
         if (!market) {
             throw new RetryableError(`no Market row with solanaMarketPda=${solana_pda}`);
         }
@@ -174,7 +157,7 @@ export default class HedgeProcessor {
         user_id: string,
         market_id: string,
     ): Promise<FillRow> {
-        const result = await this.hedges.fill_insert_idempotent({
+        const result = await Fill.insert_idempotent({
             nonceHex: data.event.nonceHex,
             txSignature: data.signature,
             userId: user_id,
@@ -194,7 +177,7 @@ export default class HedgeProcessor {
         size_shares: number,
     ): Promise<HedgeRow> {
         const client_order_id = `hedger-${bull_job_id}`;
-        const result = await this.hedges.hedge_create_idempotent({
+        const result = await Hedge.create_idempotent({
             fillId: fill_id,
             bullJobId: bull_job_id,
             clientOrderId: client_order_id,
@@ -392,13 +375,13 @@ export default class HedgeProcessor {
         ctx: ResolvedContext,
         result: PlaceMarketOrderResult,
     ): Promise<HedgeJobResult> {
-        await this.hedges.hedge_mark_filled(
+        await Hedge.mark_filled(
             ctx.hedge.id,
             result.polymarketOrderId ?? "unknown",
             result.filledShares,
             result.avgPriceCents ?? ctx.fill.price,
         );
-        await this.hedges.exposure_decrement(ctx.market.id, result.filledShares);
+        await Exposure.decrement(ctx.market.id, result.filledShares);
         return {
             status: "FILLED",
             filledSize: result.filledShares,
@@ -440,24 +423,24 @@ export default class HedgeProcessor {
         );
 
         if (total_filled >= ctx.fill.size) {
-            await this.hedges.hedge_mark_filled(
+            await Hedge.mark_filled(
                 ctx.hedge.id,
                 walk.lastOrderId ?? initial.polymarketOrderId ?? "unknown",
                 total_filled,
                 avg ?? ctx.fill.price,
             );
-            await this.hedges.exposure_decrement(ctx.market.id, total_filled);
+            await Exposure.decrement(ctx.market.id, total_filled);
             return { status: "FILLED", filledSize: total_filled, avgPriceCents: avg ?? undefined };
         }
 
-        await this.hedges.hedge_mark_partial(
+        await Hedge.mark_partial(
             ctx.hedge.id,
             walk.lastOrderId ?? initial.polymarketOrderId,
             total_filled,
             avg,
         );
         if (total_filled > 0) {
-            await this.hedges.exposure_decrement(ctx.market.id, total_filled);
+            await Exposure.decrement(ctx.market.id, total_filled);
         }
         this.log.warn(
             {

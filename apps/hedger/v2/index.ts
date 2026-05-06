@@ -21,21 +21,21 @@ let shutting_down = false;
  * window and result in SIGKILL.
  */
 const shutdown = async (signal: string): Promise<void> => {
-  if (shutting_down) process.exit(1);
-  shutting_down = true;
-  log.info({ signal }, "received shutdown signal");
+    if (shutting_down) process.exit(1);
+    shutting_down = true;
+    log.info({ signal }, "received shutdown signal");
 
-  const hard = setTimeout(() => {
-    log.warn("graceful shutdown exceeded 4s budget — forcing exit");
-    process.exit(0);
-  }, 4_000);
+    const hard = setTimeout(() => {
+        log.warn("graceful shutdown exceeded 4s budget — forcing exit");
+        process.exit(0);
+    }, 4_000);
 
-  try {
-    await stop_services(services);
-  } finally {
-    clearTimeout(hard);
-    process.exit(0);
-  }
+    try {
+        await stop_services(services);
+    } finally {
+        clearTimeout(hard);
+        process.exit(0);
+    }
 };
 
 process.on("SIGINT", () => void shutdown("SIGINT"));

@@ -8,14 +8,14 @@
  * without losing the typed-retryable signal.
  */
 export class RetryableError extends Error {
-  public readonly retryable = true;
-  public readonly cause_err?: unknown;
+    public readonly retryable = true;
+    public readonly cause_err?: unknown;
 
-  constructor(message: string, cause_err?: unknown) {
-    super(message);
-    this.cause_err = cause_err;
-    this.name = "RetryableError";
-  }
+    constructor(message: string, cause_err?: unknown) {
+        super(message);
+        this.cause_err = cause_err;
+        this.name = "RetryableError";
+    }
 }
 
 /**
@@ -25,14 +25,14 @@ export class RetryableError extends Error {
  * "market resolved before we hedged" (the chain has moved on).
  */
 export class UnrecoverableError extends Error {
-  public readonly retryable = false;
-  public readonly cause_err?: unknown;
+    public readonly retryable = false;
+    public readonly cause_err?: unknown;
 
-  constructor(message: string, cause_err?: unknown) {
-    super(message);
-    this.cause_err = cause_err;
-    this.name = "UnrecoverableError";
-  }
+    constructor(message: string, cause_err?: unknown) {
+        super(message);
+        this.cause_err = cause_err;
+        this.name = "UnrecoverableError";
+    }
 }
 
 /**
@@ -46,7 +46,7 @@ export class UnrecoverableError extends Error {
  * `UnrecoverableError` once you've identified them as terminal.
  */
 export function is_retryable(err: unknown): boolean {
-  if (err instanceof RetryableError) return true;
-  if (err instanceof UnrecoverableError) return false;
-  return true;
+    if (err instanceof RetryableError) return true;
+    if (err instanceof UnrecoverableError) return false;
+    return true;
 }

@@ -73,11 +73,14 @@ function BrandRow(): JSX.Element {
             >
                 {APP_NAME}
             </motion.h2>
-            <section className='flex items-center justify-between'>
+            <section className="flex items-center justify-between">
                 <p className="text-base md:text-3xl text-dark-base/65 leading-relaxed max-w-xl">
                     Engineered to make future outcomes transparent, tradable, and verifiable.
                 </p>
-                <button aria-label='test' className='relative h-44 flex-1 rounded-full text-6xl uppercase border-2 border-black overflow-hidden font-semibold'>
+                <button
+                    aria-label="test"
+                    className="relative h-44 flex-1 rounded-full text-6xl uppercase border-2 border-black overflow-hidden font-semibold"
+                >
                     <video
                         src="/videos/porsche.mp4"
                         autoPlay
@@ -149,10 +152,14 @@ function BottomBar(): JSX.Element {
     return (
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-3 font-mono text-[10px] uppercase tracking-[0.25em] text-dark-base/40">
             <span>
-                © {APP_NAME} 2026 <span className="mx-2 text-dark-base/20">·</span> All rights reserved
+                © {APP_NAME} 2026 <span className="mx-2 text-dark-base/20">·</span> All rights
+                reserved
             </span>
             <div className="flex items-center gap-x-6">
-                <a href="#" className="text-dark-base/40 hover:text-dark-base transition-colors duration-200">
+                <a
+                    href="#"
+                    className="text-dark-base/40 hover:text-dark-base transition-colors duration-200"
+                >
                     Privacy
                 </a>
                 <a
@@ -161,7 +168,10 @@ function BottomBar(): JSX.Element {
                 >
                     Terms
                 </a>
-                <a href="#" className="text-dark-base/40 hover:text-dark-base transition-colors duration-200">
+                <a
+                    href="#"
+                    className="text-dark-base/40 hover:text-dark-base transition-colors duration-200"
+                >
                     Disclosures
                 </a>
             </div>

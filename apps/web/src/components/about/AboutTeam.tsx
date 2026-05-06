@@ -43,8 +43,8 @@ export default function AboutTeam({ index, engineers }: Props): JSX.Element {
             </h2>
 
             <p className="mb-12 max-w-2xl text-[14px] leading-[1.75] text-white/55">
-                A small, opinionated team building every layer of the protocol — from the
-                on-chain order book to the interface you&apos;re reading this on.
+                A small, opinionated team building every layer of the protocol — from the on-chain
+                order book to the interface you&apos;re reading this on.
             </p>
 
             <div className="grid grid-cols-1 gap-x-6 gap-y-10 md:grid-cols-3">
