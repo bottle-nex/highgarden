@@ -4,6 +4,29 @@
 > Owner: this is the plan for the **bot app** that hedges Solana fills onto Polymarket. Lives in its own app (`apps/hedger`), not inside `apps/server`.
 > Trust model: assumes the **custodial** flow (the server holds user keypairs and signs `place_order` on behalf of users). The hedger doesn't care about that detail — it just listens to the contract's events.
 
+> **For deployment-state-of-record (what's actually shipped, devnet artifacts, env reference, runbook, gaps), see [build-log.md](build-log.md).** This document is the design rationale; status markers (✅ ⚠️ ❌) on each section reflect what's built as of the latest build-log update.
+
+## Status at a glance
+
+| Phase | Plan section | Status |
+| --- | --- | --- |
+| 0 — Scaffold | §17 build order | ✅ shipped |
+| 1 — Solana wiring (live listener) | §3 / §7.1 | ✅ shipped |
+| 2 — Queue scaffold | §3 / §7 / §8 | ✅ shipped |
+| 3 — Catch-up poller + cursor | §3 / §7.2 | ✅ shipped |
+| 4 — Polymarket client wrapper | §3 / §13 | ✅ shipped (dry-run mode active) |
+| 5 — Hedge processor + FSM | §8 | ✅ shipped |
+| 5b — Walk-book + recovery | §8 / §10 | ✅ shipped |
+| 6 — Exposure + admin endpoints | §11 / §12 | ✅ shipped |
+| 7 — Reconciliation loop | §7.3 | ✅ shipped |
+| 8 — Resolver (Gamma → Solana → Polygon redeem) | §7.4 | ✅ PRs 1–3 shipped; max-attempts (PR 4 redeem retry cap) ⚠️ pending |
+| Auto-pause on permanent failure | §15 (D) | ✅ shipped |
+| Bull Board dashboard | §17 Phase 6 | ❌ not built (admin endpoints cover the basics) |
+| `cancel_market` + `refund` (Polymarket-broken markets) | §15 (H) extended | ❌ not built; Phase 9 — see build-log §8 |
+| `close_used_nonce` + auto-close `UserPosition` (rent recovery) | §1.6 of build-log | ❌ not built |
+| Tests (`bun test`) | §16 | ❌ not built |
+| Production deploy config (Dockerfile, etc.) | — | ❌ not built |
+
 ---
 
 ## 0. What this app is, and what it isn't
