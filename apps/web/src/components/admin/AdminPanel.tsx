@@ -6,7 +6,7 @@ import { fetchAdminListings, type AdminListingApi } from '@/lib/api/admin';
 import AdminListings, { type AdminListingRow } from './AdminListings';
 import RunListerButton from './RunListerButton';
 import FundUserButton from './FundUserButton';
-import BalancePanel from './BalancePanel';
+import BalanceModalButton from './BalanceModalButton';
 
 function toRow(l: AdminListingApi): AdminListingRow {
     return {
@@ -63,11 +63,10 @@ export default function AdminPanel() {
                 </div>
                 <div className="flex items-center gap-2">
                     <RunListerButton onComplete={refresh} />
+                    <BalanceModalButton />
                     <FundUserButton />
                 </div>
             </div>
-
-            <BalancePanel />
 
             {loading ? (
                 <div className="text-xs text-white/40">Loading listings…</div>
