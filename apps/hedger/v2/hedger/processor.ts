@@ -15,6 +15,7 @@ import type {
     PlaceMarketOrderResult,
     BookTop,
 } from "../clients/polymarket";
+import chalk from "chalk";
 
 /**
  * Direction picker output: which Polymarket token + which side gives us
@@ -102,6 +103,7 @@ export default class HedgeProcessor {
         this.log.info({ jobId: job.id, attemptsMade: job.attemptsMade }, "processing job");
 
         const ctx = await this.resolve_context(job);
+        console.log(chalk.bgGreen("context returned is : ", ctx));
         if (this.is_terminal(ctx.hedge)) {
             return {
                 status: "SKIPPED",
@@ -109,7 +111,7 @@ export default class HedgeProcessor {
             };
         }
 
-        await this.hedges.hedge_mark_hedging(ctx.hedge.id, job.attemptsMade + 1);
+        // await this.hedges.hedge_mark_hedging(ctx.hedge.id, job.attemptsMade + 1);
         if (job.attemptsMade === 0) {
             await this.hedges.exposure_increment(ctx.market.id, ctx.fill.size);
         }
@@ -130,13 +132,24 @@ export default class HedgeProcessor {
         const user = await this.lookup_user(data.event.user);
         const market = await this.lookup_market(data.event.market);
         const fill = await this.upsert_fill(data, user.id, market.id);
+
+        console.log(chalk.cyan("-------------------------->", {
+            data, user, market, fill,
+        }));
+
         const direction = this.pick_direction({
             solana_side: data.event.side,
             solana_outcome: data.event.outcome,
             yes_token_id: market.yesTokenId,
             no_token_id: market.noTokenId,
         });
+        console.log(chalk.cyan("direction-------------------------->", {
+            direction
+        }));
         const hedge = await this.upsert_hedge(fill.id, job.id!, direction, fill.size);
+        console.log(chalk.cyan("hedge-------------------------->", {
+            hedge
+        }));
         return { user, market, fill, hedge, direction };
     }
 

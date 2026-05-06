@@ -2,39 +2,11 @@
 import { JSX } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { IconType } from 'react-icons';
-import {
-    PiFlameFill,
-    PiBankFill,
-    PiTrophyFill,
-    PiCurrencyBtcFill,
-    PiGlobeFill,
-    PiFilmSlateFill,
-    PiCpuFill,
-    PiChartLineFill,
-    PiCloudSunFill,
-    PiCheckSquareOffsetFill,
-    PiAtFill,
-    PiBookmarkSimpleFill,
-} from 'react-icons/pi';
+import { PiBookmarkSimpleFill } from 'react-icons/pi';
 import { cn } from '@/lib/utils';
 import { CATEGORY_TABS } from '@/utils/constants';
 import { useCategoryStore } from '@/store/ui/useCategoryStore';
 import Applogo from '@/components/ui/Applogo';
-
-const CATEGORY_ICONS: Record<(typeof CATEGORY_TABS)[number], IconType> = {
-    Trending: PiFlameFill,
-    Politics: PiBankFill,
-    Sports: PiTrophyFill,
-    Crypto: PiCurrencyBtcFill,
-    Geopolitics: PiGlobeFill,
-    Culture: PiFilmSlateFill,
-    Tech: PiCpuFill,
-    Economy: PiChartLineFill,
-    Weather: PiCloudSunFill,
-    Elections: PiCheckSquareOffsetFill,
-    Mentions: PiAtFill,
-};
 
 export default function CategorySidebar(): JSX.Element {
     const active = useCategoryStore((s) => s.activeCategory);
