@@ -4,7 +4,6 @@ import { verifySessionJwt } from "../services/service.jwt";
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
     const header = req.headers.authorization;
-    console.log({header});
     if (!header || !header.startsWith("Bearer ")) {
         return ResponseWriter.not_authorized(res, "Missing bearer token");
     }

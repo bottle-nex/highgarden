@@ -171,23 +171,23 @@ export default function BalancePanel(): React.ReactElement {
                     />
                     <Card
                         title="Polymarket funder · gas"
-                        chain="Polygon · MATIC"
-                        amount={snapshot?.polygon.funderMatic.amount ?? 0}
-                        unit="MATIC"
+                        chain="Polygon · POL"
+                        amount={snapshot?.polygon.funderPol.amount ?? 0}
+                        unit="POL"
                         decimals={4}
-                        severity={derive_severity(snapshot?.polygon.funderMatic)}
+                        severity={derive_severity(snapshot?.polygon.funderPol)}
                         address={snapshot?.polygon.funderAddress ?? null}
-                        threshold={snapshot?.thresholds.matic ?? { warn: 1, critical: 0.1 }}
+                        threshold={snapshot?.thresholds.pol ?? { warn: 1, critical: 0.1 }}
                     />
                     <Card
                         title="Polymarket funder · trades"
-                        chain="Polygon · USDC.e"
-                        amount={snapshot?.polygon.funderUsdcE.amount ?? 0}
-                        unit="USDC"
+                        chain="Polygon · pUSD"
+                        amount={snapshot?.polygon.funderPusd.amount ?? 0}
+                        unit="pUSD"
                         decimals={2}
-                        severity={derive_severity(snapshot?.polygon.funderUsdcE)}
+                        severity={derive_severity(snapshot?.polygon.funderPusd)}
                         address={snapshot?.polygon.funderAddress ?? null}
-                        threshold={snapshot?.thresholds.usdcE ?? { warn: 500, critical: 50 }}
+                        threshold={snapshot?.thresholds.pusd ?? { warn: 500, critical: 50 }}
                     />
                 </div>
             )}

@@ -3,8 +3,10 @@ import { Contract, providers } from "ethers";
 import bs58 from "bs58";
 import { ENV } from "../config/config.env";
 
-// Polymarket trades against bridged USDC.e on Polygon (NOT native USDC).
-const USDC_E_ADDRESS_POLYGON = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
+// Polymarket migrated from USDC.e → native USDC → their own pUSD token.
+// The CTF Exchange now settles in pUSD, so that's the trading collateral
+// (verified via polygonscan tx history on a live funder).
+const PUSD_ADDRESS_POLYGON = "0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb";
 const ERC20_BALANCE_OF_ABI = [
     "function balanceOf(address) view returns (uint256)",
     "function decimals() view returns (uint8)",
@@ -16,8 +18,8 @@ const TREASURY_VAULT_SEED = Buffer.from("treasury_vault");
 const THRESHOLDS = {
     sol: { warn: 0.5, critical: 0.05 },
     usdcVault: { warn: 1000, critical: 100 },
-    matic: { warn: 1, critical: 0.1 },
-    usdcE: { warn: 500, critical: 50 },
+    pol: { warn: 1, critical: 0.1 },
+    pusd: { warn: 500, critical: 50 },
 } as const;
 
 export type Severity = "ok" | "warn" | "critical" | "unknown";
@@ -33,8 +35,8 @@ export interface SolanaBalances {
 export interface PolygonBalances {
     configured: boolean;
     funderAddress: string | null;
-    funderMatic: { amount: number; severity: Severity };
-    funderUsdcE: { amount: number; severity: Severity };
+    funderPol: { amount: number; severity: Severity };
+    funderPusd: { amount: number; severity: Severity };
 }
 
 export interface BalanceSnapshot {
@@ -119,31 +121,31 @@ export default class BalanceMonitorService {
         const provider = new providers.JsonRpcProvider(ENV.SERVER_POLYGON_RPC_URL);
         const funder = ENV.SERVER_POLYMARKET_FUNDER_ADDRESS;
 
-        const matic_wei = await provider.getBalance(funder);
-        const matic_amount = Number(matic_wei.toString()) / 1e18;
-        const usdc_e_amount = await this.fetch_usdc_e(provider, funder);
+        const pol_wei = await provider.getBalance(funder);
+        const pol_amount = Number(pol_wei.toString()) / 1e18;
+        const pusd_amount = await this.fetch_pusd(provider, funder);
 
         return {
             configured: true,
             funderAddress: funder,
-            funderMatic: {
-                amount: matic_amount,
-                severity: this.classify(matic_amount, THRESHOLDS.matic),
+            funderPol: {
+                amount: pol_amount,
+                severity: this.classify(pol_amount, THRESHOLDS.pol),
             },
-            funderUsdcE: {
-                amount: usdc_e_amount,
-                severity: this.classify(usdc_e_amount, THRESHOLDS.usdcE),
+            funderPusd: {
+                amount: pusd_amount,
+                severity: this.classify(pusd_amount, THRESHOLDS.pusd),
             },
         };
     }
 
-    private async fetch_usdc_e(
+    private async fetch_pusd(
         provider: providers.JsonRpcProvider,
         funder: string,
     ): Promise<number> {
-        const usdc = new Contract(USDC_E_ADDRESS_POLYGON, ERC20_BALANCE_OF_ABI, provider);
-        const raw = await usdc.balanceOf(funder);
-        // USDC.e on Polygon has 6 decimals.
+        const pusd = new Contract(PUSD_ADDRESS_POLYGON, ERC20_BALANCE_OF_ABI, provider);
+        const raw = await pusd.balanceOf(funder);
+        // pUSD has 6 decimals (verified via polygonscan).
         return Number(raw.toString()) / 1e6;
     }
 
@@ -181,8 +183,8 @@ export default class BalanceMonitorService {
         return {
             configured: false,
             funderAddress: null,
-            funderMatic: { amount: 0, severity: "unknown" },
-            funderUsdcE: { amount: 0, severity: "unknown" },
+            funderPol: { amount: 0, severity: "unknown" },
+            funderPusd: { amount: 0, severity: "unknown" },
         };
     }
 }

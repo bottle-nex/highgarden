@@ -92,14 +92,14 @@ export interface BalanceSnapshot {
     polygon: {
         configured: boolean;
         funderAddress: string | null;
-        funderMatic: BalanceCard;
-        funderUsdcE: BalanceCard;
+        funderPol: BalanceCard;
+        funderPusd: BalanceCard;
     };
     thresholds: {
         sol: { warn: number; critical: number };
         usdcVault: { warn: number; critical: number };
-        matic: { warn: number; critical: number };
-        usdcE: { warn: number; critical: number };
+        pol: { warn: number; critical: number };
+        pusd: { warn: number; critical: number };
     };
 }
 
