@@ -15,7 +15,7 @@ type Props = {
 
 export default function AboutShell({ engineers }: Props): JSX.Element {
     return (
-        <main className="relative w-full bg-neutral-950 pt-32 pb-32">
+        <main className="relative w-full bg-dark-alpha pt-32 pb-32">
             <div className="mx-auto w-full max-w-7xl px-6 md:px-10">
                 <AboutHero
                     eyebrow={`ABOUT · WHO BUILDS ${APP_NAME.toUpperCase()}`}

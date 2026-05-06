@@ -58,7 +58,7 @@ export default function AppFaq({ index }: Props): JSX.Element {
     return (
         <motion.section
             id="faq"
-            className="scroll-mt-28 border-t border-white/10 py-16"
+            className="scroll-mt-28 border-t border-white/10 py-16 bg-dark-alpha"
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}

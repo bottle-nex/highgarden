@@ -84,11 +84,10 @@ export default function DashboardNavbar(): JSX.Element {
                         </span>
                     ) : (
                         <CroppedButton
-                            size={'sm'}
                             onClick={() => setOpenSigninModal(true)}
                             className={cn(
                                 'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
-                                'bg-transparent border border-white/15 text-white hover:bg-white/5',
+                                'bg-transparent text-white hover:bg-white/5',
                                 'transition-all duration-200',
                             )}
                         >

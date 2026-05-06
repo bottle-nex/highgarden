@@ -1,9 +1,10 @@
 'use client';
-import { JSX } from 'react';
+import { JSX, useState } from 'react';
 import { MdArrowOutward } from 'react-icons/md';
 import { cn } from '@/lib/utils';
 import { doto } from './LandingTextContent';
 import { APP_NAME } from '@/utils/constants';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const NAV_GROUPS = [
     {
@@ -43,7 +44,7 @@ const SOCIALS = [
 
 export default function LandingFooter(): JSX.Element {
     return (
-        <footer className="relative w-full bg-neutral-950 mt-20 pt-24 pb-10 px-6 md:px-10">
+        <footer className="relative w-full bg-alpha pt-24 pb-10 px-6 md:px-10">
             <div className="max-w-340 mx-auto w-full">
                 <BrandRow />
                 <div className="my-16 h-px w-full bg-white/10" />
@@ -59,25 +60,35 @@ export default function LandingFooter(): JSX.Element {
 function BrandRow(): JSX.Element {
     return (
         <div className="flex flex-col gap-y-6">
-            <h2
+            <motion.h2
+                initial={{ y: 60, opacity: 1 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: false, amount: 0.3 }}
+                transition={{ duration: 0.5 }}
                 className={cn(
-                    'font-black tracking-tighter leading-[0.9] text-light-base',
-                    'text-6xl sm:text-7xl md:text-8xl',
+                    'font-black tracking-tighter leading-[0.9] text-dark-base',
+                    'text-6xl sm:text-7xl md:text-[12rem]',
                     doto.className,
                 )}
             >
                 {APP_NAME}
-            </h2>
-            <p className="text-base md:text-lg text-light-base/65 leading-relaxed max-w-xl">
-                Engineered to make future outcomes transparent, tradable, and verifiable.
-            </p>
-            <a
-                href="#"
-                className="group/cta mt-2 inline-flex items-center gap-x-2 font-mono text-[11px] uppercase tracking-[0.25em] text-light-base hover:text-alpha transition-colors duration-300 w-fit"
-            >
-                <span>Start predicting</span>
-                <MdArrowOutward className="size-3.5 transition-transform duration-300 group-hover/cta:translate-x-0.5 group-hover/cta:-translate-y-0.5" />
-            </a>
+            </motion.h2>
+            <section className='flex items-center justify-between'>
+                <p className="text-base md:text-3xl text-dark-base/65 leading-relaxed max-w-xl">
+                    Engineered to make future outcomes transparent, tradable, and verifiable.
+                </p>
+                <button aria-label='test' className='relative h-44 flex-1 rounded-full text-6xl uppercase border-2 border-black overflow-hidden font-semibold'>
+                    <video
+                        src="/videos/porsche.mp4"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    <span className="relative z-10">Start trading</span>
+                </button>
+            </section>
         </div>
     );
 }
@@ -99,18 +110,35 @@ interface LinkColumnProps {
 }
 
 function LinkColumn({ label, links }: LinkColumnProps): JSX.Element {
+    const [hovered_link, set_hovered_link] = useState<string | null>(null);
     return (
         <div className="flex flex-col gap-y-3">
-            <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/40 mb-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-black/40 mb-2">
                 {label}
             </span>
             {links.map((l) => (
                 <a
                     key={l.name}
                     href={l.href}
-                    className="text-[15px] text-light-base/75 hover:text-light-base transition-colors duration-200 w-fit"
+                    onMouseEnter={() => set_hovered_link(l.name)}
+                    onMouseLeave={() => set_hovered_link(null)}
+                    className="group/link inline-flex items-center gap-x-1.5 text-[16px] text-dark-base/75 hover:text-dark-base transition-colors duration-200 w-fit font-medium"
                 >
-                    {l.name}
+                    <span>{l.name}</span>
+                    <AnimatePresence initial={false}>
+                        {hovered_link === l.name && (
+                            <motion.span
+                                key="arrow"
+                                initial={{ opacity: 0, x: -4, width: 0 }}
+                                animate={{ opacity: 1, x: 0, width: 'auto' }}
+                                exit={{ opacity: 0, x: -4, width: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="inline-flex overflow-hidden"
+                            >
+                                <MdArrowOutward className="size-3.5" />
+                            </motion.span>
+                        )}
+                    </AnimatePresence>
                 </a>
             ))}
         </div>
@@ -119,21 +147,21 @@ function LinkColumn({ label, links }: LinkColumnProps): JSX.Element {
 
 function BottomBar(): JSX.Element {
     return (
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-3 font-mono text-[10px] uppercase tracking-[0.25em] text-white/40">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-3 font-mono text-[10px] uppercase tracking-[0.25em] text-dark-base/40">
             <span>
-                © {APP_NAME} 2026 <span className="mx-2 text-white/20">·</span> All rights reserved
+                © {APP_NAME} 2026 <span className="mx-2 text-dark-base/20">·</span> All rights reserved
             </span>
             <div className="flex items-center gap-x-6">
-                <a href="#" className="hover:text-light-base transition-colors duration-200">
+                <a href="#" className="text-dark-base/40 hover:text-dark-base transition-colors duration-200">
                     Privacy
                 </a>
                 <a
                     href="/legal/terms"
-                    className="hover:text-light-base transition-colors duration-200"
+                    className="text-dark-base/40 hover:text-dark-base transition-colors duration-200"
                 >
                     Terms
                 </a>
-                <a href="#" className="hover:text-light-base transition-colors duration-200">
+                <a href="#" className="text-dark-base/40 hover:text-dark-base transition-colors duration-200">
                     Disclosures
                 </a>
             </div>

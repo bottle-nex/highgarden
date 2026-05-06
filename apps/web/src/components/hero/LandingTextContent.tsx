@@ -29,7 +29,7 @@ export default function LandingTextContent(): JSX.Element {
     return (
         <main
             ref={section_ref}
-            className="relative z-20 w-screen min-h-[110vh] bg-[#ff4000] overflow-hidden"
+            className="relative z-20 w-screen min-h-[110vh] bg-alpha overflow-hidden"
         >
             <div
                 aria-hidden
@@ -37,11 +37,11 @@ export default function LandingTextContent(): JSX.Element {
             />
             <div
                 aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-linear-to-b from-[#ff4000] to-transparent"
+                className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-linear-to-b from-alpha to-transparent"
             />
             <div
                 aria-hidden
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-linear-to-t from-[#ff4000] to-transparent"
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-linear-to-t from-alpha to-transparent"
             />
 
             <div className="relative z-10">

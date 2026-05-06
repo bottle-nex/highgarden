@@ -135,7 +135,7 @@ export default function LandingFeatureCardsSection(): JSX.Element {
     }, [])
 
     return (
-        <section className="relative z-30 w-full bg-neutral-950 py-32">
+        <section className="relative z-30 w-full bg-dark-alpha py-32">
             <div className="max-w-7xl mx-auto w-full px-6">
                 <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-[0.25em] text-neutral-500">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-alpha" />

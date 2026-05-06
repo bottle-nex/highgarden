@@ -113,7 +113,7 @@ export default function LandingCtaSection(): JSX.Element {
     return (
         <section
             ref={sectionRef}
-            className="w-full h-screen shrink-0 overflow-hidden bg-neutral-950 sticky top-0"
+            className="w-full h-screen shrink-0 overflow-hidden bg-dark-alpha sticky top-0"
         >
             {/* video background */}
             <video

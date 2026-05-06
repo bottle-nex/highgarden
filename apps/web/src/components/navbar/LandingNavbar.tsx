@@ -38,7 +38,7 @@ export default function LandingNavbar(): JSX.Element {
             className={cn(
                 'fixed top-0 left-0 w-full z-50 transition-all duration-300',
                 isScrolled
-                    ? 'bg-neutral-950 border-b border-white/10'
+                    ? 'bg-dark-alpha border-b border-white/10'
                     : 'bg-transparent border-b border-transparent',
             )}
         >

@@ -33,7 +33,7 @@ export default function LegalShell({
     const toc_items: TocItem[] = sections.map((s) => ({ id: s.id, label: s.title }));
 
     return (
-        <main className="relative w-full bg-neutral-950 pt-32 pb-32">
+        <main className="relative w-full bg-dark-alpha pt-32 pb-32">
             <div className="mx-auto w-full max-w-7xl px-6 md:px-10">
                 <LegalHero
                     eyebrow={eyebrow}
