@@ -25,6 +25,8 @@ const env_schema = z.object({
     SERVER_QUOTE_EXPIRY_SECONDS: z.coerce.number().default(5),
     SERVER_QUOTE_SPREAD_CENTS: z.coerce.number().default(1),
     SERVER_UNHEDGED_DELTA_CAP_USD: z.coerce.number().default(500),
+    SERVER_POLYGON_RPC_URL: z.string().url().default("https://polygon-rpc.com"),
+    SERVER_POLYMARKET_FUNDER_ADDRESS: z.string().optional(),
 });
 export let ENV: z.infer<typeof env_schema>;
 

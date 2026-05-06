@@ -6,6 +6,7 @@ import { fetchAdminListings, type AdminListingApi } from '@/lib/api/admin';
 import AdminListings, { type AdminListingRow } from './AdminListings';
 import RunListerButton from './RunListerButton';
 import FundUserButton from './FundUserButton';
+import BalancePanel from './BalancePanel';
 
 function toRow(l: AdminListingApi): AdminListingRow {
     return {
@@ -65,6 +66,8 @@ export default function AdminPanel() {
                     <FundUserButton />
                 </div>
             </div>
+
+            <BalancePanel />
 
             {loading ? (
                 <div className="text-xs text-white/40">Loading listings…</div>

@@ -73,6 +73,41 @@ export async function fundUserByEmail(args: {
     return data?.data as FundUserResult;
 }
 
+export type BalanceSeverity = 'ok' | 'warn' | 'critical' | 'unknown';
+
+export interface BalanceCard {
+    amount: number;
+    severity: BalanceSeverity;
+}
+
+export interface BalanceSnapshot {
+    fetchedAt: string;
+    solana: {
+        configured: boolean;
+        adminPubkey: string | null;
+        adminSol: BalanceCard;
+        treasuryVaultPda: string | null;
+        treasuryUsdc: BalanceCard;
+    };
+    polygon: {
+        configured: boolean;
+        funderAddress: string | null;
+        funderMatic: BalanceCard;
+        funderUsdcE: BalanceCard;
+    };
+    thresholds: {
+        sol: { warn: number; critical: number };
+        usdcVault: { warn: number; critical: number };
+        matic: { warn: number; critical: number };
+        usdcE: { warn: number; critical: number };
+    };
+}
+
+export async function fetchAdminBalances(): Promise<BalanceSnapshot> {
+    const { data } = await apiClient.get('/admin/balances');
+    return data?.data as BalanceSnapshot;
+}
+
 export async function runAutoLister(): Promise<AutoListerResult> {
     const { data } = await apiClient.post('/admin/lister/run');
     return (
