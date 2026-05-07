@@ -52,7 +52,6 @@ function BalanceModalInner({ onClose }: { onClose: () => void }) {
 
     useEffect(() => {
         void load();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const rows = snapshot ? build_rows(snapshot) : [];

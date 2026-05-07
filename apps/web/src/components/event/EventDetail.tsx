@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { HiArrowLeft } from 'react-icons/hi2';
 import type { MarketDTO } from '@solmarket/types';
 import { Outcome } from '@solmarket/types';
 import { fetch_market_by_id, fetch_market_orderbook } from '@/lib/api/markets';
@@ -17,7 +19,6 @@ import EventTradePanel from './EventTradePanel';
 import EventTabs from './EventTabs';
 import EventNews from './EventNews';
 import EventRelatedMarkets from './EventRelatedMarkets';
-import DashboardNavbar from '../dashboard/DashboardNavbar';
 import MarketComments from '../market/comments/MarketComments';
 
 function format_usd(usd: number | null): string {
@@ -63,19 +64,13 @@ export default function EventDetail({ id }: { id: string }) {
     }, [id]);
 
     return (
-        <div data-lenis-prevent className="min-h-screen w-full bg-dark-alpha text-white/80">
-            <DashboardNavbar />
-
-            <main className="mx-auto w-full max-w-360 px-6 lg:px-8 py-10 lg:py-12">
-                {state.status === 'loading' && <Frame>Loading market…</Frame>}
-                {state.status === 'not_found' && (
-                    <Frame>
-                        Market not found. It may not be approved yet, or the link is wrong.
-                    </Frame>
-                )}
-                {state.status === 'ready' && <Body market={state.market} />}
-            </main>
-        </div>
+        <main data-lenis-prevent className="mx-auto w-full max-w-380 px-6 lg:px-8 py-10 lg:py-12">
+            {state.status === 'loading' && <Frame>Loading market…</Frame>}
+            {state.status === 'not_found' && (
+                <Frame>Market not found. It may not be approved yet, or the link is wrong.</Frame>
+            )}
+            {state.status === 'ready' && <Body market={state.market} />}
+        </main>
     );
 }
 
@@ -128,6 +123,13 @@ function Body({ market }: { market: MarketDTO }) {
 
     return (
         <div className="space-y-6 [overflow-anchor:none]">
+            <Link
+                href="/dashboard"
+                className="group inline-flex items-center gap-1.5 text-[12px] text-white/45 hover:text-white/85 transition-colors"
+            >
+                <HiArrowLeft className="text-[13px] transition-transform duration-200 group-hover:-translate-x-0.5" />
+                <span>Back to dashboard</span>
+            </Link>
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 xl:gap-3">
                 <div className="min-w-0 space-y-5">
                     <div

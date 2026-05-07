@@ -27,23 +27,24 @@ export type { OrderFilledEvent } from "./decoder";
  * holds no resources to release.
  */
 export default class FillIngester {
-    private readonly log = logger_for("ingest");
-    private readonly solana: SolanaClient;
-    private readonly on_fill: FillHandler;
-    private readonly health: HealthServer;
-    private readonly cursor: Cursor;
-    private readonly decoder: OrderFilledDecoder;
-    private listener: Listener | null = null;
-    private poller: Poller | null = null;
+  private readonly log = logger_for("ingest");
+  private readonly solana: SolanaClient;
+  private readonly on_fill: FillHandler;
+  private readonly health: HealthServer;
+  private readonly cursor: Cursor;
+  private readonly decoder: OrderFilledDecoder;
+  private listener: Listener | null = null;
+  private poller: Poller | null = null;
 
-    constructor(solana: SolanaClient, on_fill: FillHandler, health: HealthServer) {
-        this.solana = solana;
-        this.on_fill = on_fill;
-        this.health = health;
-        this.cursor = new Cursor();
-        this.decoder = new OrderFilledDecoder(solana);
-    }
+  constructor(solana: SolanaClient, on_fill: FillHandler, health: HealthServer) {
+    this.solana = solana;
+    this.on_fill = on_fill;
+    this.health = health;
+    this.cursor = new Cursor();
+    this.decoder = new OrderFilledDecoder(solana);
+  }
 
+<<<<<<< HEAD
     public async start(): Promise<void> {
         await this.cursor.load();
         this.listener = new Listener(
@@ -58,9 +59,19 @@ export default class FillIngester {
         this.poller.start();
         this.log.info("ingester up");
     }
+=======
+  public async start(): Promise<void> {
+    await this.cursor.load();
+    this.listener = new Listener(this.solana, this.decoder, this.cursor, this.on_fill, this.health);
+    this.poller = new Poller(this.solana, this.decoder, this.cursor, this.on_fill, this.health);
+    await this.listener.start();
+    this.poller.start();
+    this.log.info("ingester up");
+  }
+>>>>>>> 3dbfc24 (fixed dashboard and event uis)
 
-    public async stop(): Promise<void> {
-        this.poller?.stop();
-        await this.listener?.stop();
-    }
+  public async stop(): Promise<void> {
+    this.poller?.stop();
+    await this.listener?.stop();
+  }
 }

@@ -3,15 +3,18 @@
 import { JSX, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { GoStar, GoStarFill } from 'react-icons/go';
 import { HiMiniMagnifyingGlass } from 'react-icons/hi2';
-import { RxCross2 } from 'react-icons/rx';
 import type { MarketDTO } from '@solmarket/types';
-import OpacityBackground from '../ui/opacity-background';
-import UtilityCard from '../ui/utility-card';
+import OpacityBackground from '@/components/ui/opacity-background';
+import UtilityCard from '@/components/ui/utility-card';
 import { fetchPublicMarkets } from '@/lib/api/markets';
 import { getMarketById } from '@/utils/constants';
 import { cn } from '@/lib/utils';
 import { useSearchPanelStore } from '@/store/ui/useSearchPanelStore';
+import { useBookmarksStore } from '@/store/bookmarks/useBookmarksStore';
+import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 
 type State =
     | { status: 'loading' }
@@ -19,24 +22,41 @@ type State =
     | { status: 'ready'; markets: MarketDTO[] };
 
 const MAX_RESULTS = 50;
-const RECENTS_DISPLAY = 2;
-const EXPLORE_DISPLAY = 4;
+const TOP_TAGS = 4;
 
 function resolveHref(market: MarketDTO): string {
     const detail = getMarketById(market.id);
     return detail ? `/market/${detail.slug}` : `/event/${market.id}`;
 }
 
-export default function SearchPanel({ onClose }: { onClose: () => void }): JSX.Element {
+function formatVolume(usd: number | null): string {
+    if (usd === null) return '—';
+    if (usd >= 1_000_000) return `$${(usd / 1_000_000).toFixed(1)}M`;
+    if (usd >= 1_000) return `$${(usd / 1_000).toFixed(1)}K`;
+    return `$${usd.toFixed(0)}`;
+}
+
+interface SearchPanelProps {
+    onClose: () => void;
+}
+
+export default function SearchPanel({ onClose }: SearchPanelProps): JSX.Element {
     const [state, setState] = useState<State>({ status: 'loading' });
-    const [query, setQuery] = useState('');
     const [activeIndex, setActiveIndex] = useState(0);
+    const [activeTag, setActiveTag] = useState<string>('All');
+    const [bookmarksOnly, setBookmarksOnly] = useState(false);
+    const inputRef = useRef<HTMLInputElement | null>(null);
     const rowRefs = useRef<Array<HTMLAnchorElement | null>>([]);
     const router = useRouter();
 
-    const recentIds = useSearchPanelStore((s) => s.recents);
+    const query = useSearchPanelStore((s) => s.query);
+    const setQuery = useSearchPanelStore((s) => s.setQuery);
     const addRecent = useSearchPanelStore((s) => s.addRecent);
-    const removeRecent = useSearchPanelStore((s) => s.removeRecent);
+
+    const session = useUserSessionStore((s) => s.session);
+    const setOpenSigninModal = useUserSessionStore((s) => s.setOpenSigninModal);
+    const bookmarkIds = useBookmarksStore((s) => s.ids);
+    const toggleBookmark = useBookmarksStore((s) => s.toggle);
 
     useEffect(() => {
         let cancelled = false;
@@ -58,38 +78,51 @@ export default function SearchPanel({ onClose }: { onClose: () => void }): JSX.E
     }, []);
 
     const trimmedQuery = query.trim();
-    const isSearching = trimmedQuery.length > 0;
 
-    const searchResults = useMemo(() => {
-        if (state.status !== 'ready' || !isSearching) return [];
-        const q = trimmedQuery.toLowerCase();
-        return state.markets.filter((m) => m.name.toLowerCase().includes(q)).slice(0, MAX_RESULTS);
-    }, [state, isSearching, trimmedQuery]);
+    const tagOptions = useMemo<string[]>(() => {
+        if (state.status !== 'ready') return ['All'];
+        const counts = new Map<string, number>();
+        for (const m of state.markets) {
+            for (const tag of m.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+        }
+        const top = Array.from(counts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, TOP_TAGS)
+            .map(([t]) => t);
+        return ['All', ...top];
+    }, [state]);
 
-    const recentMarkets = useMemo(() => {
-        if (state.status !== 'ready' || isSearching) return [];
-        const byId = new Map(state.markets.map((m) => [m.id, m]));
-        return recentIds
-            .map((id) => byId.get(id))
-            .filter((m): m is MarketDTO => Boolean(m))
-            .slice(0, RECENTS_DISPLAY);
-    }, [state, recentIds, isSearching]);
+    const filteredMarkets = useMemo<MarketDTO[]>(() => {
+        if (state.status !== 'ready') return [];
+        let list = state.markets;
+        if (bookmarksOnly) list = list.filter((m) => bookmarkIds.has(m.id));
+        if (activeTag !== 'All') list = list.filter((m) => m.tags.includes(activeTag));
+        if (trimmedQuery) {
+            const q = trimmedQuery.toLowerCase();
+            list = list.filter((m) => m.name.toLowerCase().includes(q));
+        }
+        return list.slice(0, MAX_RESULTS);
+    }, [state, bookmarksOnly, activeTag, bookmarkIds, trimmedQuery]);
 
-    const exploreMarkets = useMemo(() => {
-        if (state.status !== 'ready' || isSearching) return [];
-        const recentSet = new Set(recentMarkets.map((m) => m.id));
-        return state.markets.filter((m) => !recentSet.has(m.id)).slice(0, EXPLORE_DISPLAY);
-    }, [state, recentMarkets, isSearching]);
-
-    const navigableItems = useMemo<MarketDTO[]>(
-        () => (isSearching ? searchResults : [...recentMarkets, ...exploreMarkets]),
-        [isSearching, searchResults, recentMarkets, exploreMarkets],
-    );
+    // Reset highlight whenever the visible list changes — done during render
+    // (instead of in an effect) so we don't trigger a cascading re-render.
+    const [filterSnapshot, setFilterSnapshot] = useState({
+        trimmedQuery,
+        activeTag,
+        bookmarksOnly,
+    });
+    if (
+        filterSnapshot.trimmedQuery !== trimmedQuery ||
+        filterSnapshot.activeTag !== activeTag ||
+        filterSnapshot.bookmarksOnly !== bookmarksOnly
+    ) {
+        setFilterSnapshot({ trimmedQuery, activeTag, bookmarksOnly });
+        setActiveIndex(0);
+    }
 
     const effectiveActiveIndex =
-        navigableItems.length > 0 ? Math.min(activeIndex, navigableItems.length - 1) : 0;
+        filteredMarkets.length > 0 ? Math.min(activeIndex, filteredMarkets.length - 1) : 0;
 
-    // Keep the active row in view when keyboard nav scrolls past the visible area.
     useEffect(() => {
         rowRefs.current[effectiveActiveIndex]?.scrollIntoView({ block: 'nearest' });
     }, [effectiveActiveIndex]);
@@ -100,17 +133,30 @@ export default function SearchPanel({ onClose }: { onClose: () => void }): JSX.E
         router.push(resolveHref(market));
     }
 
-    function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-        if (navigableItems.length === 0) return;
+    async function handleToggleBookmark(marketId: string) {
+        if (!session?.user) {
+            setOpenSigninModal(true);
+            return;
+        }
+        try {
+            const next = await toggleBookmark(marketId);
+            toast.success(next ? 'Bookmarked' : 'Removed bookmark');
+        } catch {
+            toast.error('Could not update bookmark');
+        }
+    }
+
+    function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+        if (filteredMarkets.length === 0) return;
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setActiveIndex((i) => (i + 1) % navigableItems.length);
+            setActiveIndex((i) => (i + 1) % filteredMarkets.length);
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            setActiveIndex((i) => (i - 1 + navigableItems.length) % navigableItems.length);
+            setActiveIndex((i) => (i - 1 + filteredMarkets.length) % filteredMarkets.length);
         } else if (e.key === 'Enter') {
             e.preventDefault();
-            const market = navigableItems[effectiveActiveIndex];
+            const market = filteredMarkets[effectiveActiveIndex];
             if (market) openMarket(market);
         }
     }
@@ -121,18 +167,16 @@ export default function SearchPanel({ onClose }: { onClose: () => void }): JSX.E
             escapeClosing
             className="bg-neutral-950/40 items-start pt-[20vh]"
         >
-            <UtilityCard className="w-full max-w-xl rounded-lg border border-white/10 px-0 py-0 backdrop-blur-md">
-                <div className="relative flex items-center border-b border-white/10">
+            <UtilityCard className="w-full max-w-xl rounded-lg border border-white/8 px-0 py-0 backdrop-blur-md overflow-hidden shadow-sm shadow-black/10">
+                <div className="relative flex items-center border-b border-white/8">
                     <HiMiniMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-white/55" />
                     <input
+                        ref={inputRef}
                         autoFocus
                         type="text"
                         value={query}
-                        onChange={(e) => {
-                            setQuery(e.target.value);
-                            setActiveIndex(0);
-                        }}
-                        onKeyDown={handleKeyDown}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onKeyDown={handleInputKeyDown}
                         placeholder="Search markets"
                         className="w-full h-12 bg-transparent pl-11 pr-12 text-[13px] text-white/85 placeholder:text-white/35 outline-none focus:outline-none focus:ring-0"
                     />
@@ -140,20 +184,66 @@ export default function SearchPanel({ onClose }: { onClose: () => void }): JSX.E
                         ESC
                     </kbd>
                 </div>
+                <div className="flex items-center gap-1 border-b border-white/8 px-2 py-2">
+                    <div className="flex items-center gap-1 overflow-x-auto">
+                        {tagOptions.map((tag) => {
+                            const active = !bookmarksOnly && activeTag === tag;
+                            return (
+                                <button
+                                    key={tag}
+                                    type="button"
+                                    onClick={() => setActiveTag(tag)}
+                                    className={cn(
+                                        'h-7 px-3 rounded-sm text-[12px] whitespace-nowrap cursor-pointer transition-colors',
+                                        active
+                                            ? 'bg-white/10 text-white'
+                                            : 'text-white/55 hover:text-white/80 hover:bg-white/5',
+                                    )}
+                                >
+                                    {tag}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setBookmarksOnly((v) => !v)}
+                        aria-pressed={bookmarksOnly}
+                        aria-label="Show bookmarked markets only"
+                        title="Show bookmarked markets only"
+                        className={cn(
+                            'ml-auto flex items-center justify-center size-7 rounded-sm cursor-pointer transition-colors',
+                            bookmarksOnly
+                                ? 'bg-white/10 text-yellow-300'
+                                : 'text-white/45 hover:text-white/80 hover:bg-white/5',
+                        )}
+                    >
+                        {bookmarksOnly ? (
+                            <GoStarFill className="size-4" />
+                        ) : (
+                            <GoStar className="size-4" />
+                        )}
+                    </button>
+                </div>
 
-                <div className="max-h-110 overflow-y-auto px-1 py-1">
+                <div className="max-h-96 overflow-y-auto px-1 py-1">
                     {state.status === 'loading' && <Empty>Loading markets…</Empty>}
                     {state.status === 'error' && (
                         <Empty tone="error">Couldn&apos;t load markets — {state.message}.</Empty>
                     )}
 
-                    {state.status === 'ready' && isSearching && searchResults.length === 0 && (
-                        <Empty>No markets match &ldquo;{trimmedQuery}&rdquo;.</Empty>
+                    {state.status === 'ready' && filteredMarkets.length === 0 && (
+                        <Empty>
+                            {bookmarksOnly
+                                ? 'No bookmarked markets match your filters.'
+                                : trimmedQuery
+                                  ? `No markets match "${trimmedQuery}".`
+                                  : 'No markets available.'}
+                        </Empty>
                     )}
 
                     {state.status === 'ready' &&
-                        isSearching &&
-                        searchResults.map((m, i) => (
+                        filteredMarkets.map((m, i) => (
                             <ResultRow
                                 key={m.id}
                                 ref={(el) => {
@@ -161,92 +251,36 @@ export default function SearchPanel({ onClose }: { onClose: () => void }): JSX.E
                                 }}
                                 market={m}
                                 active={i === effectiveActiveIndex}
+                                bookmarked={bookmarkIds.has(m.id)}
                                 onHover={() => setActiveIndex(i)}
                                 onSelect={(e) => {
                                     e.preventDefault();
                                     openMarket(m);
                                 }}
+                                onToggleBookmark={() => void handleToggleBookmark(m.id)}
                             />
                         ))}
-
-                    {state.status === 'ready' && !isSearching && (
-                        <>
-                            {recentMarkets.length > 0 && (
-                                <>
-                                    <SectionHeader>Recents</SectionHeader>
-                                    {recentMarkets.map((m, i) => (
-                                        <ResultRow
-                                            key={m.id}
-                                            ref={(el) => {
-                                                rowRefs.current[i] = el;
-                                            }}
-                                            market={m}
-                                            active={i === effectiveActiveIndex}
-                                            onHover={() => setActiveIndex(i)}
-                                            onSelect={(e) => {
-                                                e.preventDefault();
-                                                openMarket(m);
-                                            }}
-                                            onRemove={() => removeRecent(m.id)}
-                                        />
-                                    ))}
-                                </>
-                            )}
-
-                            {exploreMarkets.length > 0 && (
-                                <>
-                                    <SectionHeader>Explore</SectionHeader>
-                                    {exploreMarkets.map((m, i) => {
-                                        const idx = recentMarkets.length + i;
-                                        return (
-                                            <ResultRow
-                                                key={m.id}
-                                                ref={(el) => {
-                                                    rowRefs.current[idx] = el;
-                                                }}
-                                                market={m}
-                                                active={idx === effectiveActiveIndex}
-                                                onHover={() => setActiveIndex(idx)}
-                                                onSelect={(e) => {
-                                                    e.preventDefault();
-                                                    openMarket(m);
-                                                }}
-                                            />
-                                        );
-                                    })}
-                                </>
-                            )}
-
-                            {recentMarkets.length === 0 && exploreMarkets.length === 0 && (
-                                <Empty>No markets available.</Empty>
-                            )}
-                        </>
-                    )}
                 </div>
             </UtilityCard>
         </OpacityBackground>
     );
 }
 
-function SectionHeader({ children }: { children: React.ReactNode }): JSX.Element {
-    return (
-        <div className="px-3 pt-3 pb-1 text-[12px] tracking-wider text-gray-400/60">{children}</div>
-    );
-}
-
 function ResultRow({
     market,
     active,
+    bookmarked,
     onHover,
     onSelect,
-    onRemove,
+    onToggleBookmark,
     ref,
 }: {
     market: MarketDTO;
     active: boolean;
+    bookmarked: boolean;
     onHover: () => void;
     onSelect: (e: React.MouseEvent<HTMLAnchorElement>) => void;
-    onRemove?: () => void;
+    onToggleBookmark: () => void;
     ref?: React.Ref<HTMLAnchorElement>;
 }): JSX.Element {
     return (
@@ -256,28 +290,34 @@ function ResultRow({
             onMouseEnter={onHover}
             onClick={onSelect}
             className={cn(
-                'relative flex items-center gap-3 px-4 py-2.5 transition-colors no-underline rounded-sm',
+                'group flex items-center gap-3 px-3 py-2  transition-colors no-underline rounded-sm',
                 active ? 'bg-white/8' : 'bg-transparent',
-                onRemove ? 'pr-10' : '',
             )}
         >
             <MarketLogo src={market.imageUrl} alt={market.name} />
-            <span className="flex-1 text-[13px] text-white/80 line-clamp-1">{market.name}</span>
-            {onRemove && (
-                <button
-                    type="button"
-                    title="Remove from recents"
-                    aria-label="Remove from recents"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onRemove();
-                    }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-white/40 hover:text-white/80 cursor-pointer"
-                >
-                    <RxCross2 className="size-3.5" />
-                </button>
-            )}
+            <span className="flex-1 min-w-0 text-[13px] text-white/85 line-clamp-1">
+                {market.name}
+            </span>
+            <span className="shrink-0 text-[12px] tabular-nums text-white/70">
+                {formatVolume(market.volume24hUsd)}
+            </span>
+            <button
+                type="button"
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onToggleBookmark();
+                }}
+                aria-pressed={bookmarked}
+                aria-label={bookmarked ? 'Remove bookmark' : 'Add bookmark'}
+                title={bookmarked ? 'Remove bookmark' : 'Add bookmark'}
+                className={cn(
+                    'shrink-0 p-1 rounded-sm cursor-pointer transition-colors',
+                    bookmarked ? 'text-yellow-300' : 'text-white/30 hover:text-white/80',
+                )}
+            >
+                {bookmarked ? <GoStarFill className="size-3.5" /> : <GoStar className="size-3.5" />}
+            </button>
         </Link>
     );
 }
@@ -287,7 +327,7 @@ function MarketLogo({ src, alt }: { src: string | null; alt: string }): JSX.Elem
         return (
             <span
                 aria-hidden
-                className="size-8 shrink-0 bg-white/5 rounded-sm flex items-center justify-center text-[10px] text-white/30"
+                className="size-7.5 shrink-0 bg-white/5 rounded-sm flex items-center justify-center text-[10px] text-white/30"
             >
                 {alt.slice(0, 1).toUpperCase()}
             </span>
@@ -297,7 +337,7 @@ function MarketLogo({ src, alt }: { src: string | null; alt: string }): JSX.Elem
     // so we sidestep next/image's remotePatterns allowlist for the panel.
     return (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt={alt} className="size-8 shrink-0 rounded-sm object-cover bg-white/5" />
+        <img src={src} alt={alt} className="size-7.5 shrink-0 rounded-sm object-cover bg-white/5" />
     );
 }
 

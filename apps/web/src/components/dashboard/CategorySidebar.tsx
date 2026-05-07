@@ -17,7 +17,7 @@ export default function CategorySidebar(): JSX.Element {
     const on_bookmarks_route = pathname?.startsWith('/bookmarks') ?? false;
 
     return (
-        <aside className="sticky top-0 self-start h-screen w-60 shrink-0 border-r border-gray-500/15 bg-dark-alpha flex flex-col">
+        <aside className="sticky top-0 self-start h-screen w-60 shrink-0 bg-dark-alpha border-r border-white/6 flex flex-col">
             <div className="h-16 px-3 flex items-center shrink-0">
                 <Applogo />
             </div>

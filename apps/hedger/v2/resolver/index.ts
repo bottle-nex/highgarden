@@ -10,9 +10,15 @@ import { logger_for } from "../log/log";
 import type SolanaClient from "../clients/solana";
 import type PolymarketClient from "../clients/polymarket";
 import type { GammaResolution, RedeemOutcome } from "../clients/polymarket";
+<<<<<<< HEAD
 import Market from "../db/market";
 import ResolverDb from "../db/resolver";
 import type { ResolverStateRow } from "../db/resolver";
+=======
+import type MarketRepo from "../repos/market";
+import type { ResolverStateRow } from "../repos/market";
+import type HedgeRepo from "../repos/hedge";
+>>>>>>> 3dbfc24 (fixed dashboard and event uis)
 
 interface MarketCandidate {
     marketId: string;
@@ -58,21 +64,148 @@ export default class Resolver {
     private oracle_keypair: Keypair | null = null;
     private oracle_client: SolmarketClient | null = null;
 
+<<<<<<< HEAD
     constructor(_solana: SolanaClient, poly: PolymarketClient) {
         this.poly = poly;
+=======
+  constructor(
+    solana: SolanaClient,
+    poly: PolymarketClient,
+    markets: MarketRepo,
+    hedges: HedgeRepo,
+  ) {
+    this.solana = solana;
+    this.poly = poly;
+    this.markets = markets;
+    this.hedges = hedges;
+  }
+
+  // ──────────────── Lifecycle ────────────────
+
+  public start(): void {
+    if (this.interval_handle) return;
+    void this.tick();
+    this.interval_handle = setInterval(
+      () => void this.tick(),
+      ENV.HEDGER_RESOLVER_POLL_INTERVAL_MS,
+    );
+    this.log.info({ intervalMs: ENV.HEDGER_RESOLVER_POLL_INTERVAL_MS }, "resolver started");
+  }
+
+  public stop(): void {
+    if (this.interval_handle) {
+      clearInterval(this.interval_handle);
+      this.interval_handle = null;
+>>>>>>> 3dbfc24 (fixed dashboard and event uis)
     }
 
     // ──────────────── Lifecycle ────────────────
 
+<<<<<<< HEAD
     public start(): void {
         if (this.interval_handle) return;
         void this.tick();
         this.interval_handle = setInterval(
             () => void this.tick(),
             ENV.HEDGER_RESOLVER_POLL_INTERVAL_MS,
+=======
+  // ──────────────── Stage 1: detect Polymarket resolution ────────────────
+
+  private async detect_polymarket_resolutions(): Promise<void> {
+    const candidates = await this.list_pending_candidates();
+    for (const candidate of candidates) {
+      try {
+        await this.check_one(candidate);
+      } catch (err) {
+        this.log.error({ err, marketId: candidate.marketId }, "resolver check failed");
+      }
+    }
+  }
+
+  /**
+   * Markets eligible for resolution checking: those with a Solana PDA
+   * and whose `ResolverState.stage` has not yet entered any of the
+   * post-resolution stages. We pre-filter in the DB and finish-filter
+   * in memory — the row count is small (markets, not fills) so this
+   * is cheap.
+   */
+  private async list_pending_candidates(): Promise<MarketCandidate[]> {
+    const rows = await prisma.market.findMany({
+      where: { solanaMarketPda: { not: null } },
+      select: { id: true, name: true, polyMarketId: true, solanaMarketPda: true },
+    });
+    const filtered: MarketCandidate[] = [];
+    for (const row of rows) {
+      if (!row.solanaMarketPda) continue;
+      const state = await this.markets.resolver_find(row.id);
+      if (this.is_terminal_stage(state?.stage)) continue;
+      filtered.push({
+        marketId: row.id,
+        polyMarketId: row.polyMarketId,
+        name: row.name,
+        solanaMarketPda: row.solanaMarketPda,
+      });
+    }
+    return filtered;
+  }
+
+  private is_terminal_stage(stage: string | undefined): boolean {
+    return stage === "POLYMARKET_RESOLVED" || stage === "SOLANA_RESOLVED" || stage === "REDEEMED";
+  }
+
+  private async check_one(candidate: MarketCandidate): Promise<void> {
+    const resolution = await this.poly.fetch_resolution(candidate.polyMarketId);
+    if (!resolution || !resolution.closed) return;
+    if (resolution.winningOutcomeIndex === null) {
+      this.log.debug(
+        { marketId: candidate.marketId, polyMarketId: candidate.polyMarketId },
+        "market closed but winner not yet determinable",
+      );
+      return;
+    }
+    await this.record_resolution(candidate, resolution);
+  }
+
+  private async record_resolution(
+    candidate: MarketCandidate,
+    resolution: GammaResolution,
+  ): Promise<void> {
+    const winning_outcome: Outcome = resolution.winningOutcomeIndex === 0 ? "YES" : "NO";
+    const resolved_at = resolution.resolvedAt ?? new Date();
+
+    const existing = await this.markets.resolver_find(candidate.marketId);
+    if (existing?.polymarketResolvedAt) return;
+
+    const row = await this.markets.resolver_record_polymarket_resolved(
+      candidate.marketId,
+      winning_outcome,
+      resolved_at,
+    );
+
+    this.log.info(
+      {
+        marketId: candidate.marketId,
+        polyMarketId: candidate.polyMarketId,
+        name: candidate.name,
+        winningOutcome: winning_outcome,
+        resolvedAt: row.polymarketResolvedAt?.toISOString() ?? null,
+      },
+      ">>> RESOLVER: polymarket resolution detected",
+    );
+  }
+
+  // ──────────────── Stage 2: submit on Solana ────────────────
+
+  private async submit_solana_for_resolved(): Promise<void> {
+    if (!ENV.HEDGER_SOLANA_ORACLE_SIGNER_KEYPAIR) {
+      if (!this.warned_oracle_unconfigured) {
+        this.log.warn(
+          "HEDGER_SOLANA_ORACLE_SIGNER_KEYPAIR not set — skipping Solana resolve_market submission",
+>>>>>>> 3dbfc24 (fixed dashboard and event uis)
         );
         this.log.info({ intervalMs: ENV.HEDGER_RESOLVER_POLL_INTERVAL_MS }, "resolver started");
     }
+<<<<<<< HEAD
 
     public stop(): void {
         if (this.interval_handle) {
@@ -155,6 +288,48 @@ export default class Resolver {
         }
         await this.record_resolution(candidate, resolution);
     }
+=======
+    const cutoff = this.dispute_window_cutoff();
+    const ready = await this.markets.resolver_list_awaiting_solana_submission(cutoff);
+    for (const row of ready) {
+      try {
+        await this.submit_one(row);
+      } catch (err) {
+        this.log.error({ err, marketId: row.marketId }, "solana resolution submit failed");
+      }
+    }
+  }
+
+  /**
+   * The dispute window is ops insurance: Polymarket's UMA-backed
+   * resolutions can in principle be challenged for a configured
+   * window. We delay forwarding to Solana by `HEDGER_RESOLVER_DISPUTE_WINDOW_HOURS`
+   * to ensure the gamma payout is final.
+   */
+  private dispute_window_cutoff(): Date {
+    return new Date(Date.now() - ENV.HEDGER_RESOLVER_DISPUTE_WINDOW_HOURS * 60 * 60 * 1000);
+  }
+
+  private async submit_one(row: ResolverStateRow): Promise<void> {
+    const market = await prisma.market.findUnique({
+      where: { id: row.marketId },
+      select: { id: true, name: true, solanaMarketPda: true, polyMarketId: true },
+    });
+    if (!market?.solanaMarketPda) {
+      this.log.warn({ marketId: row.marketId }, "market missing solanaMarketPda — cannot submit");
+      return;
+    }
+    if (!row.winningOutcome) {
+      this.log.warn(
+        { marketId: row.marketId },
+        "ResolverState has no winningOutcome — refusing to submit",
+      );
+      return;
+    }
+
+    const signature = await this.send_resolve_to_solana(market.solanaMarketPda, row.winningOutcome);
+    await this.markets.resolver_record_solana_resolved(row.marketId, signature, new Date());
+>>>>>>> 3dbfc24 (fixed dashboard and event uis)
 
     private async record_resolution(
         candidate: MarketCandidate,

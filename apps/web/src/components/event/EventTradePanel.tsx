@@ -28,11 +28,12 @@ function format_cents(price: number | undefined): string {
 export default function EventTradePanel({ market }: Props): JSX.Element {
     const [selectedOutcome, setSelectedOutcome] = useState<Outcome>(Outcome.YES);
     const [tab, set_tab] = useState<'BUY' | 'SELL'>('BUY');
-    const [amount, set_amount] = useState('');
+    const [amount, set_amount] = useState<string>('');
     const [input_mode, set_input_mode] = useState<InputMode>('USDC');
-    const [submitting, set_submitting] = useState(false);
+    const [submitting, set_submitting] = useState<boolean>(false);
+    const [focused, set_focused] = useState<boolean>(false);
     const requireAuth = useRequireAuth();
-    const [claiming, set_claiming] = useState(false);
+    const [claiming, set_claiming] = useState<boolean>(false);
 
     const is_resolved = market.status === 'RESOLVED';
 
@@ -44,11 +45,17 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
 
     const flash_ref = useRef<HTMLDivElement>(null);
     const last_active_price = useRef<number | undefined>(undefined);
+    const last_outcome = useRef<Outcome>(selectedOutcome);
 
     useEffect(() => {
         if (active_price === undefined) return;
         const prev = last_active_price.current;
+        const prev_outcome = last_outcome.current;
         last_active_price.current = active_price;
+        last_outcome.current = selectedOutcome;
+        // Skip flash when the user toggled YES/NO — the price change is just
+        // because we're reading a different side of the book, not a live tick.
+        if (prev_outcome !== selectedOutcome) return;
         if (prev === undefined || prev === active_price) return;
         const el = flash_ref.current;
         if (!el) return;
@@ -56,7 +63,7 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
         el.classList.add(cls);
         const timer = setTimeout(() => el.classList.remove(cls), 350);
         return () => clearTimeout(timer);
-    }, [active_price]);
+    }, [active_price, selectedOutcome]);
 
     const safe_price =
         active_price !== undefined && active_price > 0 && active_price < 1 ? active_price : 0.5;
@@ -292,6 +299,8 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                                         placeholder="0"
                                         value={amount}
                                         onChange={(e) => set_amount(e.target.value)}
+                                        onFocus={() => set_focused(true)}
+                                        onBlur={() => set_focused(false)}
                                         className="absolute inset-0 w-full bg-transparent outline-none text-3xl font-bold tabular-nums text-transparent caret-transparent placeholder:text-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     />
                                     <div
@@ -323,6 +332,19 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                                                 </AnimatePresence>
                                             </span>
                                         ))}
+                                        {focused && (
+                                            <motion.span
+                                                aria-hidden
+                                                animate={{ opacity: [1, 1, 0, 0] }}
+                                                transition={{
+                                                    duration: 1,
+                                                    repeat: Infinity,
+                                                    ease: 'linear',
+                                                    times: [0, 0.5, 0.5, 1],
+                                                }}
+                                                className="ml-0.5 inline-block w-0.5 h-7 bg-white"
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             </div>

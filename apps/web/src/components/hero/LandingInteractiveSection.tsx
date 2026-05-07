@@ -27,7 +27,7 @@ const sections: InteractiveSectionType[] = [
             'Search and filter by category, volume or close date',
         ],
         cta: 'EXPLORE MARKETS',
-        image: '/images/landing/landing.png',
+        image: '/images/landing/pickAMarket.png',
     },
     {
         id: 2,
@@ -42,7 +42,7 @@ const sections: InteractiveSectionType[] = [
             'Transparent fees, baked into the price',
         ],
         cta: 'SEE A QUOTE',
-        image: '/images/landing/landing.png',
+        image: '/images/landing/getQuote.png',
     },
     {
         id: 3,
@@ -72,7 +72,7 @@ const sections: InteractiveSectionType[] = [
             'Hedge telemetry auditable on-chain',
         ],
         cta: 'HEDGING DETAILS',
-        image: '/images/landing/landing.png',
+        image: '/images/landing/realTime.png',
     },
     {
         id: 5,
@@ -87,7 +87,7 @@ const sections: InteractiveSectionType[] = [
             'Settlement fully on Solana — no bridging back',
         ],
         cta: 'CLAIM FLOW',
-        image: '/images/landing/landing.png',
+        image: '/images/landing/claim.png',
     },
 ];
 
@@ -143,7 +143,7 @@ export default function LandingInteractiveSection(): JSX.Element {
     }
 
     return (
-        <section ref={sectionRef} className="w-full relative h-[500vh] bg-dark-alpha text-white">
+        <section ref={sectionRef} className="w-full relative h-[500vh] bg-black text-white">
             <main className="relative grid grid-cols-[16.5%_33.5%_50%] items-start w-full h-full">
                 <div className="w-full sticky top-10 h-screen flex flex-col gap-y-4 p-4">
                     <ul className="flex flex-col  text-white gap-y-2 mt-8">

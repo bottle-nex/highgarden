@@ -5,11 +5,12 @@ import { toast } from 'sonner';
 import type { MarketDTO } from '@solmarket/types';
 import Image from 'next/image';
 import { PiShareFat, PiBookmarkSimple, PiBookmarkSimpleFill } from 'react-icons/pi';
-import { Button } from '@/components/ui/button';
 import ToolTipComponent from '@/components/utility/ToolTipComponent';
 import { useBookmarksStore } from '@/store/bookmarks/useBookmarksStore';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { cn } from '@/lib/utils';
+import { IoCheckmarkOutline } from 'react-icons/io5';
+import { AnimatePresence, motion } from 'framer-motion';
 
 function placeholder_gradient(seed: string): string {
     let h = 0;
@@ -24,8 +25,28 @@ interface Props {
 }
 
 export default function EventTitleBlock({ market, is_stuck }: Props): JSX.Element {
-    const handle_share = () => toast.info('Share link coming soon');
-    const [img_error, set_img_error] = useState(false);
+    const [img_error, set_img_error] = useState<boolean>(false);
+    const [copied, setCopied] = useState<boolean>(false);
+
+    const handle_share = async () => {
+        const url = `${window.location.origin}/event/${market.id}`;
+        const is_mobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+        try {
+            if (is_mobile && navigator.share) {
+                await navigator.share({ title: market.name, url });
+                return;
+            }
+            await navigator.clipboard.writeText(url);
+            setCopied(true);
+            toast.success('Link copied');
+            setTimeout(() => {
+                setCopied(false);
+            }, 2000);
+        } catch (err) {
+            if ((err as DOMException)?.name === 'AbortError') return;
+            toast.error('Could not share link');
+        }
+    };
 
     const session = useUserSessionStore((s) => s.session);
     const setOpenSigninModal = useUserSessionStore((s) => s.setOpenSigninModal);
@@ -57,14 +78,18 @@ export default function EventTitleBlock({ market, is_stuck }: Props): JSX.Elemen
 
     return (
         <header
-            className={`flex gap-4 items-start h-14 ${ease}${
-                compact ? ' lg:items-center lg:h-10' : ''
-            }`}
+            className={cn(
+                'flex gap-4 items-start h-14',
+                ease,
+                compact && 'lg:items-center lg:h-10',
+            )}
         >
             <div
-                className={`shrink-0 w-14 h-14 rounded-md border border-white/10 overflow-hidden ${ease}${
-                    compact ? ' lg:w-10 lg:h-10' : ''
-                }`}
+                className={cn(
+                    'shrink-0 w-14 h-14 rounded-md border border-white/10 overflow-hidden',
+                    ease,
+                    compact && 'lg:w-10 lg:h-10',
+                )}
                 style={show_image ? undefined : { background: placeholder_gradient(market.id) }}
                 aria-hidden
             >
@@ -80,22 +105,27 @@ export default function EventTitleBlock({ market, is_stuck }: Props): JSX.Elemen
                 )}
             </div>
             <div
-                className={`flex-1 min-w-0 flex flex-col justify-between h-full${
-                    compact ? ' lg:justify-center' : ''
-                }`}
+                className={cn(
+                    'flex-1 min-w-0 flex flex-col justify-between h-full',
+                    compact && 'lg:justify-center',
+                )}
             >
                 <h1
-                    className={`text-3xl text-white leading-none font-medium ${ease}${
-                        compact ? ' lg:text-lg' : ''
-                    }`}
+                    className={cn(
+                        'text-3xl text-white leading-none font-medium',
+                        ease,
+                        compact && 'lg:text-lg',
+                    )}
                 >
                     {market.name}
                 </h1>
                 {(market.description || market.tags.length > 0) && (
                     <div
-                        className={`grid grid-rows-[1fr] opacity-100 overflow-hidden ${ease}${
-                            compact ? ' lg:grid-rows-[0fr] lg:opacity-0' : ''
-                        }`}
+                        className={cn(
+                            'grid grid-rows-[1fr] opacity-100 overflow-hidden',
+                            ease,
+                            compact && 'lg:grid-rows-[0fr] lg:opacity-0',
+                        )}
                     >
                         <div className="min-h-0 flex flex-col gap-1.5">
                             {market.description && (
@@ -119,40 +149,71 @@ export default function EventTitleBlock({ market, is_stuck }: Props): JSX.Elemen
                     </div>
                 )}
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-                <ToolTipComponent side="top" content="Share">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
+            <div className="flex items-center gap-1.5 shrink-0">
+                <ToolTipComponent side="top" content={`${copied ? 'Copied link' : 'Share'}`}>
+                    <motion.button
+                        initial={{ opacity: 0, filter: 'blur(4px)' }}
+                        animate={{ opacity: 100, filter: 'blur(0px)' }}
+                        exit={{ opacity: 0, filter: 'blur(4px)' }}
                         aria-label="Share"
                         onClick={handle_share}
-                        className="rounded-md border-white/10 bg-dark-base hover:border-white/25 text-white/55 hover:text-white"
+                        className={cn(
+                            'size-7 flex justify-center items-center',
+                            'rounded-md ring-1 ring-white/8 bg-dark-faded/30 shadow-xs shadow-black/10',
+                            'text-neutral-300 hover:text-neutral-100',
+                            'transition-all transform duration-250',
+                            'cursor-pointer active:scale-[0.97]',
+                        )}
                     >
-                        <PiShareFat />
-                    </Button>
+                        <AnimatePresence mode="wait" initial={false}>
+                            <motion.span
+                                key={copied ? 'check' : 'share'}
+                                initial={{ opacity: 0, scale: 0.6, filter: 'blur(4px)' }}
+                                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                exit={{ opacity: 0, scale: 0.6, filter: 'blur(4px)' }}
+                                transition={{ duration: 0.12, ease: [0.4, 0, 0.2, 1] }}
+                                className="flex"
+                            >
+                                {copied ? <IoCheckmarkOutline /> : <PiShareFat />}
+                            </motion.span>
+                        </AnimatePresence>
+                    </motion.button>
                 </ToolTipComponent>
                 <ToolTipComponent
                     side="top"
                     content={is_bookmarked ? 'Remove bookmark' : 'Bookmark'}
                 >
-                    <Button
+                    <motion.button
                         type="button"
-                        variant="outline"
-                        size="icon"
+                        initial={{ opacity: 0, filter: 'blur(4px)' }}
+                        animate={{ opacity: 100, filter: 'blur(0px)' }}
+                        exit={{ opacity: 0, filter: 'blur(4px)' }}
                         aria-label={is_bookmarked ? 'Remove bookmark' : 'Bookmark'}
                         aria-pressed={is_bookmarked}
                         disabled={pending}
                         onClick={handle_bookmark}
                         className={cn(
-                            'rounded-md border-white/10 bg-dark-base hover:border-white/10 transition-colors',
-                            is_bookmarked
-                                ? 'text-white border-white/10'
-                                : 'text-white/55 hover:text-white',
+                            'size-7 flex justify-center items-center',
+                            'rounded-md ring-1 ring-white/8 bg-dark-faded/30 shadow-xs shadow-black/10',
+                            'text-neutral-300 hover:text-neutral-100',
+                            'transition-all transform duration-250',
+                            'cursor-pointer active:scale-[0.97]',
+                            'disabled:opacity-50 disabled:cursor-not-allowed',
                         )}
                     >
-                        {is_bookmarked ? <PiBookmarkSimpleFill /> : <PiBookmarkSimple />}
-                    </Button>
+                        <AnimatePresence mode="wait" initial={false}>
+                            <motion.span
+                                key={is_bookmarked ? 'filled' : 'empty'}
+                                initial={{ opacity: 0, scale: 0.6, filter: 'blur(4px)' }}
+                                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                exit={{ opacity: 0, scale: 0.6, filter: 'blur(4px)' }}
+                                transition={{ duration: 0.12, ease: [0.4, 0, 0.2, 1] }}
+                                className="flex"
+                            >
+                                {is_bookmarked ? <PiBookmarkSimpleFill /> : <PiBookmarkSimple />}
+                            </motion.span>
+                        </AnimatePresence>
+                    </motion.button>
                 </ToolTipComponent>
             </div>
         </header>

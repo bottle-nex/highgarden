@@ -6,7 +6,12 @@ import { useRouter } from 'next/navigation';
 import { Button } from '../ui/button';
 import { APP_NAME } from '@/utils/constants';
 
-const NAV_ITEMS = ['SOLUTIONS', 'RESOURCES', 'DOCS', 'ENTERPRISE'] as const;
+const NAV_ITEMS = [
+    { label: 'HOW IT WORKS', href: '/how-it-works' },
+    { label: 'FAQ', href: '/faq' },
+    { label: 'RESOLUTION', href: '/docs/resolution' },
+    { label: 'SUPPORT', href: '/support' },
+] as const;
 
 export default function LandingNavbar(): JSX.Element {
     const router = useRouter();
@@ -55,17 +60,14 @@ export default function LandingNavbar(): JSX.Element {
                 </div>
 
                 <div className="hidden md:flex items-center">
-                    {NAV_ITEMS.map((item, i) => (
+                    {NAV_ITEMS.map((item) => (
                         <a
-                            key={item}
-                            href="#"
-                            className="group/nav relative px-5 py-2  text-[10px] tracking-[0.2em] uppercase text-white transition-colors duration-300"
+                            key={item.label}
+                            href={item.href}
+                            className="group/nav relative px-6 py-2  text-[10px] tracking-[0.2em] uppercase text-white transition-colors duration-300"
                         >
-                            <span className="text-white/50 mr-1.5">
-                                {String(i + 1).padStart(2, '0')}
-                            </span>
-                            {item}
-                            <span className="absolute left-5 right-5 bottom-1 h-px bg-alpha origin-left scale-x-0 group-hover/nav:scale-x-100 transition-transform duration-300" />
+                            {item.label}
+                            <span className="absolute left-5 right-5 bottom-1 h-px bg-alpha origin-center scale-x-0 group-hover/nav:scale-x-100 transition-transform duration-300 ease-out" />
                         </a>
                     ))}
                 </div>

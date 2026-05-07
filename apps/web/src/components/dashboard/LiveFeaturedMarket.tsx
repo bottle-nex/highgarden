@@ -110,7 +110,7 @@ export default function LiveFeaturedMarket() {
     if (state.status === 'loading') {
         return (
             <Section>
-                <Frame>Loading featured market…</Frame>
+                <FeaturedMarketSkeleton />
             </Section>
         );
     }
@@ -169,6 +169,63 @@ function Frame({
             }`}
         >
             {children}
+        </div>
+    );
+}
+
+function FeaturedMarketSkeleton() {
+    return (
+        <div
+            className="relative bg-dark-base shadow-xs shadow-black/5 rounded-lg overflow-hidden h-full flex flex-col animate-pulse"
+            aria-hidden
+        >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-500/15 shrink-0">
+                <div className="h-3 w-20 rounded-sm bg-white/10" />
+                <div className="hidden md:flex items-center gap-2">
+                    <div className="h-3 w-24 rounded-sm bg-white/8" />
+                    <span className="text-white/15">→</span>
+                    <div className="h-3 w-24 rounded-sm bg-white/8" />
+                </div>
+            </div>
+
+            <div className="flex-1 min-h-0 flex flex-col p-5">
+                <div className="flex items-start justify-between gap-6 shrink-0">
+                    <div className="min-w-0 flex-1 flex items-start gap-3">
+                        <div className="shrink-0 w-12 h-12 rounded-md border border-white/10 bg-white/8" />
+                        <div className="min-w-0 flex-1 space-y-2">
+                            <div className="h-7 w-3/4 rounded-sm bg-white/10" />
+                            <div className="h-7 w-1/2 rounded-sm bg-white/10" />
+                            <div className="mt-3 space-y-1.5">
+                                <div className="h-3 w-full rounded-sm bg-white/6" />
+                                <div className="h-3 w-2/3 rounded-sm bg-white/6" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                        <div className="h-2.5 w-16 rounded-sm bg-white/8" />
+                        <div className="h-7 w-14 rounded-sm bg-white/12" />
+                        <div className="h-2.5 w-20 rounded-sm bg-white/8" />
+                    </div>
+                </div>
+
+                <div className="flex-1 min-h-0 mt-3 rounded-sm bg-white/4" />
+
+                <div className="mt-3 flex items-center gap-4 px-3 py-2 border border-white/10 rounded-[6px] bg-neutral-950 shrink-0">
+                    {[0, 1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center gap-2 flex-1">
+                            <div className="h-2.5 w-8 rounded-sm bg-white/8" />
+                            <div className="h-2.5 w-12 rounded-sm bg-white/12" />
+                        </div>
+                    ))}
+                </div>
+
+                <div className="mt-3 flex items-center gap-2 shrink-0">
+                    <div className="flex-1 h-11 rounded-sm bg-white/8" />
+                    <div className="flex-1 h-11 rounded-sm bg-white/8" />
+                    <div className="h-9 w-9 rounded-sm bg-white/8" />
+                </div>
+            </div>
         </div>
     );
 }

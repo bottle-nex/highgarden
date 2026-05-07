@@ -2,7 +2,7 @@
 import { JSX, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import SearchBar from './SearchBar';
+import SearchBar from '../dashboard/SearchBar';
 import { CroppedButton } from '../ui/cropped-button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';
@@ -13,8 +13,9 @@ import { AnimatePresence } from 'motion/react';
 import OpacityBackground from '../ui/opacity-background';
 import UtilityCard from '../ui/utility-card';
 import DepositDialog from '../ui/deposit-dialog';
+import { APP_NAME } from '@/utils/constants';
 
-export default function DashboardNavbar(): JSX.Element {
+export default function EventNavbar(): JSX.Element {
     const router = useRouter();
     const { session } = useUserSessionStore();
     const setOpenSigninModal = useUserSessionStore((s) => s.setOpenSigninModal);
@@ -26,70 +27,89 @@ export default function DashboardNavbar(): JSX.Element {
     const is_signed_in = !!session?.user;
 
     return (
-        <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm px-4">
-            <div className="w-full h-16 flex items-center justify-between gap-8 px-5">
-                <div className="flex justify-center">
-                    <SearchBar />
-                </div>
+        <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm">
+            <div className="mx-auto w-full max-w-380 px-6 lg:px-8">
+                <div className="h-16 flex items-center justify-between gap-8">
+                    <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => router.push('/')}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                router.push('/');
+                            }
+                        }}
+                        className="text-white text-sm font-medium tracking-tight cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/30"
+                    >
+                        {APP_NAME}
+                    </span>
 
-                <div className="flex items-center gap-2">
-                    <CroppedButton
-                        size={'sm'}
-                        onClick={() => requireAuth(() => setDepositDropdown(!openDepositDropdown))}
-                        className={cn(
-                            'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
-                            'bg-dark-faded text-white',
-                            'transition-all duration-200',
-                        )}
-                    >
-                        Deposit
-                    </CroppedButton>
-                    <CroppedButton
-                        size={'sm'}
-                        onClick={() => requireAuth(() => router.push('/portfolio'))}
-                        className={cn(
-                            'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
-                            'bg-white text-neutral-900',
-                            'transition-all duration-200',
-                        )}
-                    >
-                        Portfolio
-                    </CroppedButton>
-                    {is_signed_in ? (
-                        <span
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => setLogoutOpen(true)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    setLogoutOpen(true);
-                                }
-                            }}
-                            className="cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/30 rounded-full"
-                        >
-                            {session?.user?.image && (
-                                <Image
-                                    src={session?.user?.image}
-                                    alt="User Avatar"
-                                    width={32}
-                                    height={32}
-                                    className="rounded-full"
-                                />
-                            )}
-                        </span>
-                    ) : (
+                    <div className="flex-1 max-w-md">
+                        <SearchBar />
+                    </div>
+
+                    <div className="flex items-center gap-2">
                         <CroppedButton
-                            onClick={() => setOpenSigninModal(true)}
+                            size={'sm'}
+                            onClick={() =>
+                                requireAuth(() => setDepositDropdown(!openDepositDropdown))
+                            }
                             className={cn(
                                 'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
-                                'bg-transparent text-white hover:bg-white/5',
+                                'bg-dark-faded text-white',
                                 'transition-all duration-200',
                             )}
                         >
-                            Sign in
+                            Deposit
                         </CroppedButton>
-                    )}
+                        <CroppedButton
+                            size={'sm'}
+                            onClick={() => requireAuth(() => router.push('/portfolio'))}
+                            className={cn(
+                                'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
+                                'bg-white text-neutral-900',
+                                'transition-all duration-200',
+                            )}
+                        >
+                            Portfolio
+                        </CroppedButton>
+                        {is_signed_in ? (
+                            <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => setLogoutOpen(true)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        setLogoutOpen(true);
+                                    }
+                                }}
+                                className="cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/30 rounded-full"
+                            >
+                                {session?.user?.image && (
+                                    <Image
+                                        src={session?.user?.image}
+                                        alt="User Avatar"
+                                        width={32}
+                                        height={32}
+                                        className="rounded-full"
+                                    />
+                                )}
+                            </span>
+                        ) : (
+                            <CroppedButton
+                                onClick={() => setOpenSigninModal(true)}
+                                className={cn(
+                                    'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
+                                    'bg-transparent text-white hover:bg-white/5',
+                                    'transition-all duration-200',
+                                )}
+                            >
+                                Sign in
+                            </CroppedButton>
+                        )}
+                    </div>
                 </div>
             </div>
 

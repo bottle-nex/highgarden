@@ -5,9 +5,11 @@ const MAX_RECENTS = 10;
 
 interface SearchPanelStore {
     open: boolean;
+    query: string;
     /** Market ids the user has opened from the search panel, most-recent first */
     recents: string[];
     setOpen: (v: boolean) => void;
+    setQuery: (q: string) => void;
     toggle: () => void;
     addRecent: (id: string) => void;
     removeRecent: (id: string) => void;
@@ -17,8 +19,10 @@ export const useSearchPanelStore = create<SearchPanelStore>()(
     persist(
         (set, get) => ({
             open: false,
+            query: '',
             recents: [],
             setOpen: (v) => set({ open: v }),
+            setQuery: (q) => set({ query: q }),
             toggle: () => set({ open: !get().open }),
             addRecent: (id) =>
                 set((s) => ({

@@ -1,11 +1,11 @@
 'use client';
-import { JSX } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import LiveFeaturedMarket from './LiveFeaturedMarket';
 import LiveMarketGrid from './LiveMarketGrid';
 import LiveStakingSection from './LiveStakingSection';
 import BreakingNewsList from './BreakingNewsList';
 import HotTopicsList from './HotTopicsList';
-import { hotTopics } from '@/utils/constants';
+import { hotTopics, type HotTopic } from '@/utils/constants';
 import { useCategoryStore } from '@/store/ui/useCategoryStore';
 import type { Category } from '@/store/ui/useCategoryStore';
 import { is_tag_category } from '@/utils/category-tags';
@@ -20,16 +20,24 @@ export default function CategorySection(): JSX.Element {
 }
 
 function TrendingSection(): JSX.Element {
+    // Hold topics back for one paint so the hot-topics list shows its skeleton
+    // alongside the other panels' loading states instead of flashing in alone.
+    const [topics, set_topics] = useState<HotTopic[] | null>(null);
+    useEffect(() => {
+        const id = requestAnimationFrame(() => set_topics(hotTopics.slice(0, 4)));
+        return () => cancelAnimationFrame(id);
+    }, []);
+
     return (
         <div className="space-y-14">
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_290px] gap-12 xl:gap-12 h-140 overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-12 xl:gap-8 h-140 overflow-hidden">
                 <div className="min-w-0 min-h-0 flex flex-col">
                     <LiveFeaturedMarket />
                 </div>
 
                 <aside className="flex flex-col h-full justify-between min-h-0 py-1">
                     <BreakingNewsList limit={3} />
-                    <HotTopicsList topics={hotTopics.slice(0, 4)} />
+                    <HotTopicsList topics={topics} />
                 </aside>
             </div>
 
