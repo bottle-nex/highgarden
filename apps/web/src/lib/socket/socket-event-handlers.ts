@@ -3,14 +3,11 @@ import {
     Outcome,
     ServerMessage,
     MarketEvent,
-    Fill,
     PriceUpdatePayload,
 } from '@solmarket/types';
 
 import { useMarketsStore } from '@/store/markets/useMarketsStore';
 import { useStreamStore } from '@/store/stream/useStreamStore';
-import { useFillsStore } from '@/store/portfolio/useFillsStore';
-import { usePositionsStore } from '@/store/portfolio/usePositionsStore';
 import { useUIStore } from '@/store/ui/useUIStore';
 import { enqueueBookUpdate } from '@/store/book/useOrderBookStore';
 import {
@@ -211,11 +208,6 @@ export class SocketEventHandlers {
 
     static handle_pong(): void {
         toast.success('PONG');
-    }
-
-    static handle_order_filled(fill: Fill): void {
-        useFillsStore.getState().push(fill);
-        usePositionsStore.getState().applyFill(fill);
     }
 
     static dispatch(msg: ServerMessage): void {
