@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { PiBookmarkSimpleFill } from 'react-icons/pi';
 import { cn } from '@/lib/utils';
-import { CATEGORY_TABS } from '@/utils/constants';
+import { APP_NAME, CATEGORY_TABS } from '@/utils/constants';
 import { useCategoryStore } from '@/store/ui/useCategoryStore';
 import Applogo from '@/components/ui/Applogo';
 
@@ -17,9 +17,14 @@ export default function CategorySidebar(): JSX.Element {
     const on_bookmarks_route = pathname?.startsWith('/bookmarks') ?? false;
 
     return (
-        <aside className="sticky top-0 self-start h-screen w-60 shrink-0 bg-dark-alpha border-r border-white/6 flex flex-col">
-            <div className="h-16 px-3 flex items-center shrink-0">
-                <Applogo />
+        <aside className="sticky top-0 self-start h-screen w-60 shrink-0 border-r border-gray-500/15 bg-dark-alpha flex flex-col">
+            <div className="h-16 px-3 flex items-center justify-start gap-x-2 shrink-0 text-white">
+                <a href="/" className="inline-flex items-center cursor-pointer">
+                    <Applogo size={28} />
+                </a>
+                <div>
+                    {APP_NAME}
+                </div>
             </div>
             <nav className="flex flex-col overflow-y-auto no-scrollbar flex-1 py-2 px-4">
                 {CATEGORY_TABS.map((tab) => {

@@ -165,7 +165,7 @@ function BottomBar(): JSX.Element {
     return (
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-3  text-[10px] uppercase tracking-[0.25em] text-dark-base">
             <span className="flex items-center gap-1">
-                <span className="text-sm leading-0 pt-px">©</span> {APP_NAME} 2026{' '}
+                <span className="text-sm leading-0 pt-px">©️</span> {APP_NAME} 2026{' '}
                 <span className="mx-2 text-black">·</span> All rights reserved
             </span>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">

@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { useRouter } from 'next/navigation';
 import { Button } from '../ui/button';
+import Applogo from '../ui/Applogo';
 import { APP_NAME } from '@/utils/constants';
 
 const NAV_ITEMS = [
@@ -54,9 +55,14 @@ export default function LandingNavbar(): JSX.Element {
                 )}
             >
                 <div className="flex-1 flex items-center">
-                    <span className="text-white text-sm font-medium tracking-tight cursor-pointer">
-                        {APP_NAME}
-                    </span>
+                    <a href="/" className="inline-flex items-center gap-x-2 cursor-pointer">
+                        <Applogo size={28} />
+                        {!isScrolled && (
+                            <div className='text-white'>
+                                {APP_NAME}
+                            </div>
+                        )}
+                    </a>
                 </div>
 
                 <div className="hidden md:flex items-center">
