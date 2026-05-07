@@ -193,8 +193,8 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                                             className="absolute inset-0 rounded"
                                             style={{
                                                 backgroundColor: is_yes
-                                                    ? 'rgba(16, 185, 129, 0.35)'
-                                                    : 'rgba(244, 63, 94, 0.35)',
+                                                    ? 'rgba(20, 113, 80, 1)'
+                                                    : 'rgba(186, 32, 64, 1)',
                                             }}
                                             transition={{
                                                 type: 'spring',

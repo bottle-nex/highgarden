@@ -81,10 +81,10 @@ export default function LandingTextContent(): JSX.Element {
                         >
                             {APP_NAME}
                         </h2>
-                        <p className="text-2xl md:text-3xl lg:text-4xl text-black/80 max-w-2xl tracking-tight font-medium">
+                        <p className="text-2xl md:text-3xl lg:text-4xl text-black/80 max-w-2xl tracking-tight font-medium mt-4">
                             <RandomRevealText text="Polymarket depth. Solana speed." />
                         </p>
-                        <CroppedButton size={'lg'} className="bg-black text-white mt-6">
+                        <CroppedButton size={'lg'} className="bg-black text-white mt-4">
                             <span>Start trading</span>
                             <FaArrowRight />
                         </CroppedButton>

@@ -90,7 +90,7 @@ export default function LiveMarketGrid({ category, excludeFeatured = false }: Pr
     if (state.status === 'loading') {
         return (
             <Section title={heading_title} subtitle={heading_subtitle}>
-                <Frame>Loading markets…</Frame>
+                <MarketGridSkeleton count={excludeFeatured ? 9 : 6} showSort={!category} />
             </Section>
         );
     }
@@ -174,6 +174,53 @@ function Frame({
             }`}
         >
             {children}
+        </div>
+    );
+}
+
+function MarketGridSkeleton({ count, showSort }: { count: number; showSort: boolean }) {
+    return (
+        <div className="animate-pulse" aria-hidden>
+            {showSort && (
+                <div className="mb-5 flex items-center gap-1 border border-gray-500/15 bg-dark-base p-1 rounded-sm w-fit">
+                    {[0, 1, 2].map((i) => (
+                        <div key={i} className="h-6 w-20 rounded-xs bg-white/8" />
+                    ))}
+                </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-7">
+                {Array.from({ length: count }).map((_, i) => (
+                    <MarketCardSkeleton key={i} />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function MarketCardSkeleton() {
+    return (
+        <div className="rounded-lg p-5 bg-dark-base">
+            <div className="flex items-center justify-between">
+                <div className="h-2.5 w-16 rounded-sm bg-white/10" />
+                <div className="h-2.5 w-20 rounded-sm bg-white/8" />
+            </div>
+            <div className="mt-5 space-y-2 min-h-12">
+                <div className="h-4 w-11/12 rounded-sm bg-white/12" />
+                <div className="h-4 w-2/3 rounded-sm bg-white/10" />
+            </div>
+            <div className="mt-6 space-y-2.5">
+                {[0, 1].map((i) => (
+                    <div key={i} className="flex items-center gap-2">
+                        <div className="h-2.5 w-7 rounded-sm bg-white/10" />
+                        <div className="flex-1 h-1.5 rounded-full bg-white/8" />
+                        <div className="h-2.5 w-8 rounded-sm bg-white/10" />
+                    </div>
+                ))}
+            </div>
+            <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between">
+                <div className="h-2.5 w-20 rounded-sm bg-white/10" />
+                <div className="h-2.5 w-12 rounded-sm bg-white/10" />
+            </div>
         </div>
     );
 }

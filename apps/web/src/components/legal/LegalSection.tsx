@@ -37,7 +37,7 @@ export default function LegalSection({ id, index, title, eyebrow, children }: Pr
             <h2 className="mb-6 text-2xl font-medium tracking-tight text-white md:text-3xl">
                 {title}
             </h2>
-            <div className="space-y-5 text-[14px] leading-[1.75] text-white/65 [&_a]:text-alpha [&_a]:underline-offset-4 hover:[&_a]:underline [&_strong]:font-medium [&_strong]:text-white/90">
+            <div className="space-y-5 text-[14px] leading-[1.75] text-white/65 [&_a]:text-alpha [&_a]:underline-offset-4 [&_a:hover]:underline [&_strong]:font-medium [&_strong]:text-white/90">
                 {children}
             </div>
         </motion.section>

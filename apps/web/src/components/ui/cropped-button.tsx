@@ -32,7 +32,7 @@ export function CroppedButton({
     className,
     size,
     cut = 12,
-    radius = 4,
+    radius = 3,
     smooth = 2,
     stroke_width = 1,
     type = 'button',

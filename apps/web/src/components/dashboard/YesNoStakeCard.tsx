@@ -41,7 +41,7 @@ export default function YesNoStakeCard({ market }: { market: YesNoMarket }): JSX
                         />
                     )}
                     <div className="min-w-0">
-                        <h3 className="text-[14px] text-white/80 font-medium leading-snug hover:underline">
+                        <h3 className="text-[15px] text-white/80 font-medium leading-snug hover:underline">
                             {market.title}
                         </h3>
                         <p className="mt-2.5 text-[12px] text-white/40 leading-relaxed line-clamp-2">
