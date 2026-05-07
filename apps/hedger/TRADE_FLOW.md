@@ -54,9 +54,9 @@ Our server, in [QuoteController](../server/controllers/markets/controller.quote.
 3. **Reads the live price from Polymarket.** Polymarket says YES is currently being sold at 50¢. We add a 1¢ markup (our fee) and quote Alice **51¢ per share**.
 4. **Cryptographically signs the price.** Our backend has a special key (the "quote signer key"). It signs a small note that says:
 
-   > _"I, the SolMarket backend, promise: Alice can buy 10 YES shares for 51¢ each on this market. Valid for the next 5 seconds. Random ticket number: `8f3a...c4`."_
+    > _"I, the SolMarket backend, promise: Alice can buy 10 YES shares for 51¢ each on this market. Valid for the next 5 seconds. Random ticket number: `8f3a...c4`."_
 
-   This signature is the trick that makes everything else safe. We'll see why in step 3.
+    This signature is the trick that makes everything else safe. We'll see why in step 3.
 
 5. **Sends the signed note back to the web app.**
 
@@ -72,8 +72,8 @@ A wrinkle: Alice doesn't have a crypto wallet. We hold her keys for her (a "**cu
 
 1. **Loads Alice's encrypted Solana key** from our database and decrypts it.
 2. **Builds a Solana transaction** with two instructions:
-   - **Instruction A:** "Hey Solana, please verify this signature is real" — using Solana's built-in signature checker.
-   - **Instruction B:** "Hey our smart contract, execute this trade" — pointing to instruction A as proof.
+    - **Instruction A:** "Hey Solana, please verify this signature is real" — using Solana's built-in signature checker.
+    - **Instruction B:** "Hey our smart contract, execute this trade" — pointing to instruction A as proof.
 3. **Signs and sends the transaction** to the Solana blockchain using Alice's key.
 
 Why two instructions? So the smart contract can be 100% sure the price came from us. If Alice tried to forge the price (say, claim YES costs 1¢), instruction A would fail because she can't fake our signature.
@@ -100,7 +100,7 @@ All checks pass. Now it does the actual work:
 3. **Records that Alice now owns 10 YES shares** of this market.
 4. **Shouts to the world** by emitting an event — basically writing into the transaction's logs:
 
-   > 📣 **OrderFilled!** User: Alice's pubkey, Market: "rain tomorrow", Side: BUY, Outcome: YES, Size: 10, Price: 51¢, Nonce: `8f3a...c4`
+    > 📣 **OrderFilled!** User: Alice's pubkey, Market: "rain tomorrow", Side: BUY, Outcome: YES, Size: 10, Price: 51¢, Nonce: `8f3a...c4`
 
 Alice's part is done. She has her 10 YES shares. She can close her browser.
 
