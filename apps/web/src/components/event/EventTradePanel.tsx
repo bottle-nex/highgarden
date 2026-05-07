@@ -4,11 +4,13 @@ import { JSX, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import type { MarketDTO } from '@solmarket/types';
-import { Outcome } from '@solmarket/types';
+import { Outcome, Side } from '@solmarket/types';
 import { selectDepth, useOrderBookDepthStore } from '@/store/book/useOrderBookDepthStore';
+import { selectShares, usePositionsStore } from '@/store/portfolio/usePositionsStore';
 import { cn } from '@/lib/utils';
 import trading_api, { TradingError } from '@/lib/api/trading';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { usePortfolioSync } from '@/hooks/usePortfolioSync';
 import Link from 'next/link';
 
 interface Props {
@@ -26,6 +28,7 @@ function format_cents(price: number | undefined): string {
 }
 
 export default function EventTradePanel({ market }: Props): JSX.Element {
+    usePortfolioSync();
     const [selectedOutcome, setSelectedOutcome] = useState<Outcome>(Outcome.YES);
     const [tab, set_tab] = useState<'BUY' | 'SELL'>('BUY');
     const [amount, set_amount] = useState<string>('');
@@ -42,6 +45,25 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
     const yes_price = tab === 'BUY' ? yes_depth?.asks[0]?.price : yes_depth?.bids[0]?.price;
     const no_price = tab === 'BUY' ? no_depth?.asks[0]?.price : no_depth?.bids[0]?.price;
     const active_price = selectedOutcome === Outcome.YES ? yes_price : no_price;
+
+    const owned_shares = usePositionsStore(selectShares(market.id, selectedOutcome));
+    const apply_fill = usePositionsStore((s) => s.applyFill);
+
+    const max_amount_for_mode = (mode: InputMode, price: number): number => {
+        if (mode === 'SHARES') return owned_shares;
+        return +(owned_shares * price).toFixed(2);
+    };
+
+    const clamp_for_sell = (raw: string, mode: InputMode, price: number): string => {
+        if (tab !== 'SELL') return raw;
+        if (raw === '') return raw;
+        const max = max_amount_for_mode(mode, price);
+        if (max <= 0) return '0';
+        const n = parseFloat(raw);
+        if (!Number.isFinite(n) || n < 0) return raw;
+        if (n <= max) return raw;
+        return mode === 'SHARES' ? String(max) : max.toFixed(2);
+    };
 
     const flash_ref = useRef<HTMLDivElement>(null);
     const last_active_price = useRef<number | undefined>(undefined);
@@ -86,12 +108,36 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
         if (active_price === undefined) return 'Loading price…';
         if (computed.shares <= 0) {
             const min_dollars = safe_price.toFixed(2);
+            if (tab === 'SELL') {
+                return owned_shares > 0
+                    ? input_mode === 'USDC'
+                        ? `Minimum $${min_dollars} to sell 1 share`
+                        : 'Enter at least 1 share'
+                    : `You don't own any ${selectedOutcome} shares to sell`;
+            }
             return input_mode === 'USDC'
                 ? `Minimum $${min_dollars} to buy 1 share`
                 : 'Enter at least 1 share';
         }
+        if (tab === 'SELL') {
+            if (owned_shares <= 0) {
+                return `You don't own any ${selectedOutcome} shares to sell`;
+            }
+            if (computed.shares > owned_shares) {
+                return `You only own ${owned_shares.toLocaleString()} ${selectedOutcome} shares`;
+            }
+        }
         return null;
-    }, [market.solanaMarketPda, active_price, computed.shares, safe_price, input_mode]);
+    }, [
+        market.solanaMarketPda,
+        active_price,
+        computed.shares,
+        safe_price,
+        input_mode,
+        tab,
+        owned_shares,
+        selectedOutcome,
+    ]);
 
     const handle_submit = async () => {
         if (submitting) return;
@@ -111,6 +157,13 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                 size: computed.shares,
             });
             const result = await trading_api.place_order(market.id, signed);
+            apply_fill({
+                marketId: market.id,
+                side: tab === 'BUY' ? Side.BUY : Side.SELL,
+                outcome: selectedOutcome,
+                price: signed.price,
+                size: computed.shares,
+            });
             const verb = tab === 'BUY' ? 'Bought' : 'Sold';
             const outcome_label = selectedOutcome === Outcome.YES ? 'YES' : 'NO';
             toast.success(
@@ -298,7 +351,15 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                                         step={input_mode === 'USDC' ? '0.01' : '1'}
                                         placeholder="0"
                                         value={amount}
-                                        onChange={(e) => set_amount(e.target.value)}
+                                        onChange={(e) =>
+                                            set_amount(
+                                                clamp_for_sell(
+                                                    e.target.value,
+                                                    input_mode,
+                                                    safe_price,
+                                                ),
+                                            )
+                                        }
                                         onFocus={() => set_focused(true)}
                                         onBlur={() => set_focused(false)}
                                         className="absolute inset-0 w-full bg-transparent outline-none text-3xl font-bold tabular-nums text-transparent caret-transparent placeholder:text-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -358,7 +419,13 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                                         key={v}
                                         type="button"
                                         onClick={() =>
-                                            set_amount(String((parseFloat(amount) || 0) + v))
+                                            set_amount(
+                                                clamp_for_sell(
+                                                    String((parseFloat(amount) || 0) + v),
+                                                    input_mode,
+                                                    safe_price,
+                                                ),
+                                            )
                                         }
                                         className="py-1.5 rounded-md bg-white/5 hover:bg-white/6 text-[12px] font-semibold tabular-nums text-white/50 hover:text-white/80 transition-colors duration-250 cursor-pointer"
                                     >
@@ -367,6 +434,41 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                                 ))}
                             </div>
                         </div>
+
+                        {tab === 'SELL' && (
+                            <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-white/55">
+                                    You own{' '}
+                                    <span className="text-white font-semibold tabular-nums">
+                                        {owned_shares.toLocaleString()}
+                                    </span>{' '}
+                                    {selectedOutcome === Outcome.YES ? 'YES' : 'NO'} share
+                                    {owned_shares === 1 ? '' : 's'}
+                                </span>
+                                <button
+                                    type="button"
+                                    disabled={owned_shares <= 0}
+                                    onClick={() => {
+                                        if (owned_shares <= 0) return;
+                                        if (input_mode === 'SHARES') {
+                                            set_amount(String(owned_shares));
+                                        } else {
+                                            set_amount(
+                                                (owned_shares * safe_price).toFixed(2),
+                                            );
+                                        }
+                                    }}
+                                    className={cn(
+                                        'px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider transition-colors',
+                                        owned_shares > 0
+                                            ? 'bg-white/8 hover:bg-white/15 text-white/80 cursor-pointer'
+                                            : 'bg-white/5 text-white/25 cursor-not-allowed',
+                                    )}
+                                >
+                                    Max
+                                </button>
+                            </div>
+                        )}
 
                         {disable_reason && (
                             <p className="text-[11px] text-white/45 text-center -mt-1">

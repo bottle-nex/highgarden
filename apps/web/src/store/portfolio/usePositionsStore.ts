@@ -1,151 +1,107 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import type { Fill } from '@solmarket/types';
+import type { Fill, FillDTO, PositionDTO } from '@solmarket/types';
 import { Outcome, Side } from '@solmarket/types';
 
-// On-chain position per market, derived from Solana UserPosition PDAs
-export interface UserPosition {
-    marketId: string;
-    yesShares: number;
-    noShares: number;
-    /** Average cost basis in USDC cents — computed client-side from fills */
-    avgCostYes: number;
-    avgCostNo: number;
-    /** Unrealized P&L stub — caller fills in using live book prices */
-    lastUpdatedAt: number; // epoch ms
-}
-
 interface PositionsState {
-    byMarket: Record<string, UserPosition>;
+    positions: PositionDTO[];
     loading: boolean;
     error: string | null;
 
-    // Actions
-    hydrate: (positions: UserPosition[]) => void;
+    hydrate: (positions: PositionDTO[]) => void;
     setLoading: (v: boolean) => void;
     setError: (e: string | null) => void;
-    /** Optimistic update: called immediately after a successful place_order tx */
-    applyFill: (fill: Fill) => void;
-    /** Called when a claim tx settles: removes shares */
-    applyClaim: (marketId: string, outcome: Outcome, shares: number) => void;
+    /** Optimistic update applied right after a place_order tx confirms. */
+    applyFill: (fill: Pick<Fill, 'marketId' | 'side' | 'outcome' | 'price' | 'size'>) => void;
+    /** Optimistic update after a successful claim — zeroes the winning row. */
+    applyClaim: (marketId: string, outcome: Outcome) => void;
     reset: () => void;
 }
 
-function updateAvgCost(
-    prevAvg: number,
-    prevShares: number,
-    newPrice: number,
-    newShares: number,
-): number {
-    const total = prevShares + newShares;
+function update_avg(prev_avg: number, prev_qty: number, price: number, qty: number): number {
+    const total = prev_qty + qty;
     if (total === 0) return 0;
-    return (prevAvg * prevShares + newPrice * newShares) / total;
+    return (prev_avg * prev_qty + price * qty) / total;
 }
 
 export const usePositionsStore = create<PositionsState>()(
     devtools(
         (set) => ({
-            byMarket: {},
+            positions: [],
             loading: false,
             error: null,
 
-            hydrate: (positions) => {
-                const byMarket: Record<string, UserPosition> = {};
-                for (const p of positions) byMarket[p.marketId] = p;
-                set({ byMarket, loading: false, error: null }, false, 'positions/hydrate');
-            },
-
+            hydrate: (positions) =>
+                set({ positions, loading: false, error: null }, false, 'positions/hydrate'),
             setLoading: (loading) => set({ loading }, false, 'positions/setLoading'),
             setError: (error) => set({ error }, false, 'positions/setError'),
 
             applyFill: (fill) =>
                 set(
                     (s) => {
-                        const prev = s.byMarket[fill.marketId] ?? {
-                            marketId: fill.marketId,
-                            yesShares: 0,
-                            noShares: 0,
-                            avgCostYes: 0,
-                            avgCostNo: 0,
-                            lastUpdatedAt: Date.now(),
-                        };
+                        const idx = s.positions.findIndex(
+                            (p) => p.marketId === fill.marketId && p.outcome === fill.outcome,
+                        );
+                        const existing = idx >= 0 ? s.positions[idx]! : null;
+                        const prev_shares = existing?.shares ?? 0;
+                        const prev_avg = existing?.avgCostCents ?? 0;
 
-                        let { yesShares, noShares, avgCostYes, avgCostNo } = prev;
-
+                        let next_shares = prev_shares;
+                        let next_avg = prev_avg;
                         if (fill.side === Side.BUY) {
-                            if (fill.outcome === Outcome.YES) {
-                                avgCostYes = updateAvgCost(
-                                    avgCostYes,
-                                    yesShares,
-                                    fill.price,
-                                    fill.size,
-                                );
-                                yesShares += fill.size;
-                            } else {
-                                avgCostNo = updateAvgCost(
-                                    avgCostNo,
-                                    noShares,
-                                    fill.price,
-                                    fill.size,
-                                );
-                                noShares += fill.size;
-                            }
+                            next_avg = update_avg(prev_avg, prev_shares, fill.price, fill.size);
+                            next_shares = prev_shares + fill.size;
                         } else {
-                            // SELL: reduce position
-                            if (fill.outcome === Outcome.YES) {
-                                yesShares = Math.max(0, yesShares - fill.size);
-                            } else {
-                                noShares = Math.max(0, noShares - fill.size);
-                            }
+                            next_shares = Math.max(0, prev_shares - fill.size);
+                            if (next_shares === 0) next_avg = 0;
                         }
 
-                        return {
-                            byMarket: {
-                                ...s.byMarket,
-                                [fill.marketId]: {
-                                    ...prev,
-                                    yesShares,
-                                    noShares,
-                                    avgCostYes,
-                                    avgCostNo,
-                                    lastUpdatedAt: Date.now(),
-                                },
-                            },
+                        if (next_shares === 0 && existing && existing.status === 'OPEN') {
+                            // Position fully closed — drop the row.
+                            return {
+                                positions: s.positions.filter((_, i) => i !== idx),
+                            };
+                        }
+
+                        if (!existing) {
+                            // Optimistic skeleton — server refresh will fill in market metadata.
+                            return s;
+                        }
+
+                        const updated: PositionDTO = {
+                            ...existing,
+                            shares: next_shares,
+                            avgCostCents: Math.round(next_avg),
+                            tradedUsd: +((Math.round(next_avg) * next_shares) / 100).toFixed(2),
+                            toWinUsd: next_shares,
+                            valueUsd:
+                                existing.currentPriceCents !== null
+                                    ? +(
+                                          (existing.currentPriceCents * next_shares) /
+                                          100
+                                      ).toFixed(2)
+                                    : +((Math.round(next_avg) * next_shares) / 100).toFixed(2),
                         };
+                        const next = s.positions.slice();
+                        next[idx] = updated;
+                        return { positions: next };
                     },
                     false,
                     'positions/applyFill',
                 ),
 
-            applyClaim: (marketId, outcome, shares) =>
+            applyClaim: (marketId, outcome) =>
                 set(
-                    (s) => {
-                        const prev = s.byMarket[marketId];
-                        if (!prev) return s;
-                        return {
-                            byMarket: {
-                                ...s.byMarket,
-                                [marketId]: {
-                                    ...prev,
-                                    yesShares:
-                                        outcome === Outcome.YES
-                                            ? Math.max(0, prev.yesShares - shares)
-                                            : prev.yesShares,
-                                    noShares:
-                                        outcome === Outcome.NO
-                                            ? Math.max(0, prev.noShares - shares)
-                                            : prev.noShares,
-                                    lastUpdatedAt: Date.now(),
-                                },
-                            },
-                        };
-                    },
+                    (s) => ({
+                        positions: s.positions.filter(
+                            (p) => !(p.marketId === marketId && p.outcome === outcome),
+                        ),
+                    }),
                     false,
                     'positions/applyClaim',
                 ),
 
-            reset: () =>
-                set({ byMarket: {}, loading: false, error: null }, false, 'positions/reset'),
+            reset: () => set({ positions: [], loading: false, error: null }, false, 'positions/reset'),
         }),
         { name: 'PositionsStore' },
     ),
@@ -153,9 +109,17 @@ export const usePositionsStore = create<PositionsState>()(
 
 // ─── Selectors ───────────────────────────────────────────────────────────────
 
-export const selectPosition = (marketId: string) => (s: PositionsState) => s.byMarket[marketId];
-export const selectHasPosition = (marketId: string) => (s: PositionsState) => {
-    const p = s.byMarket[marketId];
-    return !!p && (p.yesShares > 0 || p.noShares > 0);
-};
-export const selectAllPositions = (s: PositionsState) => Object.values(s.byMarket);
+// IMPORTANT: selectors must return stable references (or primitives). A
+// selector that returns `arr.filter(...)` produces a new array each call,
+// which Zustand sees as a state change and triggers an infinite render loop.
+// For derived arrays, subscribe to `selectAllPositions` and compute with
+// `useMemo` in the component.
+export const selectAllPositions = (s: PositionsState) => s.positions;
+export const selectPositionsLoading = (s: PositionsState) => s.loading;
+export const selectShares =
+    (marketId: string, outcome: Outcome) =>
+    (s: PositionsState): number =>
+        s.positions.find((p) => p.marketId === marketId && p.outcome === outcome)?.shares ?? 0;
+
+// Re-export the FillDTO type for convenience so callers don't need a second import.
+export type { FillDTO, PositionDTO };

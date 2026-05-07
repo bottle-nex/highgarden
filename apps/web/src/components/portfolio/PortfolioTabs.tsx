@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PositionsTable from './PositionsTable';
+import HistoryTable from './HistoryTable';
 import EmptyTabState from './EmptyTabState';
 import { PORTFOLIO_TABS, type PortfolioTab } from './types';
 
@@ -19,7 +20,7 @@ export default function PortfolioTabs(): JSX.Element {
             case 'Open orders':
                 return <EmptyTabState label="Open orders" />;
             case 'History':
-                return <EmptyTabState label="History" />;
+                return <HistoryTable search={searchQuery} />;
         }
     };
 

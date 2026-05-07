@@ -1,17 +1,16 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import type { Fill } from '@solmarket/types';
+import type { FillDTO } from '@solmarket/types';
 
 interface FillsState {
     /** All fills for the current user, newest first */
-    fills: Fill[];
+    fills: FillDTO[];
     loading: boolean;
     error: string | null;
 
-    // Actions
-    hydrate: (fills: Fill[]) => void;
+    hydrate: (fills: FillDTO[]) => void;
     /** Prepend a new fill (optimistic or from ORDER_FILLED WS event) */
-    push: (fill: Fill) => void;
+    push: (fill: FillDTO) => void;
     setLoading: (v: boolean) => void;
     setError: (e: string | null) => void;
     reset: () => void;
@@ -40,7 +39,6 @@ export const useFillsStore = create<FillsState>()(
             push: (fill) =>
                 set(
                     (s) => {
-                        // Deduplicate by id in case WS + REST both deliver it
                         if (s.fills.some((f) => f.id === fill.id)) return s;
                         return { fills: [fill, ...s.fills] };
                     },
@@ -56,9 +54,6 @@ export const useFillsStore = create<FillsState>()(
     ),
 );
 
-// ─── Selectors ───────────────────────────────────────────────────────────────
-
-export const selectFillsByMarket = (marketId: string) => (s: FillsState) =>
-    s.fills.filter((f) => f.marketId === marketId);
+// Selectors must return stable refs or primitives — see usePositionsStore.
 export const selectAllFills = (s: FillsState) => s.fills;
 export const selectFillsLoading = (s: FillsState) => s.loading;

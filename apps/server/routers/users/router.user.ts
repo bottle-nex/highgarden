@@ -4,9 +4,11 @@ import { requireAuth } from "../../middleware/middleware.auth";
 import ResponseWriter from "../../services/service.response";
 import { ensure_user_has_keypair } from "../../services/service.keypair";
 import { get_user_usdc_balance } from "../../services/service.wallet";
+import PortfolioService from "../../services/service.portfolio";
 import { ENV } from "../../config/config.env";
 
 const user_router: Router = Router();
+const portfolio = new PortfolioService();
 
 user_router.get("/me", requireAuth, async (req, res) => {
     try {
@@ -54,6 +56,26 @@ user_router.get("/me/wallet", requireAuth, async (req, res) => {
         );
     } catch (err) {
         console.error("[users/me/wallet]", err);
+        return ResponseWriter.system_error(res);
+    }
+});
+
+user_router.get("/me/positions", requireAuth, async (req, res) => {
+    try {
+        const positions = await portfolio.list_positions(req.user!.id);
+        return ResponseWriter.success(res, positions, "OK");
+    } catch (err) {
+        console.error("[users/me/positions]", err);
+        return ResponseWriter.system_error(res);
+    }
+});
+
+user_router.get("/me/fills", requireAuth, async (req, res) => {
+    try {
+        const fills = await portfolio.list_fills(req.user!.id);
+        return ResponseWriter.success(res, fills, "OK");
+    } catch (err) {
+        console.error("[users/me/fills]", err);
         return ResponseWriter.system_error(res);
     }
 });
