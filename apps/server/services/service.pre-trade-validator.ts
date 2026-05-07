@@ -22,6 +22,8 @@ interface CacheSlot<V> {
 
 export interface ValidateInput {
     polymarketMarketId: string;
+    /** Trade direction. SELL doesn't drain pUSD — hedger receives it. */
+    side: "BUY" | "SELL";
     /** Estimated max pUSD the bot would need to spend to hedge this trade. */
     estimatedHedgeCostUsd: number;
 }
@@ -39,8 +41,11 @@ export default class PreTradeValidator {
         const market_check = await this.check_market_status(input.polymarketMarketId);
         if (market_check && !market_check.ok) return market_check;
 
-        const balance_check = await this.check_funder_balance(input.estimatedHedgeCostUsd);
-        if (!balance_check.ok) return balance_check;
+        // SELL hedges generate pUSD on Polymarket; no funder outflow to gate.
+        if (input.side === "BUY") {
+            const balance_check = await this.check_funder_balance(input.estimatedHedgeCostUsd);
+            if (!balance_check.ok) return balance_check;
+        }
 
         return { ok: true };
     }

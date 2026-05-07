@@ -50,6 +50,16 @@ export default class SolanaTradeService {
             ed25519_ix,
         });
 
+        // Write the Fill row now so the user's portfolio reflects the trade
+        // immediately, independent of hedger liveness. The hedger uses the
+        // same nonce for idempotency, so its later write is a no-op.
+        await this.record_fill_idempotent({
+            userId: input.userId,
+            marketDbId: input.marketDbId,
+            quote: input.signedQuote,
+            txSignature: sig,
+        });
+
         console.log(chalk.green("final payload is : "), {
             txSignature: sig,
             marketPda: market_pda.toBase58(),
@@ -61,6 +71,39 @@ export default class SolanaTradeService {
             marketPda: market_pda.toBase58(),
             userPubkey: user_keypair.publicKey.toBase58(),
         };
+    }
+
+    private async record_fill_idempotent(args: {
+        userId: string;
+        marketDbId: string;
+        quote: SignedQuoteWire;
+        txSignature: string;
+    }): Promise<void> {
+        const side = args.quote.side === 0 ? "BUY" : "SELL";
+        const outcome = args.quote.outcome === 0 ? "YES" : "NO";
+        try {
+            await prisma.fill.create({
+                data: {
+                    userId: args.userId,
+                    marketId: args.marketDbId,
+                    side,
+                    outcome,
+                    price: args.quote.price,
+                    size: args.quote.size,
+                    solanaTxSig: args.txSignature,
+                    nonce: args.quote.nonceHex,
+                },
+            });
+        } catch (err) {
+            // P2002 = unique violation on nonce or txSig — hedger already
+            // wrote it, our row is redundant. Anything else, log and swallow:
+            // the on-chain trade succeeded, we don't want to fail the whole
+            // request just because we couldn't record it server-side.
+            const code = (err as { code?: string }).code;
+            if (code !== "P2002") {
+                console.error("[solana-trade/record_fill]", err);
+            }
+        }
     }
 
     private async load_custodial_keypair(user_id: string): Promise<Keypair> {

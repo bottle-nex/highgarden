@@ -44,7 +44,10 @@ export default class QuoteController {
             const resolved = await QuoteController.resolve_market(market_id);
             if ("error" in resolved) return resolved.error(res);
 
-            const verdict = await QuoteController.exposure.can_quote(market_id, parsed.data.size);
+            const price = QuoteController.compute_price(resolved.market, parsed.data);
+            const notional_usd = (price * parsed.data.size) / 100;
+
+            const verdict = await QuoteController.exposure.can_quote(market_id, notional_usd);
             if (!verdict.ok) {
                 return ResponseWriter.error(
                     res,
@@ -55,14 +58,12 @@ export default class QuoteController {
                 );
             }
 
-            const price = QuoteController.compute_price(resolved.market, parsed.data);
-
-            // Pre-trade validation: market still open on Polymarket and we
-            // have enough pUSD to hedge. Cached for 30s, runs after price
-            // calc so we can size the funder-balance check accurately.
+            // Pre-trade validation: market still open on Polymarket and (for
+            // BUY only) hedger has enough pUSD. Cached for 30s.
             const pre_check = await QuoteController.pre_trade.validate({
                 polymarketMarketId: resolved.market.polyMarketId,
-                estimatedHedgeCostUsd: (price * parsed.data.size) / 100,
+                side: parsed.data.side,
+                estimatedHedgeCostUsd: notional_usd,
             });
             if (!pre_check.ok) {
                 return ResponseWriter.error(res, pre_check.code, pre_check.details, undefined, 409);

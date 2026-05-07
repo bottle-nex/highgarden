@@ -48,10 +48,21 @@ export default class HedgeProcessor {
 
         await this.hedges.mark_hedging(ctx.hedge.id, job.attemptsMade + 1);
         if (job.attemptsMade === 0) {
-            await this.exposure.increment(ctx.market.id, ctx.fill.size);
+            await this.exposure.increment(
+                ctx.market.id,
+                HedgeProcessor.notional_usd(ctx.fill.price, ctx.fill.size),
+            );
         }
 
         return this.execute_hedge(ctx);
+    }
+
+    /**
+     * Convert a fill (priceCents × shares) into whole-dollar notional. Used
+     * for exposure tracking which lives in USD, not shares.
+     */
+    private static notional_usd(price_cents: number, shares: number): number {
+        return Math.round((price_cents * shares) / 100);
     }
 
     private async resolve_context(job: Job<HedgeJobData>): Promise<ResolvedContext> {
@@ -182,7 +193,12 @@ export default class HedgeProcessor {
             result.filledShares,
             result.avgPriceCents ?? ctx.fill.price,
         );
-        await this.exposure.decrement(ctx.market.id, result.filledShares);
+        // Decrement by the original fill notional so exposure exactly cancels
+        // the increment, regardless of slippage on the hedge price.
+        await this.exposure.decrement(
+            ctx.market.id,
+            HedgeProcessor.notional_usd(ctx.fill.price, result.filledShares),
+        );
         return {
             status: "FILLED",
             filledSize: result.filledShares,
@@ -226,7 +242,10 @@ export default class HedgeProcessor {
                 total_filled,
                 avg ?? ctx.fill.price,
             );
-            await this.exposure.decrement(ctx.market.id, total_filled);
+            await this.exposure.decrement(
+                ctx.market.id,
+                HedgeProcessor.notional_usd(ctx.fill.price, total_filled),
+            );
             return { status: "FILLED", filledSize: total_filled, avgPriceCents: avg ?? undefined };
         }
 
@@ -237,7 +256,10 @@ export default class HedgeProcessor {
             avg,
         );
         if (total_filled > 0) {
-            await this.exposure.decrement(ctx.market.id, total_filled);
+            await this.exposure.decrement(
+                ctx.market.id,
+                HedgeProcessor.notional_usd(ctx.fill.price, total_filled),
+            );
         }
         await this.events.record_alert("processor", "hedge partial — slippage cap reached", {
             hedgeId: ctx.hedge.id,
