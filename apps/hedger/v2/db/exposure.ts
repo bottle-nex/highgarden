@@ -44,6 +44,33 @@ export default class Exposure {
     }
 
     /**
+     * Applies a signed delta to unhedgedUsd. Convention:
+     *   - positive = BUY-direction work pending (we owe shares)
+     *   - negative = SELL-direction work pending (we have excess shares)
+     * The cap is enforced as a two-sided bound on |unhedgedUsd|.
+     */
+    static async apply_signed_delta(
+        market_id: string,
+        signed_delta_usd: number,
+    ): Promise<void> {
+        const now = new Date();
+        const stamps =
+            signed_delta_usd >= 0 ? { lastIncrementAt: now } : { lastDecrementAt: now };
+        await prisma.exposure.upsert({
+            where: { marketId: market_id },
+            create: {
+                marketId: market_id,
+                unhedgedUsd: signed_delta_usd,
+                ...stamps,
+            },
+            update: {
+                unhedgedUsd: { increment: signed_delta_usd },
+                ...stamps,
+            },
+        });
+    }
+
+    /**
      * Toggles the `paused` flag for a market. Set true by the auto-pause
      * path on permanent hedge failure; set false manually by ops once the
      * underlying issue is resolved.

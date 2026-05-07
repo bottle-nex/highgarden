@@ -98,9 +98,33 @@ export default class HedgeProcessor {
 
         await Hedge.mark_hedging(ctx.hedge.id, job.attemptsMade + 1);
         if (job.attemptsMade === 0) {
-            await Exposure.increment(ctx.market.id, ctx.fill.size);
+            // BUY pushes unhedged up (we owe shares); SELL pulls it down
+            // (we have excess). Hedge completion reverses by the same magnitude.
+            await Exposure.apply_signed_delta(
+                ctx.market.id,
+                HedgeProcessor.signed_notional_usd(
+                    ctx.fill.price,
+                    ctx.fill.size,
+                    ctx.fill.side,
+                ),
+            );
         }
         return this.execute_hedge(ctx);
+    }
+
+    /** priceCents × shares → whole-dollar notional (unsigned). */
+    private static notional_usd(price_cents: number, shares: number): number {
+        return Math.round((price_cents * shares) / 100);
+    }
+
+    /** Signed by trade direction. BUY = +, SELL = −. Used for exposure tracking. */
+    private static signed_notional_usd(
+        price_cents: number,
+        shares: number,
+        side: Side,
+    ): number {
+        const magnitude = HedgeProcessor.notional_usd(price_cents, shares);
+        return side === "BUY" ? magnitude : -magnitude;
     }
 
     // ──────────────── Context resolution ────────────────
@@ -381,7 +405,16 @@ export default class HedgeProcessor {
             result.filledShares,
             result.avgPriceCents ?? ctx.fill.price,
         );
-        await Exposure.decrement(ctx.market.id, result.filledShares);
+        // Reverse the fill's signed delta so exposure returns toward zero,
+        // regardless of slippage on the hedge price itself.
+        await Exposure.apply_signed_delta(
+            ctx.market.id,
+            -HedgeProcessor.signed_notional_usd(
+                ctx.fill.price,
+                result.filledShares,
+                ctx.fill.side,
+            ),
+        );
         return {
             status: "FILLED",
             filledSize: result.filledShares,
@@ -429,7 +462,14 @@ export default class HedgeProcessor {
                 total_filled,
                 avg ?? ctx.fill.price,
             );
-            await Exposure.decrement(ctx.market.id, total_filled);
+            await Exposure.apply_signed_delta(
+                ctx.market.id,
+                -HedgeProcessor.signed_notional_usd(
+                    ctx.fill.price,
+                    total_filled,
+                    ctx.fill.side,
+                ),
+            );
             return { status: "FILLED", filledSize: total_filled, avgPriceCents: avg ?? undefined };
         }
 
@@ -440,7 +480,14 @@ export default class HedgeProcessor {
             avg,
         );
         if (total_filled > 0) {
-            await Exposure.decrement(ctx.market.id, total_filled);
+            await Exposure.apply_signed_delta(
+                ctx.market.id,
+                -HedgeProcessor.signed_notional_usd(
+                    ctx.fill.price,
+                    total_filled,
+                    ctx.fill.side,
+                ),
+            );
         }
         this.log.warn(
             {

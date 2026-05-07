@@ -45,6 +45,29 @@ export default class ExposureRepo {
         });
     }
 
+    /**
+     * Applies a signed delta to unhedgedUsd. Positive for BUY-direction work
+     * (we owe shares), negative for SELL-direction work (we have excess).
+     * Used so the cap can be enforced as a two-sided bound on |unhedged|.
+     */
+    public async apply_signed_delta(market_id: string, signed_delta_usd: number): Promise<void> {
+        const now = new Date();
+        const stamps =
+            signed_delta_usd >= 0 ? { lastIncrementAt: now } : { lastDecrementAt: now };
+        await prisma.exposure.upsert({
+            where: { marketId: market_id },
+            create: {
+                marketId: market_id,
+                unhedgedUsd: signed_delta_usd,
+                ...stamps,
+            },
+            update: {
+                unhedgedUsd: { increment: signed_delta_usd },
+                ...stamps,
+            },
+        });
+    }
+
     public async set_paused(market_id: string, paused: boolean): Promise<void> {
         await prisma.exposure.upsert({
             where: { marketId: market_id },

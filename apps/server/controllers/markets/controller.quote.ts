@@ -47,7 +47,11 @@ export default class QuoteController {
             const price = QuoteController.compute_price(resolved.market, parsed.data);
             const notional_usd = (price * parsed.data.size) / 100;
 
-            const verdict = await QuoteController.exposure.can_quote(market_id, notional_usd);
+            const verdict = await QuoteController.exposure.can_quote(
+                market_id,
+                notional_usd,
+                parsed.data.side,
+            );
             if (!verdict.ok) {
                 return ResponseWriter.error(
                     res,

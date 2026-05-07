@@ -88,17 +88,27 @@ export default class Fill {
      * unhedged" from authoritative tables.
      */
     static async list_with_hedge_status(): Promise<
-        { marketId: string; size: number; hedge: { status: string } | null }[]
+        {
+            marketId: string;
+            side: Side;
+            price: number;
+            size: number;
+            hedge: { status: string } | null;
+        }[]
     > {
         const rows = await prisma.fill.findMany({
             select: {
                 marketId: true,
+                side: true,
+                price: true,
                 size: true,
                 hedge: { select: { status: true } },
             },
         });
         return rows.map((r) => ({
             marketId: r.marketId,
+            side: r.side,
+            price: r.price,
             size: r.size,
             hedge: r.hedge ? { status: r.hedge.status } : null,
         }));

@@ -400,7 +400,11 @@ export default class Hedger {
         const expected = new Map<string, number>();
         for (const f of fills) {
             if (this.is_hedge_terminal(f.hedge?.status)) continue;
-            expected.set(f.marketId, (expected.get(f.marketId) ?? 0) + f.size);
+            // Signed USD notional. BUY adds (we owe shares),
+            // SELL subtracts (we hold excess shares).
+            const magnitude = Math.round((f.price * f.size) / 100);
+            const signed = f.side === "BUY" ? magnitude : -magnitude;
+            expected.set(f.marketId, (expected.get(f.marketId) ?? 0) + signed);
         }
         return expected;
     }
