@@ -39,8 +39,8 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
 
     const yes_depth = useOrderBookDepthStore(selectDepth(market.id, Outcome.YES));
     const no_depth = useOrderBookDepthStore(selectDepth(market.id, Outcome.NO));
-    const yes_price = yes_depth?.asks[0]?.price;
-    const no_price = no_depth?.asks[0]?.price;
+    const yes_price = tab === 'BUY' ? yes_depth?.asks[0]?.price : yes_depth?.bids[0]?.price;
+    const no_price = tab === 'BUY' ? no_depth?.asks[0]?.price : no_depth?.bids[0]?.price;
     const active_price = selectedOutcome === Outcome.YES ? yes_price : no_price;
 
     const flash_ref = useRef<HTMLDivElement>(null);

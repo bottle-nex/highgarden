@@ -6,6 +6,7 @@ import {
     type OrderBookSnapshotDTO,
     type OrderBookStatus,
 } from "@solmarket/types";
+import SpreadService from "../../services/service.spread";
 import { services, socket_server } from "../../index";
 import ResponseWriter from "../../services/service.response";
 
@@ -91,16 +92,31 @@ export default class GetOrderBookController {
                 status = "TRACKED";
             }
 
+            const shifted_bids = SpreadService.shift_numeric_levels(
+                depth_view?.bids ?? [],
+                "BID",
+            );
+            const shifted_asks = SpreadService.shift_numeric_levels(
+                depth_view?.asks ?? [],
+                "ASK",
+            );
+            const best_bid = SpreadService.shift_top(top?.bestBid ?? null, "BID");
+            const best_ask = SpreadService.shift_top(top?.bestAsk ?? null, "ASK");
+            const mid_price =
+                best_bid !== null && best_ask !== null
+                    ? +((best_bid + best_ask) / 2).toFixed(4)
+                    : (top?.midPrice ?? null);
+
             const dto: OrderBookSnapshotDTO = {
                 marketId: id,
                 outcome,
                 tokenId: token_id,
                 status,
-                bids: depth_view?.bids ?? [],
-                asks: depth_view?.asks ?? [],
-                bestBid: top?.bestBid ?? null,
-                bestAsk: top?.bestAsk ?? null,
-                midPrice: top?.midPrice ?? null,
+                bids: shifted_bids,
+                asks: shifted_asks,
+                bestBid: best_bid,
+                bestAsk: best_ask,
+                midPrice: mid_price,
                 updatedAt: top?.updatedAt ?? Date.now(),
             };
 

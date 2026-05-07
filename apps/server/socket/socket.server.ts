@@ -8,6 +8,7 @@ import { SERVER_MESSAGE_TYPE, CLIENT_MESSAGE_TYPE } from "@solmarket/types";
 import type { ServerMessage, ClientMessage, CustomWebSocketFields } from "@solmarket/types";
 import type MirrorControlPublisher from "../services/service.mirror-control";
 import type BookCache from "../services/service.book-cache";
+import SpreadService from "../services/service.spread";
 
 export interface CustomWebSocket extends WebSocket, CustomWebSocketFields {}
 
@@ -421,7 +422,7 @@ export default class SocketServer {
         }
         const data = (await res.json()) as Record<string, unknown>;
         if (!Array.isArray(data.bids) || !Array.isArray(data.asks)) return null;
-        return {
+        const raw: BookSnapshotPayload = {
             event_type: "book",
             asset_id: token_id,
             market: typeof data.market === "string" ? data.market : "",
@@ -431,6 +432,7 @@ export default class SocketServer {
                 typeof data.timestamp === "string" ? data.timestamp : new Date().toISOString(),
             hash: typeof data.hash === "string" ? data.hash : "",
         };
+        return SpreadService.apply_to_event(raw) as BookSnapshotPayload;
     }
 
     private route_redis_message(token_id: string, data: string): void {
@@ -444,7 +446,8 @@ export default class SocketServer {
             return;
         }
 
-        const payload = JSON.stringify({ type: SERVER_MESSAGE_TYPE.MARKET, event });
+        const adjusted = SpreadService.apply_to_event(event);
+        const payload = JSON.stringify({ type: SERVER_MESSAGE_TYPE.MARKET, event: adjusted });
 
         for (const ws_id of ws_ids) {
             const ws = this.socket_mapping.get(ws_id);
