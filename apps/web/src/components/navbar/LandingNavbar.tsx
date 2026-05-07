@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '../ui/button';
 import Applogo from '../ui/Applogo';
 import { APP_NAME } from '@/utils/constants';
+import Link from 'next/link';
 
 const NAV_ITEMS = [
     { label: 'HOW IT WORKS', href: '/how-it-works' },
@@ -55,14 +56,14 @@ export default function LandingNavbar(): JSX.Element {
                 )}
             >
                 <div className="flex-1 flex items-center">
-                    <a href="/" className="inline-flex items-center gap-x-2 cursor-pointer">
+                    <Link href="/" className="inline-flex items-center gap-x-2 cursor-pointer">
                         <Applogo size={28} />
                         {!isScrolled && (
                             <div className='text-white'>
                                 {APP_NAME}
                             </div>
                         )}
-                    </a>
+                    </Link>
                 </div>
 
                 <div className="hidden md:flex items-center">

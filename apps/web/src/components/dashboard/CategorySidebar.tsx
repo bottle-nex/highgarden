@@ -19,9 +19,9 @@ export default function CategorySidebar(): JSX.Element {
     return (
         <aside className="sticky top-0 self-start h-screen w-60 shrink-0 border-r border-gray-500/15 bg-dark-alpha flex flex-col">
             <div className="h-16 px-3 flex items-center justify-start gap-x-2 shrink-0 text-white">
-                <a href="/" className="inline-flex items-center cursor-pointer">
+                <Link href="/" className="inline-flex items-center cursor-pointer">
                     <Applogo size={28} />
-                </a>
+                </Link>
                 <div>
                     {APP_NAME}
                 </div>
