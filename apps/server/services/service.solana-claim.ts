@@ -2,6 +2,7 @@ import { AnchorProvider } from "@coral-xyz/anchor";
 import NodeWallet from "@coral-xyz/anchor/dist/esm/nodewallet.js";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import bs58 from "bs58";
 import { prisma } from "@solmarket/database";
 import { SolmarketClient } from "@solmarket/contract";
 import { ENV } from "../config/config.env";
@@ -36,10 +37,11 @@ export class ClaimError extends Error {
 export default class SolanaClaimService {
     public async claim(input: ClaimInput): Promise<ClaimResult> {
         const user_keypair = await this.load_custodial_keypair(input.userId);
+        const fee_payer = this.load_fee_payer_keypair();
         const market = await this.load_resolved_market(input.marketDbId);
         const market_pda = new PublicKey(market.solanaMarketPda);
 
-        const client = this.build_client(user_keypair);
+        const client = this.build_client(fee_payer);
         const user_usdc = getAssociatedTokenAddressSync(
             new PublicKey(ENV.SERVER_USDC_MINT),
             user_keypair.publicKey,
@@ -47,6 +49,8 @@ export default class SolanaClaimService {
 
         const sig = await client.claim({
             user: user_keypair.publicKey,
+            userKeypair: user_keypair,
+            feePayer: fee_payer,
             market: market_pda,
             userUsdc: user_usdc,
         });
@@ -56,6 +60,21 @@ export default class SolanaClaimService {
             marketPda: market.solanaMarketPda,
             userPubkey: user_keypair.publicKey.toBase58(),
         };
+    }
+
+    private load_fee_payer_keypair(): Keypair {
+        const encoded = ENV.SERVER_SOLANA_ADMIN_KEYPAIR;
+        if (!encoded) {
+            throw new Error(
+                "SERVER_SOLANA_ADMIN_KEYPAIR not set — fee_payer is required for claim",
+            );
+        }
+        const trimmed = encoded.trim();
+        if (trimmed.startsWith("[")) {
+            const arr = JSON.parse(trimmed) as number[];
+            return Keypair.fromSecretKey(Uint8Array.from(arr));
+        }
+        return Keypair.fromSecretKey(bs58.decode(trimmed));
     }
 
     private async load_custodial_keypair(user_id: string): Promise<Keypair> {

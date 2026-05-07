@@ -1,7 +1,7 @@
 import { BN } from "@coral-xyz/anchor";
 import type { IdlAccounts, IdlTypes } from "@coral-xyz/anchor";
 import type { Contract } from "./contract";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Keypair } from "@solana/web3.js";
 import type { TransactionInstruction, TransactionSignature } from "@solana/web3.js";
 
 export { IDL } from "./idl";
@@ -55,12 +55,19 @@ export interface PlaceOrderParams {
   quote: QuoteInput;
   userUsdc: PublicKey;
   ed25519Ix: TransactionInstruction;
+  /** Pays tx fees and rent for newly-init'd PDAs (user_position, used_nonce). */
+  feePayer: Keypair;
+  /** Required so the program can co-sign for the USDC transfer. */
+  userKeypair: Keypair;
 }
 
 export interface ClaimParams {
   user: PublicKey;
   market: PublicKey;
   userUsdc: PublicKey;
+  /** Pays the tx fee. Lets the user keep zero SOL in their custodial wallet. */
+  feePayer: Keypair;
+  userKeypair: Keypair;
 }
 
 export interface ResolveMarketParams {

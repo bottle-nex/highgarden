@@ -322,6 +322,11 @@ export const IDL = {
           signer: true,
         },
         {
+          name: "fee_payer",
+          writable: true,
+          signer: true,
+        },
+        {
           name: "config",
           pda: {
             seeds: [

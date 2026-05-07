@@ -200,10 +200,14 @@ export class SolmarketClient {
       nonce: Array.from(params.quote.nonce) as number[],
     };
 
-    return this.program.methods
+    // Build the tx ourselves so we can set a fee_payer distinct from the
+    // user. This is the gasless-trade pattern: user signs to authorize their
+    // USDC transfer; admin signs to pay tx fees and PDA rent.
+    const tx = await this.program.methods
       .placeOrder(quoteArg)
       .accountsStrict({
         user: params.user,
+        feePayer: params.feePayer.publicKey,
         config: this.configPda,
         market: params.quote.market,
         userPosition: userPositionPda,
@@ -216,12 +220,14 @@ export class SolmarketClient {
         systemProgram: SystemProgram.programId,
       })
       .preInstructions([params.ed25519Ix])
-      .rpc();
+      .transaction();
+
+    return this.signAndSendWithFeePayer(tx, params.feePayer, params.userKeypair);
   }
 
   async claim(params: ClaimParams): Promise<TransactionSignature> {
     const [userPositionPda] = this.derivePositionPda(params.user, params.market);
-    return this.program.methods
+    const tx = await this.program.methods
       .claim()
       .accountsStrict({
         user: params.user,
@@ -233,7 +239,26 @@ export class SolmarketClient {
         treasuryAuthority: this.treasuryAuthorityPda,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
-      .rpc();
+      .transaction();
+
+    return this.signAndSendWithFeePayer(tx, params.feePayer, params.userKeypair);
+  }
+
+  private async signAndSendWithFeePayer(
+    tx: import("@solana/web3.js").Transaction,
+    feePayer: Keypair,
+    user: Keypair,
+  ): Promise<TransactionSignature> {
+    const conn = this.provider.connection;
+    const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash("confirmed");
+    tx.recentBlockhash = blockhash;
+    tx.feePayer = feePayer.publicKey;
+    tx.sign(feePayer, user);
+    const sig = await conn.sendRawTransaction(tx.serialize(), {
+      preflightCommitment: "confirmed",
+    });
+    await conn.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+    return sig;
   }
 
   async resolveMarket(params: ResolveMarketParams): Promise<TransactionSignature> {

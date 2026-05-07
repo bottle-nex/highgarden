@@ -360,6 +360,11 @@ export type Contract = {
           signer: true;
         },
         {
+          name: "feePayer";
+          writable: true;
+          signer: true;
+        },
+        {
           name: "config";
           pda: {
             seeds: [

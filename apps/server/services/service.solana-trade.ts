@@ -2,6 +2,7 @@ import { AnchorProvider, BN } from "@coral-xyz/anchor";
 import NodeWallet from "@coral-xyz/anchor/dist/esm/nodewallet.js";
 import { Connection, Ed25519Program, Keypair, PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import bs58 from "bs58";
 import { prisma } from "@solmarket/database";
 import { SolmarketClient } from "@solmarket/contract";
 import { ENV } from "../config/config.env";
@@ -39,12 +40,14 @@ export default class SolanaTradeService {
         const market_pda = await this.load_market_pda(input.marketDbId);
         this.assert_quote_market(input.signedQuote, market_pda);
 
-        const client = this.build_client(user_keypair);
+        const fee_payer = this.load_fee_payer_keypair();
+        const client = this.build_client(fee_payer);
         const ed25519_ix = this.build_ed25519_ix(input.signedQuote);
         const user_usdc = this.derive_user_usdc(user_keypair.publicKey);
         console.log(chalk.yellow("user usdc is : "), user_usdc);
         const sig = await this.send_place_order(client, {
             user: user_keypair,
+            fee_payer,
             user_usdc,
             quote: input.signedQuote,
             ed25519_ix,
@@ -124,6 +127,26 @@ export default class SolanaTradeService {
         return keypair;
     }
 
+    /**
+     * Loads the platform's fee-payer keypair. Reuses SERVER_SOLANA_ADMIN_KEYPAIR
+     * since admin already has SOL provisioned. The custodial wallet stays at
+     * zero SOL — admin pays tx fees and rent for any new PDAs.
+     */
+    private load_fee_payer_keypair(): Keypair {
+        const encoded = ENV.SERVER_SOLANA_ADMIN_KEYPAIR;
+        if (!encoded) {
+            throw new Error(
+                "SERVER_SOLANA_ADMIN_KEYPAIR not set — fee_payer is required for placeOrder/claim",
+            );
+        }
+        const trimmed = encoded.trim();
+        if (trimmed.startsWith("[")) {
+            const arr = JSON.parse(trimmed) as number[];
+            return Keypair.fromSecretKey(Uint8Array.from(arr));
+        }
+        return Keypair.fromSecretKey(bs58.decode(trimmed));
+    }
+
     private async load_market_pda(market_db_id: string): Promise<PublicKey> {
         const row = await prisma.market.findUnique({
             where: { id: market_db_id },
@@ -181,6 +204,7 @@ export default class SolanaTradeService {
         client: SolmarketClient,
         args: {
             user: Keypair;
+            fee_payer: Keypair;
             user_usdc: PublicKey;
             quote: SignedQuoteWire;
             ed25519_ix: Awaited<ReturnType<SolanaTradeService["build_ed25519_ix"]>>;
@@ -188,6 +212,8 @@ export default class SolanaTradeService {
     ): Promise<string> {
         return client.placeOrder({
             user: args.user.publicKey,
+            userKeypair: args.user,
+            feePayer: args.fee_payer,
             quote: {
                 market: new PublicKey(args.quote.market),
                 side: args.quote.side as 0 | 1,

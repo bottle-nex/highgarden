@@ -14,8 +14,17 @@ use crate::utils::verify_signed_quote;
 #[derive(Accounts)]
 #[instruction(quote: SignedQuote)]
 pub struct PlaceOrder<'info> {
+    /// Authorizes the USDC transfer from the user's token account. Holds no
+    /// SOL; rent + tx fees are paid by `fee_payer`.
     #[account(mut)]
     pub user: Signer<'info>,
+
+    /// Pays the tx fee and the rent for any newly-initialized PDAs in this
+    /// instruction (user_position on first trade, used_nonce every trade).
+    /// Any signer can volunteer — there's no abuse vector since they are
+    /// just spending their own SOL on a tx the user already authorized.
+    #[account(mut)]
+    pub fee_payer: Signer<'info>,
 
     #[account(
         seeds = [CONFIG_SEED],
@@ -28,7 +37,7 @@ pub struct PlaceOrder<'info> {
 
     #[account(
         init_if_needed,
-        payer = user,
+        payer = fee_payer,
         space = 8 + UserPosition::INIT_SPACE,
         seeds = [POSITION_SEED, user.key().as_ref(), market.key().as_ref()],
         bump,
@@ -37,7 +46,7 @@ pub struct PlaceOrder<'info> {
 
     #[account(
         init,
-        payer = user,
+        payer = fee_payer,
         space = 8 + UsedNonce::INIT_SPACE,
         seeds = [NONCE_SEED, &quote.nonce],
         bump,

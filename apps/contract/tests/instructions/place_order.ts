@@ -94,6 +94,7 @@ export function placeOrderTests(getCtx: () => TestContext): void {
         .placeOrder(quoteArg)
         .accountsStrict({
           user: ctx.admin.publicKey,
+          feePayer: ctx.admin.publicKey,
           config: ctx.configPda,
           market: marketPda,
           userPosition: userPositionPda,
@@ -160,6 +161,7 @@ export function placeOrderTests(getCtx: () => TestContext): void {
           .placeOrder(quoteArg)
           .accountsStrict({
             user: ctx.admin.publicKey,
+            feePayer: ctx.admin.publicKey,
             config: ctx.configPda,
             market: marketPda,
             userPosition: userPositionPda,
@@ -214,6 +216,7 @@ export function placeOrderTests(getCtx: () => TestContext): void {
           .placeOrder(quoteArg)
           .accountsStrict({
             user: ctx.admin.publicKey,
+            feePayer: ctx.admin.publicKey,
             config: ctx.configPda,
             market: marketPda,
             userPosition: userPositionPda,
@@ -267,6 +270,7 @@ export function placeOrderTests(getCtx: () => TestContext): void {
         .placeOrder(quoteArg1)
         .accountsStrict({
           user: ctx.admin.publicKey,
+          feePayer: ctx.admin.publicKey,
           config: ctx.configPda,
           market: marketPda,
           userPosition: userPositionPda,
@@ -302,6 +306,7 @@ export function placeOrderTests(getCtx: () => TestContext): void {
           .placeOrder(quoteArg2)
           .accountsStrict({
             user: ctx.admin.publicKey,
+            feePayer: ctx.admin.publicKey,
             config: ctx.configPda,
             market: marketPda,
             userPosition: userPositionPda,
@@ -353,6 +358,7 @@ export function placeOrderTests(getCtx: () => TestContext): void {
         .placeOrder(quoteArg)
         .accountsStrict({
           user: ctx.admin.publicKey,
+          feePayer: ctx.admin.publicKey,
           config: ctx.configPda,
           market: marketPda,
           userPosition: userPositionPda,
@@ -423,6 +429,7 @@ export function placeOrderTests(getCtx: () => TestContext): void {
         .placeOrder(quoteArg)
         .accountsStrict({
           user: ctx.admin.publicKey,
+          feePayer: ctx.admin.publicKey,
           config: ctx.configPda,
           market: marketPda,
           userPosition: userPositionPda,
@@ -485,6 +492,7 @@ export function placeOrderTests(getCtx: () => TestContext): void {
           .placeOrder(quoteArg)
           .accountsStrict({
             user: ctx.admin.publicKey,
+            feePayer: ctx.admin.publicKey,
             config: ctx.configPda,
             market: marketPda,
             userPosition: userPositionPda,
@@ -572,6 +580,7 @@ export function placeOrderTests(getCtx: () => TestContext): void {
           .placeOrder(quoteArg)
           .accountsStrict({
             user: ctx.admin.publicKey,
+            feePayer: ctx.admin.publicKey,
             config: ctx.configPda,
             market: pausedMarket,
             userPosition: userPositionPda,
