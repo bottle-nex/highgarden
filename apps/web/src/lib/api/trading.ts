@@ -40,6 +40,9 @@ export type TradingErrorReason =
     | 'CLAIM_FAILED'
     | 'MARKET_NOT_RESOLVED'
     | 'NO_WINNING_SHARES'
+    | 'MARKET_CLOSED_ON_POLYMARKET'
+    | 'MARKET_NOT_ACCEPTING_ORDERS'
+    | 'INSUFFICIENT_FUNDER_BALANCE'
     | 'NETWORK'
     | 'UNKNOWN';
 
@@ -120,6 +123,27 @@ class TradingApi {
                 'INSUFFICIENT_SHARES',
                 raw,
                 'You don’t have enough shares to sell.',
+            );
+        }
+        if (code === 'MARKET_CLOSED_ON_POLYMARKET') {
+            return new TradingError(
+                'MARKET_CLOSED_ON_POLYMARKET',
+                raw,
+                'This market has just closed on Polymarket. Trading is paused.',
+            );
+        }
+        if (code === 'MARKET_NOT_ACCEPTING_ORDERS') {
+            return new TradingError(
+                'MARKET_NOT_ACCEPTING_ORDERS',
+                raw,
+                'Market is not accepting new orders right now. Try again shortly.',
+            );
+        }
+        if (code === 'INSUFFICIENT_FUNDER_BALANCE') {
+            return new TradingError(
+                'INSUFFICIENT_FUNDER_BALANCE',
+                raw,
+                'Trading temporarily unavailable. Please try again in a moment.',
             );
         }
         if (code === 'PLACE_ORDER_FAILED') {

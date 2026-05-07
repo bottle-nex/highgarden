@@ -318,6 +318,35 @@ export class GammaClient {
         return first ? String(first.id) : null;
     }
 
+    /**
+     * Lightweight status check by ID — returns the raw closed/archived flags
+     * without filtering. Used by the pre-trade validator to gate quotes.
+     * Quotes get rejected if the underlying Polymarket market is no longer
+     * open, before we ever sign a quote we couldn't hedge.
+     */
+    async fetch_market_status(market_id: string): Promise<{
+        closed: boolean;
+        archived: boolean;
+        active: boolean;
+        accepting_orders: boolean;
+    } | null> {
+        const url = new URL("/markets", this.base_url);
+        url.searchParams.set("id", market_id);
+        url.searchParams.set("limit", "1");
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const body = (await res.json()) as RawGammaMarket[] | RawGammaMarket | null;
+        if (!body) return null;
+        const raw = Array.isArray(body) ? body[0] : body;
+        if (!raw) return null;
+        return {
+            closed: !!raw.closed,
+            archived: !!raw.archived,
+            active: raw.active !== false,
+            accepting_orders: raw.acceptingOrders !== false,
+        };
+    }
+
     static pick_yes_no_token_ids(market: GammaMarket): {
         yes_token_id: string;
         no_token_id: string;

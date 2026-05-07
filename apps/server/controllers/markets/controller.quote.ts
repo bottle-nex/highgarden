@@ -8,6 +8,7 @@ import { ENV } from "../../config/config.env";
 import { services } from "../../index";
 import QuoteSignerService from "../../services/service.quote-signer";
 import ExposureReaderService from "../../services/service.exposure-reader";
+import PreTradeValidator from "../../services/service.pre-trade-validator";
 
 const body_schema = z.object({
     side: z.enum(["BUY", "SELL"]),
@@ -20,11 +21,13 @@ interface ResolvedMarket {
     solanaMarketPda: string;
     yesTokenId: string;
     noTokenId: string;
+    polyMarketId: string;
 }
 
 export default class QuoteController {
     private static signer = new QuoteSignerService();
     private static exposure = new ExposureReaderService();
+    private static pre_trade = new PreTradeValidator();
 
     static async process(req: Request, res: Response) {
         if (!req.user) return ResponseWriter.not_authorized(res);
@@ -53,6 +56,18 @@ export default class QuoteController {
             }
 
             const price = QuoteController.compute_price(resolved.market, parsed.data);
+
+            // Pre-trade validation: market still open on Polymarket and we
+            // have enough pUSD to hedge. Cached for 30s, runs after price
+            // calc so we can size the funder-balance check accurately.
+            const pre_check = await QuoteController.pre_trade.validate({
+                polymarketMarketId: resolved.market.polyMarketId,
+                estimatedHedgeCostUsd: (price * parsed.data.size) / 100,
+            });
+            if (!pre_check.ok) {
+                return ResponseWriter.error(res, pre_check.code, pre_check.details, undefined, 409);
+            }
+
             const signed = await QuoteController.sign_and_persist(
                 resolved.market,
                 parsed.data,
@@ -117,6 +132,7 @@ export default class QuoteController {
                 solanaMarketPda: row.solanaMarketPda,
                 yesTokenId: row.polymarket.yesTokenId,
                 noTokenId: row.polymarket.noTokenId,
+                polyMarketId: row.polyMarketId,
             },
         };
     }
