@@ -78,6 +78,13 @@ export interface ClosePositionParams {
   userKeypair: Keypair;
 }
 
+export interface CloseUsedNonceParams {
+  /** The 16-byte nonce of the quote whose UsedNonce PDA we're closing. */
+  nonce: Buffer;
+  /** Admin keypair — signs and receives the reclaimed rent. */
+  admin: Keypair;
+}
+
 export interface ResolveMarketParams {
   oracleSigner: PublicKey;
   market: PublicKey;

@@ -83,19 +83,23 @@ model Comment {
 }
 
 model Quote {
-  nonce     String   @id
-  marketId  String
-  market    Market   @relation(fields: [marketId], references: [id])
-  side      Side
-  outcome   Outcome
-  price     Int
-  size      Int
-  expiresAt DateTime
-  signature String
-  consumed  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  nonce          String    @id
+  marketId       String
+  market         Market    @relation(fields: [marketId], references: [id])
+  side           Side
+  outcome        Outcome
+  price          Int
+  size           Int
+  expiresAt      DateTime
+  signature      String
+  consumed       Boolean   @default(false)
+  /** When the on-chain UsedNonce PDA was closed by the sweeper. Null until close lands. */
+  nonceClosedAt  DateTime?
+  createdAt      DateTime  @default(now())
 
   fill Fill?
+
+  @@index([consumed, nonceClosedAt, expiresAt])
 }
 
 model Fill {

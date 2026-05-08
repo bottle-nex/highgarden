@@ -31,6 +31,7 @@ import type {
   AdminMarketParams,
   ClaimParams,
   ClosePositionParams,
+  CloseUsedNonceParams,
   ConfigAccount,
   CreateMarketParams,
   CreateMarketResult,
@@ -259,6 +260,31 @@ export class SolmarketClient {
       .transaction();
 
     return this.signAndSendWithFeePayer(tx, params.feePayer, params.userKeypair);
+  }
+
+  async closeUsedNonce(params: CloseUsedNonceParams): Promise<TransactionSignature> {
+    const [usedNoncePda] = this.deriveNoncePda(params.nonce);
+    const conn = this.provider.connection;
+    const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash("confirmed");
+    const tx = await this.program.methods
+      .closeUsedNonce(Array.from(params.nonce) as number[])
+      .accountsStrict({
+        admin: params.admin.publicKey,
+        config: this.configPda,
+        usedNonce: usedNoncePda,
+      })
+      .transaction();
+    tx.recentBlockhash = blockhash;
+    tx.feePayer = params.admin.publicKey;
+    tx.sign(params.admin);
+    const sig = await conn.sendRawTransaction(tx.serialize(), {
+      preflightCommitment: "confirmed",
+    });
+    await conn.confirmTransaction(
+      { signature: sig, blockhash, lastValidBlockHeight },
+      "confirmed",
+    );
+    return sig;
   }
 
   private async signAndSendWithFeePayer(
