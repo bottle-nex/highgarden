@@ -62,6 +62,10 @@ pub mod contract {
         instructions::close_position::handler(ctx)
     }
 
+    pub fn close_used_nonce(ctx: Context<CloseUsedNonce>, nonce: [u8; 16]) -> Result<()> {
+        instructions::close_used_nonce::handler(ctx, nonce)
+    }
+
     pub fn admin_pause_market(ctx: Context<AdminPauseMarket>) -> Result<()> {
         instructions::admin::pause_handler(ctx)
     }
