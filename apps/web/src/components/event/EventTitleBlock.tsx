@@ -86,7 +86,7 @@ export default function EventTitleBlock({ market, is_stuck }: Props): JSX.Elemen
         >
             <div
                 className={cn(
-                    'shrink-0 w-14 h-14 rounded-md border border-white/10 overflow-hidden',
+                    'shrink-0 w-14 h-14 rounded-md border-2 border-white overflow-hidden',
                     ease,
                     compact && 'lg:w-10 lg:h-10',
                 )}

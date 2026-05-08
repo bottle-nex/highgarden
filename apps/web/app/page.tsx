@@ -20,7 +20,7 @@ export default function Home() {
                 <LandingTextContent />
                 <LandingFeatureCardsSection />
                 <LandingMagicLanes />
-                <LandingInteractiveSection />
+                {/* <LandingInteractiveSection /> */}
                 <section className="relative z-30 w-full bg-dark-alpha px-6 pt-24 md:px-10">
                     <div className="mx-auto w-full max-w-7xl">
                         <AppFaq />

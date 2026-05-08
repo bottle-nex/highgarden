@@ -303,7 +303,7 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                                 <Image
                                     src={market.imageUrl!}
                                     alt=""
-                                    className="w-full h-full object-cover rounded-lg"
+                                    className="w-full h-full object-cover rounded-lg border-2 border-white"
                                     onError={() => set_img_error(true)}
                                     width={52}
                                     height={52}
