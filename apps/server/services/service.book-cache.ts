@@ -1,8 +1,5 @@
 import Redis from "ioredis";
 import { REDIS_CHANNELS, type MarketEvent } from "@solmarket/polymarket-contracts";
-import chalk from "chalk";
-import { inspect } from "node:util";
-
 export interface TopOfBook {
     bestBid: number | null;
     bestAsk: number | null;
