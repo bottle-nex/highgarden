@@ -1,5 +1,7 @@
 import Redis from "ioredis";
 import { REDIS_CHANNELS, type MarketEvent } from "@solmarket/polymarket-contracts";
+import chalk from "chalk";
+import { inspect } from "node:util";
 
 export interface TopOfBook {
     bestBid: number | null;
@@ -157,7 +159,6 @@ export default class BookCache {
             console.warn(`[book-cache] malformed event on ${channel}`);
             return;
         }
-
         const token_id = event.asset_id;
         if (!this.tracked.has(token_id)) {
             return;

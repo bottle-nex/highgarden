@@ -56,7 +56,7 @@ export default class SpreadService {
         const out: Array<{ price: number; size: number }> = [];
         for (const lvl of levels) {
             const shifted = +(lvl.price + delta).toFixed(4);
-            if (shifted >= 0.99 || shifted <= 0.01) continue;
+            if (shifted <= 0 || shifted >= 1) continue;
             out.push({ price: shifted, size: lvl.size });
         }
         return out;
@@ -68,7 +68,7 @@ export default class SpreadService {
         if (cents <= 0) return price;
         const delta = (side === "ASK" ? 1 : -1) * (cents / 100);
         const shifted = +(price + delta).toFixed(4);
-        if (shifted >= 0.99 || shifted <= 0.01) return null;
+        if (shifted <= 0 || shifted >= 1) return null;
         return shifted;
     }
 
@@ -87,7 +87,7 @@ export default class SpreadService {
         const p = parseFloat(price_str);
         if (!Number.isFinite(p)) return null;
         const shifted = +(p + delta).toFixed(4);
-        if (shifted >= 0.99 || shifted <= 0.01) return null;
+        if (shifted <= 0 || shifted >= 1) return null;
         return String(shifted);
     }
 }

@@ -8,9 +8,15 @@ const BALANCE_TTL_MS = 30_000;
 // estimated hedge cost is $5, we don't want to drain to zero — leave a buffer.
 const MIN_FUNDER_BUFFER_PUSD = 5;
 
+// Polymarket's CLOB rejects marketable orders whose notional is under $1 on
+// either side. If we let such an order through, the user's Solana fill is
+// real but the hedge silently fails — leaving the platform short.
+const POLYMARKET_MIN_NOTIONAL_USD = 1;
+
 export type ValidationFailure =
     | { ok: false; code: "MARKET_CLOSED_ON_POLYMARKET"; details: string }
     | { ok: false; code: "MARKET_NOT_ACCEPTING_ORDERS"; details: string }
+    | { ok: false; code: "BELOW_HEDGE_MIN_NOTIONAL"; details: string }
     | { ok: false; code: "INSUFFICIENT_FUNDER_BALANCE"; details: string };
 
 export type ValidationResult = { ok: true } | ValidationFailure;
@@ -26,6 +32,12 @@ export interface ValidateInput {
     side: "BUY" | "SELL";
     /** Estimated max pUSD the bot would need to spend to hedge this trade. */
     estimatedHedgeCostUsd: number;
+    /**
+     * Hedge notional priced at the raw Polymarket top-of-book (no spread).
+     * Used to gate orders below Polymarket's $1 minimum. Pass 0 if the book
+     * is not yet warmed — that fails closed.
+     */
+    polymarketNotionalUsd: number;
 }
 
 export default class PreTradeValidator {
@@ -40,6 +52,14 @@ export default class PreTradeValidator {
     public async validate(input: ValidateInput): Promise<ValidationResult> {
         const market_check = await this.check_market_status(input.polymarketMarketId);
         if (market_check && !market_check.ok) return market_check;
+
+        if (input.polymarketNotionalUsd < POLYMARKET_MIN_NOTIONAL_USD) {
+            return {
+                ok: false,
+                code: "BELOW_HEDGE_MIN_NOTIONAL",
+                details: `polymarket requires $${POLYMARKET_MIN_NOTIONAL_USD.toFixed(2)} min notional — this order is $${input.polymarketNotionalUsd.toFixed(2)}`,
+            };
+        }
 
         // SELL hedges generate pUSD on Polymarket; no funder outflow to gate.
         if (input.side === "BUY") {

@@ -37,7 +37,7 @@ export default function PortfolioTabs(): JSX.Element {
                             className={cn(
                                 'h-auto rounded-none px-0 pb-3 text-sm bg-transparent border-none',
                                 isActive
-                                    ? 'text-white border-b-2 border-primary hover:bg-transparent hover:text-white'
+                                    ? 'text-white border-b-2 border-alpha hover:bg-transparent hover:text-white'
                                     : 'text-white/50 hover:bg-transparent hover:text-white/80',
                             )}
                         >
@@ -54,13 +54,13 @@ export default function PortfolioTabs(): JSX.Element {
                         placeholder="Search"
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
-                        className="h-10 pl-9 bg-dark-alpha border-neutral-900 rounded-none"
+                        className="h-10 pl-9 bg-dark-base border-neutral-900 rounded-lg"
                     />
                 </div>
                 <Button
                     variant="outline"
                     onClick={() => {}}
-                    className="h-10 px-4 border-neutral-900 bg-dark-alpha text-sm text-white/70 hover:bg-dark-alpha hover:text-white"
+                    className="h-10 px-4 border-neutral-900 bg-dark-base text-sm text-white/70 hover:bg-dark-base hover:text-white rounded-lg"
                 >
                     <LuArrowUpDown className="size-3.5" />
                     Current value

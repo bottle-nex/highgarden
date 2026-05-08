@@ -5,6 +5,7 @@ import { ENV } from "../config/config.env";
 import type { MarketEvent } from "@solmarket/polymarket-contracts";
 import type PolymarketPublisher from "../services/service.polymarket.publisher";
 import type TokenIndex from "../services/service.token-index";
+import chalk from "chalk";
 
 export default class MarketSocket extends SocketBase {
     public readonly registry = new SubscriptionRegistry();

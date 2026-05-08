@@ -9,7 +9,7 @@ export default function ProfitLossCard(): JSX.Element {
     const [activeRange, setActiveRange] = useState<ProfitTimeRange>('1D');
 
     return (
-        <div className="border border-neutral-900 col-span-1 p-5 bg-dark-faded rounded-lg flex flex-col">
+        <div className="border border-neutral-900 col-span-1 p-5 bg-dark-base rounded-lg flex flex-col">
             <div className="w-full flex items-start justify-between">
                 <div className="flex items-center gap-x-2 text-white/70">
                     <span className="size-2 rounded-full bg-white/40" />
@@ -24,9 +24,9 @@ export default function ProfitLossCard(): JSX.Element {
                                 variant="ghost"
                                 onClick={() => setActiveRange(range)}
                                 className={cn(
-                                    'h-auto rounded-none px-3 py-1 text-xs border',
+                                    'h-auto rounded-lg px-3 py-1 text-xs border',
                                     isActive
-                                        ? 'bg-primary/15 text-primary border-primary/30 hover:bg-primary/15 hover:text-primary'
+                                        ? 'bg-alpha/15 text-alpha border-alpha/30 hover:bg-alpha/15 hover:text-alpha'
                                         : 'border-transparent text-white/60 hover:bg-transparent hover:text-white',
                                 )}
                             >
@@ -48,7 +48,7 @@ export default function ProfitLossCard(): JSX.Element {
             </div>
             <p className="mt-1 text-xs text-white/50">Past Day</p>
             <div className="mt-auto pt-6">
-                <div className="h-2 w-full bg-gradient-to-r from-primary/0 via-primary/40 to-primary/0 rounded-full" />
+                <div className="h-2 w-full bg-gradient-to-r from-alpha/0 via-alpha/40 to-alpha/0 rounded-full" />
             </div>
         </div>
     );

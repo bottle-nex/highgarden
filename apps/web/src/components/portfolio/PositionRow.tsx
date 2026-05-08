@@ -78,14 +78,14 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
                     />
                 </MarketIcon>
                 <div className="min-w-0">
-                    <p className="text-sm text-white truncate">{position.marketName}</p>
+                    <p className="text-base text-white truncate">{position.marketName}</p>
                     <div className="flex items-center gap-x-2 mt-1">
                         <span
                             className={cn(
-                                'text-xs px-2 py-0.5',
+                                'text-sm px-2 py-1 rounded-lg',
                                 isYes
-                                    ? 'bg-primary/15 text-primary'
-                                    : 'bg-red-500/15 text-red-400',
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'bg-rose-500 text-white',
                             )}
                         >
                             {isYes ? 'Yes' : 'No'} {position.avgCostCents}¢
@@ -124,7 +124,7 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
                 )}
                 <Button
                     size="icon"
-                    className="size-9 bg-neutral-800 hover:bg-neutral-900"
+                    className="size-9 bg-neutral-800 hover:bg-neutral-900 text-white rounded-lg"
                     onClick={() => {}}
                 >
                     <LuShare2 />

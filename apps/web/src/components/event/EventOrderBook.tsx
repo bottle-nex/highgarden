@@ -8,7 +8,18 @@ import ToolTipComponent from '@/components/utility/ToolTipComponent';
 import { cn } from '@/lib/utils';
 import { TbReload } from 'react-icons/tb';
 
-const BAR_TRANSITION = { duration: 0.25, ease: [0.22, 1, 0.36, 1] as const };
+const BAR_TRANSITION = {
+    type: 'spring',
+    stiffness: 220,
+    damping: 32,
+    mass: 0.6,
+} as const;
+
+const BAR_STYLE = {
+    width: '100%',
+    transformOrigin: 'right',
+    willChange: 'transform',
+} as const;
 
 type ViewMode = 'asks' | 'bids' | 'center';
 
@@ -92,6 +103,10 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
     const has_centered_ref = useRef<Outcome | null>(null);
     const has_data = book.isHydrated && (book.asks.length > 0 || book.bids.length > 0);
     const [view_mode, set_view_mode] = useState<ViewMode>('center');
+
+    useEffect(() => {
+        has_centered_ref.current = null;
+    }, [marketId]);
 
     useEffect(() => {
         if (!has_data) return;
@@ -212,7 +227,7 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
             </header>
 
             <div
-                className={`overflow-hidden [overflow-anchor:none] transition-[max-height] duration-300 ease-in-out `}
+                className={`overflow-hidden transition-[max-height] duration-300 ease-in-out `}
             >
                 <div>
                     <div className="pt-1">
@@ -258,7 +273,7 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                         {book.isHydrated && (asks.length > 0 || bids.length > 0) && (
                             <div
                                 ref={scroll_ref}
-                                className="h-105 overflow-y-auto custom-scrollbar"
+                                className="h-105 overflow-y-auto overscroll-contain custom-scrollbar [overflow-anchor:auto]"
                             >
                                 {view_mode !== 'bids' && (
                                     <div className="pt-3.5 space-y-0.5">
@@ -282,15 +297,17 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                                                             className="relative grid grid-cols-3 gap-x-8 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                                         >
                                                             <motion.div
-                                                                className="absolute inset-y-0 right-0 bg-rose-500/25 rounded-none pointer-events-none"
+                                                                className="absolute inset-y-0 right-0 bg-rose-500/15 rounded-none pointer-events-none"
+                                                                style={BAR_STYLE}
                                                                 initial={false}
-                                                                animate={{ width: `${cum_w}%` }}
+                                                                animate={{ scaleX: cum_w / 100 }}
                                                                 transition={BAR_TRANSITION}
                                                             />
                                                             <motion.div
-                                                                className="absolute inset-y-0 right-0 bg-rose-500/25 rounded-none pointer-events-none"
+                                                                className="absolute inset-y-0 right-0 bg-rose-500/35 rounded-none pointer-events-none"
+                                                                style={BAR_STYLE}
                                                                 initial={false}
-                                                                animate={{ width: `${size_w}%` }}
+                                                                animate={{ scaleX: size_w / 100 }}
                                                                 transition={BAR_TRANSITION}
                                                             />
                                                             <span className="relative text-right font-medium text-rose-500">
@@ -348,15 +365,17 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                                                         className="relative grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                                     >
                                                         <motion.div
-                                                            className="absolute inset-y-0 right-0 bg-emerald-500/25 rounded-none pointer-events-none"
+                                                            className="absolute inset-y-0 right-0 bg-emerald-500/15 rounded-none pointer-events-none"
+                                                            style={BAR_STYLE}
                                                             initial={false}
-                                                            animate={{ width: `${cum_w}%` }}
+                                                            animate={{ scaleX: cum_w / 100 }}
                                                             transition={BAR_TRANSITION}
                                                         />
                                                         <motion.div
-                                                            className="absolute inset-y-0 right-0 bg-emerald-500/25 rounded-none pointer-events-none"
+                                                            className="absolute inset-y-0 right-0 bg-emerald-500/35 rounded-none pointer-events-none"
+                                                            style={BAR_STYLE}
                                                             initial={false}
-                                                            animate={{ width: `${size_w}%` }}
+                                                            animate={{ scaleX: size_w / 100 }}
                                                             transition={BAR_TRANSITION}
                                                         />
                                                         <span className="relative text-right font-medium text-emerald-500">

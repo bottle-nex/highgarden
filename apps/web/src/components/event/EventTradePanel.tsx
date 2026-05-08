@@ -12,6 +12,7 @@ import trading_api, { TradingError } from '@/lib/api/trading';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { usePortfolioSync } from '@/hooks/usePortfolioSync';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Props {
     market: MarketDTO;
@@ -35,8 +36,9 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
     const [input_mode, set_input_mode] = useState<InputMode>('USDC');
     const [submitting, set_submitting] = useState<boolean>(false);
     const [focused, set_focused] = useState<boolean>(false);
-    const requireAuth = useRequireAuth();
+    const [img_error, set_img_error] = useState<boolean>(false);
     const [claiming, set_claiming] = useState<boolean>(false);
+    const requireAuth = useRequireAuth();
 
     const is_resolved = market.status === 'RESOLVED';
 
@@ -119,6 +121,9 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                 ? `Minimum $${min_dollars} to buy 1 share`
                 : 'Enter at least 1 share';
         }
+        if (computed.usd < 1) {
+            return 'Minimum $1 to trade';
+        }
         if (tab === 'SELL') {
             if (owned_shares <= 0) {
                 return `You don't own any ${selectedOutcome} shares to sell`;
@@ -132,6 +137,7 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
         market.solanaMarketPda,
         active_price,
         computed.shares,
+        computed.usd,
         safe_price,
         input_mode,
         tab,
@@ -212,6 +218,8 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
         }
     };
 
+    const show_image = !!market.imageUrl && !img_error;
+
     return (
         <motion.aside
             initial={{ opacity: 0, x: 20 }}
@@ -259,11 +267,10 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                                     key={t}
                                     type="button"
                                     onClick={() => set_tab(t)}
-                                    className={`relative px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer ${
-                                        tab === t
-                                            ? 'text-white'
-                                            : 'text-white/45 hover:text-white/75'
-                                    }`}
+                                    className={`relative px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer ${tab === t
+                                        ? 'text-white'
+                                        : 'text-white/45 hover:text-white/75'
+                                        }`}
                                 >
                                     {tab === t && (
                                         <motion.span
@@ -282,9 +289,18 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                                 </button>
                             ))}
                         </div>
-                        <span className="text-[10px] font-medium tracking-[0.18em] uppercase text-white/35">
-                            Market
-                        </span>
+                        {show_image && (
+                            <div className="w-13 h-13 rounded-lg overflow-hidden shrink-0">
+                                <Image
+                                    src={market.imageUrl!}
+                                    alt=""
+                                    className="w-full h-full object-cover rounded-lg"
+                                    onError={() => set_img_error(true)}
+                                    width={52}
+                                    height={52}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="px-5 pt-4 pb-5 space-y-3.5">
@@ -337,9 +353,8 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                             </div>
                             <div className="flex items-center gap-1">
                                 <span
-                                    className={`text-3xl font-bold leading-none transition-colors ${
-                                        amount ? 'text-white' : 'text-white/40'
-                                    }`}
+                                    className={`text-3xl font-bold leading-none transition-colors ${amount ? 'text-white' : 'text-white/40'
+                                        }`}
                                 >
                                     {input_mode === 'USDC' ? '$' : '#'}
                                 </span>
@@ -365,9 +380,8 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                                         className="absolute inset-0 w-full bg-transparent outline-none text-3xl font-bold tabular-nums text-transparent caret-transparent placeholder:text-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     />
                                     <div
-                                        className={`absolute inset-0 flex items-center pointer-events-none text-3xl font-bold tabular-nums ${
-                                            amount ? 'text-white' : 'text-white/20'
-                                        }`}
+                                        className={`absolute inset-0 flex items-center pointer-events-none text-3xl font-bold tabular-nums ${amount ? 'text-white' : 'text-white/20'
+                                            }`}
                                     >
                                         {(amount || '0').split('').map((char, idx) => (
                                             <span

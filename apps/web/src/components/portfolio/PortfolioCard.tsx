@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { selectAllPositions, usePositionsStore } from '@/store/portfolio/usePositionsStore';
+import { CroppedButton } from '../ui/cropped-button';
 
 const usd_fmt = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -25,7 +26,7 @@ export default function PortfolioCard(): JSX.Element {
     const total_usd = cash_usd + positions_usd;
 
     return (
-        <div className="border border-neutral-900 col-span-1 p-5 bg-dark-faded rounded-lg">
+        <div className="border border-neutral-900 col-span-1 p-5 bg-dark-base rounded-lg">
             <div className="w-full flex items-start justify-between">
                 <div className="flex items-center gap-x-2 text-white/70">
                     <p>Portfolio</p>
@@ -57,19 +58,18 @@ export default function PortfolioCard(): JSX.Element {
                     : `${usd_fmt.format(positions_usd)} in open positions`}
             </p>
             <div className="w-full grid gap-x-3 mt-5 grid-cols-2">
-                <Button
+                <CroppedButton
                     onClick={() => open_deposit_dialog(true)}
-                    className="col-span-1 w-full h-10 rounded-full text-sm font-medium tracking-tight bg-dark-base/85 text-neutral-200 hover:text-white hover:bg-dark-base border border-white/6 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.05)] transition-all duration-200"
+                    className="col-span-1 w-full h-10 text-sm font-medium tracking-tight bg-dark-faded text-light-alpha hover:text-white border border-white/6 transition-all duration-200"
                 >
                     <LuArrowDownToLine /> Deposit
-                </Button>
-                <Button
-                    variant="outline"
-                    onClick={() => {}}
-                    className="col-span-1 w-full h-10 rounded-full text-sm font-medium tracking-tight border-white/6 text-neutral-300 hover:text-white hover:bg-dark-base/60 transition-all duration-200"
+                </CroppedButton>
+                <CroppedButton
+                    onClick={() => { }}
+                    className="col-span-1 w-full h-10 text-sm font-medium tracking-tight bg-white hover:bg-neutral-100 text-dark-alpha border border-white/6 transition-all duration-200"
                 >
                     <LuArrowUpFromLine /> Withdraw
-                </Button>
+                </CroppedButton>
             </div>
         </div>
     );

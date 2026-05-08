@@ -62,12 +62,24 @@ export default class QuoteController {
                 );
             }
 
-            // Pre-trade validation: market still open on Polymarket and (for
-            // BUY only) hedger has enough pUSD. Cached for 30s.
+            const token_id =
+                parsed.data.outcome === "YES"
+                    ? resolved.market.yesTokenId
+                    : resolved.market.noTokenId;
+
+            const top = services.book_cache.getTopOfBook(token_id);
+            const raw_price = parsed.data.side === "BUY" ? top?.bestAsk : top?.bestBid;
+            const polymarket_notional_usd =
+                raw_price && raw_price > 0 ? raw_price * parsed.data.size : 0;
+
+            // Pre-trade validation: market still open on Polymarket, hedge
+            // notional clears the $1 Polymarket minimum, and (for BUY only)
+            // hedger has enough pUSD. Cached for 30s.
             const pre_check = await QuoteController.pre_trade.validate({
                 polymarketMarketId: resolved.market.polyMarketId,
                 side: parsed.data.side,
                 estimatedHedgeCostUsd: notional_usd,
+                polymarketNotionalUsd: polymarket_notional_usd,
             });
             if (!pre_check.ok) {
                 return ResponseWriter.error(res, pre_check.code, pre_check.details, undefined, 409);

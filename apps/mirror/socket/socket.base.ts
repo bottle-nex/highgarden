@@ -4,6 +4,7 @@ import { POLY_WS } from "../config/config.polymarket";
 import type PolymarketPublisher from "../services/service.polymarket.publisher";
 import type TokenIndex from "../services/service.token-index";
 
+
 export abstract class SocketBase {
     protected ws: WebSocket | null = null;
     protected state: SocketState = "idle";
@@ -72,7 +73,7 @@ export abstract class SocketBase {
         try {
             this.ws?.close(1000, "shutdown");
             //eslint-disable-next-line no-empty
-        } catch {}
+        } catch { }
         this.ws = null;
         this.set_state("closed");
     }
@@ -110,7 +111,7 @@ export abstract class SocketBase {
             try {
                 this.ws?.send("PING");
                 //eslint-disable-next-line no-empty
-            } catch {}
+            } catch { }
         }, POLY_WS.heartbeat_ms);
 
         try {
@@ -123,7 +124,6 @@ export abstract class SocketBase {
     private on_message(data: unknown): void {
         if (typeof data !== "string") return;
         if (data === "PONG" || data === "pong") return;
-
         let parsed: unknown;
         try {
             parsed = JSON.parse(data);

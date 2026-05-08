@@ -145,7 +145,7 @@ class TradingApi {
             return new TradingError(
                 'INSUFFICIENT_FUNDER_BALANCE',
                 raw,
-                'Trading temporarily unavailable. Please try again in a moment.',
+                'Trading is paused while we top up our hedge wallet. Please try again later.',
             );
         }
         if (code === 'PLACE_ORDER_FAILED') {
