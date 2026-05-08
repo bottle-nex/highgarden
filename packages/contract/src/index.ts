@@ -30,6 +30,7 @@ import {
 import type {
   AdminMarketParams,
   ClaimParams,
+  ClosePositionParams,
   ConfigAccount,
   CreateMarketParams,
   CreateMarketResult,
@@ -238,6 +239,22 @@ export class SolmarketClient {
         treasuryVault: this.treasuryVaultPda,
         treasuryAuthority: this.treasuryAuthorityPda,
         tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .transaction();
+
+    return this.signAndSendWithFeePayer(tx, params.feePayer, params.userKeypair);
+  }
+
+  async closePosition(params: ClosePositionParams): Promise<TransactionSignature> {
+    const [userPositionPda] = this.derivePositionPda(params.user, params.market);
+    const tx = await this.program.methods
+      .closePosition()
+      .accountsStrict({
+        user: params.user,
+        feePayer: params.feePayer.publicKey,
+        config: this.configPda,
+        market: params.market,
+        userPosition: userPositionPda,
       })
       .transaction();
 

@@ -70,6 +70,14 @@ export interface ClaimParams {
   userKeypair: Keypair;
 }
 
+export interface ClosePositionParams {
+  user: PublicKey;
+  market: PublicKey;
+  /** Pays the tx fee AND receives the reclaimed PDA rent. */
+  feePayer: Keypair;
+  userKeypair: Keypair;
+}
+
 export interface ResolveMarketParams {
   oracleSigner: PublicKey;
   market: PublicKey;

@@ -17,6 +17,8 @@ export interface ClaimResult {
     txSignature: string;
     marketPda: string;
     userPubkey: string;
+    /** Signature of the follow-up close_position tx, or null if it failed. */
+    closePositionSignature: string | null;
 }
 
 export type ClaimErrorCode =
@@ -55,11 +57,40 @@ export default class SolanaClaimService {
             userUsdc: user_usdc,
         });
 
+        // Best-effort cleanup: reclaim the position PDA's rent. The winning
+        // shares were just zeroed by claim above, so close_position's
+        // require!(winning_balance == 0) check passes. Failures here are
+        // non-fatal — the user got their USDC, the position just stays
+        // open until a future sweeper picks it up.
+        const closeSig = await this.try_close_position(client, {
+            user: user_keypair,
+            feePayer: fee_payer,
+            market: market_pda,
+        });
+
         return {
             txSignature: sig,
             marketPda: market.solanaMarketPda,
             userPubkey: user_keypair.publicKey.toBase58(),
+            closePositionSignature: closeSig,
         };
+    }
+
+    private async try_close_position(
+        client: SolmarketClient,
+        args: { user: Keypair; feePayer: Keypair; market: PublicKey },
+    ): Promise<string | null> {
+        try {
+            return await client.closePosition({
+                user: args.user.publicKey,
+                userKeypair: args.user,
+                feePayer: args.feePayer,
+                market: args.market,
+            });
+        } catch (err) {
+            console.warn("[claim] close_position failed (non-fatal)", err);
+            return null;
+        }
     }
 
     private load_fee_payer_keypair(): Keypair {

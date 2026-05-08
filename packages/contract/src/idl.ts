@@ -88,6 +88,58 @@ export const IDL = {
       args: [],
     },
     {
+      name: "close_position",
+      discriminator: [123, 134, 81, 0, 49, 68, 98, 98],
+      accounts: [
+        {
+          name: "user",
+          signer: true,
+          relations: ["user_position"],
+        },
+        {
+          name: "fee_payer",
+          writable: true,
+          signer: true,
+        },
+        {
+          name: "config",
+          pda: {
+            seeds: [
+              {
+                kind: "const",
+                value: [99, 111, 110, 102, 105, 103],
+              },
+            ],
+          },
+        },
+        {
+          name: "market",
+          relations: ["user_position"],
+        },
+        {
+          name: "user_position",
+          writable: true,
+          pda: {
+            seeds: [
+              {
+                kind: "const",
+                value: [112, 111, 115, 105, 116, 105, 111, 110],
+              },
+              {
+                kind: "account",
+                path: "user",
+              },
+              {
+                kind: "account",
+                path: "market",
+              },
+            ],
+          },
+        },
+      ],
+      args: [],
+    },
+    {
       name: "claim",
       discriminator: [62, 198, 214, 193, 213, 159, 108, 210],
       accounts: [
@@ -488,6 +540,10 @@ export const IDL = {
       name: "OrderFilled",
       discriminator: [120, 124, 109, 66, 249, 116, 174, 30],
     },
+    {
+      name: "PositionClosed",
+      discriminator: [157, 163, 227, 228, 13, 97, 138, 121],
+    },
   ],
   errors: [
     {
@@ -579,6 +635,11 @@ export const IDL = {
       code: 6017,
       name: "Unauthorized",
       msg: "Unauthorized signer",
+    },
+    {
+      code: 6018,
+      name: "WinningSharesUnclaimed",
+      msg: "Cannot close position with unclaimed winning shares",
     },
   ],
   types: [
@@ -791,6 +852,26 @@ export const IDL = {
             type: {
               array: ["u8", 16],
             },
+          },
+        ],
+      },
+    },
+    {
+      name: "PositionClosed",
+      type: {
+        kind: "struct",
+        fields: [
+          {
+            name: "user",
+            type: "pubkey",
+          },
+          {
+            name: "market",
+            type: "pubkey",
+          },
+          {
+            name: "rent_recipient",
+            type: "pubkey",
           },
         ],
       },

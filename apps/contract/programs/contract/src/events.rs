@@ -26,3 +26,10 @@ pub struct Claimed {
     pub shares: u64,
     pub payout: u64,
 }
+
+#[event]
+pub struct PositionClosed {
+    pub user: Pubkey,
+    pub market: Pubkey,
+    pub rent_recipient: Pubkey,
+}

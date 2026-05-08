@@ -38,4 +38,6 @@ pub enum SolMarketError {
     InvalidMarketId,
     #[msg("Unauthorized signer")]
     Unauthorized,
+    #[msg("Cannot close position with unclaimed winning shares")]
+    WinningSharesUnclaimed,
 }

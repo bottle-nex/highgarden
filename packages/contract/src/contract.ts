@@ -94,6 +94,58 @@ export type Contract = {
       args: [];
     },
     {
+      name: "closePosition";
+      discriminator: [123, 134, 81, 0, 49, 68, 98, 98];
+      accounts: [
+        {
+          name: "user";
+          signer: true;
+          relations: ["userPosition"];
+        },
+        {
+          name: "feePayer";
+          writable: true;
+          signer: true;
+        },
+        {
+          name: "config";
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [99, 111, 110, 102, 105, 103];
+              },
+            ];
+          };
+        },
+        {
+          name: "market";
+          relations: ["userPosition"];
+        },
+        {
+          name: "userPosition";
+          writable: true;
+          pda: {
+            seeds: [
+              {
+                kind: "const";
+                value: [112, 111, 115, 105, 116, 105, 111, 110];
+              },
+              {
+                kind: "account";
+                path: "user";
+              },
+              {
+                kind: "account";
+                path: "market";
+              },
+            ];
+          };
+        },
+      ];
+      args: [];
+    },
+    {
       name: "claim";
       discriminator: [62, 198, 214, 193, 213, 159, 108, 210];
       accounts: [
@@ -542,6 +594,10 @@ export type Contract = {
       name: "orderFilled";
       discriminator: [120, 124, 109, 66, 249, 116, 174, 30];
     },
+    {
+      name: "positionClosed";
+      discriminator: [157, 163, 227, 228, 13, 97, 138, 121];
+    },
   ];
   errors: [
     {
@@ -633,6 +689,11 @@ export type Contract = {
       code: 6017;
       name: "unauthorized";
       msg: "Unauthorized signer";
+    },
+    {
+      code: 6018;
+      name: "winningSharesUnclaimed";
+      msg: "Cannot close position with unclaimed winning shares";
     },
   ];
   types: [
@@ -845,6 +906,26 @@ export type Contract = {
             type: {
               array: ["u8", 16];
             };
+          },
+        ];
+      };
+    },
+    {
+      name: "positionClosed";
+      type: {
+        kind: "struct";
+        fields: [
+          {
+            name: "user";
+            type: "pubkey";
+          },
+          {
+            name: "market";
+            type: "pubkey";
+          },
+          {
+            name: "rentRecipient";
+            type: "pubkey";
           },
         ];
       };

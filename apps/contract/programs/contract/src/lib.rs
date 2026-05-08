@@ -58,6 +58,10 @@ pub mod contract {
         instructions::claim::handler(ctx)
     }
 
+    pub fn close_position(ctx: Context<ClosePosition>) -> Result<()> {
+        instructions::close_position::handler(ctx)
+    }
+
     pub fn admin_pause_market(ctx: Context<AdminPauseMarket>) -> Result<()> {
         instructions::admin::pause_handler(ctx)
     }

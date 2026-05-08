@@ -28,6 +28,8 @@ export interface ClaimResult {
     txSignature: string;
     marketPda: string;
     userPubkey: string;
+    /** Signature of the follow-up close_position tx, or null if it failed. */
+    closePositionSignature: string | null;
 }
 
 export type TradingErrorReason =
