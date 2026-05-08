@@ -123,7 +123,7 @@ function Frame({
 }) {
     return (
         <div
-            className={`border border-dashed rounded-[6px] py-16 text-center text-sm ${
+            className={`border border-dashed rounded-[6px] py-10 sm:py-12 lg:py-16 text-center text-xs sm:text-sm ${
                 tone === 'error'
                     ? 'border-rose-500/30 text-rose-300/80'
                     : 'border-white/10 text-white/45'

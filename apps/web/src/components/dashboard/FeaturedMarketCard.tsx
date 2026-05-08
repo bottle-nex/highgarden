@@ -35,7 +35,7 @@ export default function FeaturedMarketCard({
             href={resolved_href}
             className="relative bg-dark-base shadow-xs shadow-black/5 rounded-lg overflow-hidden group transition-colors no-underline h-full flex flex-col"
         >
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-500/15  text-[10px] tracking-wide uppercase shrink-0">
+            <div className="flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-3 border-b border-gray-500/15  text-[10px] tracking-wide uppercase shrink-0">
                 <div className="flex items-center gap-3">
                     <span className="text-white/75">{market.category}</span>
                 </div>
@@ -46,11 +46,11 @@ export default function FeaturedMarketCard({
                 </div>
             </div>
 
-            <div className="flex-1 min-h-0 flex flex-col p-5">
-                <div className="flex items-start justify-between gap-6 shrink-0">
+            <div className="flex-1 min-h-0 flex flex-col p-4 sm:p-5">
+                <div className="flex items-start justify-between gap-3 sm:gap-6 shrink-0">
                     <div className="min-w-0 flex-1 flex items-start gap-3">
                         <div
-                            className="shrink-0 w-12 h-12 rounded-md border border-white/10 overflow-hidden"
+                            className="shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-lg border-2 border-white overflow-hidden"
                             style={
                                 show_image
                                     ? undefined
@@ -70,10 +70,10 @@ export default function FeaturedMarketCard({
                             )}
                         </div>
                         <div className="min-w-0 flex-1">
-                            <h2 className="text-3xl text-white/85 font-medium leading-snug tracking-tight line-clamp-2 hover:underline">
+                            <h2 className="text-xl sm:text-2xl lg:text-3xl text-white/85 font-medium leading-snug tracking-tight line-clamp-2 hover:underline">
                                 {market.title}
                             </h2>
-                            <p className="mt-2 text-[13px] text-white/50 leading-relaxed line-clamp-2">
+                            <p className="mt-1.5 sm:mt-2 text-[12px] sm:text-[13px] text-white/50 leading-relaxed line-clamp-2">
                                 {market.description}
                             </p>
                         </div>
@@ -84,10 +84,10 @@ export default function FeaturedMarketCard({
                             CURRENT YES
                         </span>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-3xl font-light text-white/85 tabular-nums leading-none">
+                            <span className="text-2xl sm:text-3xl font-light text-white/85 tabular-nums leading-none">
                                 {market.currentProbability}
                             </span>
-                            <span className="text-sm text-white/50 ">%</span>
+                            <span className="text-xs sm:text-sm text-white/50 ">%</span>
                         </div>
                         <div
                             className={cn(
@@ -105,7 +105,7 @@ export default function FeaturedMarketCard({
                     <ProbabilityChart data={market.probabilities} height="100%" />
                 </div>
 
-                <div className="mt-3 flex items-center gap-4 px-3 py-2 border border-white/10 rounded-[6px] bg-neutral-950  text-[10px] tracking-[0.18em] uppercase shrink-0">
+                <div className="mt-3 flex items-center gap-2 sm:gap-4 px-2 sm:px-3 py-2 border border-white/10 rounded-[6px] bg-neutral-950  text-[10px] tracking-[0.18em] uppercase shrink-0 overflow-x-auto custom-scrollbar">
                     <Stat label="VOL" value={market.volume} />
                     <Sep />
                     <Stat label="LIQ" value={market.liquidity} />
@@ -118,14 +118,14 @@ export default function FeaturedMarketCard({
                 <div className="mt-3 flex items-center gap-2 shrink-0">
                     <Button
                         className={cn(
-                            'green-btn flex-1 rounded-sm text-[12px] tracking-[0.2em] uppercase font-semibold py-5! text-neutral-300',
+                            'green-btn flex-1 rounded-sm text-[11px] sm:text-[12px] tracking-[0.2em] uppercase font-semibold py-3.5! sm:py-5! text-neutral-300',
                         )}
                     >
                         BUY YES · 47¢
                     </Button>
                     <Button
                         className={cn(
-                            'red-btn flex-1 rounded-sm text-[12px] tracking-[0.2em] uppercase font-semibold py-5! text-neutral-300',
+                            'red-btn flex-1 rounded-sm text-[11px] sm:text-[12px] tracking-[0.2em] uppercase font-semibold py-3.5! sm:py-5! text-neutral-300',
                         )}
                     >
                         BUY NO · 53¢

@@ -29,13 +29,13 @@ function TrendingSection(): JSX.Element {
     }, []);
 
     return (
-        <div className="space-y-14">
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-12 xl:gap-8 h-140 overflow-hidden">
-                <div className="min-w-0 min-h-0 flex flex-col">
+        <div className="space-y-8 sm:space-y-12 lg:space-y-14">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 sm:gap-8 lg:gap-12 xl:gap-8 lg:h-140 lg:overflow-hidden">
+                <div className="min-w-0 flex flex-col min-h-80 lg:min-h-0">
                     <LiveFeaturedMarket />
                 </div>
 
-                <aside className="flex flex-col h-full justify-between min-h-0 py-1">
+                <aside className="flex flex-col gap-6 sm:gap-8 lg:h-full lg:justify-between lg:min-h-0 lg:gap-0 lg:py-1">
                     <BreakingNewsList limit={3} />
                     <HotTopicsList topics={topics} />
                 </aside>
@@ -48,7 +48,7 @@ function TrendingSection(): JSX.Element {
             <div className="flex items-center justify-center pt-6">
                 <button
                     type="button"
-                    className="group relative h-11 px-8 rounded-md border border-white/15 hover:bg-white/5  text-[10px] tracking-[0.3em] uppercase text-white/60 hover:text-white/85 transition-colors cursor-pointer"
+                    className="group relative h-11 px-8 rounded-md border border-white/15 hover:bg-white/5  text-[10px] sm:text-[11px] tracking-[0.3em] uppercase text-white/60 hover:text-white/85 transition-colors cursor-pointer"
                 >
                     EXPLORE ALL MARKETS →
                 </button>
@@ -70,9 +70,9 @@ function TagFilteredSection({ category }: { category: Category }): JSX.Element {
 
 function PlaceholderSection({ category }: { category: Category }): JSX.Element {
     return (
-        <div className="border border-dashed border-white/10 rounded-md py-24 text-center">
+        <div className="border border-dashed border-white/10 rounded-md py-12 sm:py-16 lg:py-24 text-center px-4">
             <div className=" text-[10px] tracking-[0.3em] uppercase text-white/35">{category}</div>
-            <div className="mt-3 text-sm text-white/55">
+            <div className="mt-3 text-xs sm:text-sm text-white/55">
                 No {category.toLowerCase()} markets to show yet.
             </div>
         </div>

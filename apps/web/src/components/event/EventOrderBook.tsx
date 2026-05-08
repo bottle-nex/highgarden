@@ -143,7 +143,7 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
         <section className="rounded-lg overflow-hidden bg-dark-base">
             <header
                 className={cn(
-                    'group flex items-center justify-between px-4 py-3 border-white/7 cursor-pointer select-none',
+                    'group flex flex-wrap items-center justify-between gap-y-2 px-3 sm:px-4 py-2.5 sm:py-3 border-white/7 cursor-pointer select-none',
                 )}
             >
                 <ToolTipComponent side="top" duration={100} content="Refresh order book">
@@ -231,7 +231,7 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
             >
                 <div>
                     <div className="pt-1">
-                        <div className="grid grid-cols-3 pr-3 gap-x-8 text-[11.5px] text-white/35 pb-2 border-b border-white/7">
+                        <div className="grid grid-cols-3 pr-2 sm:pr-3 gap-x-3 sm:gap-x-8 text-[11.5px] text-white/35 pb-2 border-b border-white/7">
                             <span className="text-right">Price</span>
                             <span className="text-right">Shares</span>
                             <span className="text-right">Total</span>
@@ -273,7 +273,7 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                         {book.isHydrated && (asks.length > 0 || bids.length > 0) && (
                             <div
                                 ref={scroll_ref}
-                                className="h-105 overflow-y-auto overscroll-contain custom-scrollbar [overflow-anchor:auto]"
+                                className="h-72 sm:h-96 lg:h-105 overflow-y-auto overscroll-contain custom-scrollbar [overflow-anchor:auto]"
                             >
                                 {view_mode !== 'bids' && (
                                     <div className="pt-3.5 space-y-0.5">
@@ -294,7 +294,7 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                                                     return (
                                                         <div
                                                             key={`ask-${lvl.price}`}
-                                                            className="relative grid grid-cols-3 gap-x-8 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
+                                                            className="relative grid grid-cols-3 gap-x-3 sm:gap-x-8 pr-2 sm:pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                                         >
                                                             <motion.div
                                                                 className="absolute inset-y-0 right-0 bg-rose-500/15 rounded-none pointer-events-none"
@@ -362,7 +362,7 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                                                 return (
                                                     <div
                                                         key={`bid-${lvl.price}`}
-                                                        className="relative grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
+                                                        className="relative grid grid-cols-3 gap-x-3 sm:gap-x-8 pr-2 sm:pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
                                                     >
                                                         <motion.div
                                                             className="absolute inset-y-0 right-0 bg-emerald-500/15 rounded-none pointer-events-none"

@@ -33,7 +33,7 @@ export default function HotTopicsList({
                     : topics.map((topic, i) => (
                           <li
                               key={topic.id}
-                              className="py-3 flex items-center gap-3 hover:bg-white/3 transition-colors cursor-pointer group px-2 rounded-sm"
+                              className="py-2.5 sm:py-3 flex items-center gap-2.5 sm:gap-3 hover:bg-white/3 transition-colors cursor-pointer group px-2 rounded-sm"
                           >
                               <span className=" text-[15px] tabular-nums text-white/35 shrink-0">
                                   {String(i + 1).padStart(2, '0')}

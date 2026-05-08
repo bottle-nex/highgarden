@@ -162,7 +162,7 @@ function Frame({
 }) {
     return (
         <div
-            className={`border border-dashed rounded-[6px] py-16 text-center text-sm ${
+            className={`border border-dashed rounded-[6px] py-10 sm:py-12 lg:py-16 text-center text-sm ${
                 tone === 'error'
                     ? 'border-rose-500/30 text-rose-300/80'
                     : 'border-white/10 text-white/45'
@@ -179,7 +179,7 @@ function FeaturedMarketSkeleton() {
             className="relative bg-dark-base shadow-xs shadow-black/5 rounded-lg overflow-hidden h-full flex flex-col animate-pulse"
             aria-hidden
         >
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-500/15 shrink-0">
+            <div className="flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-3 border-b border-gray-500/15 shrink-0">
                 <div className="h-3 w-20 rounded-sm bg-white/10" />
                 <div className="hidden md:flex items-center gap-2">
                     <div className="h-3 w-24 rounded-sm bg-white/8" />
@@ -209,7 +209,7 @@ function FeaturedMarketSkeleton() {
                     </div>
                 </div>
 
-                <div className="flex-1 min-h-0 mt-3 rounded-sm bg-white/4" />
+                <div className="flex-1 mt-3 min-h-60 lg:min-h-0 rounded-sm bg-white/4" />
 
                 <div className="mt-3 flex items-center gap-4 px-3 py-2 border border-white/10 rounded-[6px] bg-neutral-950 shrink-0">
                     {[0, 1, 2, 3].map((i) => (

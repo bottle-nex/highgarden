@@ -64,7 +64,7 @@ export default function EventDetail({ id }: { id: string }) {
     }, [id]);
 
     return (
-        <main data-lenis-prevent className="mx-auto w-full max-w-380 px-6 lg:px-8 py-10 lg:py-12">
+        <main data-lenis-prevent className="mx-auto w-full max-w-380 px-3 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-12">
             {state.status === 'loading' && <Frame>Loading market…</Frame>}
             {state.status === 'not_found' && (
                 <Frame>Market not found. It may not be approved yet, or the link is wrong.</Frame>
@@ -130,30 +130,40 @@ function Body({ market }: { market: MarketDTO }) {
                 <HiArrowLeft className="text-[13px] transition-transform duration-200 group-hover:-translate-x-0.5" />
                 <span>Back to dashboard</span>
             </Link>
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 xl:gap-3">
-                <div className="min-w-0 space-y-5">
+            <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[1fr_340px] lg:gap-6 xl:gap-3">
+                <div className="contents lg:block lg:min-w-0 lg:space-y-5">
                     <div
                         ref={sticky_title_ref}
-                        className="lg:sticky lg:top-16 lg:z-20 lg:-mx-2 lg:px-2 lg:py-3 lg:bg-dark-alpha/90 lg:backdrop-blur-sm"
+                        className="order-1 lg:order-0 lg:sticky lg:top-16 lg:z-20 lg:-mx-2 lg:px-2 lg:py-3 lg:bg-dark-alpha/90 lg:backdrop-blur-sm"
                     >
                         <EventTitleBlock market={market} is_stuck={is_title_stuck} />
                     </div>
-                    <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3">
-                        <EventPriceChart
-                            marketId={market.id}
-                            volumeLabel={format_usd(market.volume24hUsd)}
-                            closeLabel={format_close_label(market.endAt)}
-                            delta24hPct={delta24h}
-                            onLoaded={handle_chart_loaded}
-                        />
-                        <EventOrderBook marketId={market.id} />
+                    <div className="contents xl:grid xl:grid-cols-[1fr_320px] xl:gap-3">
+                        <div className="order-2 lg:order-0 min-w-0">
+                            <EventPriceChart
+                                marketId={market.id}
+                                volumeLabel={format_usd(market.volume24hUsd)}
+                                closeLabel={format_close_label(market.endAt)}
+                                delta24hPct={delta24h}
+                                onLoaded={handle_chart_loaded}
+                            />
+                        </div>
+                        <div className="order-4 lg:order-0">
+                            <EventOrderBook marketId={market.id} />
+                        </div>
                     </div>
-                    <EventTabs description={market.description} tags={market.tags} />
-                    <MarketComments market_id={market.id} />
+                    <div className="order-6 lg:order-0">
+                        <EventTabs description={market.description} tags={market.tags} />
+                    </div>
+                    <div className="order-7 lg:order-0">
+                        <MarketComments market_id={market.id} />
+                    </div>
                 </div>
-                <div className="space-y-4 lg:space-y-0 lg:sticky lg:top-24 lg:h-[calc(100vh-6rem)] lg:flex lg:flex-col lg:gap-3">
-                    <EventTradePanel market={market} />
-                    <div className="custom-scrollbar lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
+                <div className="contents lg:flex lg:flex-col lg:gap-3 lg:sticky lg:top-24 lg:h-[calc(100vh-6rem)]">
+                    <div className="order-3 lg:order-0">
+                        <EventTradePanel market={market} />
+                    </div>
+                    <div className="custom-scrollbar order-5 lg:order-0 lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
                         <EventNews marketId={market.id} />
                     </div>
                 </div>

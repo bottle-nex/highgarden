@@ -40,7 +40,7 @@ export default function MarketGrid({
             <SectionHeading title="ACTIVE MARKETS" subtitle={`${markets.length} LIVE`} />
 
             {show_sort && (
-                <div className="mb-5 flex items-center gap-1 border border-gray-500/15 bg-dark-base p-1 rounded-sm w-fit">
+                <div className="mb-4 sm:mb-5 flex items-center gap-1 border border-gray-500/15 bg-dark-base p-1 rounded-sm w-fit overflow-x-auto custom-scrollbar max-w-full">
                     {SORTS.map((key) => {
                         const isActive = sort === key;
                         return (
@@ -49,7 +49,7 @@ export default function MarketGrid({
                                 type="button"
                                 onClick={() => setSort(key)}
                                 className={cn(
-                                    'px-3 py-1.5 rounded-xs text-[9px] tracking-[0.22em] uppercase transition-colors cursor-pointer',
+                                    'px-3 py-1.5 rounded-xs text-[9px] tracking-[0.22em] uppercase transition-colors cursor-pointer whitespace-nowrap',
                                     isActive
                                         ? 'bg-white/10 text-white/80'
                                         : 'text-white/40 hover:text-white/65',
@@ -62,7 +62,7 @@ export default function MarketGrid({
                 </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-7">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 xl:gap-7">
                 {sorted.map((m) => (
                     <MarketCard
                         key={m.id}

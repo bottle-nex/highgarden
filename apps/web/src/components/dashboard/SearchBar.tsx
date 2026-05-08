@@ -30,7 +30,7 @@ export default function SearchBar(): JSX.Element {
     }, [open, setOpen]);
 
     return (
-        <div className="relative w-xl max-w-full">
+        <div className="relative w-full sm:w-xl max-w-full">
             <div className="relative h-10">
                 <HiMiniMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-white/45 pointer-events-none z-10" />
                 <input
@@ -40,7 +40,7 @@ export default function SearchBar(): JSX.Element {
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => setOpen(true)}
                     placeholder="Search markets"
-                    className="w-full h-10 bg-dark-base pl-10 pr-20 text-[13px] text-white/85 placeholder:text-white/35 outline-none focus:outline-none rounded-md"
+                    className="w-full h-10 bg-dark-base pl-10 pr-3 md:pr-20 text-[13px] text-white/85 placeholder:text-white/35 outline-none focus:outline-none rounded-md"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 hidden md:flex items-center gap-1 text-[9px] text-gray-600 pointer-events-none">
                     <span className="h-5 w-8 flex justify-center items-center bg-dark-alpha/50 rounded-sm">

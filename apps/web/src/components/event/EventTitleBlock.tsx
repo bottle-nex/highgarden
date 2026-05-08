@@ -79,14 +79,14 @@ export default function EventTitleBlock({ market, is_stuck }: Props): JSX.Elemen
     return (
         <header
             className={cn(
-                'flex gap-4 items-start h-14',
+                'flex gap-3 sm:gap-4 items-start h-12 sm:h-14',
                 ease,
                 compact && 'lg:items-center lg:h-10',
             )}
         >
             <div
                 className={cn(
-                    'shrink-0 w-14 h-14 rounded-md border-2 border-white overflow-hidden',
+                    'shrink-0 w-11 h-11 sm:w-14 sm:h-14 rounded-md border-2 border-white overflow-hidden',
                     ease,
                     compact && 'lg:w-10 lg:h-10',
                 )}
@@ -112,7 +112,7 @@ export default function EventTitleBlock({ market, is_stuck }: Props): JSX.Elemen
             >
                 <h1
                     className={cn(
-                        'text-3xl text-white leading-none font-medium',
+                        'text-xl sm:text-2xl lg:text-3xl text-white leading-none font-medium',
                         ease,
                         compact && 'lg:text-lg',
                     )}
@@ -129,7 +129,7 @@ export default function EventTitleBlock({ market, is_stuck }: Props): JSX.Elemen
                     >
                         <div className="min-h-0 flex flex-col gap-1.5">
                             {market.description && (
-                                <p className="text-[14px] text-white/55 leading-[1.2] line-clamp-1 max-w-3xl">
+                                <p className="text-[13px] sm:text-[14px] text-white/55 leading-[1.2] line-clamp-1 max-w-3xl">
                                     {market.description}
                                 </p>
                             )}
@@ -149,7 +149,7 @@ export default function EventTitleBlock({ market, is_stuck }: Props): JSX.Elemen
                     </div>
                 )}
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                 <ToolTipComponent side="top" content={`${copied ? 'Copied link' : 'Share'}`}>
                     <motion.button
                         initial={{ opacity: 0, filter: 'blur(4px)' }}

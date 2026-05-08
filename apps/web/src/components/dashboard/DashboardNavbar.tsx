@@ -3,6 +3,8 @@ import { JSX, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import SearchBar from './SearchBar';
+import Link from 'next/link';
+import Applogo from '../ui/Applogo';
 import { CroppedButton } from '../ui/cropped-button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';
@@ -26,18 +28,21 @@ export default function DashboardNavbar(): JSX.Element {
     const is_signed_in = !!session?.user;
 
     return (
-        <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm px-4">
-            <div className="w-full h-16 flex items-center justify-between gap-8 px-5">
-                <div className="flex justify-center">
+        <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm px-3 sm:px-6 lg:px-8">
+            <div className="w-full h-14 sm:h-16 flex items-center justify-between gap-3 sm:gap-4 lg:gap-8">
+                <Link href="/" className="lg:hidden inline-flex items-center cursor-pointer no-underline shrink-0">
+                    <Applogo size={24} />
+                </Link>
+                <div className="hidden sm:flex justify-center flex-1 max-w-md">
                     <SearchBar />
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                     <CroppedButton
                         size={'sm'}
                         onClick={() => requireAuth(() => setDepositDropdown(!openDepositDropdown))}
                         className={cn(
-                            'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
+                            'px-3 sm:px-4.5 text-[12px] font-[510] tracking-normal uppercase',
                             'bg-dark-faded text-white',
                             'transition-all duration-200',
                         )}
@@ -48,7 +53,7 @@ export default function DashboardNavbar(): JSX.Element {
                         size={'sm'}
                         onClick={() => requireAuth(() => router.push('/portfolio'))}
                         className={cn(
-                            'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
+                            'px-3 sm:px-4.5 text-[12px] font-[510] tracking-normal uppercase',
                             'bg-white text-neutral-900',
                             'transition-all duration-200',
                         )}
@@ -82,7 +87,7 @@ export default function DashboardNavbar(): JSX.Element {
                         <CroppedButton
                             onClick={() => setOpenSigninModal(true)}
                             className={cn(
-                                'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
+                                'px-3 sm:px-4.5 text-[12px] font-[510] tracking-normal uppercase',
                                 'bg-transparent text-white hover:bg-white/5',
                                 'transition-all duration-200',
                             )}

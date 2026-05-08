@@ -306,10 +306,10 @@ export default function EventPriceChart({
     const areaColor = lineColor;
 
     return (
-        <section className="rounded-lg bg-dark-base flex flex-col min-h-120">
-            <div className="flex items-center justify-between px-5 pt-4 pb-2 gap-4">
+        <section className="rounded-lg bg-dark-base flex flex-col h-120 min-w-0">
+            <div className="flex items-center justify-between px-3 sm:px-5 pt-3 sm:pt-4 pb-2 gap-2 sm:gap-4">
                 <ProbabilityHeadline marketId={marketId} delta24hPct={delta24hPct} />
-                <div className="flex items-center gap-3 text-[11px] tracking-widest text-neutral-400">
+                <div className="flex items-center gap-3 text-[11px] tracking-widest text-neutral-400 min-w-0">
                     <span>{volumeLabel} Vol</span>
                     <span className="text-white/30">|</span>
                     <span>{closeLabel}</span>
@@ -546,7 +546,7 @@ export default function EventPriceChart({
                 )}
             </div>
 
-            <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-white/8">
+            <div className="flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 border-t border-white/8">
                 <div className="relative flex gap-1 bg-white/2.5 border border-white/8 rounded-md p-0.75">
                     {[Outcome.YES, Outcome.NO].map((o) => {
                         const is_selected = selectedOutcome === o;
@@ -582,13 +582,13 @@ export default function EventPriceChart({
                     })}
                 </div>
                 <div className="flex items-center gap-1">
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 overflow-x-auto custom-scrollbar max-w-full">
                         {RANGES.map((r) => (
                             <button
                                 key={r.key}
                                 type="button"
                                 onClick={() => set_range(r.key)}
-                                className={`relative px-2 py-1 rounded text-[9px] tracking-[0.2em] uppercase transition-colors cursor-pointer ${
+                                className={`relative px-2 py-1 rounded text-[9px] tracking-[0.2em] uppercase transition-colors cursor-pointer whitespace-nowrap ${
                                     range === r.key
                                         ? 'text-white'
                                         : 'text-white/45 hover:text-white/75'

@@ -52,7 +52,7 @@ export default function EventNews({ marketId }: Props): JSX.Element {
 
     return (
         <section>
-            <header className="flex items-center justify-between px-5 py-4">
+            <header className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4">
                 <h3 className="text-[10px] tracking-[0.25em] uppercase text-white/55">
                     Related news
                 </h3>
@@ -79,7 +79,7 @@ export default function EventNews({ marketId }: Props): JSX.Element {
                                 href={a.link}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-start gap-3 px-5 py-3 hover:bg-white/3 transition-colors group rounded-lg"
+                                className="flex items-start gap-2.5 sm:gap-3 px-3 sm:px-5 py-2.5 sm:py-3 hover:bg-white/3 transition-colors group rounded-lg"
                             >
                                 {a.publicationFavicon ? (
                                     // eslint-disable-next-line @next/next/no-img-element

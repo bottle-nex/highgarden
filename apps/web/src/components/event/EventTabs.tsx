@@ -81,13 +81,13 @@ export default function EventTabs({ description, tags }: Props): JSX.Element {
 
     return (
         <section className="">
-            <header className="flex items-center gap-6 px-5 pt-5 border-b border-white/8">
+            <header className="flex items-center gap-4 sm:gap-6 px-3 sm:px-5 pt-4 sm:pt-5 border-b border-white/8 overflow-x-auto custom-scrollbar">
                 {TABS.map((t) => (
                     <button
                         key={t}
                         type="button"
                         onClick={() => handle_tab_click(t)}
-                        className={`pb-3  text-[10px] tracking-[0.2em] uppercase border-b-2 transition-colors cursor-pointer ${
+                        className={`pb-3  text-[10px] tracking-[0.2em] uppercase border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
                             active === t
                                 ? 'border-blue-500/80 text-white'
                                 : 'border-transparent text-white/40 hover:text-white/70'
@@ -104,7 +104,7 @@ export default function EventTabs({ description, tags }: Props): JSX.Element {
                 transition={{ duration: 0.32, ease: HEIGHT_EASE }}
                 className="overflow-hidden"
             >
-                <div ref={panel_ref} className="px-5 py-5 text-sm text-white/65 leading-relaxed">
+                <div ref={panel_ref} className="px-3 sm:px-5 py-4 sm:py-5 text-sm text-white/65 leading-relaxed">
                     {active === 'MARKET CONTEXT' ? (
                         description ? (
                             <>

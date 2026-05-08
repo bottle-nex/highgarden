@@ -208,7 +208,7 @@ export default function SearchPanel({ onClose }: SearchPanelProps): JSX.Element 
                     <button
                         type="button"
                         onClick={() => setBookmarksOnly((v) => !v)}
-                        aria-pressed={bookmarksOnly}
+                        data-pressed={bookmarksOnly}
                         aria-label="Show bookmarked markets only"
                         title="Show bookmarked markets only"
                         className={cn(
@@ -308,7 +308,7 @@ function ResultRow({
                     e.stopPropagation();
                     onToggleBookmark();
                 }}
-                aria-pressed={bookmarked}
+                data-pressed={bookmarked}
                 aria-label={bookmarked ? 'Remove bookmark' : 'Add bookmark'}
                 title={bookmarked ? 'Remove bookmark' : 'Add bookmark'}
                 className={cn(

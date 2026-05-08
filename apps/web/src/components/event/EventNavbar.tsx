@@ -14,6 +14,8 @@ import OpacityBackground from '../ui/opacity-background';
 import UtilityCard from '../ui/utility-card';
 import DepositDialog from '../ui/deposit-dialog';
 import { APP_NAME } from '@/utils/constants';
+import Link from 'next/link';
+import Applogo from '../ui/Applogo';
 
 export default function EventNavbar(): JSX.Element {
     const router = useRouter();
@@ -28,35 +30,29 @@ export default function EventNavbar(): JSX.Element {
 
     return (
         <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm">
-            <div className="mx-auto w-full max-w-380 px-6 lg:px-8">
-                <div className="h-16 flex items-center justify-between gap-8">
-                    <span
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => router.push('/')}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                router.push('/');
-                            }
-                        }}
-                        className="text-white text-sm font-medium tracking-tight cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/30"
-                    >
-                        {APP_NAME}
-                    </span>
+            <div className="mx-auto w-full max-w-380 px-3 sm:px-6 lg:px-8">
+                <div className="h-16 flex items-center justify-between gap-3 sm:gap-4 lg:gap-8">
+                    <div className="flex-1 flex items-center">
+                        <Link href="/" className="inline-flex items-center gap-x-2 cursor-pointer">
+                            <Applogo size={28} />
+                            <div className='text-white'>
+                                {APP_NAME}
+                            </div>
+                        </Link>
+                    </div>
 
-                    <div className="flex-1 max-w-md">
+                    <div className="hidden sm:block flex-1 max-w-md">
                         <SearchBar />
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                         <CroppedButton
                             size={'sm'}
                             onClick={() =>
                                 requireAuth(() => setDepositDropdown(!openDepositDropdown))
                             }
                             className={cn(
-                                'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
+                                'px-3 sm:px-4.5 text-[12px] font-[510] tracking-normal uppercase',
                                 'bg-dark-faded text-white',
                                 'transition-all duration-200',
                             )}
@@ -67,7 +63,7 @@ export default function EventNavbar(): JSX.Element {
                             size={'sm'}
                             onClick={() => requireAuth(() => router.push('/portfolio'))}
                             className={cn(
-                                'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
+                                'px-3 sm:px-4.5 text-[12px] font-[510] tracking-normal uppercase',
                                 'bg-white text-neutral-900',
                                 'transition-all duration-200',
                             )}
@@ -101,7 +97,7 @@ export default function EventNavbar(): JSX.Element {
                             <CroppedButton
                                 onClick={() => setOpenSigninModal(true)}
                                 className={cn(
-                                    'px-4.5 text-[12px] font-[510] tracking-normal uppercase',
+                                    'px-3 sm:px-4.5 text-[12px] font-[510] tracking-normal uppercase',
                                     'bg-transparent text-white hover:bg-white/5',
                                     'transition-all duration-200',
                                 )}

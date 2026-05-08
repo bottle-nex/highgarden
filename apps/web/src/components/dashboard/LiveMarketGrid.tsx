@@ -167,7 +167,7 @@ function Frame({
 }) {
     return (
         <div
-            className={`border border-dashed rounded-[6px] py-16 text-center text-sm ${
+            className={`border border-dashed rounded-[6px] py-10 sm:py-12 lg:py-16 text-center text-xs sm:text-sm ${
                 tone === 'error'
                     ? 'border-rose-500/30 text-rose-300/80'
                     : 'border-white/10 text-white/45'
@@ -182,13 +182,13 @@ function MarketGridSkeleton({ count, showSort }: { count: number; showSort: bool
     return (
         <div className="animate-pulse" aria-hidden>
             {showSort && (
-                <div className="mb-5 flex items-center gap-1 border border-gray-500/15 bg-dark-base p-1 rounded-sm w-fit">
+                <div className="mb-4 sm:mb-5 flex items-center gap-1 border border-gray-500/15 bg-dark-base p-1 rounded-sm w-fit">
                     {[0, 1, 2].map((i) => (
                         <div key={i} className="h-6 w-20 rounded-xs bg-white/8" />
                     ))}
                 </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-7">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5 xl:gap-7">
                 {Array.from({ length: count }).map((_, i) => (
                     <MarketCardSkeleton key={i} />
                 ))}
@@ -199,7 +199,7 @@ function MarketGridSkeleton({ count, showSort }: { count: number; showSort: bool
 
 function MarketCardSkeleton() {
     return (
-        <div className="rounded-lg p-5 bg-dark-base">
+        <div className="rounded-lg p-4 sm:p-5 bg-dark-base">
             <div className="flex items-center justify-between">
                 <div className="h-2.5 w-16 rounded-sm bg-white/10" />
                 <div className="h-2.5 w-20 rounded-sm bg-white/8" />

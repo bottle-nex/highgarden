@@ -76,7 +76,7 @@ export default function BreakingNewsList({ limit = 3 }: { limit?: number }): JSX
                             href={item.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="py-3 flex items-start gap-3 hover:bg-white/3 transition-colors group px-3 rounded-sm"
+                            className="py-2.5 sm:py-3 flex items-start gap-2.5 sm:gap-3 hover:bg-white/3 transition-colors group px-2 sm:px-3 rounded-sm"
                         >
                             {item.publicationFavicon ? (
                                 // eslint-disable-next-line @next/next/no-img-element

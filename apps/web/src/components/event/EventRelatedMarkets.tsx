@@ -54,12 +54,12 @@ export default function EventRelatedMarkets({ excludeId }: Props): JSX.Element |
             <h2 className="text-[10px] tracking-[0.25em] uppercase text-white/45">
                 RELATED MARKETS
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {markets.map((m) => (
                     <Link
                         key={m.id}
                         href={`/event/${m.id}`}
-                        className="group rounded-xl p-5 bg-dark-base no-underline block hover:bg-dark-faded transition-colors"
+                        className="group rounded-xl p-4 sm:p-5 bg-dark-base no-underline block hover:bg-dark-faded transition-colors"
                     >
                         <div className="flex items-start gap-3.5">
                             {m.imageUrl ? (

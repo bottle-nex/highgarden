@@ -269,7 +269,7 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
 
             {!is_resolved && (
                 <>
-                    <div className="flex items-center justify-between px-5 pt-4">
+                    <div className="flex items-center justify-between px-3 sm:px-5 pt-3 sm:pt-4">
                         <div className="flex gap-1">
                             {(['BUY', 'SELL'] as const).map((t) => (
                                 <button
@@ -299,7 +299,7 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                             ))}
                         </div>
                         {show_image && (
-                            <div className="w-13 h-13 rounded-lg overflow-hidden shrink-0">
+                            <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-lg overflow-hidden shrink-0">
                                 <Image
                                     src={market.imageUrl!}
                                     alt=""
@@ -312,7 +312,7 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                         )}
                     </div>
 
-                    <div className="px-5 pt-4 pb-5 space-y-3.5">
+                    <div className="px-3 sm:px-5 pt-3 sm:pt-4 pb-4 sm:pb-5 space-y-3 sm:space-y-3.5">
                         <div ref={flash_ref} className="grid grid-cols-2 gap-2.5">
                             <button
                                 aria-label="yes"
@@ -362,7 +362,7 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                             </div>
                             <div className="flex items-center gap-1">
                                 <span
-                                    className={`text-3xl font-bold leading-none transition-colors ${amount ? 'text-white' : 'text-white/40'
+                                    className={`text-2xl sm:text-3xl font-bold leading-none transition-colors ${amount ? 'text-white' : 'text-white/40'
                                         }`}
                                 >
                                     {input_mode === 'USDC' ? '$' : '#'}
@@ -386,10 +386,10 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                                         }
                                         onFocus={() => set_focused(true)}
                                         onBlur={() => set_focused(false)}
-                                        className="absolute inset-0 w-full bg-transparent outline-none text-3xl font-bold tabular-nums text-transparent caret-transparent placeholder:text-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        className="absolute inset-0 w-full bg-transparent outline-none text-2xl sm:text-3xl font-bold tabular-nums text-transparent caret-transparent placeholder:text-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     />
                                     <div
-                                        className={`absolute inset-0 flex items-center pointer-events-none text-3xl font-bold tabular-nums ${amount ? 'text-white' : 'text-white/20'
+                                        className={`absolute inset-0 flex items-center pointer-events-none text-2xl sm:text-3xl font-bold tabular-nums ${amount ? 'text-white' : 'text-white/20'
                                             }`}
                                     >
                                         {(amount || '0').split('').map((char, idx) => (

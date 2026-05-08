@@ -7,7 +7,7 @@ export default function MarketTicker(): JSX.Element {
 
     return (
         <div className="relative border border-white/10 bg-neutral-950 overflow-hidden rounded-[6px]">
-            <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center gap-2 bg-neutral-950 border-r border-white/10 pl-5 pr-4 rounded-l-[6px]">
+            <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center gap-2 bg-neutral-950 border-r border-white/10 pl-3 sm:pl-5 pr-3 sm:pr-4 rounded-l-[6px]">
                 <span className="relative flex size-1.5">
                     <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500/60 animate-ping opacity-60" />
                     <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500/80" />
@@ -32,7 +32,7 @@ export default function MarketTicker(): JSX.Element {
 function TradeItem({ trade }: { trade: TickerTrade }): JSX.Element {
     const isYes = trade.side === 'YES';
     return (
-        <div className="flex items-center gap-2 px-5 whitespace-nowrap  text-[12px] tracking-[0.12em] uppercase">
+        <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 whitespace-nowrap text-[11px] sm:text-[12px] tracking-[0.12em] uppercase">
             <span className="text-white/55">{trade.market}</span>
             <span
                 className={cn(

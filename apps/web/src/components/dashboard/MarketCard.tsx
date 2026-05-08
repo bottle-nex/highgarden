@@ -22,7 +22,7 @@ export default function MarketCard({
     return (
         <Link
             href={resolved_href}
-            className="group relative rounded-lg p-5 bg-dark-base transition-colors cursor-pointer block no-underline"
+            className="group relative rounded-lg p-4 sm:p-5 bg-dark-base transition-colors cursor-pointer block no-underline"
         >
             {overlay && (
                 <div className="absolute right-3 top-3 z-10 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
@@ -34,16 +34,16 @@ export default function MarketCard({
                 <span className="text-white/45">ENDS IN {market.endsIn}</span>
             </div>
 
-            <h3 className="mt-5 text-[15px] text-white/75 font-medium leading-snug min-h-12 line-clamp-2 hover:underline">
+            <h3 className="mt-3 sm:mt-5 text-[13px] sm:text-[15px] text-white/75 font-medium leading-snug min-h-10 sm:min-h-12 line-clamp-2 hover:underline">
                 {market.title}
             </h3>
 
-            <div className="mt-6 space-y-2.5">
+            <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-2.5">
                 <ProbBar label="YES" value={market.yesPrice} color="bg-green-500/90" />
                 <ProbBar label="NO" value={market.noPrice} color="bg-red-500/90" />
             </div>
 
-            <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between  text-[11px] tracking-[0.18em] uppercase">
+            <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-white/10 flex items-center justify-between gap-2 sm:gap-4 text-[11px] tracking-[0.18em] uppercase flex-wrap">
                 <span className="text-white/55">VOL {market.volume}</span>
                 <span
                     className={cn(
