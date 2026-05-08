@@ -2,7 +2,6 @@
 import { JSX, useState } from 'react';
 import { ImUserTie } from 'react-icons/im';
 import { LuArrowDownToLine, LuArrowUpFromLine, LuEye, LuEyeOff } from 'react-icons/lu';
-import { Button } from '@/components/ui/button';
 import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { selectAllPositions, usePositionsStore } from '@/store/portfolio/usePositionsStore';
