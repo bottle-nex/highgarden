@@ -24,7 +24,7 @@ export interface ResolverStateRow {
  * `Resolver.find(id)` / `Resolver.record_redeemed(...)`.
  *
  * Named `Resolver` (not `ResolverState`) for callsite ergonomics.
- * The matching service class is in `apps/hedger/v2/resolver/index.ts`;
+ * The matching service class is in `apps/hedger/resolver/index.ts`;
  * if a single file ever needs both, alias one on import.
  */
 export default class Resolver {

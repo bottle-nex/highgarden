@@ -66,8 +66,9 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
               ? 'text-red-500'
               : 'text-white/60';
 
+    const has_current_price = position.currentPriceCents !== null;
     return (
-        <div className="grid grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] gap-x-4 items-center px-2 py-4 border-t border-neutral-900">
+        <div className="grid grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] gap-x-4 items-center px-3 py-4 border-b border-neutral-900/80 hover:bg-white/2 transition-colors">
             <div className="flex items-center gap-x-3 min-w-0">
                 <MarketIcon className="bg-neutral-700">
                     <Image
@@ -78,40 +79,56 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
                     />
                 </MarketIcon>
                 <div className="min-w-0">
-                    <p className="text-base text-white truncate">{position.marketName}</p>
-                    <div className="flex items-center gap-x-2 mt-1">
+                    <p className="text-sm text-white/95 truncate font-medium">
+                        {position.marketName}
+                    </p>
+                    <div className="flex items-center gap-x-2 mt-1.5">
                         <span
                             className={cn(
-                                'text-sm px-2 py-1 rounded-lg',
+                                'text-xs px-2 py-0.5 rounded-md font-semibold tabular-nums',
                                 isYes
-                                    ? 'bg-emerald-600 text-white'
-                                    : 'bg-rose-500 text-white',
+                                    ? 'bg-emerald-600/90 text-white'
+                                    : 'bg-rose-500/90 text-white',
                             )}
                         >
                             {isYes ? 'Yes' : 'No'} {position.avgCostCents}¢
                         </span>
-                        <span className="text-xs text-white/50">
+                        <span className="text-xs text-white/50 tabular-nums">
                             {position.shares.toLocaleString()} shares
                         </span>
                     </div>
                 </div>
             </div>
-            <div className="text-sm text-white/70">
-                {position.avgCostCents}¢ <span className="text-white/40">→</span>{' '}
-                {position.currentPriceCents !== null ? `${position.currentPriceCents}¢` : '—'}
+            <div className="text-sm text-white/75 text-right tabular-nums">
+                <span className="text-white/85">{position.avgCostCents}¢</span>
+                <span className="text-white/35 mx-1">→</span>
+                <span className="text-white/85">
+                    {has_current_price ? `${position.currentPriceCents}¢` : '—'}
+                </span>
             </div>
-            <div className="text-sm text-white/70">${position.tradedUsd.toFixed(2)}</div>
-            <div className="text-sm text-white/70">${position.toWinUsd.toFixed(2)}</div>
-            <div>
-                <div className={cn('flex items-center gap-x-1 text-xs', status_color)}>
-                    {position.status === 'WON' && <FaCheckCircle className="size-3.5" />}
+            <div className="text-sm text-white/85 text-right tabular-nums">
+                ${position.tradedUsd.toFixed(2)}
+            </div>
+            <div className="text-sm text-white/85 text-right tabular-nums">
+                ${position.toWinUsd.toFixed(2)}
+            </div>
+            <div className="text-right">
+                <div
+                    className={cn(
+                        'inline-flex items-center gap-x-1 text-[10px] font-semibold uppercase tracking-wider',
+                        status_color,
+                    )}
+                >
+                    {position.status === 'WON' && <FaCheckCircle className="size-3" />}
                     {status_label}
                 </div>
-                <div className={cn('text-sm font-medium', status_color)}>
+                <div
+                    className={cn('text-sm font-semibold tabular-nums leading-tight', status_color)}
+                >
                     ${position.valueUsd.toFixed(2)}
                 </div>
             </div>
-            <div className="flex items-center gap-x-2">
+            <div className="flex items-center justify-end gap-x-2 pl-2">
                 {position.claimableUsd > 0 && (
                     <Button
                         variant="outline"
@@ -124,7 +141,7 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
                 )}
                 <Button
                     size="icon"
-                    className="size-9 bg-neutral-800 hover:bg-neutral-900 text-white rounded-lg"
+                    className="size-9 bg-neutral-800/60 hover:bg-neutral-800 text-white/70 hover:text-white rounded-lg"
                     onClick={() => {}}
                 >
                     <LuShare2 />

@@ -9,7 +9,13 @@ import {
 import PositionRow from './PositionRow';
 import EmptyTabState from './EmptyTabState';
 
-const COLUMN_HEADERS = ['Market', 'Avg → Now', 'Traded', 'To win', 'Value'];
+const COLUMN_HEADERS: { label: string; align: 'left' | 'right' }[] = [
+    { label: 'Market', align: 'left' },
+    { label: 'Avg → Now', align: 'right' },
+    { label: 'Traded', align: 'right' },
+    { label: 'To win', align: 'right' },
+    { label: 'Value', align: 'right' },
+];
 
 export default function PositionsTable(): JSX.Element {
     const positions = usePositionsStore(selectAllPositions);
@@ -29,10 +35,17 @@ export default function PositionsTable(): JSX.Element {
 
     return (
         <div className="mt-4">
-            <div className="grid grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] gap-x-4 px-2 pb-3 text-xs text-white/50 uppercase tracking-wide">
+            <div className="grid grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] gap-x-4 px-3 pb-3 text-[11px] font-medium text-white/45 uppercase tracking-wider border-b border-neutral-900">
                 {COLUMN_HEADERS.map((header) => (
-                    <div key={header} className="flex items-center gap-x-1">
-                        {header} <LuChevronsUpDown className="size-3" />
+                    <div
+                        key={header.label}
+                        className={
+                            header.align === 'right'
+                                ? 'flex items-center justify-end gap-x-1'
+                                : 'flex items-center gap-x-1'
+                        }
+                    >
+                        {header.label} <LuChevronsUpDown className="size-3" />
                     </div>
                 ))}
                 <div />

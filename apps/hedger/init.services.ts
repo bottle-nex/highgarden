@@ -16,7 +16,7 @@ import { logger_for } from "./log/log";
  * the graph, nothing should swap a service out at runtime — that would
  * break the dependency arrows wired in here.
  *
- * DB access lives in `apps/hedger/v2/db/*` as static-method classes
+ * DB access lives in `apps/hedger/db/*` as static-method classes
  * (`User`, `Market`, `Resolver`, `Fill`, `Hedge`, `Exposure`, plus the
  * stateful `Cursor`). They are *not* listed here because they aren't
  * instances — call sites import the class and dispatch statically.

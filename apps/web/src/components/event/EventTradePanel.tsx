@@ -105,32 +105,39 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
         return { shares: target_shares, usd: target_shares * safe_price };
     }, [amount, input_mode, safe_price]);
 
+    // Trades clear two constraints at once: shares are integer-only on-chain,
+    // and Polymarket rejects hedges below $1 notional. The real minimum input
+    // is therefore ceil(1 / price) whole shares — which at high prices means
+    // the user has to spend well over $1 (e.g. 2 × 97¢ = $1.94).
+    const min_shares = Math.max(1, Math.ceil(1 / safe_price));
+    const min_usd = +(min_shares * safe_price).toFixed(2);
+
     const disable_reason = useMemo<string | null>(() => {
         if (!market.solanaMarketPda) return 'Trading not yet available on this market';
         if (active_price === undefined) return 'Loading price…';
-        if (computed.shares <= 0) {
-            const min_dollars = safe_price.toFixed(2);
-            if (tab === 'SELL') {
-                return owned_shares > 0
-                    ? input_mode === 'USDC'
-                        ? `Minimum $${min_dollars} to sell 1 share`
-                        : 'Enter at least 1 share'
-                    : `You don't own any ${selectedOutcome} shares to sell`;
-            }
-            return input_mode === 'USDC'
-                ? `Minimum $${min_dollars} to buy 1 share`
-                : 'Enter at least 1 share';
-        }
-        if (computed.usd < 1) {
-            return 'Minimum $1 to trade';
-        }
+
+        const share_word = (n: number) => `${n} share${n === 1 ? '' : 's'}`;
+        const below_min = computed.shares < min_shares || computed.usd < 1;
+
         if (tab === 'SELL') {
             if (owned_shares <= 0) {
                 return `You don't own any ${selectedOutcome} shares to sell`;
             }
+            if (below_min) {
+                return input_mode === 'USDC'
+                    ? `Minimum $${min_usd.toFixed(2)} to sell (${share_word(min_shares)})`
+                    : `Minimum ${share_word(min_shares)} to sell (≈ $${min_usd.toFixed(2)})`;
+            }
             if (computed.shares > owned_shares) {
                 return `You only own ${owned_shares.toLocaleString()} ${selectedOutcome} shares`;
             }
+            return null;
+        }
+
+        if (below_min) {
+            return input_mode === 'USDC'
+                ? `Minimum $${min_usd.toFixed(2)} to trade (${share_word(min_shares)} at ${(safe_price * 100).toFixed(0)}¢)`
+                : `Minimum ${share_word(min_shares)} (≈ $${min_usd.toFixed(2)} at ${(safe_price * 100).toFixed(0)}¢)`;
         }
         return null;
     }, [
@@ -139,6 +146,8 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
         computed.shares,
         computed.usd,
         safe_price,
+        min_shares,
+        min_usd,
         input_mode,
         tab,
         owned_shares,
