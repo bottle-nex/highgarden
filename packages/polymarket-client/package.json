@@ -1,0 +1,26 @@
+{
+  "name": "@solmarket/polymarket-client",
+  "version": "1.0.0",
+  "description": "Shared Polymarket facade — CLOB orders, Gamma resolution, Polygon CTF redemption. Used by apps/hedger and apps/server.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@polymarket/clob-client-v2": "^1.0.3",
+    "ethers": "^5.7.2"
+  },
+  "devDependencies": {
+    "@solmarket/eslint-config": "*",
+    "@solmarket/typescript-config": "*",
+    "@types/node": "^22.0.0",
+    "eslint": "^8.57.0",
+    "typescript": "5.5.4"
+  }
+}

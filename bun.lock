@@ -55,6 +55,7 @@
         "@coral-xyz/anchor": "^0.31.1",
         "@polymarket/clob-client-v2": "^1.0.3",
         "@solana/web3.js": "^1.98.4",
+        "@solmarket/polymarket-client": "*",
         "bs58": "^6.0.0",
         "bullmq": "^5.34.0",
         "chalk": "^5.6.2",
@@ -243,6 +244,21 @@
         "rimraf": "^5.0.5",
         "tsup": "^8.0.2",
         "tsx": "4.21.0",
+        "typescript": "5.5.4",
+      },
+    },
+    "packages/polymarket-client": {
+      "name": "@solmarket/polymarket-client",
+      "version": "1.0.0",
+      "dependencies": {
+        "@polymarket/clob-client-v2": "^1.0.3",
+        "ethers": "^5.7.2",
+      },
+      "devDependencies": {
+        "@solmarket/eslint-config": "*",
+        "@solmarket/typescript-config": "*",
+        "@types/node": "^22.0.0",
+        "eslint": "^8.57.0",
         "typescript": "5.5.4",
       },
     },
@@ -1118,6 +1134,8 @@
     "@solmarket/database": ["@solmarket/database@workspace:packages/database"],
 
     "@solmarket/eslint-config": ["@solmarket/eslint-config@workspace:packages/config-eslint"],
+
+    "@solmarket/polymarket-client": ["@solmarket/polymarket-client@workspace:packages/polymarket-client"],
 
     "@solmarket/polymarket-contracts": ["@solmarket/polymarket-contracts@workspace:packages/polymarket-contracts"],
 
@@ -3704,6 +3722,8 @@
     "@solmarket/database/typescript": ["typescript@5.5.4", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-Mtq29sKDAEYP7aljRgtPOpTvOfbwRWlS6dPRzwjdE+C0R4brX/GUyhHSecbHMFLNBLcJIPt9nl9yG5TZ1weH+Q=="],
 
     "@solmarket/eslint-config/typescript": ["typescript@5.5.4", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-Mtq29sKDAEYP7aljRgtPOpTvOfbwRWlS6dPRzwjdE+C0R4brX/GUyhHSecbHMFLNBLcJIPt9nl9yG5TZ1weH+Q=="],
+
+    "@solmarket/polymarket-client/typescript": ["typescript@5.5.4", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-Mtq29sKDAEYP7aljRgtPOpTvOfbwRWlS6dPRzwjdE+C0R4brX/GUyhHSecbHMFLNBLcJIPt9nl9yG5TZ1weH+Q=="],
 
     "@solmarket/polymarket-contracts/typescript": ["typescript@5.5.4", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-Mtq29sKDAEYP7aljRgtPOpTvOfbwRWlS6dPRzwjdE+C0R4brX/GUyhHSecbHMFLNBLcJIPt9nl9yG5TZ1weH+Q=="],
 
