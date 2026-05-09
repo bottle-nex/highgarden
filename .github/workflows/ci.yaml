@@ -16,6 +16,10 @@ env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
   TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_SIGNATURE_KEY }}
+  # packages/database/prisma.config.ts eagerly resolves DATABASE_URL via
+  # env("DATABASE_URL"). prisma generate never opens a connection, so a
+  # well-formed dummy URL satisfies the eager check without exposing real creds.
+  DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
 jobs:
   validate:
