@@ -134,27 +134,27 @@ export default function LandingFeatureCardsSection(): JSX.Element {
     }, []);
 
     return (
-        <section className="relative z-30 w-full bg-dark-alpha py-32">
-            <div className="max-w-7xl mx-auto w-full px-6">
+        <section className="relative z-30 w-full bg-dark-alpha py-12 sm:py-20 lg:py-32">
+            <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-[0.25em] text-neutral-500">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-alpha" />
                     <span>{'// Why SolMarket'}</span>
                 </div>
                 <h1
                     className={cn(
-                        'mt-6 w-full text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-white leading-[0.95]',
+                        'mt-6 w-full text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tight text-white leading-[0.95]',
                         doto.className,
                     )}
                 >
                     One prediction market. Every edge Solana gives you.
                 </h1>
-                <p className="mt-8 max-w-3xl text-lg md:text-xl text-neutral-400 leading-snug">
+                <p className="mt-8 max-w-3xl text-base sm:text-lg md:text-xl text-neutral-400 leading-snug">
                     SolMarket fuses Polymarket-grade liquidity with sub-second Solana execution, so
                     you can trade real-world outcomes without bridging, waiting, or paying Polygon
                     gas.
                 </p>
             </div>
-            <div className="max-w-7xl mx-auto w-full px-6 mt-16">
+            <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-12 sm:mt-16">
                 <div className="relative grid w-full grid-cols-1 gap-0 md:grid-cols-3">
                     <svg
                         aria-hidden
@@ -192,7 +192,7 @@ export default function LandingFeatureCardsSection(): JSX.Element {
                                 transition={{ duration: 0.5, delay: index * 0.8 }}
                                 key={card.id}
                                 onClick={() => setActiveId(card.id)}
-                                className={`group relative aspect-square overflow-hidden text-left  uppercase tracking-wider transition-colors duration-300 ease-in-out ${stateClasses}`}
+                                className={`group relative aspect-[5/4] sm:aspect-square overflow-hidden text-left  uppercase tracking-wider transition-colors duration-300 ease-in-out ${stateClasses}`}
                             >
                                 <span
                                     aria-hidden
@@ -226,7 +226,7 @@ function InactiveCard({ label }: { label: string }): JSX.Element {
             <div
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
-                className="flex h-full w-full flex-col p-8"
+                className="flex h-full w-full flex-col p-5 sm:p-6 lg:p-8"
             >
                 <div className="h-2.25" aria-hidden />
                 <div className="relative mt-2 flex flex-1 items-center justify-center bg-neutral-950 p-3">
@@ -244,7 +244,7 @@ function InactiveCard({ label }: { label: string }): JSX.Element {
 
 function ActiveCard({ card }: { card: CardConfig }): JSX.Element {
     return (
-        <div className="flex h-full w-full flex-col p-8 relative">
+        <div className="flex h-full w-full flex-col p-5 sm:p-6 lg:p-8 relative">
             <div className="flex items-center justify-between text-[10px]">
                 <span>AGENT CONTEXT</span>
                 <span className="flex items-center gap-1">

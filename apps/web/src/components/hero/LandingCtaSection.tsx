@@ -142,7 +142,7 @@ export default function LandingCtaSection(): JSX.Element {
                 transition={{ duration: 0.7 }}
             >
                 {/* ── Top section: stat + metadata + slide nav ── */}
-                <section className="px-8 md:px-12 lg:px-16 pt-32">
+                <section className="px-4 sm:px-8 md:px-12 lg:px-16 pt-16 sm:pt-24 lg:pt-32">
                     <div className="flex items-start justify-between">
                         {/* Left: stat block */}
                         <AnimatePresence mode="wait">
@@ -158,7 +158,7 @@ export default function LandingCtaSection(): JSX.Element {
                                 </div>
                                 <div
                                     className={cn(
-                                        'text-6xl md:text-7xl lg:text-8xl tracking-tighter text-white leading-none',
+                                        'text-5xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tighter text-white leading-none',
                                         bitcountGridDouble.className,
                                     )}
                                 >
@@ -172,7 +172,7 @@ export default function LandingCtaSection(): JSX.Element {
 
                         {/* Right: metadata + slide nav */}
                         <div className="flex flex-col items-end gap-y-4">
-                            <div className="flex items-center gap-x-3  text-[10px] tracking-[0.2em] uppercase text-white/40">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] tracking-[0.2em] uppercase text-white/40">
                                 <span>PROOF</span>
                                 <span className="w-6 h-px bg-white/20" />
                                 <span>ECOSYSTEM VOICES</span>
@@ -202,8 +202,8 @@ export default function LandingCtaSection(): JSX.Element {
                 <div className="flex-1" />
 
                 {/* ── Bottom: quote block + CTA ── */}
-                <div className="px-8 md:px-12 lg:px-16 pb-10">
-                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-x-16 gap-y-6 items-end">
+                <div className="px-4 sm:px-8 md:px-12 lg:px-16 pb-8 sm:pb-10">
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-x-8 lg:gap-x-16 gap-y-6 items-start md:items-end">
                         {/* Quote */}
                         <AnimatePresence mode="wait">
                             <motion.div
@@ -245,7 +245,7 @@ export default function LandingCtaSection(): JSX.Element {
                                         router.push('/dashboard');
                                     }
                                 }}
-                                className="relative border border-white/10 hover:border-white/20 bg-white/3 backdrop-blur-sm px-8 py-5 cursor-pointer group outline-none focus-visible:border-white/40"
+                                className="relative border border-white/10 hover:border-white/20 bg-white/3 backdrop-blur-sm px-5 sm:px-8 py-4 sm:py-5 cursor-pointer group outline-none focus-visible:border-white/40"
                             >
                                 <div className=" text-[10px] tracking-[0.2em] uppercase text-white/30 mb-3">
                                     GO TO DASHBOARD

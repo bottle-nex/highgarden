@@ -58,13 +58,13 @@ export default function AppFaq({ index }: Props): JSX.Element {
     return (
         <motion.section
             id="faq"
-            className="scroll-mt-28 border-t border-white/10 py-16 bg-dark-alpha"
+            className="scroll-mt-28 border-t border-white/10 py-10 sm:py-12 lg:py-16 bg-dark-alpha"
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.1 }}
             transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
         >
-            <div className="grid grid-cols-1 gap-x-12 gap-y-12 lg:grid-cols-[3fr_7fr] lg:gap-x-20">
+            <div className="grid grid-cols-1 gap-x-8 gap-y-8 sm:gap-x-12 sm:gap-y-12 lg:grid-cols-[3fr_7fr] lg:gap-x-20">
                 <div className="lg:sticky lg:top-28 lg:self-start">
                     <div className="mb-5 flex items-center gap-x-3">
                         {number ? (
@@ -84,7 +84,7 @@ export default function AppFaq({ index }: Props): JSX.Element {
 
                     <h2
                         className={cn(
-                            'text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tighter text-white leading-[0.9]',
+                            'text-4xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tighter text-white leading-[0.9]',
                             doto.className,
                         )}
                     >
@@ -118,7 +118,7 @@ export default function AppFaq({ index }: Props): JSX.Element {
                                     aria-expanded={is_open}
                                     aria-controls={`faq-panel-${faq.id}`}
                                     className={cn(
-                                        'group/faq flex h-auto w-full items-center justify-between gap-x-6 rounded-none bg-transparent px-0 py-6 text-left whitespace-normal',
+                                        'group/faq flex h-auto w-full items-center justify-between gap-x-3 sm:gap-x-6 rounded-none bg-transparent px-0 py-4 sm:py-6 text-left whitespace-normal',
                                         'hover:bg-transparent aria-expanded:bg-transparent',
                                     )}
                                 >
@@ -157,7 +157,7 @@ export default function AppFaq({ index }: Props): JSX.Element {
                                             }}
                                             className="overflow-hidden"
                                         >
-                                            <p className="max-w-2xl pb-6 text-[16px] leading-[1.75] text-white/65">
+                                            <p className="max-w-2xl pb-4 sm:pb-6 text-[14px] sm:text-[16px] leading-[1.75] text-white/65">
                                                 {faq.answer}
                                             </p>
                                         </motion.div>

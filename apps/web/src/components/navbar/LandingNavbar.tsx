@@ -51,7 +51,7 @@ export default function LandingNavbar(): JSX.Element {
         >
             <div
                 className={cn(
-                    'mx-auto w-full flex items-center transition-all duration-300 px-6',
+                    'mx-auto w-full flex items-center transition-all duration-300 px-3 sm:px-6 lg:px-8',
                     isScrolled ? 'h-14' : 'h-20',
                 )}
             >

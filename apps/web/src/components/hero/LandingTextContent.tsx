@@ -29,7 +29,7 @@ export default function LandingTextContent(): JSX.Element {
     return (
         <main
             ref={section_ref}
-            className="relative z-20 w-screen min-h-[110vh] bg-alpha overflow-hidden"
+            className="relative z-20 w-full min-h-[110vh] bg-alpha overflow-hidden"
         >
             <div
                 aria-hidden
@@ -45,7 +45,7 @@ export default function LandingTextContent(): JSX.Element {
             />
 
             <div className="relative z-10">
-                <div className="mx-auto max-w-6xl px-6 pt-28">
+                <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-16 sm:pt-20 lg:pt-28">
                     <div className="flex items-center gap-3 text-xs font-mono uppercase tracking-[0.25em] text-black/70">
                         <span className="inline-block h-1.5 w-1.5 rounded-full bg-black animate-pulse" />
                         <span>Live on Solana mainnet · 1:1 USDC settlement</span>
@@ -53,7 +53,7 @@ export default function LandingTextContent(): JSX.Element {
                     <motion.h1
                         style={{ y: heading_y }}
                         className={cn(
-                            'mt-6 max-w-5xl text-5xl md:text-6xl lg:text-7xl font-black tracking-tight text-black leading-[0.95]',
+                            'mt-6 max-w-5xl text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black tracking-tight text-black leading-[0.95]',
                             doto.className,
                         )}
                     >
@@ -63,12 +63,12 @@ export default function LandingTextContent(): JSX.Element {
 
                 <motion.section
                     style={{ y: image_y, scale: image_scale }}
-                    className="relative z-30 w-full max-w-6xl mx-auto px-4 mt-20"
+                    className="relative z-30 w-full max-w-6xl mx-auto px-3 sm:px-4 mt-12 sm:mt-16 lg:mt-20"
                 >
                     <LandingDummyEvent />
                 </motion.section>
 
-                <div className="mx-auto w-full max-w-6xl px-6 pt-28 pb-28">
+                <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 pt-16 sm:pt-20 lg:pt-28 pb-16 sm:pb-20 lg:pb-28">
                     <div className="flex flex-col items-center text-center gap-6">
                         <span className="text-xs font-mono uppercase tracking-[0.3em] text-black/60">
                             Mainnet · Live now
@@ -81,7 +81,7 @@ export default function LandingTextContent(): JSX.Element {
                         >
                             {APP_NAME}
                         </h2>
-                        <p className="text-2xl md:text-3xl lg:text-4xl text-black/80 max-w-2xl tracking-tight font-medium mt-4">
+                        <p className="text-lg sm:text-2xl md:text-3xl lg:text-4xl text-black/80 max-w-2xl tracking-tight font-medium mt-4">
                             <RandomRevealText text="Polymarket depth. Solana speed." />
                         </p>
                         <CroppedButton size={'lg'} className="bg-black text-white mt-4">

@@ -14,14 +14,14 @@ import LandingInteractiveSection from '@/components/hero/LandingInteractiveSecti
 export default function Home() {
     return (
         <>
-            <div className="relative z-10 min-h-screen w-screen bg-dark-alpha flex flex-col">
+            <div className="relative z-10 min-h-screen w-full overflow-x-clip bg-dark-alpha flex flex-col">
                 <LandingNavbar />
                 <LandingCtaSection />
                 <LandingTextContent />
                 <LandingFeatureCardsSection />
                 <LandingMagicLanes />
                 {/* <LandingInteractiveSection /> */}
-                <section className="relative z-30 w-full bg-dark-alpha px-6 pt-24 md:px-10">
+                <section className="relative z-30 w-full bg-dark-alpha px-4 sm:px-6 md:px-10 lg:px-12 pt-12 sm:pt-16 lg:pt-24">
                     <div className="mx-auto w-full max-w-7xl">
                         <AppFaq />
                     </div>

@@ -39,8 +39,8 @@ const rise_transition = {
 
 export default function LandingMagicLanes(): JSX.Element {
     return (
-        <main className="w-screen h-screen bg-neutral-50 relative z-30">
-            <div className="grid grid-rows-3 w-full max-w-7xl mx-auto h-full px-6">
+        <main className="w-full h-screen bg-neutral-50 relative z-30 overflow-hidden">
+            <div className="grid grid-rows-3 w-full max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8">
                 <HeadingStatRow stat={stats[0]!} />
                 <StatRow stat={stats[1]!} />
                 <StatRow stat={stats[2]!} is_last />
@@ -58,7 +58,7 @@ function HeadingStatRow({ stat }: { stat: StatRow }): JSX.Element {
     return (
         <div
             ref={ref}
-            className="border-b border-neutral-300 flex items-center justify-between gap-8 overflow-hidden relative"
+            className="border-b border-neutral-300 flex items-center justify-between gap-4 sm:gap-8 overflow-hidden relative"
         >
             <div className="overflow-hidden">
                 <motion.h2
@@ -66,7 +66,7 @@ function HeadingStatRow({ stat }: { stat: StatRow }): JSX.Element {
                     animate={{ y: in_view ? '0%' : '100%' }}
                     transition={rise_transition}
                     style={{ willChange: 'transform' }}
-                    className="max-w-xl text-3xl md:text-4xl lg:text-5xl tracking-tight leading-[1.05] font-medium text-black"
+                    className="max-w-xl text-xl sm:text-2xl md:text-4xl lg:text-5xl tracking-tight leading-[1.05] font-medium text-black"
                 >
                     <span className="text-[#ff4000]">Battle tested:</span>{' '}
                     <span>day-one depth, settled in milliseconds.</span>
@@ -105,16 +105,16 @@ function StatBlock({ stat, in_view }: { stat: StatRow; in_view: boolean }): JSX.
             className={cn('flex flex-col gap-2', block_align_class[stat.align])}
         >
             <div className="flex items-start leading-none">
-                <span className="text-[5rem] md:text-[8rem] lg:text-[10rem] font-light tracking-tighter text-black tabular-nums">
+                <span className="text-[2.5rem] sm:text-[3.5rem] md:text-[8rem] lg:text-[10rem] font-light tracking-tighter text-black tabular-nums">
                     {stat.value}
                 </span>
-                <span className="text-3xl md:text-5xl lg:text-6xl text-neutral-300 font-light mt-1 ml-1">
+                <span className="text-xl sm:text-2xl md:text-5xl lg:text-6xl text-neutral-300 font-light mt-1 ml-1">
                     +
                 </span>
             </div>
             <span
                 className={cn(
-                    'text-lg md:text-xl lg:text-2xl tracking-[0.18em] uppercase text-[#ff4000]',
+                    'text-xs sm:text-sm md:text-xl lg:text-2xl tracking-[0.18em] uppercase text-[#ff4000]',
                     bitcountGridDouble.className,
                 )}
             >
