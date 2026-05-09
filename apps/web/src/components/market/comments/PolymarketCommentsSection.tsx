@@ -45,6 +45,7 @@ export default function PolymarketCommentsSection({ market_id }: Props): JSX.Ele
     }, [market_id, holders_only]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void load_initial();
     }, [load_initial]);
 

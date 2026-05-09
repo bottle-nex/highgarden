@@ -9,7 +9,6 @@ import AppFaq from '@/components/faq/AppFaq';
 // import LandingFooter from '@/components/hero/LandingFooter';
 // import LandingInteractiveSection from '@/components/hero/LandingInteractiveSection';
 import LandingNavbar from '@/components/navbar/LandingNavbar';
-import LandingInteractiveSection from '@/components/hero/LandingInteractiveSection';
 
 export default function Home() {
     return (
