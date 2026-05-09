@@ -1,0 +1,233 @@
+# Build & deploy each affected deployable app to AWS ECS in a job matrix.
+# One workflow handles every app — same prune → build → push → deploy → smoke
+# test → rollback flow.
+#
+# Prerequisites (NOT created by this workflow):
+#   - apps/<app>/Dockerfile           for each entry in DEPLOYABLE_APPS below
+#   - infra/ecs/<app>.task-def.json   ECS task definition template per app
+#   - GitHub repo vars:
+#       AWS_REGION, TURBO_TEAM, AWS_DEPLOY_ROLE,
+#       optional HEALTHCHECK_URL_<APP_UPPER> for the smoke test step
+#   - GitHub repo secrets: TURBO_TOKEN, TURBO_SIGNATURE_KEY (optional)
+#   - GitHub Environments "staging" and "production"
+#       (production should require approvers / wait timer)
+#   - ECR repos named <app> in the target AWS account
+#   - IAM role trusted via GitHub OIDC with ecr:* + ecs:UpdateService perms
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [staging, production]
+        default: staging
+      apps:
+        description: Comma-separated apps to deploy (default = affected)
+        type: string
+        default: ""
+
+# Never cancel an in-flight deploy; cancellation leaves ECS in a stuck state.
+concurrency:
+  group: cd-${{ github.event.inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write # OIDC for AWS
+  contents: read
+  security-events: write # upload Trivy SARIF
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+  TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+  # Edit this list when an app becomes deployable. Smart contracts
+  # (apps/contract) and stub apps (apps/polymarket) are intentionally excluded.
+  DEPLOYABLE_APPS: '["web","server","hedger","mirror"]'
+
+jobs:
+  detect:
+    name: Detect changed apps
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.list.outputs.apps }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Cache Bun install store
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - run: bun install --frozen-lockfile
+
+      - id: list
+        name: Compute affected ∩ deployable
+        env:
+          DEPLOYABLE: ${{ env.DEPLOYABLE_APPS }}
+          OVERRIDE: ${{ github.event.inputs.apps }}
+        run: |
+          if [[ -n "$OVERRIDE" ]]; then
+            APPS=$(echo "$OVERRIDE" | jq -Rc 'split(",") | map(gsub("^\\s+|\\s+$"; ""))')
+          else
+            export TURBO_SCM_BASE=HEAD^1
+            export TURBO_SCM_HEAD=HEAD
+            CHANGED=$(bun x turbo ls --affected --output=json 2>/dev/null \
+              | jq -c '[.packages.items[].name]')
+            APPS=$(jq -nc --argjson c "$CHANGED" --argjson d "$DEPLOYABLE" \
+              '$c | map(select(. as $x | $d | index($x)))')
+          fi
+          echo "apps=$APPS" >> "$GITHUB_OUTPUT"
+          echo "Will deploy: $APPS"
+
+  deploy:
+    name: Deploy ${{ matrix.app }}
+    needs: detect
+    if: needs.detect.outputs.apps != '[]' && needs.detect.outputs.apps != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: ${{ github.event.inputs.environment || 'staging' }}
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        app: ${{ fromJSON(needs.detect.outputs.apps) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Cache Bun install store
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
+      - run: bun install --frozen-lockfile
+
+      - name: Prune workspace for ${{ matrix.app }}
+        run: bun x turbo prune ${{ matrix.app }} --docker
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.ecr.outputs.registry }}/${{ matrix.app }}
+          tags: |
+            type=sha,prefix=,format=long
+            type=raw,value=${{ github.event.inputs.environment || 'staging' }}-latest
+
+      - name: Build & push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,scope=${{ matrix.app }},mode=max
+          provenance: true
+          sbom: true
+          build-args: |
+            APP_NAME=${{ matrix.app }}
+            BUILD_SHA=${{ github.sha }}
+
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: sarif
+          output: trivy-${{ matrix.app }}.sarif
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+
+      - if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-${{ matrix.app }}.sarif
+          category: trivy-${{ matrix.app }}
+
+      - id: td
+        name: Render ECS task definition
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: infra/ecs/${{ matrix.app }}.task-def.json
+          container-name: ${{ matrix.app }}
+          image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+
+      - id: deploy
+        name: Deploy to ECS (rolling, wait for stability)
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.td.outputs.task-definition }}
+          service: ${{ matrix.app }}
+          cluster: ${{ github.event.inputs.environment || 'staging' }}
+          wait-for-service-stability: true
+
+      - name: Smoke test
+        env:
+          URL: ${{ vars[format('HEALTHCHECK_URL_{0}', matrix.app)] }}
+        run: |
+          if [[ -z "$URL" ]]; then
+            echo "No HEALTHCHECK_URL_${{ matrix.app }} configured; skipping smoke test."
+            exit 0
+          fi
+          for i in {1..30}; do
+            if curl -fsS --max-time 5 "$URL" >/dev/null; then
+              echo "Healthy after ${i} attempts"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Smoke test failed after 30 attempts"
+          exit 1
+
+      - name: Rollback on failure
+        if: failure() && steps.deploy.outcome == 'success'
+        env:
+          CLUSTER: ${{ github.event.inputs.environment || 'staging' }}
+        run: |
+          echo "Deploy or post-deploy step failed. Rolling back ${{ matrix.app }}."
+          PREV=$(aws ecs describe-services \
+            --cluster "$CLUSTER" --services ${{ matrix.app }} \
+            --query 'services[0].deployments[?status==`ACTIVE`].taskDefinition | [0]' \
+            --output text)
+          if [[ -z "$PREV" || "$PREV" == "None" ]]; then
+            echo "No previous ACTIVE task definition found; manual intervention required."
+            exit 1
+          fi
+          aws ecs update-service \
+            --cluster "$CLUSTER" --service ${{ matrix.app }} \
+            --task-definition "$PREV" >/dev/null
+          aws ecs wait services-stable --cluster "$CLUSTER" --services ${{ matrix.app }}
+          echo "Rolled back ${{ matrix.app }} to $PREV"

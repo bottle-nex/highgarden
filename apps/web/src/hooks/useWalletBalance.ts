@@ -28,6 +28,8 @@ export function useWalletBalance(opts: { enabled: boolean }): State {
     }, []);
 
     useEffect(() => {
+        // Fetch-on-mount (gated by opts.enabled): setState cascade is intentional.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (opts.enabled) void refetch();
     }, [opts.enabled, refetch]);
 

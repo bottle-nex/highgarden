@@ -8,13 +8,13 @@ The program ID never changes. The Config PDA, all Market PDAs, all UserPosition 
 
 ## 1. Keys and roles
 
-| File | Role | Touched during upgrade? |
-|---|---|---|
-| `~/.config/solana/id.json` | Deployer = **upgrade authority** | Yes — signs the upgrade tx |
+| File                                                | Role                                                                                          | Touched during upgrade?        |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------ |
+| `~/.config/solana/id.json`                          | Deployer = **upgrade authority**                                                              | Yes — signs the upgrade tx     |
 | `apps/contract/target/deploy/contract-keypair.json` | Program keypair (its pubkey is the program ID `2LEm66V2Ys8JbVoQfYbZqCy6YGM1wuPUc843xRx76t3P`) | No — only used at first deploy |
-| `~/.config/solana/solmarket-admin.json` | `Config.admin` — gates `create_market`, `admin_pause_market`, `close_used_nonce` | No |
-| `~/.config/solana/solmarket-oracle.json` | `Config.oracle_signer` — signs `resolve_market` | No |
-| `~/.config/solana/solmarket-quote.json` | `Config.quote_signer` — signs ed25519 quotes for `place_order` | No |
+| `~/.config/solana/solmarket-admin.json`             | `Config.admin` — gates `create_market`, `admin_pause_market`, `close_used_nonce`              | No                             |
+| `~/.config/solana/solmarket-oracle.json`            | `Config.oracle_signer` — signs `resolve_market`                                               | No                             |
+| `~/.config/solana/solmarket-quote.json`             | `Config.quote_signer` — signs ed25519 quotes for `place_order`                                | No                             |
 
 The admin / oracle / quote keys are program **state**, not program **infrastructure**. They are unaffected by upgrades. Keep them safe but don't touch them during this procedure.
 
@@ -98,13 +98,13 @@ ls -lh target/idl/contract.json
 ls -lh ../../packages/contract/src/idl.ts
 ```
 
-If you ever need a build *with* embedded IDL (e.g. for a one-off explorer compatibility deploy), drop the `-- --features no-idl` flag.
+If you ever need a build _with_ embedded IDL (e.g. for a one-off explorer compatibility deploy), drop the `-- --features no-idl` flag.
 
 ---
 
 ## 5. (Optional, first-time only) Close the stale on-chain IDL PDA
 
-Your current devnet deployment was made *with* the embedded IDL, so an `IdlAccount` PDA was created beside the program. After you upgrade to a `no-idl` build, that PDA can no longer be updated or closed via `anchor idl ...` because the handlers are stripped from the new bytecode.
+Your current devnet deployment was made _with_ the embedded IDL, so an `IdlAccount` PDA was created beside the program. After you upgrade to a `no-idl` build, that PDA can no longer be updated or closed via `anchor idl ...` because the handlers are stripped from the new bytecode.
 
 **Do this once, before the first `no-idl` upgrade.** Skip in all subsequent upgrades.
 

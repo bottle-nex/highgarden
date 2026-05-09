@@ -59,6 +59,8 @@ export function useExternalWalletUsdc(): State {
     }, [connection, publicKey]);
 
     useEffect(() => {
+        // Fetch-on-mount: setState cascade is intentional.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void refetch();
     }, [refetch]);
 

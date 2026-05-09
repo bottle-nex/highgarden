@@ -4,11 +4,7 @@ import { LuChevronsUpDown, LuExternalLink } from 'react-icons/lu';
 import type { FillDTO } from '@solmarket/types';
 import { Outcome, Side } from '@solmarket/types';
 import { cn } from '@/lib/utils';
-import {
-    selectAllFills,
-    selectFillsLoading,
-    useFillsStore,
-} from '@/store/portfolio/useFillsStore';
+import { selectAllFills, selectFillsLoading, useFillsStore } from '@/store/portfolio/useFillsStore';
 import EmptyTabState from './EmptyTabState';
 
 const COLUMN_HEADERS = ['Market', 'Action', 'Price', 'Shares', 'Total', 'When'];
@@ -78,18 +74,14 @@ function HistoryRow({ fill }: { fill: FillDTO }): JSX.Element {
                 <span
                     className={cn(
                         'text-[10px] px-1.5 py-0.5 font-semibold tracking-wider',
-                        isYes
-                            ? 'bg-primary/15 text-primary'
-                            : 'bg-red-500/15 text-red-400',
+                        isYes ? 'bg-primary/15 text-primary' : 'bg-red-500/15 text-red-400',
                     )}
                 >
                     {isYes ? 'YES' : 'NO'}
                 </span>
             </div>
             <div className="text-sm text-white/70 tabular-nums">{fill.priceCents}¢</div>
-            <div className="text-sm text-white/70 tabular-nums">
-                {fill.size.toLocaleString()}
-            </div>
+            <div className="text-sm text-white/70 tabular-nums">{fill.size.toLocaleString()}</div>
             <div className="text-sm text-white tabular-nums">${total_usd.toFixed(2)}</div>
             <div className="text-sm text-white/50">{format_when(fill.createdAt)}</div>
             <a

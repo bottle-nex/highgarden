@@ -18,7 +18,10 @@ export default function FooterReveal() {
         const footer_el = footer_ref.current;
         if (!footer_el) return;
         const update_height = () => {
-            document.documentElement.style.setProperty('--footer-reveal-height', `${footer_el.offsetHeight}px`);
+            document.documentElement.style.setProperty(
+                '--footer-reveal-height',
+                `${footer_el.offsetHeight}px`,
+            );
         };
         update_height();
         const ro = new ResizeObserver(update_height);

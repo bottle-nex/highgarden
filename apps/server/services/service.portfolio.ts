@@ -58,9 +58,7 @@ export default class PortfolioService {
             );
 
             if (yes_agg.shares > 0) {
-                positions.push(
-                    PortfolioService.build_position(first, "YES", yes_agg, yes_price),
-                );
+                positions.push(PortfolioService.build_position(first, "YES", yes_agg, yes_price));
             }
             if (no_agg.shares > 0) {
                 positions.push(PortfolioService.build_position(first, "NO", no_agg, no_price));
@@ -115,10 +113,7 @@ export default class PortfolioService {
         return map;
     }
 
-    private static aggregate_outcome(
-        fills: FillRow[],
-        outcome: "YES" | "NO",
-    ): OutcomeAggregate {
+    private static aggregate_outcome(fills: FillRow[], outcome: "YES" | "NO"): OutcomeAggregate {
         let shares = 0;
         let avg = 0;
         for (const f of fills) {

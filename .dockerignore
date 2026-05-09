@@ -1,0 +1,37 @@
+# Anything not needed inside the build context.
+# Without this, `docker build` ships hundreds of MB of node_modules / .git
+# / build outputs into BuildKit, slowing every build.
+
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/.cache
+
+.git
+.github
+.husky
+.vscode
+.idea
+.DS_Store
+
+# secrets — never bake into images
+.env
+.env.*
+!.env.example
+
+# local dev / docs
+docker-compose.yml
+docker-compose.*.yml
+*.md
+!apps/*/README.md
+
+# tests / coverage / large dev-only data
+coverage
+data
+plan.md
+change.md
+
+# anything Anchor / Rust generates locally for the contract app
+apps/contract/target
+apps/contract/.anchor

@@ -96,10 +96,16 @@ export default function EventRelatedMarkets({ excludeId }: Props): JSX.Element |
                         <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between text-[12px]">
                             <div className="flex gap-4">
                                 <span className="text-white/55">
-                                    Vol <span className="text-white/85 font-medium">{format_usd(m.volume24hUsd)}</span>
+                                    Vol{' '}
+                                    <span className="text-white/85 font-medium">
+                                        {format_usd(m.volume24hUsd)}
+                                    </span>
                                 </span>
                                 <span className="text-white/55">
-                                    Liq <span className="text-white/85 font-medium">{format_usd(m.liquidityUsd)}</span>
+                                    Liq{' '}
+                                    <span className="text-white/85 font-medium">
+                                        {format_usd(m.liquidityUsd)}
+                                    </span>
                                 </span>
                             </div>
                             <span className="text-white/70 font-medium">{format_end(m.endAt)}</span>
