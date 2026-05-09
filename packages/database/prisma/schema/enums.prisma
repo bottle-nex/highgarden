@@ -47,3 +47,15 @@ enum ListingStatus {
   APPROVED
   REJECTED
 }
+
+/**
+ * Why a row exists in PlatformInventory. SOLANA_FAILED_AFTER_HEDGE is the
+ * common case (Polymarket filled but Solana place_order kept reverting).
+ * MANUAL covers operator-injected rows for testing or hand-recovered
+ * positions; OTHER is the catch-all.
+ */
+enum InventoryReason {
+  SOLANA_FAILED_AFTER_HEDGE
+  MANUAL
+  OTHER
+}

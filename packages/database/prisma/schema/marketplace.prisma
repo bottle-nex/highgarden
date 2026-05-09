@@ -20,6 +20,7 @@ model Market {
   exposure  Exposure?
   listing   Listing?
   bookmarks Bookmark[]
+  platformInventory PlatformInventory[]
 
   @@unique([id, polyMarketId])
   @@unique([id, solanaMarketPda])
@@ -118,6 +119,14 @@ model Fill {
   nonce       String? @unique
   quote       Quote?  @relation(fields: [nonce], references: [nonce])
 
+  /**
+   * If this fill consumed an existing PlatformInventory row (instead of
+   * placing a fresh Polymarket order), points back to that row. Null for
+   * the common case (Polymarket-fill-then-Solana-commit).
+   */
+  nettedFromInventoryId String?            @unique
+  nettedFromInventory   PlatformInventory? @relation(fields: [nettedFromInventoryId], references: [id])
+
   createdAt DateTime @default(now())
 
   hedge Hedge?
@@ -163,4 +172,38 @@ model TreasuryBalance {
   updatedAt DateTime @updatedAt
 
   @@id([chain, token])
+}
+
+/**
+ * Tracks Polymarket positions the platform holds without a corresponding
+ * user Fill — typically because the Solana place_order leg permanently
+ * failed *after* the Polymarket leg already filled. The orchestrator nets
+ * these against opposite-direction user trades when possible; the
+ * liquidator sweeps anything older than the configured stale window.
+ */
+model PlatformInventory {
+  id                 String          @id @default(cuid())
+  marketId           String
+  market             Market          @relation(fields: [marketId], references: [id])
+  polymarketOrderId  String          @unique
+  polymarketTokenId  String
+  // The position the platform now holds, awaiting netting or liquidation.
+  // Side from our trade-direction POV: BUY = we own these shares (long the outcome),
+  // SELL = we sold (short the outcome).
+  side               Side
+  outcome            Outcome
+  shares             Int
+  avgPriceCents      Int
+  reason             InventoryReason
+  // Lifecycle timestamps.
+  createdAt          DateTime        @default(now())
+  nettedAt           DateTime?
+  /** Fill.id of the user trade that consumed this inventory (1:1 link via Fill.nettedFromInventoryId). */
+  nettedFromFill     Fill?
+  liquidatedAt       DateTime?
+  liquidateOrderId   String?
+  notes              String?
+
+  @@index([marketId, nettedAt, liquidatedAt])
+  @@index([createdAt])
 }

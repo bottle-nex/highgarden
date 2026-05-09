@@ -10,6 +10,7 @@ import NewsService from "./service.news";
 import { ClobClient } from "../polymarket/clob";
 import SolanaAdminService from "./service.solana-admin";
 import NonceSweeperService from "./service.nonce-sweeper";
+import TradeIdempotencyService from "./service.trade-idempotency";
 
 export default class Services {
     public redis!: Redis;
@@ -21,6 +22,7 @@ export default class Services {
     public news!: NewsService;
     public solana_admin!: SolanaAdminService;
     public nonce_sweeper!: NonceSweeperService;
+    public trade_idempotency!: TradeIdempotencyService;
 
     public async boot(): Promise<void> {
         this.redis = new Redis(ENV.SERVER_REDIS_URL);
@@ -32,6 +34,7 @@ export default class Services {
         this.news = new NewsService();
         this.solana_admin = new SolanaAdminService();
         this.nonce_sweeper = new NonceSweeperService();
+        this.trade_idempotency = new TradeIdempotencyService(this.redis);
         await this.token_index.start();
         this.nonce_sweeper.start();
         errorHandler;

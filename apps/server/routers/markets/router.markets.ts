@@ -12,6 +12,7 @@ import CreateCommentController from "../../controllers/comments/controller.creat
 import QuoteController from "../../controllers/markets/controller.quote";
 import PlaceOrderController from "../../controllers/markets/controller.place-order";
 import ClaimController from "../../controllers/markets/controller.claim";
+import TradeController from "../../controllers/markets/controller.trade";
 import { requireAuth } from "../../middleware/middleware.auth";
 
 const markets_router: Router = Router();
@@ -31,5 +32,10 @@ markets_router.post("/:id/comments", requireAuth, CreateCommentController.proces
 markets_router.post("/:id/quote", requireAuth, QuoteController.process);
 markets_router.post("/:id/place-order", requireAuth, PlaceOrderController.process);
 markets_router.post("/:id/claim", requireAuth, ClaimController.process);
+// Hedge-first trade endpoint (PR 2/5). Disabled by default behind the
+// SERVER_TRADE_ENDPOINT_ENABLED env var; set to "true" once stable to flip
+// the frontend onto this path. Coexists with /quote + /place-order during
+// migration; the legacy two-call flow remains functional until PR 5.
+markets_router.post("/:id/trade", requireAuth, TradeController.process);
 
 export default markets_router;

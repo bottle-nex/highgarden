@@ -131,6 +131,7 @@
         "@solmarket/contract": "*",
         "@solmarket/database": "*",
         "@solmarket/eslint-config": "*",
+        "@solmarket/polymarket-client": "*",
         "@solmarket/polymarket-contracts": "*",
         "@solmarket/types": "*",
         "@solmarket/typescript-config": "*",
