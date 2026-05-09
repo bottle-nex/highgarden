@@ -51,6 +51,8 @@ function BalanceModalInner({ onClose }: { onClose: () => void }) {
     };
 
     useEffect(() => {
+        // Fetch-on-mount: setState cascade is intentional.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void load();
     }, []);
 

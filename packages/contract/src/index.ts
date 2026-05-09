@@ -280,10 +280,7 @@ export class SolmarketClient {
     const sig = await conn.sendRawTransaction(tx.serialize(), {
       preflightCommitment: "confirmed",
     });
-    await conn.confirmTransaction(
-      { signature: sig, blockhash, lastValidBlockHeight },
-      "confirmed",
-    );
+    await conn.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
     return sig;
   }
 

@@ -47,6 +47,8 @@ export default function AdminPanel() {
     }, []);
 
     useEffect(() => {
+        // Fetch-on-mount: setState cascade is intentional.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void refresh();
     }, [refresh]);
 

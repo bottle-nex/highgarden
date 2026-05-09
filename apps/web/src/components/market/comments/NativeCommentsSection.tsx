@@ -59,6 +59,8 @@ export default function NativeCommentsSection({
     }, [market_id]);
 
     useEffect(() => {
+        // Fetch-on-mount: setState cascade is intentional.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void load_initial();
     }, [load_initial]);
 

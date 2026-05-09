@@ -49,9 +49,7 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
             apply_claim(position.marketId, position.outcome);
         } catch (err) {
             const msg =
-                err instanceof TradingError
-                    ? err.user_message
-                    : 'Claim failed. Please try again.';
+                err instanceof TradingError ? err.user_message : 'Claim failed. Please try again.';
             toast.error(msg);
         } finally {
             setClaiming(false);

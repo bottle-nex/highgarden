@@ -51,10 +51,7 @@ export default function PositionsTable(): JSX.Element {
                 <div />
             </div>
             {positions.map((position) => (
-                <PositionRow
-                    key={`${position.marketId}-${position.outcome}`}
-                    position={position}
-                />
+                <PositionRow key={`${position.marketId}-${position.outcome}`} position={position} />
             ))}
         </div>
     );
