@@ -38,7 +38,51 @@ Back up both `id.json` and the program keypair offline.
 
 ---
 
-## 2. Current on-chain state
+## 2. Costs
+
+Numbers are for a 166 KB `solmarket_contract.so`. Recompute proportionally if the binary size changes meaningfully — query the live cluster with `solana rent <bytes>` before any real deploy in case the lamports-per-byte constants ever change.
+
+### First-time deploy
+
+| Account | Size | Rent | Recoverable? |
+|---|---|---|---|
+| ProgramData | 332,045 B (= 2 × 166000 + 45) | **~2.31 SOL** | Yes — refunded if you `solana program close` |
+| Program | ~36 B | ~0.00114 SOL | Yes — refunded on `solana program close` |
+| Buffer (transient) | 166,000 B | ~1.16 SOL | Yes — refunded automatically after the loader copies bytes into ProgramData |
+| Tx fees (many small Write txs) | — | ~0.005–0.01 SOL | **No** — gone forever |
+
+You need **~3.48 SOL available** in the wallet during the deploy window (buffer 1.16 + ProgramData 2.31 + program 0.001 + fees). The buffer's 1.16 SOL flows back when the loader closes it, so the wallet is **down ~2.32 SOL net** once deploy completes. That ~2.31 SOL is locked as rent-exempt on ProgramData — recoverable only by closing the program.
+
+### Upgrade (program already deployed, new `.so` still fits in existing ProgramData allocation)
+
+| What happens | Cost |
+|---|---|
+| Buffer created (166 KB) | ~1.16 SOL — **refunded automatically** when the upgrade succeeds |
+| ProgramData overwritten in place | 0 — already paid for at first deploy |
+| Tx fees | ~0.005 SOL — not refunded |
+
+**Net upgrade cost: ~0.005 SOL.** You still need 1.16 SOL *available* during the upgrade window to fund the buffer, but it returns when the buffer closes. The buffer's bytes are streamed in via many small Write transactions, which is where the tx-fee total comes from.
+
+### Refund on close
+
+Closing the program is **one-way** — that program ID can never be redeployed. Generally only used for full retirement.
+
+```sh
+solana program close $PROGRAM_ID --recipient <wallet-pubkey>
+```
+
+Refunds ~2.31 SOL (ProgramData) + ~0.00114 SOL (program account). Past tx fees are not recoverable.
+
+### Quick rent lookup
+
+```sh
+solana rent 332045   # ProgramData rent at current .so size
+solana rent 166000   # buffer rent (transient)
+```
+
+---
+
+## 3. Current on-chain state
 
 Set a shell variable once per session — every command below uses it:
 
@@ -72,7 +116,7 @@ What each line means:
 
 ---
 
-## 3. Pre-flight checklist
+## 4. Pre-flight checklist
 
 Run before every upgrade. All four must pass.
 
@@ -99,7 +143,7 @@ git log -1 --oneline
 
 ---
 
-## 4. Build the new bytecode
+## 5. Build the new bytecode
 
 ```sh
 cd /Users/anjan/utility/Projects/solmarket/apps/solana
@@ -129,11 +173,11 @@ If `declare_id!()` and the keypair pubkey don't match, edit [programs/contract/s
 
 ---
 
-## 5. Upgrade the program
+## 6. Upgrade the program
 
 Two equivalent paths. Pick one.
 
-### 5a. Single-shot deploy (small programs, stable network)
+### 6a. Single-shot deploy (small programs, stable network)
 
 ```sh
 solana program deploy \
@@ -144,7 +188,7 @@ solana program deploy \
 
 This auto-detects that the program already exists, creates a buffer, copies bytes into it, invokes the loader's `Upgrade` instruction, and closes the buffer. Transactional from the user's perspective.
 
-### 5b. Two-phase via buffer (larger programs, flaky network)
+### 6b. Two-phase via buffer (larger programs, flaky network)
 
 Preferred for any program above ~100 KB or when the single-shot keeps timing out.
 
@@ -170,7 +214,7 @@ If step 1 succeeds and step 2 fails, the buffer holds your bytes safely — re-r
 
 ---
 
-## 6. Post-upgrade verification
+## 7. Post-upgrade verification
 
 ```sh
 # 1. Confirm the on-chain bytecode size changed and slot advanced
@@ -193,7 +237,7 @@ If the Config PDA reads back the same admin / oracle / quote / treasury / usdc_m
 
 ---
 
-## 7. Common failures and recovery
+## 8. Common failures and recovery
 
 ### Stranded buffer accounts
 
@@ -258,7 +302,7 @@ Recovery: if you have the original keypair backed up anywhere (offline, password
 
 ---
 
-## 8. First-time deploy
+## 9. First-time deploy
 
 Only relevant once — for the first deploy on each cluster. Skip on every subsequent upgrade.
 
@@ -299,7 +343,7 @@ Mainnet vs devnet differs only in the cluster URL. Make sure `id.json` actually 
 
 ---
 
-## 9. One-line summary
+## 10. One-line summary
 
 ```
 Edit code  →  cargo build-sbf
