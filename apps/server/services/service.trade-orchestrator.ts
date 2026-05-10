@@ -109,6 +109,7 @@ export default class TradeOrchestratorService {
 
         const user_price_cents = this.derive_user_price(hedge.avgPriceCents, req.side);
         const nonce = this.derive_nonce(request_id);
+        const expires_at_unix = Math.floor(Date.now() / 1000) + ENV.SERVER_QUOTE_EXPIRY_SECONDS;
         const signed = this.sign_quote_internally({
             market_pda: market.solanaMarketPda,
             side: req.side,
@@ -116,13 +117,45 @@ export default class TradeOrchestratorService {
             price_cents: user_price_cents,
             size_shares: hedge.filledShares,
             nonce,
+            expires_at_unix,
         });
+
+        // Persist the signed quote BEFORE submitting on-chain. Audit trail
+        // for the signer (anomaly detection later); the nonce sweeper
+        // relies on this row to know which UsedNonce PDAs to reclaim rent
+        // from after the quote expires.
+        await this.persist_quote(market.id, req, user_price_cents, hedge.filledShares, signed, expires_at_unix);
 
         const solana_result = await this.submit_solana_or_record_inventory(
             req,
             market,
             signed,
             hedge,
+        );
+
+        // Mark the quote consumed so the sweeper picks it up and closes
+        // the on-chain UsedNonce PDA after expiry. Best-effort; a failure
+        // here is non-fatal — the sweeper falls back to expiry-only logic
+        // and the user's trade has already succeeded.
+        await this.mark_quote_consumed(signed.nonceHex);
+
+        // Pre-write Fill + Hedge in FILLED status. Critical for hedge-first:
+        // without this, the hedger's catch-up poller picks up the
+        // OrderFilled event ~10s later, sees no existing Hedge, and tries
+        // to place a SECOND Polymarket order. Pre-writing in FILLED state
+        // makes `is_terminal()` return true on the hedger side and the
+        // processor returns SKIPPED. Best-effort — if this throws, the
+        // hedger's poller will create the rows itself (with a duplicate
+        // Polymarket order in live mode), which is the bug we're avoiding
+        // here but it's recoverable via the inventory-netter on the next
+        // opposite-direction trade.
+        await this.persist_fill_and_hedge(
+            req,
+            market,
+            signed,
+            hedge,
+            user_price_cents,
+            solana_result.txSignature,
         );
 
         return {
@@ -373,17 +406,152 @@ export default class TradeOrchestratorService {
         price_cents: number;
         size_shares: number;
         nonce: Buffer;
+        expires_at_unix: number;
     }) {
-        const expires_at = Math.floor(Date.now() / 1000) + ENV.SERVER_QUOTE_EXPIRY_SECONDS;
         return this.signer.sign({
             market: new PublicKey(args.market_pda),
             side: args.side === "BUY" ? 0 : 1,
             outcome: args.outcome === "YES" ? 0 : 1,
             priceCents: args.price_cents,
             sizeShares: args.size_shares,
-            expiresAt: expires_at,
+            expiresAt: args.expires_at_unix,
             nonce: args.nonce,
         });
+    }
+
+    /**
+     * Audit-log every signed quote into the Quote table. Idempotent on the
+     * nonce primary key — if the same requestId hashes to the same nonce
+     * (the deterministic-nonce-from-requestId path), we no-op rather than
+     * fail. The signature is preserved for forensics in case the quote
+     * signer key is ever suspected of being compromised.
+     */
+    private async persist_quote(
+        market_db_id: string,
+        req: TradeRequest,
+        price_cents: number,
+        size_shares: number,
+        signed: ReturnType<QuoteSignerService["sign"]>,
+        expires_at_unix: number,
+    ): Promise<void> {
+        try {
+            await prisma.quote.create({
+                data: {
+                    nonce: signed.nonceHex,
+                    marketId: market_db_id,
+                    side: req.side,
+                    outcome: req.outcome,
+                    price: price_cents,
+                    size: size_shares,
+                    expiresAt: new Date(expires_at_unix * 1000),
+                    signature: signed.signatureBase64,
+                    consumed: false,
+                },
+            });
+        } catch (err) {
+            // P2002 = unique constraint on nonce. Means the same requestId
+            // (or a colliding nonce) was already audited — safe no-op.
+            if ((err as { code?: string }).code === "P2002") return;
+            // Any other error is unexpected; surface it so the orchestrator
+            // bails before submitting on-chain. Better to fail the whole
+            // trade than have an on-chain Fill without an audit row.
+            throw err;
+        }
+    }
+
+    /**
+     * Flip Quote.consumed to true after the on-chain place_order has
+     * landed. The nonce sweeper queries `consumed = true AND nonceClosedAt
+     * IS NULL` to find PDAs ready to close. Failure is logged but does not
+     * roll back the trade — the worst case is the sweeper relies on
+     * expiry-time-based fallback logic instead.
+     */
+    private async mark_quote_consumed(nonce_hex: string): Promise<void> {
+        try {
+            await prisma.quote.update({
+                where: { nonce: nonce_hex },
+                data: { consumed: true },
+            });
+        } catch (err) {
+            console.warn(
+                "[trade-orchestrator] mark_quote_consumed failed (non-fatal)",
+                (err as Error)?.message ?? err,
+            );
+        }
+    }
+
+    /**
+     * Pre-write Fill + Hedge rows in FILLED status. The hedger's catch-up
+     * poller picks up the on-chain `OrderFilled` event ~10s after this
+     * runs; with these rows already present, its `is_terminal()` check
+     * returns true and the processor returns SKIPPED — no duplicate
+     * Polymarket order.
+     *
+     * Idempotency: each row's unique key is enforced. `Fill.solanaTxSig`
+     * (unique) and `Fill.nonce` (unique) prevent duplicate Fill inserts on
+     * retry; `Hedge.fillId` (unique 1:1) prevents duplicate Hedge.
+     * `Hedge.bullJobId` is set to nonceHex so when the hedger does call
+     * `queue.add({ jobId: nonceHex })`, BullMQ's dedupe rejects the
+     * duplicate at the queue layer too — belt and suspenders.
+     */
+    private async persist_fill_and_hedge(
+        req: TradeRequest,
+        market: ResolvedMarket,
+        signed: ReturnType<QuoteSignerService["sign"]>,
+        hedge: HedgeFilledShape,
+        price_cents: number,
+        tx_signature: string,
+    ): Promise<void> {
+        try {
+            await prisma.$transaction(async (tx) => {
+                const fill = await tx.fill.create({
+                    data: {
+                        userId: req.userId,
+                        marketId: market.id,
+                        side: req.side,
+                        outcome: req.outcome,
+                        price: price_cents,
+                        size: hedge.filledShares,
+                        solanaTxSig: tx_signature,
+                        nonce: signed.nonceHex,
+                        // 1:1 link to consumed inventory (orchestrator
+                        // schema only allows ONE per Fill — additional
+                        // consumed rows still have nettedAt set and live
+                        // in PlatformInventory's nettedAt index).
+                        nettedFromInventoryId: hedge.nettedInventoryIds[0] ?? null,
+                    },
+                });
+                await tx.hedge.create({
+                    data: {
+                        fillId: fill.id,
+                        polymarketOrderId: hedge.polymarketOrderId,
+                        polymarketTokenId: market.tokenId,
+                        polymarketSide: market.polymarketSide,
+                        bullJobId: signed.nonceHex,
+                        clientOrderId: hedge.nettedFromInventory ? null : `server-${signed.nonceHex}`,
+                        requestedSize: hedge.filledShares,
+                        filledSize: hedge.filledShares,
+                        avgPrice: hedge.avgPriceCents,
+                        status: "FILLED",
+                        completedAt: new Date(),
+                    },
+                });
+            });
+        } catch (err) {
+            // P2002 = unique constraint hit. Either the hedger's poller
+            // already processed this OrderFilled event (raced us) or the
+            // request_id was retried after a partial commit. Either way,
+            // the row(s) already exist — safe to ignore.
+            const code = (err as { code?: string }).code;
+            if (code === "P2002") return;
+            // Anything else is unexpected; log loudly but don't throw —
+            // the trade has already succeeded on-chain. The hedger's
+            // poller is the fallback writer.
+            console.error(
+                "[trade-orchestrator] persist_fill_and_hedge failed (non-fatal — hedger will fall back)",
+                err,
+            );
+        }
     }
 
     /** Deterministic 16-byte nonce from the request_id so the same retry
@@ -409,7 +577,10 @@ export default class TradeOrchestratorService {
                 marketDbId: req.marketDbId,
                 signedQuote: signed,
             });
-            await this.link_consumed_inventory(hedge, result.txSignature);
+            // Note: inventory linking happens inline inside
+            // persist_fill_and_hedge() now (Fix B). The Fill row is created
+            // there with `nettedFromInventoryId` set directly, so no
+            // separate post-write linking step is needed.
             return { txSignature: result.txSignature };
         } catch (err) {
             await this.record_orphan_inventory(market, hedge, err);
@@ -419,19 +590,6 @@ export default class TradeOrchestratorService {
                 `solana submit failed after polymarket fill: ${(err as Error).message}`,
             );
         }
-    }
-
-    private async link_consumed_inventory(
-        hedge: HedgeFilledShape,
-        tx_signature: string,
-    ): Promise<void> {
-        if (hedge.nettedInventoryIds.length === 0) return;
-        const fill = await prisma.fill.findUnique({
-            where: { solanaTxSig: tx_signature },
-            select: { id: true },
-        });
-        if (!fill) return;
-        await this.netter.link_to_fill(hedge.nettedInventoryIds, fill.id);
     }
 
     /**
