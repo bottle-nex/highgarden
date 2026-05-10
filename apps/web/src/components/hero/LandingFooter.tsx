@@ -20,7 +20,7 @@ interface FooterGroup {
 
 export default function LandingFooter(): JSX.Element {
     return (
-        <footer className="relative w-full bg-white pt-24 pb-10 px-6 md:px-10">
+        <footer className="relative w-full bg-white pt-40 md:pt-48 pb-10 px-6 md:px-10">
             <div className="max-w-340 mx-auto w-full">
                 <BrandRow />
                 <div className="my-16 h-px bg-black/10" />
