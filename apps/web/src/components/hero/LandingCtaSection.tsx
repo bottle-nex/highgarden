@@ -59,6 +59,7 @@ export default function LandingCtaSection(): JSX.Element {
     const [isTransitioning, setIsTransitioning] = useState(false);
     const isVisible = useInView(sectionRef, { amount: 0.15, once: false });
     const [tint_opacity, set_tint_opacity] = useState(0);
+    const [videoReady, setVideoReady] = useState(false);
 
     useEffect(() => {
         let raf_id = 0;
@@ -83,10 +84,44 @@ export default function LandingCtaSection(): JSX.Element {
     }, []);
 
     useEffect(() => {
-        if (isVisible && videoRef.current) {
-            videoRef.current.play();
+        const video = videoRef.current;
+        if (!video) return;
+
+        const src = '/videos/hero/master.m3u8';
+
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = src;
+            const onLoaded = () => setVideoReady(true);
+            video.addEventListener('loadedmetadata', onLoaded);
+            return () => video.removeEventListener('loadedmetadata', onLoaded);
         }
-    }, [isVisible]);
+
+        let cancelled = false;
+        let hls: import('hls.js').default | undefined;
+        import('hls.js').then(({ default: Hls }) => {
+            if (cancelled || !Hls.isSupported()) return;
+            hls = new Hls({
+                abrEwmaDefaultEstimate: 10_000_000,
+            });
+            hls.loadSource(src);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                if (hls) hls.nextLevel = hls.levels.length - 1;
+                setVideoReady(true);
+            });
+        });
+
+        return () => {
+            cancelled = true;
+            hls?.destroy();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (isVisible && videoReady && videoRef.current) {
+            videoRef.current.play().catch(() => {});
+        }
+    }, [isVisible, videoReady]);
 
     const goToSlide = useCallback(
         (idx: number) => {
@@ -118,12 +153,10 @@ export default function LandingCtaSection(): JSX.Element {
             {/* video background */}
             <video
                 ref={videoRef}
-                className="absolute inset-0 w-full h-full object-cover scale-[1.323]"
-                src="/videos/porsche.mp4"
+                className="absolute inset-0 w-full h-full object-cover scale-[1.323] opacity-55"
                 muted
                 loop
                 playsInline
-                preload="auto"
             />
 
             {/* <div className="absolute inset-0 bg-neutral-950/55" /> */}
@@ -198,13 +231,10 @@ export default function LandingCtaSection(): JSX.Element {
                     </div>
                 </section>
 
-                {/* Spacer to push bottom content down */}
                 <div className="flex-1" />
 
-                {/* ── Bottom: quote block + CTA ── */}
                 <div className="px-4 sm:px-8 md:px-12 lg:px-16 pb-8 sm:pb-10">
                     <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-x-8 lg:gap-x-16 gap-y-6 items-start md:items-end">
-                        {/* Quote */}
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={activeSlide}
@@ -233,7 +263,6 @@ export default function LandingCtaSection(): JSX.Element {
                             </motion.div>
                         </AnimatePresence>
 
-                        {/* CTA block */}
                         <div className="relative shrink-0">
                             <div
                                 role="button"
@@ -269,7 +298,6 @@ export default function LandingCtaSection(): JSX.Element {
                         </div>
                     </div>
 
-                    {/* Progress bar */}
                     <div className="mt-8 flex items-center gap-x-3">
                         {slides.map((_, i) => (
                             <div key={i} className="flex-1 h-px relative overflow-hidden">
