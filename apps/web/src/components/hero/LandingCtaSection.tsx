@@ -86,35 +86,9 @@ export default function LandingCtaSection(): JSX.Element {
     useEffect(() => {
         const video = videoRef.current;
         if (!video) return;
-
-        const src = '/videos/hero/master.m3u8';
-
-        if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = src;
-            const onLoaded = () => setVideoReady(true);
-            video.addEventListener('loadedmetadata', onLoaded);
-            return () => video.removeEventListener('loadedmetadata', onLoaded);
-        }
-
-        let cancelled = false;
-        let hls: import('hls.js').default | undefined;
-        import('hls.js').then(({ default: Hls }) => {
-            if (cancelled || !Hls.isSupported()) return;
-            hls = new Hls({
-                abrEwmaDefaultEstimate: 10_000_000,
-            });
-            hls.loadSource(src);
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                if (hls) hls.nextLevel = hls.levels.length - 1;
-                setVideoReady(true);
-            });
-        });
-
-        return () => {
-            cancelled = true;
-            hls?.destroy();
-        };
+        const onLoaded = () => setVideoReady(true);
+        video.addEventListener('loadedmetadata', onLoaded);
+        return () => video.removeEventListener('loadedmetadata', onLoaded);
     }, []);
 
     useEffect(() => {
@@ -153,6 +127,7 @@ export default function LandingCtaSection(): JSX.Element {
             {/* video background */}
             <video
                 ref={videoRef}
+                src="/videos/porsche.mp4"
                 className="absolute inset-0 w-full h-full object-cover scale-[1.323] opacity-55"
                 muted
                 loop
