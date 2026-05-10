@@ -70,12 +70,13 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
     return (
         <div className="grid grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] gap-x-4 items-center px-3 py-4 border-b border-neutral-900/80 hover:bg-white/2 transition-colors">
             <div className="flex items-center gap-x-3 min-w-0">
-                <MarketIcon className="bg-neutral-700">
+                <MarketIcon className="size-10 bg-neutral-700">
                     <Image
                         src={position.marketImage ?? FALLBACK_IMAGE}
                         alt={position.marketName}
                         width={40}
                         height={40}
+                        className="size-10 object-cover"
                     />
                 </MarketIcon>
                 <div className="min-w-0">

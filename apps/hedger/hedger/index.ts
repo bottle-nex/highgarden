@@ -1,6 +1,4 @@
 import { Queue, Worker, QueueEvents } from "bullmq";
-import { AnchorProvider, type Wallet as AnchorWallet } from "@coral-xyz/anchor";
-import NodeWallet from "@coral-xyz/anchor/dist/esm/nodewallet.js";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { SolmarketClient } from "@solmarket/contract";
 import bs58 from "bs58";
@@ -312,12 +310,11 @@ export default class Hedger {
             // Use a dedicated Connection so the admin tx path doesn't share
             // commitment / preflight settings with the listener's RPC.
             const connection = new Connection(ENV.HEDGER_SOLANA_RPC_URL, "confirmed");
-            const wallet = new NodeWallet(this.get_admin_keypair()) as unknown as AnchorWallet;
-            const provider = new AnchorProvider(connection, wallet, {
-                commitment: "confirmed",
-                preflightCommitment: "confirmed",
+            this.admin_client = new SolmarketClient({
+                connection,
+                programId: new PublicKey(ENV.HEDGER_SOLANA_PROGRAM_ID),
+                defaultSigner: this.get_admin_keypair(),
             });
-            this.admin_client = new SolmarketClient(provider);
         }
         return this.admin_client;
     }

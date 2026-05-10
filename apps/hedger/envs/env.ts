@@ -42,6 +42,19 @@ const schema = z.object({
     HEDGER_POLLER_INTERVAL_MS: z.coerce.number().default(10_000),
     HEDGER_LIVE_LISTENER_RECONNECT_MS: z.coerce.number().default(2_000),
     HEDGER_MAX_BACKFILL_SIGNATURES: z.coerce.number().default(1_000),
+    /**
+     * When `true` (default), the live websocket listener is the primary
+     * hedge driver. After PR 2/5's hedge-first orchestration in
+     * apps/server lands and is enabled in production, set this to "false":
+     * the server will hedge synchronously as part of the trade request, and
+     * the hedger's only remaining role on the live path is the catch-up
+     * poller acting as a safety net for crashes mid-flow. The poller stays
+     * on regardless of this flag.
+     */
+    HEDGER_LIVE_LISTENER_ENABLED: z
+        .enum(["true", "false"])
+        .default("true")
+        .transform((s) => s === "true"),
 
     // hedger queue tuning
     HEDGER_JOB_ATTEMPTS: z.coerce.number().default(5),
@@ -58,6 +71,17 @@ const schema = z.object({
 
     // reconciler loop tuning
     HEDGER_RECONCILE_INTERVAL_MS: z.coerce.number().default(60_000),
+
+    // platform inventory liquidator (PR 4/5)
+    /** How often the liquidator scans for stale orphan rows. */
+    HEDGER_INVENTORY_LIQUIDATE_INTERVAL_MS: z.coerce.number().default(5 * 60_000),
+    /** How long an unconsumed PlatformInventory row may live before
+     *  liquidation kicks in. Older rows get a reverse Polymarket order
+     *  to unwind the position; the platform eats the spread. */
+    HEDGER_INVENTORY_LIQUIDATE_AFTER_HOURS: z.coerce.number().default(1),
+    /** Hard cap on shares per liquidation tick — prevents one giant orphan
+     *  from monopolising the rate-limited Polymarket connection. */
+    HEDGER_INVENTORY_LIQUIDATE_MAX_SHARES_PER_TICK: z.coerce.number().default(1_000),
 
     // health + admin endpoints
     HEDGER_HEALTH_PORT: z.coerce.number().default(4001),

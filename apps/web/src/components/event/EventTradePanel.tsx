@@ -23,6 +23,21 @@ type InputMode = 'USDC' | 'SHARES';
 const QUICK_AMOUNTS_USDC = [1, 5, 10, 100] as const;
 const QUICK_AMOUNTS_SHARES = [1, 5, 10, 50] as const;
 
+/**
+ * Feature flag for the hedge-first trade flow (PR 2/5 server endpoint).
+ * Resolved once at module load: `NEXT_PUBLIC_USE_HEDGE_FIRST_TRADE === "true"`.
+ *
+ * When `true`, the panel calls the new `POST /markets/:id/trade` endpoint
+ * (Polymarket fill → Solana commit, single round-trip).
+ * When `false` (default), falls back to the legacy `request_quote` +
+ * `place_order` two-call sequence.
+ *
+ * Flip via env without a redeploy of new client code; both paths coexist
+ * during migration and will be merged once the new flow soaks in prod.
+ */
+const USE_HEDGE_FIRST_TRADE: boolean =
+    process.env.NEXT_PUBLIC_USE_HEDGE_FIRST_TRADE === 'true';
+
 function format_cents(price: number | undefined): string {
     if (price === undefined || !Number.isFinite(price)) return '—';
     return `${(price * 100).toFixed(1)}¢`;
@@ -166,27 +181,11 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
         }
         set_submitting(true);
         try {
-            const signed = await trading_api.request_quote(market.id, {
-                side: tab,
-                outcome: selectedOutcome === Outcome.YES ? 'YES' : 'NO',
-                size: computed.shares,
-            });
-            const result = await trading_api.place_order(market.id, signed);
-            apply_fill({
-                marketId: market.id,
-                side: tab === 'BUY' ? Side.BUY : Side.SELL,
-                outcome: selectedOutcome,
-                price: signed.price,
-                size: computed.shares,
-            });
-            const verb = tab === 'BUY' ? 'Bought' : 'Sold';
-            const outcome_label = selectedOutcome === Outcome.YES ? 'YES' : 'NO';
-            toast.success(
-                `${verb} ${computed.shares} ${outcome_label} for $${computed.usd.toFixed(2)}`,
-                {
-                    description: `Tx ${result.txSignature.slice(0, 8)}…${result.txSignature.slice(-6)}`,
-                },
-            );
+            if (USE_HEDGE_FIRST_TRADE) {
+                await submit_hedge_first();
+            } else {
+                await submit_legacy_two_call();
+            }
             set_amount('');
         } catch (err: unknown) {
             const msg =
@@ -197,6 +196,67 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
         } finally {
             set_submitting(false);
         }
+    };
+
+    /**
+     * PR 3 hedge-first path. Single round-trip; server places Polymarket
+     * leg AND Solana leg before returning. Uses the actual Polymarket fill
+     * price for the on-chain commit, so the spread is locked in (vs. the
+     * legacy two-call flow where Polymarket can move between quote and
+     * fill).
+     */
+    const submit_hedge_first = async () => {
+        const result = await trading_api.trade(market.id, {
+            side: tab,
+            outcome: selectedOutcome === Outcome.YES ? 'YES' : 'NO',
+            size: computed.shares,
+        });
+        apply_fill({
+            marketId: market.id,
+            side: tab === 'BUY' ? Side.BUY : Side.SELL,
+            outcome: selectedOutcome,
+            price: result.pricePaidCents,
+            size: result.filledShares,
+        });
+        const verb = tab === 'BUY' ? 'Bought' : 'Sold';
+        const outcome_label = selectedOutcome === Outcome.YES ? 'YES' : 'NO';
+        const short_tx = `${result.txSignature.slice(0, 8)}…${result.txSignature.slice(-6)}`;
+        const description = result.nettedFromInventory
+            ? `Tx ${short_tx} · netted from platform inventory`
+            : `Tx ${short_tx}`;
+        toast.success(
+            `${verb} ${result.filledShares} ${outcome_label} for $${result.totalUsd.toFixed(2)}`,
+            { description },
+        );
+    };
+
+    /**
+     * Pre-PR-2 legacy flow. Kept during migration so flipping the feature
+     * flag back falls cleanly onto the original two-call path. Will be
+     * removed in PR 5 once the new flow has soaked in production.
+     */
+    const submit_legacy_two_call = async () => {
+        const signed = await trading_api.request_quote(market.id, {
+            side: tab,
+            outcome: selectedOutcome === Outcome.YES ? 'YES' : 'NO',
+            size: computed.shares,
+        });
+        const result = await trading_api.place_order(market.id, signed);
+        apply_fill({
+            marketId: market.id,
+            side: tab === 'BUY' ? Side.BUY : Side.SELL,
+            outcome: selectedOutcome,
+            price: signed.price,
+            size: computed.shares,
+        });
+        const verb = tab === 'BUY' ? 'Bought' : 'Sold';
+        const outcome_label = selectedOutcome === Outcome.YES ? 'YES' : 'NO';
+        toast.success(
+            `${verb} ${computed.shares} ${outcome_label} for $${computed.usd.toFixed(2)}`,
+            {
+                description: `Tx ${result.txSignature.slice(0, 8)}…${result.txSignature.slice(-6)}`,
+            },
+        );
     };
 
     const toggle_mode = () => set_input_mode((m) => (m === 'USDC' ? 'SHARES' : 'USDC'));

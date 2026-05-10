@@ -1,5 +1,3 @@
-import { AnchorProvider, BN } from "@coral-xyz/anchor";
-import NodeWallet from "@coral-xyz/anchor/dist/esm/nodewallet.js";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
 import { SolmarketClient } from "@solmarket/contract";
@@ -22,6 +20,7 @@ export interface CreateOnChainMarketResult {
 
 export default class SolanaAdminService {
     private client: SolmarketClient | null = null;
+    private admin_keypair: Keypair | null = null;
 
     public is_configured(): boolean {
         return !!ENV.SERVER_SOLANA_ADMIN_KEYPAIR;
@@ -31,7 +30,8 @@ export default class SolanaAdminService {
         input: CreateOnChainMarketInput,
     ): Promise<CreateOnChainMarketResult> {
         const client = this.get_client();
-        const params = this.build_params(input, client.provider.publicKey!);
+        const admin = this.get_admin_keypair();
+        const params = this.build_params(input, admin.publicKey);
         const result = await client.createMarket(params);
         return {
             signature: result.signature,
@@ -52,13 +52,18 @@ export default class SolanaAdminService {
 
     private build_client(): SolmarketClient {
         const connection = new Connection(ENV.SERVER_SOLANA_RPC_URL, "confirmed");
-        const keypair = this.load_admin_keypair(ENV.SERVER_SOLANA_ADMIN_KEYPAIR!);
-        const wallet = new NodeWallet(keypair);
-        const provider = new AnchorProvider(connection, wallet, {
-            commitment: "confirmed",
-            preflightCommitment: "confirmed",
+        return new SolmarketClient({
+            connection,
+            programId: new PublicKey(ENV.SERVER_SOLANA_PROGRAM_ID),
+            defaultSigner: this.get_admin_keypair(),
         });
-        return new SolmarketClient(provider);
+    }
+
+    private get_admin_keypair(): Keypair {
+        if (!this.admin_keypair) {
+            this.admin_keypair = this.load_admin_keypair(ENV.SERVER_SOLANA_ADMIN_KEYPAIR!);
+        }
+        return this.admin_keypair;
     }
 
     private load_admin_keypair(encoded: string): Keypair {
@@ -76,7 +81,7 @@ export default class SolanaAdminService {
             admin,
             polymarketMarketId: input.polymarketMarketId,
             questionHash: SolmarketClient.sha256(input.question),
-            endTime: new BN(Math.floor(input.endAt.getTime() / 1000)),
+            endTime: BigInt(Math.floor(input.endAt.getTime() / 1000)),
             tickSize: this.tick_size_to_cents(input.tickSize),
             yesTokenId: input.yesTokenId,
             noTokenId: input.noTokenId,

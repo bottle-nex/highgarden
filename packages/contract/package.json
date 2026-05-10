@@ -1,7 +1,7 @@
 {
   "name": "@solmarket/contract",
   "version": "1.0.0",
-  "description": "Typed client for the SolMarket Anchor program",
+  "description": "TypeScript SDK for the native-Rust SolMarket Solana program (apps/solana). Builds instructions, decodes events/accounts, and serializes signed quotes — no Anchor runtime required.",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
@@ -16,7 +16,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@coral-xyz/anchor": "^0.31.1",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4"
   },

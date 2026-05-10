@@ -5,6 +5,7 @@ import Hedger from "./hedger";
 import Resolver from "./resolver";
 import Reconciler from "./reconcile";
 import HealthServer from "./health";
+import PlatformInventoryLiquidator from "./inventory/liquidator";
 import { logger_for } from "./log/log";
 
 /**
@@ -28,6 +29,7 @@ export interface Services {
     readonly ingester: FillIngester;
     readonly resolver: Resolver;
     readonly reconciler: Reconciler;
+    readonly liquidator: PlatformInventoryLiquidator;
     readonly health: HealthServer;
 }
 
@@ -66,6 +68,7 @@ export function init_services(): Services {
     const ingester = new FillIngester(solana, (ev, ctx) => hedger.on_fill(ev, ctx), health);
     const resolver = new Resolver(solana, poly);
     const reconciler = new Reconciler(hedger, poly);
+    const liquidator = new PlatformInventoryLiquidator(poly);
 
     return {
         solana,
@@ -74,6 +77,7 @@ export function init_services(): Services {
         ingester,
         resolver,
         reconciler,
+        liquidator,
         health,
     };
 }
@@ -98,6 +102,7 @@ export async function start_services(s: Services): Promise<void> {
     await s.ingester.start();
     s.resolver.start();
     s.reconciler.start();
+    s.liquidator.start();
     s.health.start();
 }
 
@@ -125,6 +130,7 @@ export async function stop_services(s: Services): Promise<void> {
             log.error({ err, label }, "stop step failed");
         }
     };
+    await safe("liquidator", () => s.liquidator.stop());
     await safe("resolver", () => s.resolver.stop());
     await safe("reconciler", () => s.reconciler.stop());
     await safe("ingester", () => s.ingester.stop());

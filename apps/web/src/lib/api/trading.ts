@@ -32,9 +32,28 @@ export interface ClaimResult {
     closePositionSignature: string | null;
 }
 
+/**
+ * Single-call hedge-first trade response (PR 2/5 endpoint). The server has
+ * already placed the Polymarket leg AND the Solana leg by the time the
+ * client gets this back — no second round-trip needed.
+ */
+export interface HedgeFirstTradeResult {
+    txSignature: string;
+    polymarketOrderId: string;
+    filledShares: number;
+    pricePaidCents: number;
+    totalUsd: number;
+    requestId: string;
+    /** True when an existing PlatformInventory row was netted instead of
+     *  placing a fresh Polymarket order. UI may want to surface this. */
+    nettedFromInventory: boolean;
+}
+
 export type TradingErrorReason =
     | 'OUT_OF_CAPACITY'
     | 'MARKET_NOT_LISTED'
+    | 'MARKET_PAUSED'
+    | 'MARKET_RESOLVED'
     | 'QUOTE_EXPIRED'
     | 'INSUFFICIENT_SHARES'
     | 'NOT_AUTHORIZED'
@@ -45,6 +64,11 @@ export type TradingErrorReason =
     | 'MARKET_CLOSED_ON_POLYMARKET'
     | 'MARKET_NOT_ACCEPTING_ORDERS'
     | 'INSUFFICIENT_FUNDER_BALANCE'
+    | 'STALE_BOOK'
+    | 'TRADE_UNAVAILABLE'
+    | 'TRADE_RECONCILE_PENDING'
+    | 'TRADE_ENDPOINT_DISABLED'
+    | 'DUPLICATE_REQUEST'
     | 'NETWORK'
     | 'UNKNOWN';
 
@@ -88,6 +112,32 @@ class TradingApi {
         }
     }
 
+    /**
+     * Hedge-first trade. Single round-trip; server places the Polymarket
+     * leg and the Solana leg in one orchestrated request. Generates a
+     * UUIDv4 `requestId` per call so retries from a flaky network return
+     * the same cached result instead of double-placing.
+     *
+     * Use this when `NEXT_PUBLIC_USE_HEDGE_FIRST_TRADE === "true"`. While
+     * the flag is off the panel falls back to the legacy two-call
+     * (`request_quote` + `place_order`) path for parity.
+     */
+    public async trade(
+        market_id: string,
+        body: { side: 'BUY' | 'SELL'; outcome: 'YES' | 'NO'; size: number },
+    ): Promise<HedgeFirstTradeResult> {
+        const requestId = generate_request_id();
+        try {
+            const { data } = await apiClient.post(`/markets/${market_id}/trade`, {
+                ...body,
+                requestId,
+            });
+            return data?.data as HedgeFirstTradeResult;
+        } catch (err: unknown) {
+            throw this.translate_error(err);
+        }
+    }
+
     private translate_error(err: unknown): TradingError {
         const code = this.extract_code(err);
         const raw = this.extract_message(err);
@@ -111,6 +161,55 @@ class TradingApi {
                 'MARKET_NOT_LISTED',
                 raw,
                 'Trading is not yet available on this market.',
+            );
+        }
+        if (code === 'MARKET_PAUSED') {
+            return new TradingError(
+                'MARKET_PAUSED',
+                raw,
+                'This market is paused. Try again later.',
+            );
+        }
+        if (code === 'MARKET_RESOLVED') {
+            return new TradingError(
+                'MARKET_RESOLVED',
+                raw,
+                'This market has resolved — trading is closed.',
+            );
+        }
+        if (code === 'STALE_BOOK') {
+            return new TradingError(
+                'STALE_BOOK',
+                raw,
+                'Live prices are unavailable right now. Try again in a moment.',
+            );
+        }
+        if (code === 'TRADE_UNAVAILABLE') {
+            return new TradingError(
+                'TRADE_UNAVAILABLE',
+                raw,
+                'Trade unavailable right now. Try again shortly.',
+            );
+        }
+        if (code === 'TRADE_RECONCILE_PENDING') {
+            return new TradingError(
+                'TRADE_RECONCILE_PENDING',
+                raw,
+                'Your trade is being finalized. Please refresh in a minute.',
+            );
+        }
+        if (code === 'TRADE_ENDPOINT_DISABLED') {
+            return new TradingError(
+                'TRADE_ENDPOINT_DISABLED',
+                raw,
+                'Trading is temporarily disabled. Please try again shortly.',
+            );
+        }
+        if (code === 'DUPLICATE_REQUEST') {
+            return new TradingError(
+                'DUPLICATE_REQUEST',
+                raw,
+                'A previous trade is still being processed. Please wait.',
             );
         }
         if (lower.includes('quoteexpired') || lower.includes('quote expired')) {
@@ -207,6 +306,19 @@ class TradingApi {
     } {
         return typeof err === 'object' && err !== null && 'response' in err;
     }
+}
+
+/** UUIDv4 with a tiny fallback for very old environments where
+ *  `crypto.randomUUID` isn't on the global. The runtime hosts that matter
+ *  for this app (modern Chrome/Safari/Firefox) all support it. */
+function generate_request_id(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    // RFC 4122 v4 fallback — collision-free enough for idempotency.
+    const rand = (n: number) => Math.floor(Math.random() * n);
+    const hex = (n: number, len: number) => n.toString(16).padStart(len, '0');
+    return `${hex(rand(0x100000000), 8)}-${hex(rand(0x10000), 4)}-4${hex(rand(0x1000), 3)}-${hex(0x8 | rand(0x4), 1)}${hex(rand(0x1000), 3)}-${hex(rand(0x100000000), 8)}${hex(rand(0x10000), 4)}`;
 }
 
 const trading_api = new TradingApi();

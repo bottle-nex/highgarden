@@ -1,5 +1,3 @@
-import { AnchorProvider, BN } from "@coral-xyz/anchor";
-import NodeWallet from "@coral-xyz/anchor/dist/esm/nodewallet.js";
 import { Connection, Ed25519Program, Keypair, PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import bs58 from "bs58";
@@ -168,13 +166,12 @@ export default class SolanaTradeService {
         }
     }
 
-    private build_client(user_keypair: Keypair): SolmarketClient {
+    private build_client(_user_keypair: Keypair): SolmarketClient {
         const connection = new Connection(ENV.SERVER_SOLANA_RPC_URL, "confirmed");
-        const provider = new AnchorProvider(connection, new NodeWallet(user_keypair), {
-            commitment: "confirmed",
-            preflightCommitment: "confirmed",
+        return new SolmarketClient({
+            connection,
+            programId: new PublicKey(ENV.SERVER_SOLANA_PROGRAM_ID),
         });
-        return new SolmarketClient(provider);
     }
 
     private build_ed25519_ix(quote: SignedQuoteWire) {
@@ -183,8 +180,8 @@ export default class SolanaTradeService {
             side: quote.side as 0 | 1,
             outcome: quote.outcome as 0 | 1,
             price: quote.price,
-            size: new BN(quote.size),
-            expiresAt: new BN(quote.expiresAt),
+            size: BigInt(quote.size),
+            expiresAt: BigInt(quote.expiresAt),
             nonce: Buffer.from(quote.nonceHex, "hex"),
         });
 
@@ -219,8 +216,8 @@ export default class SolanaTradeService {
                 side: args.quote.side as 0 | 1,
                 outcome: args.quote.outcome as 0 | 1,
                 price: args.quote.price,
-                size: new BN(args.quote.size),
-                expiresAt: new BN(args.quote.expiresAt),
+                size: BigInt(args.quote.size),
+                expiresAt: BigInt(args.quote.expiresAt),
                 nonce: Buffer.from(args.quote.nonceHex, "hex"),
             },
             userUsdc: args.user_usdc,

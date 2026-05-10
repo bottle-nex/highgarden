@@ -26,9 +26,9 @@
         "typescript": "^5"
     },
     "dependencies": {
-        "@coral-xyz/anchor": "^0.31.1",
         "@polymarket/clob-client-v2": "^1.0.3",
         "@solana/web3.js": "^1.98.4",
+        "@solmarket/polymarket-client": "*",
         "bs58": "^6.0.0",
         "bullmq": "^5.34.0",
         "chalk": "^5.6.2",

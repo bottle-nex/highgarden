@@ -5,4 +5,14 @@ module.exports = {
   parserOptions: {
     project: true,
   },
+  env: {
+    node: true,
+    es2020: true,
+  },
+  rules: {
+    "no-unused-vars": [
+      "warn",
+      { args: "none", varsIgnorePattern: "^_", caughtErrors: "none" },
+    ],
+  },
 };
