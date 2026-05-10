@@ -65,14 +65,14 @@ interface RawGammaMarket {
  * and the Polygon CTF contract for redemption.
  *
  * Resource lifecycles are lazy: the CLOB client is constructed on the first
- * `place_market_order` / `get_top_of_book` call (so resolver-only smoke can
- * run without CLOB creds), and the Polygon signer is constructed on the
- * first `redeem_positions` call.
+ * `place_market_order` call, and the Polygon signer is constructed on the
+ * first `redeem_positions` call. Reads (`get_top_of_book`, `get_book`,
+ * gamma) hit the public REST surface directly and require no credentials.
  *
  * Dry-run mode: if any CLOB credential is missing, the client logs a warning
  * once and `place_market_order` returns a synthetic "fully filled" result
- * without contacting Polymarket. This is the mode used in dev / on machines
- * without secrets.
+ * without contacting Polymarket. Reads stay live regardless. This is the
+ * mode used in dev / on machines without secrets.
  */
 export class PolymarketClient {
   private readonly cfg: PolymarketClientConfig;
@@ -144,16 +144,36 @@ export class PolymarketClient {
   }
 
   /**
-   * Returns top of book in integer-cents. In dry-run, returns a 49/51 stub
-   * so processor logic can still be exercised end-to-end.
+   * Returns top of book in integer-cents from Polymarket's public REST
+   * `/book` endpoint. No credentials required — reading the orderbook is
+   * unauthenticated, even when `place_market_order` is in dry-run.
    */
   public async get_top_of_book(token_id: string): Promise<BookTop> {
-    if (this.is_dry_run()) {
-      this.log.debug({ token_id }, "dry-run book lookup → 49/51 stub");
-      return { bestBidCents: 49, bestAskCents: 51, bestBidSize: 100, bestAskSize: 100 };
+    const url = `${this.cfg.restUrl}/book?token_id=${token_id}`;
+    let res: Response;
+    try {
+      res = await fetch(url);
+    } catch (err) {
+      throw new RetryableError(
+        `polymarket book fetch failed for token ${token_id}: ${(err as Error).message}`,
+        err,
+      );
     }
-    const summary = await this.get_clob_client().getOrderBook(token_id);
-    return this.shape_top(summary);
+    if (!res.ok) {
+      throw new RetryableError(
+        `polymarket book ${res.status} for token ${token_id}`,
+      );
+    }
+    const body = (await res.json()) as {
+      bids?: { price: string; size: string }[];
+      asks?: { price: string; size: string }[];
+    };
+    if (!Array.isArray(body?.bids) || !Array.isArray(body?.asks)) {
+      throw new RetryableError(
+        `polymarket book malformed for token ${token_id}`,
+      );
+    }
+    return this.shape_top({ bids: body.bids, asks: body.asks });
   }
 
   /**

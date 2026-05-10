@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import chalk from "chalk";
 import { PublicKey } from "@solana/web3.js";
 import { prisma } from "@solmarket/database";
 import type { Outcome, Side } from "@solmarket/database";
@@ -320,6 +321,17 @@ export default class TradeOrchestratorService {
             throw new TradeError("STALE_BOOK", 503, "polymarket book unavailable");
         }
         const client_order_id = `server-${randomUUID()}`;
+        console.log(
+            chalk.cyan.bold("[polymarket]"),
+            chalk.green("trade started →"),
+            chalk.white(`side=${market.polymarketSide}`),
+            chalk.white(`outcome=${market.outcome}`),
+            chalk.white(`shares=${netting.remainingShares}`),
+            chalk.white(`price=${target_price}¢`),
+            chalk.gray(`token=${market.tokenId.slice(0, 10)}…`),
+            chalk.gray(`clientOrderId=${client_order_id}`),
+        );
+        const started_at = Date.now();
         try {
             const result = await this.race_with_timeout(
                 poly.place_market_order({
@@ -334,8 +346,22 @@ export default class TradeOrchestratorService {
                 ENV.SERVER_TRADE_HEDGE_TIMEOUT_MS,
             );
             this.assert_filled(result, original_shares, netting.remainingShares);
+            console.log(
+                chalk.cyan.bold("[polymarket]"),
+                chalk.green("trade filled ✓"),
+                chalk.white(`filled=${result.filledShares}/${netting.remainingShares}`),
+                chalk.white(`avgPrice=${result.avgPriceCents}¢`),
+                chalk.white(`orderId=${result.polymarketOrderId}`),
+                chalk.gray(`(${Date.now() - started_at}ms)`),
+            );
             return result;
         } catch (err) {
+            console.log(
+                chalk.cyan.bold("[polymarket]"),
+                chalk.red("trade failed ✗"),
+                chalk.white((err as Error).message),
+                chalk.gray(`(${Date.now() - started_at}ms)`),
+            );
             if (err instanceof TradeError) throw err;
             throw new TradeError(
                 "TRADE_UNAVAILABLE",

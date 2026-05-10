@@ -16,17 +16,17 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-    metadataBase: new URL('https://solmarket.xyz'),
+    metadataBase: new URL('https://highgarden.trade'),
     title: {
-        default: 'SolMarket | The First Prediction Market Native to Solana',
-        template: '%s · SolMarket',
+        default: 'HighGarden | The First Prediction Market Native to Solana',
+        template: '%s · HighGarden',
     },
     description:
-        'SolMarket is a Solana-native prediction market. Trade YES/NO outcomes on real-world events with deep day-one liquidity mirrored from Polymarket, settled in Solana USDC, with the speed and fees Solana traders expect.',
-    applicationName: 'SolMarket',
+        'HighGarden is a Solana-native prediction market. Trade YES/NO outcomes on real-world events with deep day-one liquidity mirrored from Polymarket, settled in Solana USDC, with the speed and fees Solana traders expect.',
+    applicationName: 'HighGarden',
     keywords: [
         'Solana prediction market',
-        'Polymarket on Solana',
+        'Prediction Market on Solana',
         'prediction markets',
         'YES/NO markets',
         'Solana DeFi',
@@ -35,13 +35,13 @@ export const metadata: Metadata = {
         'event trading',
         'crypto prediction market',
     ],
-    authors: [{ name: 'SolMarket' }],
-    creator: 'SolMarket',
+    authors: [{ name: 'HighGarden' }],
+    creator: 'HighGarden',
     openGraph: {
         type: 'website',
-        url: 'https://solmarket.xyz',
-        siteName: 'SolMarket',
-        title: 'SolMarket | Polymarket on Solana',
+        url: 'https://highgarden.trade',
+        siteName: 'HighGarden',
+        title: 'HighGarden | Prediction Market on Solana',
         description:
             'A Solana-native prediction market with day-one liquidity. Trade event outcomes in Solana USDC with tight spreads, instant settlement, and a Polymarket-deep order book.',
         images: [
@@ -49,13 +49,13 @@ export const metadata: Metadata = {
                 url: '/images/landing/hero.png',
                 width: 1200,
                 height: 630,
-                alt: 'SolMarket | the first prediction market native to Solana',
+                alt: 'HighGarden | the first prediction market native to Solana',
             },
         ],
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'SolMarket | Polymarket on Solana',
+        title: 'HighGarden | Prediction Market on Solana',
         description:
             'The first prediction market native to Solana. Deep day-one liquidity, Solana-speed trading, USDC settlement.',
         images: ['/images/landing/hero.png'],
