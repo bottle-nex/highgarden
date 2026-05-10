@@ -67,9 +67,7 @@ class ContractUpgrader {
   }
 
   private async print_balance(wallet_pubkey: string): Promise<void> {
-    const balance = (
-      await Bun.$`solana balance ${wallet_pubkey} --url ${CLUSTER}`.text()
-    ).trim();
+    const balance = (await Bun.$`solana balance ${wallet_pubkey} --url ${CLUSTER}`.text()).trim();
     console.log(`wallet balance:      ${balance}`);
   }
 
