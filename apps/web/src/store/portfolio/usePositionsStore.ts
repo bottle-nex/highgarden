@@ -76,10 +76,7 @@ export const usePositionsStore = create<PositionsState>()(
                             toWinUsd: next_shares,
                             valueUsd:
                                 existing.currentPriceCents !== null
-                                    ? +(
-                                          (existing.currentPriceCents * next_shares) /
-                                          100
-                                      ).toFixed(2)
+                                    ? +((existing.currentPriceCents * next_shares) / 100).toFixed(2)
                                     : +((Math.round(next_avg) * next_shares) / 100).toFixed(2),
                         };
                         const next = s.positions.slice();
@@ -101,7 +98,8 @@ export const usePositionsStore = create<PositionsState>()(
                     'positions/applyClaim',
                 ),
 
-            reset: () => set({ positions: [], loading: false, error: null }, false, 'positions/reset'),
+            reset: () =>
+                set({ positions: [], loading: false, error: null }, false, 'positions/reset'),
         }),
         { name: 'PositionsStore' },
     ),

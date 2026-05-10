@@ -35,9 +35,7 @@ export default function EventNavbar(): JSX.Element {
                     <div className="flex-1 flex items-center">
                         <Link href="/" className="inline-flex items-center gap-x-2 cursor-pointer">
                             <Applogo size={28} />
-                            <div className='text-white'>
-                                {APP_NAME}
-                            </div>
+                            <div className="text-white">{APP_NAME}</div>
                         </Link>
                     </div>
 

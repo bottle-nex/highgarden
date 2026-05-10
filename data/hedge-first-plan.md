@@ -88,6 +88,7 @@ USER ──Buy──► WEB ──/trade──► SERVER (TradeOrchestrator)
 ```
 
 The **hedger** stays running but is demoted to:
+
 - Catch-up poller (safety net for orphaned `OrderFilled` events — should be ~zero)
 - Reconciliation loop
 - Resolver
@@ -130,21 +131,21 @@ The **hedger** stays running but is demoted to:
 
 **Failure responses**:
 
-| HTTP | Code | When |
-| --- | --- | --- |
-| 401 | `NOT_AUTHORIZED` | not signed in |
-| 400 | `INVALID_DATA` | malformed body |
-| 409 | `MARKET_NOT_LISTED_ON_SOLANA` | no PDA yet |
-| 409 | `MARKET_PAUSED` | admin paused |
-| 409 | `MARKET_RESOLVED` | already resolved |
-| 402 | `INSUFFICIENT_USDC_BALANCE` | user wallet too low |
-| 402 | `INSUFFICIENT_SOL_BALANCE` | user wallet has no SOL for fee |
-| 503 | `TRADE_UNAVAILABLE` | Polymarket couldn't fill (book too thin, network, etc.) — **no state changed** |
-| 503 | `MARKET_CLOSED_ON_POLYMARKET` | upstream market is no longer accepting orders |
-| 500 | `TRADE_RECONCILE_PENDING` | Polymarket filled but Solana commit failed; entry created in PlatformInventory; ops will reconcile |
+| HTTP | Code                          | When                                                                                               |
+| ---- | ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| 401  | `NOT_AUTHORIZED`              | not signed in                                                                                      |
+| 400  | `INVALID_DATA`                | malformed body                                                                                     |
+| 409  | `MARKET_NOT_LISTED_ON_SOLANA` | no PDA yet                                                                                         |
+| 409  | `MARKET_PAUSED`               | admin paused                                                                                       |
+| 409  | `MARKET_RESOLVED`             | already resolved                                                                                   |
+| 402  | `INSUFFICIENT_USDC_BALANCE`   | user wallet too low                                                                                |
+| 402  | `INSUFFICIENT_SOL_BALANCE`    | user wallet has no SOL for fee                                                                     |
+| 503  | `TRADE_UNAVAILABLE`           | Polymarket couldn't fill (book too thin, network, etc.) — **no state changed**                     |
+| 503  | `MARKET_CLOSED_ON_POLYMARKET` | upstream market is no longer accepting orders                                                      |
+| 500  | `TRADE_RECONCILE_PENDING`     | Polymarket filled but Solana commit failed; entry created in PlatformInventory; ops will reconcile |
 
 The user-facing toast for `TRADE_RECONCILE_PENDING` is something like
-*"Your trade is being finalized — please refresh in a minute"*. The bot will
+_"Your trade is being finalized — please refresh in a minute"_. The bot will
 either retry the Solana leg in the background (most cases) or net the
 position against another user's trade.
 
@@ -211,6 +212,7 @@ Migration: `add_platform_inventory`.
 ### Existing tables — minor touch-ups
 
 `Fill` gets a new optional column linking to inventory it consumed:
+
 ```prisma
 model Fill {
   // ...existing fields
@@ -263,7 +265,7 @@ Class with one public method:
 
 ```ts
 class TradeOrchestrator {
-  async execute(input: TradeInput): Promise<TradeResult>
+  async execute(input: TradeInput): Promise<TradeResult>;
 }
 ```
 
@@ -388,14 +390,14 @@ catches edge cases".
 
 ### What goes away
 
-- **Live listener** — no longer the *primary* path. It can stay disabled by
+- **Live listener** — no longer the _primary_ path. It can stay disabled by
   default (env flag `HEDGER_LIVE_LISTENER_ENABLED=false`) and only the
   poller backfills. Or we keep it on but with the understanding that it
   should never have anything to do (a fired event = a server crash; alert).
 
 - **BullMQ queue + worker** — for the live trade flow, we don't need a queue
   anymore, the server orchestrates synchronously. We'll keep BullMQ for the
-  *backfill* path: when the poller finds an orphan event, it drops a job and
+  _backfill_ path: when the poller finds an orphan event, it drops a job and
   the worker handles it (just like today). So the queue stays but its
   "expected steady-state job rate" goes to ~zero.
 
@@ -462,7 +464,7 @@ const result = await trading_api.trade(market.id, {
 The frontend is gated behind a feature flag during migration:
 
 ```ts
-const USE_HEDGE_FIRST_TRADE = process.env.NEXT_PUBLIC_USE_HEDGE_FIRST_TRADE === 'true';
+const USE_HEDGE_FIRST_TRADE = process.env.NEXT_PUBLIC_USE_HEDGE_FIRST_TRADE === "true";
 ```
 
 When `false`, falls back to the old two-call flow.
@@ -527,21 +529,21 @@ both flows somehow fired for the same trade, the second insert is a no-op.
 
 For every failure point, what happens and what the user sees:
 
-| Step | Failure | Server behavior | User sees | Platform exposure |
-| --- | --- | --- | --- | --- |
-| 1 (validate) | not signed in | 401 | sign-in prompt | none |
-| 1 | wallet has no USDC | 402 `INSUFFICIENT_USDC_BALANCE` | "Top up first" | none |
-| 1 | wallet has no SOL | 402 `INSUFFICIENT_SOL_BALANCE` | "Top up SOL" | none |
-| 1 | market paused | 409 `MARKET_PAUSED` | "Trading paused" | none |
-| 2 (book) | mirror returns nothing / stale | 503 `STALE_BOOK` | "Try again in a moment" | none |
-| 3 (Polymarket FAK) | network error / Polymarket API down | retry up to N, then 503 `TRADE_UNAVAILABLE` | "Trade unavailable, try again" | none |
-| 3 | book moved, FAK filled 0 | 503 `TRADE_UNAVAILABLE` | same | none |
-| 3 | filled partial after walk-book | continue with actual size; toast "Filled X of Y" | partial success | none on un-filled portion |
-| 3 | Polymarket returns "market closed" | 503 `MARKET_CLOSED_ON_POLYMARKET` | "Just closed on Polymarket" | none |
-| 6 (Solana submit) | RPC blip (transient) | retry with backoff | success after delay | none |
-| 6 | Solana fails permanently | record `PlatformInventory`, return 500 `TRADE_RECONCILE_PENDING` | "Trade pending, refresh in a minute" | bounded — N shares on Polymarket awaiting net |
-| 6 | quote signature invalid (programmer bug) | 500 with full alert | generic error | none — Solana would reject |
-| 7 (return) | response never reaches user (network) | server side fine; client retries with same `requestId` → cached result | retry returns same trade | none |
+| Step               | Failure                                  | Server behavior                                                        | User sees                            | Platform exposure                             |
+| ------------------ | ---------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------ | --------------------------------------------- |
+| 1 (validate)       | not signed in                            | 401                                                                    | sign-in prompt                       | none                                          |
+| 1                  | wallet has no USDC                       | 402 `INSUFFICIENT_USDC_BALANCE`                                        | "Top up first"                       | none                                          |
+| 1                  | wallet has no SOL                        | 402 `INSUFFICIENT_SOL_BALANCE`                                         | "Top up SOL"                         | none                                          |
+| 1                  | market paused                            | 409 `MARKET_PAUSED`                                                    | "Trading paused"                     | none                                          |
+| 2 (book)           | mirror returns nothing / stale           | 503 `STALE_BOOK`                                                       | "Try again in a moment"              | none                                          |
+| 3 (Polymarket FAK) | network error / Polymarket API down      | retry up to N, then 503 `TRADE_UNAVAILABLE`                            | "Trade unavailable, try again"       | none                                          |
+| 3                  | book moved, FAK filled 0                 | 503 `TRADE_UNAVAILABLE`                                                | same                                 | none                                          |
+| 3                  | filled partial after walk-book           | continue with actual size; toast "Filled X of Y"                       | partial success                      | none on un-filled portion                     |
+| 3                  | Polymarket returns "market closed"       | 503 `MARKET_CLOSED_ON_POLYMARKET`                                      | "Just closed on Polymarket"          | none                                          |
+| 6 (Solana submit)  | RPC blip (transient)                     | retry with backoff                                                     | success after delay                  | none                                          |
+| 6                  | Solana fails permanently                 | record `PlatformInventory`, return 500 `TRADE_RECONCILE_PENDING`       | "Trade pending, refresh in a minute" | bounded — N shares on Polymarket awaiting net |
+| 6                  | quote signature invalid (programmer bug) | 500 with full alert                                                    | generic error                        | none — Solana would reject                    |
+| 7 (return)         | response never reaches user (network)    | server side fine; client retries with same `requestId` → cached result | retry returns same trade             | none                                          |
 
 The only row with "platform exposure" is the rare Solana-fails-after-hedge
 case. Mitigations:

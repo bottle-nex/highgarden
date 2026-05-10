@@ -112,10 +112,7 @@ export default class PreTradeValidator {
      * than a top-of-book estimate. A reject here means the Polymarket
      * leg already filled — caller should record orphan inventory.
      */
-    public async assert_treasury_can_cover(
-        shares: number,
-        price_cents: number,
-    ): Promise<void> {
+    public async assert_treasury_can_cover(shares: number, price_cents: number): Promise<void> {
         if (shares <= 0) return;
         const required = BigInt(shares) * BigInt(price_cents) * USDC_PER_CENT;
         const balance = await this.fetch_treasury_lamports();
@@ -226,12 +223,13 @@ export default class PreTradeValidator {
     }
 
     private translate_validation_failure(failure: ValidationFailure): TradeError {
-        const mapping: Record<ValidationFailure["code"], { status: number; code: TradeErrorCode }> = {
-            MARKET_CLOSED_ON_POLYMARKET: { status: 409, code: "MARKET_CLOSED_ON_POLYMARKET" },
-            MARKET_NOT_ACCEPTING_ORDERS: { status: 409, code: "MARKET_NOT_ACCEPTING_ORDERS" },
-            BELOW_HEDGE_MIN_NOTIONAL: { status: 422, code: "BELOW_HEDGE_MIN_NOTIONAL" },
-            INSUFFICIENT_FUNDER_BALANCE: { status: 503, code: "INSUFFICIENT_FUNDER_BALANCE" },
-        };
+        const mapping: Record<ValidationFailure["code"], { status: number; code: TradeErrorCode }> =
+            {
+                MARKET_CLOSED_ON_POLYMARKET: { status: 409, code: "MARKET_CLOSED_ON_POLYMARKET" },
+                MARKET_NOT_ACCEPTING_ORDERS: { status: 409, code: "MARKET_NOT_ACCEPTING_ORDERS" },
+                BELOW_HEDGE_MIN_NOTIONAL: { status: 422, code: "BELOW_HEDGE_MIN_NOTIONAL" },
+                INSUFFICIENT_FUNDER_BALANCE: { status: 503, code: "INSUFFICIENT_FUNDER_BALANCE" },
+            };
         const entry = mapping[failure.code];
         return new TradeError(entry.code, entry.status, failure.details);
     }

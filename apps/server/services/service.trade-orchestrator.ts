@@ -7,9 +7,7 @@ import { ENV } from "../config/config.env";
 import ServerPolymarketClientFactory from "./service.polymarket-client";
 import QuoteSignerService from "./service.quote-signer";
 import SolanaTradeService from "./service.solana-trade";
-import InventoryNetterService, {
-    type NettedConsumption,
-} from "./service.inventory-netter";
+import InventoryNetterService, { type NettedConsumption } from "./service.inventory-netter";
 import PreTradeValidator from "./service.pre-trade-validator";
 import { TradeError } from "./service.trade-errors";
 
@@ -151,7 +149,14 @@ export default class TradeOrchestratorService {
         // for the signer (anomaly detection later); the nonce sweeper
         // relies on this row to know which UsedNonce PDAs to reclaim rent
         // from after the quote expires.
-        await this.persist_quote(market.id, req, user_price_cents, hedge.filledShares, signed, expires_at_unix);
+        await this.persist_quote(
+            market.id,
+            req,
+            user_price_cents,
+            hedge.filledShares,
+            signed,
+            expires_at_unix,
+        );
 
         const solana_result = await this.submit_solana_or_record_inventory(
             req,
@@ -230,19 +235,15 @@ export default class TradeOrchestratorService {
         // on-chain check uses Solana clock; ours uses wall-clock — close
         // enough for UX, and the on-chain check still gates correctness.
         if (row.endAt.getTime() <= Date.now()) {
-            throw new TradeError(
-                "MARKET_ENDED",
-                409,
-                "market has ended — no more trades",
-            );
+            throw new TradeError("MARKET_ENDED", 409, "market has ended — no more trades");
         }
         // Per-market exposure cap. If the platform's unhedged USD on this
         // market is already at or above the configured ceiling, don't take
         // more risk. Bidirectional check (abs) — long and short exposure
         // are equally bad.
         if (
-            row.exposure
-            && Math.abs(row.exposure.unhedgedUsd) >= ENV.SERVER_UNHEDGED_DELTA_CAP_USD
+            row.exposure &&
+            Math.abs(row.exposure.unhedgedUsd) >= ENV.SERVER_UNHEDGED_DELTA_CAP_USD
         ) {
             throw new TradeError(
                 "EXPOSURE_LIMIT",
@@ -251,11 +252,7 @@ export default class TradeOrchestratorService {
             );
         }
         if (!row.polymarket) {
-            throw new TradeError(
-                "MARKET_NOT_FOUND",
-                422,
-                "market missing polymarket linkage",
-            );
+            throw new TradeError("MARKET_NOT_FOUND", 422, "market missing polymarket linkage");
         }
 
         return this.shape_market(row, side, outcome);
@@ -298,12 +295,14 @@ export default class TradeOrchestratorService {
     // ───────────────── Step 3: attempt netting ─────────────────
 
     private async attempt_netting(market: ResolvedMarket, shares: number) {
-        return this.netter.net({
-            marketId: market.id,
-            polymarketSide: market.polymarketSide,
-            outcome: market.outcome,
-            sharesNeeded: shares,
-        }).catch(() => ({ consumed: [], totalSharesNetted: 0, remainingShares: shares }));
+        return this.netter
+            .net({
+                marketId: market.id,
+                polymarketSide: market.polymarketSide,
+                outcome: market.outcome,
+                sharesNeeded: shares,
+            })
+            .catch(() => ({ consumed: [], totalSharesNetted: 0, remainingShares: shares }));
     }
 
     // ───────────────── Step 4: place Polymarket order ─────────────────
@@ -392,10 +391,7 @@ export default class TradeOrchestratorService {
         return await Promise.race([
             p,
             new Promise<T>((_, reject) =>
-                setTimeout(
-                    () => reject(new Error(`polymarket call exceeded ${ms}ms`)),
-                    ms,
-                ),
+                setTimeout(() => reject(new Error(`polymarket call exceeded ${ms}ms`)), ms),
             ),
         ]);
     }
@@ -421,9 +417,7 @@ export default class TradeOrchestratorService {
 
         return {
             polymarketOrderId:
-                polymarket?.polymarketOrderId ??
-                netting.consumed[0]?.polymarketOrderId ??
-                "netted",
+                polymarket?.polymarketOrderId ?? netting.consumed[0]?.polymarketOrderId ?? "netted",
             filledShares: total_shares,
             avgPriceCents: combined_avg,
             nettedFromInventory: netted_shares > 0,
@@ -602,7 +596,9 @@ export default class TradeOrchestratorService {
                         polymarketTokenId: market.tokenId,
                         polymarketSide: market.polymarketSide,
                         bullJobId: signed.nonceHex,
-                        clientOrderId: hedge.nettedFromInventory ? null : `server-${signed.nonceHex}`,
+                        clientOrderId: hedge.nettedFromInventory
+                            ? null
+                            : `server-${signed.nonceHex}`,
                         requestedSize: hedge.filledShares,
                         filledSize: hedge.filledShares,
                         avgPrice: hedge.avgPriceCents,

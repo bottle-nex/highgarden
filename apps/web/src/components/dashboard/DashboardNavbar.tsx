@@ -30,7 +30,10 @@ export default function DashboardNavbar(): JSX.Element {
     return (
         <header className="sticky top-0 z-40 w-full bg-dark-alpha backdrop-blur-sm px-3 sm:px-6 lg:px-8">
             <div className="w-full h-14 sm:h-16 flex items-center justify-between gap-3 sm:gap-4 lg:gap-8">
-                <Link href="/" className="lg:hidden inline-flex items-center cursor-pointer no-underline shrink-0">
+                <Link
+                    href="/"
+                    className="lg:hidden inline-flex items-center cursor-pointer no-underline shrink-0"
+                >
                     <Applogo size={24} />
                 </Link>
                 <div className="hidden sm:flex justify-center flex-1 max-w-md">

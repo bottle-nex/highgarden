@@ -71,8 +71,13 @@ export default class TradeIdempotencyService {
         if (raw === null) {
             // Key disappeared between SET NX and GET (TTL expired). Treat as
             // a fresh claim attempt — recursive retry once.
-            const retry = await this.redis.set(key, PENDING_MARKER, "EX",
-                ENV.SERVER_TRADE_IDEMPOTENCY_TTL_SEC, "NX");
+            const retry = await this.redis.set(
+                key,
+                PENDING_MARKER,
+                "EX",
+                ENV.SERVER_TRADE_IDEMPOTENCY_TTL_SEC,
+                "NX",
+            );
             return retry === "OK" ? { kind: "claimed" } : { kind: "in_flight" };
         }
         if (raw === PENDING_MARKER) return { kind: "in_flight" };

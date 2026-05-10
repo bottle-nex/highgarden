@@ -187,10 +187,7 @@ export default class PlatformInventoryLiquidator {
         });
     }
 
-    private async record_liquidation(
-        row_id: string,
-        order_id: string | null,
-    ): Promise<void> {
+    private async record_liquidation(row_id: string, order_id: string | null): Promise<void> {
         await prisma.platformInventory.update({
             where: { id: row_id },
             data: { liquidateOrderId: order_id },

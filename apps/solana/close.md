@@ -57,13 +57,13 @@ After `solana program close`, the program account is gone, so no Solana program 
 
 Add these handlers under [apps/solana/programs/contract/src/instructions/](programs/contract/src/instructions/) and wire each into the dispatcher in [apps/solana/programs/contract/src/lib.rs](programs/contract/src/lib.rs). Every handler must be admin-gated — load `Config`, verify `config.admin == admin.key`, then act.
 
-| Instruction | Snake name (for `ix_disc`) | Accounts (in order) | Behavior |
-|---|---|---|---|
-| `admin_drain_treasury` | `admin_drain_treasury` | `admin` (s,w), `config`, `treasury_vault` (mut), `treasury_authority` (PDA), `admin_usdc_ata` (mut, owner=admin, mint=config.usdc_mint), `token_program` | `spl_token::transfer` full vault balance → admin's USDC ATA, signed by `treasury_authority` PDA |
-| `admin_close_treasury_vault` | `admin_close_treasury_vault` | `admin` (s,w), `config`, `treasury_vault` (mut), `treasury_authority` (PDA), `token_program` | `spl_token::close_account` on vault → SOL rent to admin, signed by `treasury_authority` PDA. **Vault balance must be 0.** |
-| `admin_close_market` | `admin_close_market` | `admin` (s,w), `config`, `market` (mut) | `close_account(market, admin)` |
-| `admin_close_position` | `admin_close_position` | `admin` (s,w), `config`, `user_position` (mut) | `close_account(user_position, admin)` — admin-force variant that skips the user-signature requirement of the existing `close_position` |
-| `admin_close_config` | `admin_close_config` | `admin` (s,w), `config` (mut) | `close_account(config, admin)` |
+| Instruction                  | Snake name (for `ix_disc`)   | Accounts (in order)                                                                                                                                      | Behavior                                                                                                                               |
+| ---------------------------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `admin_drain_treasury`       | `admin_drain_treasury`       | `admin` (s,w), `config`, `treasury_vault` (mut), `treasury_authority` (PDA), `admin_usdc_ata` (mut, owner=admin, mint=config.usdc_mint), `token_program` | `spl_token::transfer` full vault balance → admin's USDC ATA, signed by `treasury_authority` PDA                                        |
+| `admin_close_treasury_vault` | `admin_close_treasury_vault` | `admin` (s,w), `config`, `treasury_vault` (mut), `treasury_authority` (PDA), `token_program`                                                             | `spl_token::close_account` on vault → SOL rent to admin, signed by `treasury_authority` PDA. **Vault balance must be 0.**              |
+| `admin_close_market`         | `admin_close_market`         | `admin` (s,w), `config`, `market` (mut)                                                                                                                  | `close_account(market, admin)`                                                                                                         |
+| `admin_close_position`       | `admin_close_position`       | `admin` (s,w), `config`, `user_position` (mut)                                                                                                           | `close_account(user_position, admin)` — admin-force variant that skips the user-signature requirement of the existing `close_position` |
+| `admin_close_config`         | `admin_close_config`         | `admin` (s,w), `config` (mut)                                                                                                                            | `close_account(config, admin)`                                                                                                         |
 
 Keep `close_used_nonce` (already admin-only) and the existing user-callable `close_position` (so users can self-close in the grace window of Phase F.3).
 
@@ -124,17 +124,17 @@ Wind-down operations are large, irreversible, and must be auditable. Don't run t
 
 Create one controller per ix under [apps/server/controllers/admin/](../../apps/server/controllers/admin/), each calling the matching method on `SolmarketClient` via a new `SolanaWindDownService` (analogous to the existing `SolanaAdminService` at [service.solana-admin.ts](../../apps/server/services/service.solana-admin.ts)):
 
-| File | Endpoint | Body |
-|---|---|---|
-| `controller.wind-pause-all.ts` | `POST /admin/wind/pause-all` | _(none)_ — pauses every market via existing `adminPauseMarket` |
-| `controller.wind-resolve.ts` | `POST /admin/wind/resolve/:marketId` | `{ winningOutcome: 0 \| 1 }` |
-| `controller.wind-drain-treasury.ts` | `POST /admin/wind/drain-treasury` | _(none)_ — calls `adminDrainTreasury` with the admin's USDC ATA derived server-side |
-| `controller.wind-close-positions.ts` | `POST /admin/wind/close-positions` | `{ batchSize?: number }` — paginates over UserPositions and force-closes each |
-| `controller.wind-close-nonces.ts` | `POST /admin/wind/close-nonces` | `{ batchSize?: number }` — drains expired UsedNonce PDAs (same shape as the existing `NonceSweeperService` but admin-triggered, no expiry filter) |
-| `controller.wind-close-markets.ts` | `POST /admin/wind/close-markets` | _(none)_ — closes every Market PDA |
-| `controller.wind-close-vault.ts` | `POST /admin/wind/close-vault` | _(none)_ — closes the treasury vault token account (must be drained first) |
-| `controller.wind-close-config.ts` | `POST /admin/wind/close-config` | _(none)_ — final on-chain step before `solana program close` |
-| `controller.wind-status.ts` | `GET /admin/wind/status` | _(none)_ — read-only inventory: vault USDC balance, count of each PDA type still alive, config PDA status |
+| File                                 | Endpoint                             | Body                                                                                                                                              |
+| ------------------------------------ | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `controller.wind-pause-all.ts`       | `POST /admin/wind/pause-all`         | _(none)_ — pauses every market via existing `adminPauseMarket`                                                                                    |
+| `controller.wind-resolve.ts`         | `POST /admin/wind/resolve/:marketId` | `{ winningOutcome: 0 \| 1 }`                                                                                                                      |
+| `controller.wind-drain-treasury.ts`  | `POST /admin/wind/drain-treasury`    | _(none)_ — calls `adminDrainTreasury` with the admin's USDC ATA derived server-side                                                               |
+| `controller.wind-close-positions.ts` | `POST /admin/wind/close-positions`   | `{ batchSize?: number }` — paginates over UserPositions and force-closes each                                                                     |
+| `controller.wind-close-nonces.ts`    | `POST /admin/wind/close-nonces`      | `{ batchSize?: number }` — drains expired UsedNonce PDAs (same shape as the existing `NonceSweeperService` but admin-triggered, no expiry filter) |
+| `controller.wind-close-markets.ts`   | `POST /admin/wind/close-markets`     | _(none)_ — closes every Market PDA                                                                                                                |
+| `controller.wind-close-vault.ts`     | `POST /admin/wind/close-vault`       | _(none)_ — closes the treasury vault token account (must be drained first)                                                                        |
+| `controller.wind-close-config.ts`    | `POST /admin/wind/close-config`      | _(none)_ — final on-chain step before `solana program close`                                                                                      |
+| `controller.wind-status.ts`          | `GET /admin/wind/status`             | _(none)_ — read-only inventory: vault USDC balance, count of each PDA type still alive, config PDA status                                         |
 
 All wind-down endpoints **must**:
 
@@ -278,7 +278,7 @@ Skip this only if you're explicitly OK with cancelling open markets and keeping 
 
 Announce the impending close, give users a reasonable window (a week or more is humane) to call `claim` and `close_position` on their resolved positions. They'll pull their winning USDC out of the vault and reclaim their own UserPosition rent.
 
-What you choose to do here defines whether F.4 returns *only platform funds* or *platform funds plus user winnings nobody got around to claiming*.
+What you choose to do here defines whether F.4 returns _only platform funds_ or _platform funds plus user winnings nobody got around to claiming_.
 
 ### F.4 — Drain USDC from the treasury vault
 
@@ -351,10 +351,12 @@ solana program close "$PROGRAM_ID" \
 ```
 
 Refunds:
+
 - ~2.31 SOL (ProgramData rent)
 - ~0.00114 SOL (program account rent)
 
 After this command lands:
+
 - The program ID is **permanently retired**. Re-deploying at the same address is impossible (the loader treats closed program accounts as un-reusable).
 - Any program-owned account you forgot to close is now orphaned. Its SOL stays locked forever.
 
@@ -368,15 +370,15 @@ solana program show "$PROGRAM_ID"
 
 ## 9. What you get back
 
-| Asset | Amount | Source |
-|---|---|---|
-| USDC in treasury vault | full balance | F.4 |
-| Per-UserPosition rent | ~0.00151 SOL × N positions | F.5 |
-| Per-UsedNonce rent | ~0.00106 SOL × K nonces | F.6 |
-| Per-Market rent | ~0.00436 SOL × M markets | F.7 |
-| Treasury vault token account rent | ~0.00203 SOL | F.8 |
-| Config PDA rent | ~0.00208 SOL | F.9 |
-| ProgramData + program account rent | ~2.31 + ~0.00114 SOL | F.11 |
+| Asset                              | Amount                     | Source |
+| ---------------------------------- | -------------------------- | ------ |
+| USDC in treasury vault             | full balance               | F.4    |
+| Per-UserPosition rent              | ~0.00151 SOL × N positions | F.5    |
+| Per-UsedNonce rent                 | ~0.00106 SOL × K nonces    | F.6    |
+| Per-Market rent                    | ~0.00436 SOL × M markets   | F.7    |
+| Treasury vault token account rent  | ~0.00203 SOL               | F.8    |
+| Config PDA rent                    | ~0.00208 SOL               | F.9    |
+| ProgramData + program account rent | ~2.31 + ~0.00114 SOL       | F.11   |
 
 Order of magnitude on a contract with 10 markets / 1000 positions / 5000 nonces:
 
@@ -430,7 +432,7 @@ The PDA is now orphaned. No path to recover. Pass-through to "permanently lost" 
 
 ### Program keypair lost mid-procedure
 
-Doesn't block the sweep — `solana program close` only needs the upgrade authority (`id.json`), not the program keypair. The program keypair is only needed to *deploy* at that program ID, which you'll never do again.
+Doesn't block the sweep — `solana program close` only needs the upgrade authority (`id.json`), not the program keypair. The program keypair is only needed to _deploy_ at that program ID, which you'll never do again.
 
 ### Phase B SDK changes broke an unrelated path
 

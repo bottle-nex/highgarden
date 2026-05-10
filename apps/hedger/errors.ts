@@ -5,8 +5,4 @@
  * the same instanceof checks should import from
  * `@solmarket/polymarket-client` directly.
  */
-export {
-  RetryableError,
-  UnrecoverableError,
-  is_retryable,
-} from "@solmarket/polymarket-client";
+export { RetryableError, UnrecoverableError, is_retryable } from "@solmarket/polymarket-client";

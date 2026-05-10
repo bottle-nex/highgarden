@@ -7,7 +7,7 @@ interface Props {
 
 export default function Layout({ children }: Props) {
     return (
-        <div className=''>
+        <div className="">
             {children}
             <ScrollToTop />
         </div>
