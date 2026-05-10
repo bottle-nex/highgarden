@@ -226,9 +226,7 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                 </div>
             </header>
 
-            <div
-                className={`overflow-hidden transition-[max-height] duration-300 ease-in-out `}
-            >
+            <div className={`overflow-hidden transition-[max-height] duration-300 ease-in-out `}>
                 <div>
                     <div className="pt-1">
                         <div className="grid grid-cols-3 pr-2 sm:pr-3 gap-x-3 sm:gap-x-8 text-[11.5px] text-white/35 pb-2 border-b border-white/7">

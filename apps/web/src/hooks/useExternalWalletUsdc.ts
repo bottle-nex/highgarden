@@ -59,7 +59,7 @@ export function useExternalWalletUsdc(): State {
     }, [connection, publicKey]);
 
     useEffect(() => {
-         
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void refetch();
     }, [refetch]);
 

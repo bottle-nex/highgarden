@@ -12,13 +12,13 @@ This program is plain Rust (no Anchor, no Pinocchio) so the entire flow uses `ca
 
 ## 1. Keys and roles
 
-| File | Role | Touched during upgrade? |
-|---|---|---|
-| `~/.config/solana/id.json` | Deployer = **upgrade authority** | Yes — signs the upgrade tx |
-| Program keypair (pubkey IS the program ID) | Identity of the deployed program | No — only used at first deploy |
-| Admin wallet (whichever wallet calls `initialize_config`) | `Config.admin` — gates `create_market`, `admin_pause_market`, `admin_unpause_market`, `close_used_nonce` | No |
-| Oracle wallet | `Config.oracle_signer` — signs `resolve_market` | No |
-| Quote signer | `Config.quote_signer` — signs ed25519 quotes for `place_order` | No |
+| File                                                      | Role                                                                                                     | Touched during upgrade?        |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| `~/.config/solana/id.json`                                | Deployer = **upgrade authority**                                                                         | Yes — signs the upgrade tx     |
+| Program keypair (pubkey IS the program ID)                | Identity of the deployed program                                                                         | No — only used at first deploy |
+| Admin wallet (whichever wallet calls `initialize_config`) | `Config.admin` — gates `create_market`, `admin_pause_market`, `admin_unpause_market`, `close_used_nonce` | No                             |
+| Oracle wallet                                             | `Config.oracle_signer` — signs `resolve_market`                                                          | No                             |
+| Quote signer                                              | `Config.quote_signer` — signs ed25519 quotes for `place_order`                                           | No                             |
 
 The admin / oracle / quote keys are program **state**, not program **infrastructure**. They live inside the `Config` PDA and are unaffected by upgrades.
 
@@ -46,24 +46,24 @@ Numbers are for a 166 KB `solmarket_contract.so`. Recompute proportionally if th
 
 ### First-time deploy
 
-| Account | Size | Rent | Recoverable? |
-|---|---|---|---|
-| ProgramData | 332,045 B (= 2 × 166000 + 45) | **~2.31 SOL** | Yes — refunded if you `solana program close` |
-| Program | ~36 B | ~0.00114 SOL | Yes — refunded on `solana program close` |
-| Buffer (transient) | 166,000 B | ~1.16 SOL | Yes — refunded automatically after the loader copies bytes into ProgramData |
-| Tx fees (many small Write txs) | — | ~0.005–0.01 SOL | **No** — gone forever |
+| Account                        | Size                          | Rent            | Recoverable?                                                                |
+| ------------------------------ | ----------------------------- | --------------- | --------------------------------------------------------------------------- |
+| ProgramData                    | 332,045 B (= 2 × 166000 + 45) | **~2.31 SOL**   | Yes — refunded if you `solana program close`                                |
+| Program                        | ~36 B                         | ~0.00114 SOL    | Yes — refunded on `solana program close`                                    |
+| Buffer (transient)             | 166,000 B                     | ~1.16 SOL       | Yes — refunded automatically after the loader copies bytes into ProgramData |
+| Tx fees (many small Write txs) | —                             | ~0.005–0.01 SOL | **No** — gone forever                                                       |
 
 You need **~3.48 SOL available** in the wallet during the deploy window (buffer 1.16 + ProgramData 2.31 + program 0.001 + fees). The buffer's 1.16 SOL flows back when the loader closes it, so the wallet is **down ~2.32 SOL net** once deploy completes. That ~2.31 SOL is locked as rent-exempt on ProgramData — recoverable only by closing the program.
 
 ### Upgrade (program already deployed, new `.so` still fits in existing ProgramData allocation)
 
-| What happens | Cost |
-|---|---|
-| Buffer created (166 KB) | ~1.16 SOL — **refunded automatically** when the upgrade succeeds |
-| ProgramData overwritten in place | 0 — already paid for at first deploy |
-| Tx fees | ~0.005 SOL — not refunded |
+| What happens                     | Cost                                                             |
+| -------------------------------- | ---------------------------------------------------------------- |
+| Buffer created (166 KB)          | ~1.16 SOL — **refunded automatically** when the upgrade succeeds |
+| ProgramData overwritten in place | 0 — already paid for at first deploy                             |
+| Tx fees                          | ~0.005 SOL — not refunded                                        |
 
-**Net upgrade cost: ~0.005 SOL.** You still need 1.16 SOL *available* during the upgrade window to fund the buffer, but it returns when the buffer closes. The buffer's bytes are streamed in via many small Write transactions, which is where the tx-fee total comes from.
+**Net upgrade cost: ~0.005 SOL.** You still need 1.16 SOL _available_ during the upgrade window to fund the buffer, but it returns when the buffer closes. The buffer's bytes are streamed in via many small Write transactions, which is where the tx-fee total comes from.
 
 ### Refund on close
 
@@ -181,14 +181,14 @@ This step is mandatory whenever the on-chain interface changes — and it is **e
 
 The TS SDK lives at [packages/contract/src](../../packages/contract/src) and is hand-written. Map each Rust change to its TS counterpart:
 
-| Rust change | What to update in `packages/contract/src` |
-|---|---|
-| New `instructions/<name>.rs` added to dispatcher in `lib.rs` | Add `encode_<name>_args(...)` in `serialize.ts` and a method on `SolmarketClient` in `client.ts` that builds the `TransactionInstruction` (8-byte `ix_disc("<snake_name>")` + borsh args + positional account list in the **exact** order the Rust handler expects) |
-| Changed account order or signer flag for an existing handler | Update the `keys: [...]` array in the matching method in `client.ts` so `isSigner` / `isWritable` / position match the Rust handler 1:1 |
-| New field in an `Args` struct, or a struct reordered | Update the matching `encode_*_args` in `serialize.ts` and the param interface in `types.ts` |
-| New field in `state::*` (Config / Market / UserPosition / UsedNonce) | Update the matching account interface in `types.ts` and the matching `decode_*_account` reader in `decode.ts` (in field-declaration order) |
-| New `events::*` payload, or a field reordered | Update the matching event interface in `types.ts` and add/adjust the parser in `decode.ts` (e.g. `parse_order_filled`) plus the corresponding `decode_<name>` method on `EventLogDecoder` |
-| New error variant in `errors.rs` | Optional but recommended — surface a friendlier code/message mapping in whichever consumer translates `ProgramError::Custom(6000+n)` into user-facing text |
+| Rust change                                                          | What to update in `packages/contract/src`                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| New `instructions/<name>.rs` added to dispatcher in `lib.rs`         | Add `encode_<name>_args(...)` in `serialize.ts` and a method on `SolmarketClient` in `client.ts` that builds the `TransactionInstruction` (8-byte `ix_disc("<snake_name>")` + borsh args + positional account list in the **exact** order the Rust handler expects) |
+| Changed account order or signer flag for an existing handler         | Update the `keys: [...]` array in the matching method in `client.ts` so `isSigner` / `isWritable` / position match the Rust handler 1:1                                                                                                                             |
+| New field in an `Args` struct, or a struct reordered                 | Update the matching `encode_*_args` in `serialize.ts` and the param interface in `types.ts`                                                                                                                                                                         |
+| New field in `state::*` (Config / Market / UserPosition / UsedNonce) | Update the matching account interface in `types.ts` and the matching `decode_*_account` reader in `decode.ts` (in field-declaration order)                                                                                                                          |
+| New `events::*` payload, or a field reordered                        | Update the matching event interface in `types.ts` and add/adjust the parser in `decode.ts` (e.g. `parse_order_filled`) plus the corresponding `decode_<name>` method on `EventLogDecoder`                                                                           |
+| New error variant in `errors.rs`                                     | Optional but recommended — surface a friendlier code/message mapping in whichever consumer translates `ProgramError::Custom(6000+n)` into user-facing text                                                                                                          |
 
 Two cardinal rules — both encoded in the existing files but worth stating explicitly:
 
@@ -328,6 +328,7 @@ All three pubkeys must agree. Fix `declare_id!`, `cargo build-sbf`, and re-upgra
 ### Every TS caller errors with `InvalidInstructionData` after upgrade
 
 You shipped a Rust interface change without updating `packages/contract` (§6). Either:
+
 - Roll the SDK forward (preferred) — apply the §6 deltas and restart server/hedger.
 - Roll the contract back — re-upgrade with the previous `.so` while you fix the SDK. Devnet is cheap; on mainnet, prefer rolling forward fast.
 

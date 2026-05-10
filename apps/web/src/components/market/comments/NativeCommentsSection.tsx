@@ -59,7 +59,7 @@ export default function NativeCommentsSection({
     }, [market_id]);
 
     useEffect(() => {
-         
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void load_initial();
     }, [load_initial]);
 

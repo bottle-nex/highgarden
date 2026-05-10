@@ -1,9 +1,7 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 import ResponseWriter from "../../services/service.response";
-import TradeOrchestratorService, {
-    TradeError,
-} from "../../services/service.trade-orchestrator";
+import TradeOrchestratorService, { TradeError } from "../../services/service.trade-orchestrator";
 import { ENV } from "../../config/config.env";
 import { services } from "../../index";
 

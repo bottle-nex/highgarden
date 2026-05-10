@@ -6,3 +6,4 @@ build
 coverage
 bun.lock
 packages/database/prisma/generated
+apps/web/public/videos

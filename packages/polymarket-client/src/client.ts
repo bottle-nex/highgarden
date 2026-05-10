@@ -25,8 +25,7 @@ const CONDITIONAL_TOKENS_ADDRESS = "0x4D97DCd97eC945f40cF65F87097ACe5EA0476045";
 const USDC_E_ADDRESS = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174";
 
 /** For binary YES/NO markets the parent collection is the zero hash. */
-const PARENT_COLLECTION_ID =
-  "0x0000000000000000000000000000000000000000000000000000000000000000";
+const PARENT_COLLECTION_ID = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 /** Index sets for binary CTF: 1 = YES (slot 0), 2 = NO (slot 1). Both =
  *  "redeem whichever side resolved." */
@@ -171,9 +170,7 @@ export class PolymarketClient {
    *   BUY  → maker side = USDC,   taker side = shares  (amount = shares × price)
    *   SELL → maker side = shares, taker side = USDC    (amount = shares)
    */
-  public async place_market_order(
-    input: PlaceMarketOrderInput,
-  ): Promise<PlaceMarketOrderResult> {
+  public async place_market_order(input: PlaceMarketOrderInput): Promise<PlaceMarketOrderResult> {
     if (this.is_dry_run()) return this.simulate_dry_run(input);
     const payload = this.build_order_payload(input);
     const options = this.build_order_options(input);
@@ -201,9 +198,7 @@ export class PolymarketClient {
    * outcome at 1.0, the other at 0.0). Ambiguous payouts return
    * `winningOutcomeIndex=null`.
    */
-  public async fetch_resolution(
-    polymarket_market_id: string,
-  ): Promise<GammaResolution | null> {
+  public async fetch_resolution(polymarket_market_id: string): Promise<GammaResolution | null> {
     const raw = await this.fetch_raw_gamma_market(polymarket_market_id);
     if (!raw) return null;
     return this.shape_resolution(raw);
@@ -496,10 +491,7 @@ export class PolymarketClient {
   ): Promise<RedeemOutcome> {
     const signer = this.get_polygon_signer();
     const ctf = new Contract(CONDITIONAL_TOKENS_ADDRESS, CTF_ABI, signer);
-    this.log.info(
-      { polymarket_market_id, condition_id },
-      "submitting redeemPositions on Polygon",
-    );
+    this.log.info({ polymarket_market_id, condition_id }, "submitting redeemPositions on Polygon");
     const tx = await ctf["redeemPositions"]!(
       USDC_E_ADDRESS,
       PARENT_COLLECTION_ID,

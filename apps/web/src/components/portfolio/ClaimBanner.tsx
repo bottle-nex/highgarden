@@ -5,10 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { MarketIcon } from './PositionRow';
 import trading_api, { TradingError } from '@/lib/api/trading';
-import {
-    selectAllPositions,
-    usePositionsStore,
-} from '@/store/portfolio/usePositionsStore';
+import { selectAllPositions, usePositionsStore } from '@/store/portfolio/usePositionsStore';
 import Image from 'next/image';
 
 const FALLBACK_IMAGE = '/images/icons/btc.webp';
@@ -18,14 +15,8 @@ export default function ClaimBanner(): JSX.Element | null {
     const apply_claim = usePositionsStore((s) => s.applyClaim);
     const [claiming, setClaiming] = useState(false);
 
-    const claimable = useMemo(
-        () => positions.filter((p) => p.claimableUsd > 0),
-        [positions],
-    );
-    const total = useMemo(
-        () => claimable.reduce((sum, p) => sum + p.claimableUsd, 0),
-        [claimable],
-    );
+    const claimable = useMemo(() => positions.filter((p) => p.claimableUsd > 0), [positions]);
+    const total = useMemo(() => claimable.reduce((sum, p) => sum + p.claimableUsd, 0), [claimable]);
 
     if (claimable.length === 0) return null;
 
@@ -38,9 +29,7 @@ export default function ClaimBanner(): JSX.Element | null {
                 await trading_api.claim(p.marketId);
                 apply_claim(p.marketId, p.outcome);
             } catch (err) {
-                errors.push(
-                    err instanceof TradingError ? err.user_message : 'Claim failed',
-                );
+                errors.push(err instanceof TradingError ? err.user_message : 'Claim failed');
             }
         }
         setClaiming(false);
@@ -77,16 +66,10 @@ export default function ClaimBanner(): JSX.Element | null {
                 </div>
                 <div className="ml-6 flex items-baseline gap-x-2">
                     <span className="text-white/70">You won</span>
-                    <span className="text-white text-2xl font-semibold">
-                        ${total.toFixed(2)}
-                    </span>
+                    <span className="text-white text-2xl font-semibold">${total.toFixed(2)}</span>
                 </div>
             </div>
-            <Button
-                className="h-10 px-6 text-sm"
-                onClick={handle_claim_all}
-                disabled={claiming}
-            >
+            <Button className="h-10 px-6 text-sm" onClick={handle_claim_all} disabled={claiming}>
                 <LuTicket /> {claiming ? 'Claiming…' : 'Claim'}
             </Button>
         </section>

@@ -10,9 +10,6 @@ module.exports = {
     es2020: true,
   },
   rules: {
-    "no-unused-vars": [
-      "warn",
-      { args: "none", varsIgnorePattern: "^_", caughtErrors: "none" },
-    ],
+    "no-unused-vars": ["warn", { args: "none", varsIgnorePattern: "^_", caughtErrors: "none" }],
   },
 };

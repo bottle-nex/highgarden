@@ -102,11 +102,7 @@ export default class HedgeProcessor {
             // (we have excess). Hedge completion reverses by the same magnitude.
             await Exposure.apply_signed_delta(
                 ctx.market.id,
-                HedgeProcessor.signed_notional_usd(
-                    ctx.fill.price,
-                    ctx.fill.size,
-                    ctx.fill.side,
-                ),
+                HedgeProcessor.signed_notional_usd(ctx.fill.price, ctx.fill.size, ctx.fill.side),
             );
         }
         return this.execute_hedge(ctx);
@@ -118,11 +114,7 @@ export default class HedgeProcessor {
     }
 
     /** Signed by trade direction. BUY = +, SELL = −. Used for exposure tracking. */
-    private static signed_notional_usd(
-        price_cents: number,
-        shares: number,
-        side: Side,
-    ): number {
+    private static signed_notional_usd(price_cents: number, shares: number, side: Side): number {
         const magnitude = HedgeProcessor.notional_usd(price_cents, shares);
         return side === "BUY" ? magnitude : -magnitude;
     }
@@ -409,11 +401,7 @@ export default class HedgeProcessor {
         // regardless of slippage on the hedge price itself.
         await Exposure.apply_signed_delta(
             ctx.market.id,
-            -HedgeProcessor.signed_notional_usd(
-                ctx.fill.price,
-                result.filledShares,
-                ctx.fill.side,
-            ),
+            -HedgeProcessor.signed_notional_usd(ctx.fill.price, result.filledShares, ctx.fill.side),
         );
         return {
             status: "FILLED",
@@ -464,11 +452,7 @@ export default class HedgeProcessor {
             );
             await Exposure.apply_signed_delta(
                 ctx.market.id,
-                -HedgeProcessor.signed_notional_usd(
-                    ctx.fill.price,
-                    total_filled,
-                    ctx.fill.side,
-                ),
+                -HedgeProcessor.signed_notional_usd(ctx.fill.price, total_filled, ctx.fill.side),
             );
             return { status: "FILLED", filledSize: total_filled, avgPriceCents: avg ?? undefined };
         }
@@ -482,11 +466,7 @@ export default class HedgeProcessor {
         if (total_filled > 0) {
             await Exposure.apply_signed_delta(
                 ctx.market.id,
-                -HedgeProcessor.signed_notional_usd(
-                    ctx.fill.price,
-                    total_filled,
-                    ctx.fill.side,
-                ),
+                -HedgeProcessor.signed_notional_usd(ctx.fill.price, total_filled, ctx.fill.side),
             );
         }
         this.log.warn(

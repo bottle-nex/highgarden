@@ -104,7 +104,10 @@ export default function EventTabs({ description, tags }: Props): JSX.Element {
                 transition={{ duration: 0.32, ease: HEIGHT_EASE }}
                 className="overflow-hidden"
             >
-                <div ref={panel_ref} className="px-3 sm:px-5 py-4 sm:py-5 text-sm text-white/65 leading-relaxed">
+                <div
+                    ref={panel_ref}
+                    className="px-3 sm:px-5 py-4 sm:py-5 text-sm text-white/65 leading-relaxed"
+                >
                     {active === 'MARKET CONTEXT' ? (
                         description ? (
                             <>

@@ -35,7 +35,9 @@ function StatCell({ stat }: { stat: DashboardStat }): JSX.Element {
                 <Icon className={cn('size-3.5', trendColor)} />
             </div>
             <div className="mt-3 flex items-baseline gap-2">
-                <span className="text-lg sm:text-2xl text-white/80 tabular-nums font-light">{stat.value}</span>
+                <span className="text-lg sm:text-2xl text-white/80 tabular-nums font-light">
+                    {stat.value}
+                </span>
                 <span className={cn(' text-[12px] tabular-nums', trendColor)}>{stat.delta}</span>
             </div>
         </div>

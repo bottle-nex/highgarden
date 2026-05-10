@@ -22,9 +22,7 @@ export default function CategorySidebar(): JSX.Element {
                 <Link href="/" className="inline-flex items-center cursor-pointer">
                     <Applogo size={28} />
                 </Link>
-                <div>
-                    {APP_NAME}
-                </div>
+                <div>{APP_NAME}</div>
             </div>
             <nav className="flex flex-row lg:flex-col overflow-x-auto lg:overflow-y-auto no-scrollbar flex-1 py-2 px-3 sm:px-4 gap-1 lg:gap-0 items-center lg:items-stretch">
                 {CATEGORY_TABS.map((tab) => {

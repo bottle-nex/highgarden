@@ -92,14 +92,8 @@ export default class GetOrderBookController {
                 status = "TRACKED";
             }
 
-            const shifted_bids = SpreadService.shift_numeric_levels(
-                depth_view?.bids ?? [],
-                "BID",
-            );
-            const shifted_asks = SpreadService.shift_numeric_levels(
-                depth_view?.asks ?? [],
-                "ASK",
-            );
+            const shifted_bids = SpreadService.shift_numeric_levels(depth_view?.bids ?? [], "BID");
+            const shifted_asks = SpreadService.shift_numeric_levels(depth_view?.asks ?? [], "ASK");
             const best_bid = SpreadService.shift_top(top?.bestBid ?? null, "BID");
             const best_ask = SpreadService.shift_top(top?.bestAsk ?? null, "ASK");
             const mid_price =

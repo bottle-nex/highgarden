@@ -12,7 +12,9 @@ export default function SectionHeading({ title, subtitle }: Props): JSX.Element 
                 {title}
             </h2>
             {subtitle && (
-                <span className="text-[10px] sm:text-[11px] tracking-widest text-white/45 shrink-0 text-right">{subtitle}</span>
+                <span className="text-[10px] sm:text-[11px] tracking-widest text-white/45 shrink-0 text-right">
+                    {subtitle}
+                </span>
             )}
         </div>
     );

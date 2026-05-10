@@ -64,7 +64,10 @@ export default function EventDetail({ id }: { id: string }) {
     }, [id]);
 
     return (
-        <main data-lenis-prevent className="mx-auto w-full max-w-380 px-3 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-12">
+        <main
+            data-lenis-prevent
+            className="mx-auto w-full max-w-380 px-3 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-12"
+        >
             {state.status === 'loading' && <Frame>Loading market…</Frame>}
             {state.status === 'not_found' && (
                 <Frame>Market not found. It may not be approved yet, or the link is wrong.</Frame>

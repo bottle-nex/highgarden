@@ -49,13 +49,9 @@ export default class Exposure {
      *   - negative = SELL-direction work pending (we have excess shares)
      * The cap is enforced as a two-sided bound on |unhedgedUsd|.
      */
-    static async apply_signed_delta(
-        market_id: string,
-        signed_delta_usd: number,
-    ): Promise<void> {
+    static async apply_signed_delta(market_id: string, signed_delta_usd: number): Promise<void> {
         const now = new Date();
-        const stamps =
-            signed_delta_usd >= 0 ? { lastIncrementAt: now } : { lastDecrementAt: now };
+        const stamps = signed_delta_usd >= 0 ? { lastIncrementAt: now } : { lastDecrementAt: now };
         await prisma.exposure.upsert({
             where: { marketId: market_id },
             create: {

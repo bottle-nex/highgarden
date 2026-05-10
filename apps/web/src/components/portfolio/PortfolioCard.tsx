@@ -52,9 +52,7 @@ export default function PortfolioCard(): JSX.Element {
                 </button>
             </div>
             <p className="mt-1 text-xs text-white/50">
-                {hidden
-                    ? '••••'
-                    : `${usd_fmt.format(positions_usd)} in open positions`}
+                {hidden ? '••••' : `${usd_fmt.format(positions_usd)} in open positions`}
             </p>
             <div className="w-full grid gap-x-3 mt-5 grid-cols-2">
                 <CroppedButton
@@ -64,7 +62,7 @@ export default function PortfolioCard(): JSX.Element {
                     <LuArrowDownToLine /> Deposit
                 </CroppedButton>
                 <CroppedButton
-                    onClick={() => { }}
+                    onClick={() => {}}
                     className="col-span-1 w-full h-10 text-sm font-medium tracking-tight bg-white hover:bg-neutral-100 text-dark-alpha border border-white/6 transition-all duration-200"
                 >
                     <LuArrowUpFromLine /> Withdraw

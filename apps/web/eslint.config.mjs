@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // HLS video segments use the .ts extension (MPEG-2 Transport Stream)
+    // and must not be parsed as TypeScript.
+    "public/videos/**",
   ]),
 ]);
 
