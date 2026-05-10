@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { PublicKey } from "@solana/web3.js";
 import { prisma } from "@solmarket/database";
 import type { Outcome, Side } from "@solmarket/database";
-import type { PlaceMarketOrderResult } from "@solmarket/polymarket-client";
+import type { BookTop, PlaceMarketOrderResult } from "@solmarket/polymarket-client";
 import { ENV } from "../config/config.env";
 import ServerPolymarketClientFactory from "./service.polymarket-client";
 import QuoteSignerService from "./service.quote-signer";
@@ -10,6 +10,12 @@ import SolanaTradeService from "./service.solana-trade";
 import InventoryNetterService, {
     type NettedConsumption,
 } from "./service.inventory-netter";
+import PreTradeValidator from "./service.pre-trade-validator";
+import { TradeError } from "./service.trade-errors";
+
+// Re-export so existing consumers (controller.trade.ts) keep working
+// without changing their import path.
+export { TradeError, type TradeErrorCode } from "./service.trade-errors";
 
 // ───────────────────────────── Types ─────────────────────────────
 
@@ -34,29 +40,11 @@ export interface TradeResult {
     nettedFromInventory: boolean;
 }
 
-export type TradeErrorCode =
-    | "MARKET_NOT_FOUND"
-    | "MARKET_NOT_LISTED_ON_SOLANA"
-    | "MARKET_PAUSED"
-    | "MARKET_RESOLVED"
-    | "STALE_BOOK"
-    | "TRADE_UNAVAILABLE"
-    | "MARKET_CLOSED_ON_POLYMARKET"
-    | "TRADE_RECONCILE_PENDING";
-
-export class TradeError extends Error {
-    public readonly code: TradeErrorCode;
-    public readonly status: number;
-    constructor(code: TradeErrorCode, status: number, message: string) {
-        super(message);
-        this.code = code;
-        this.status = status;
-        this.name = "TradeError";
-    }
-}
-
 interface ResolvedMarket {
     id: string;
+    /** Polymarket market id (the FK on `Market.polyMarketId`). Used for
+     *  the gamma freshness check the pre-flight validator runs. */
+    polyMarketId: string;
     solanaMarketPda: string;
     yesTokenId: string;
     noTokenId: string;
@@ -99,62 +87,54 @@ export default class TradeOrchestratorService {
     private readonly netter = new InventoryNetterService();
     private readonly signer = new QuoteSignerService();
     private readonly solana = new SolanaTradeService();
-
-    /**
-     * TEST-ONLY shortcut: build a signed quote at a fixed test price,
-     * sign it with the quote signer, submit place_order on Solana, and
-     * return. NO Polymarket call, NO inventory netting, NO Quote / Fill /
-     * Hedge persistence (SolanaTradeService.place_order writes its own
-     * Fill row internally — that one stays so the portfolio reflects the
-     * test trade).
-     *
-     * Used by the temporary `execute_trade_skip_polymarket` path on
-     * TradeController to smoke-test the on-chain contract end-to-end
-     * without depending on Polymarket connectivity / credentials.
-     *
-     * REMOVE BEFORE PROD: this method bypasses the spread, the inventory
-     * accounting, and the orphan-recording safety net. Calling it in
-     * production silently leaks platform exposure.
-     */
-    public async execute_solana_only(req: TradeRequest): Promise<TradeResult> {
-        const TEST_PRICE_CENTS = 50;
-        const request_id = req.requestId ?? randomUUID();
-        const market = await this.validate(req.marketDbId, req.side, req.outcome);
-        const nonce = this.derive_nonce(request_id);
-        const expires_at_unix = Math.floor(Date.now() / 1000) + ENV.SERVER_QUOTE_EXPIRY_SECONDS;
-        const signed = this.sign_quote_internally({
-            market_pda: market.solanaMarketPda,
-            side: req.side,
-            outcome: req.outcome,
-            price_cents: TEST_PRICE_CENTS,
-            size_shares: req.sizeShares,
-            nonce,
-            expires_at_unix,
-        });
-        const solana_result = await this.solana.place_order({
-            userId: req.userId,
-            marketDbId: req.marketDbId,
-            signedQuote: signed,
-        });
-        return {
-            txSignature: solana_result.txSignature,
-            polymarketOrderId: "skipped-polymarket",
-            filledShares: req.sizeShares,
-            pricePaidCents: TEST_PRICE_CENTS,
-            totalUsd: this.compute_total_usd(req.sizeShares, TEST_PRICE_CENTS),
-            requestId: request_id,
-            nettedFromInventory: false,
-        };
-    }
+    /** Lifetime-shared validator so the gamma + funder-balance TTL caches
+     *  survive across trades. */
+    private readonly preflight = new PreTradeValidator();
 
     public async execute(req: TradeRequest): Promise<TradeResult> {
         const request_id = req.requestId ?? randomUUID();
         const market = await this.validate(req.marketDbId, req.side, req.outcome);
+
+        // Pre-flight gates — gamma freshness, Polymarket min notional,
+        // platform funder balance, user USDC (BUY) / user shares (SELL).
+        // All of these reject before we touch Polymarket or Solana, so a
+        // failure leaves the system in exactly the state it was before
+        // the request landed.
+        const top = await this.fetch_top_or_null(market);
+        await this.preflight.assert_pretrade({
+            userId: req.userId,
+            side: req.side,
+            outcome: req.outcome,
+            sizeShares: req.sizeShares,
+            marketPda: market.solanaMarketPda,
+            polymarketMarketId: market.polyMarketId,
+            tokenId: market.tokenId,
+            polymarketSide: market.polymarketSide,
+            topAskCents: top?.bestAskCents ?? null,
+            topBidCents: top?.bestBidCents ?? null,
+        });
+
         const netting = await this.attempt_netting(market, req.sizeShares);
         const polymarket_fill = await this.fill_via_polymarket(market, netting, req.sizeShares);
         const hedge = this.combine_hedge_legs(netting, polymarket_fill);
 
         const user_price_cents = this.derive_user_price(hedge.avgPriceCents, req.side);
+
+        // Post-fill treasury solvency check (SELL only). Done here because
+        // we now know the exact `user_price_cents`. If treasury can't
+        // cover, record the just-filled Polymarket leg as orphan inventory
+        // so the liquidator/netter can reuse it on a future opposite trade.
+        if (req.side === "SELL") {
+            try {
+                await this.preflight.assert_treasury_can_cover(
+                    hedge.filledShares,
+                    user_price_cents,
+                );
+            } catch (err) {
+                await this.record_orphan_inventory(market, hedge, err);
+                throw err;
+            }
+        }
         const nonce = this.derive_nonce(request_id);
         const expires_at_unix = Math.floor(Date.now() / 1000) + ENV.SERVER_QUOTE_EXPIRY_SECONDS;
         const signed = this.sign_quote_internally({
@@ -245,6 +225,31 @@ export default class TradeOrchestratorService {
                 "market is already resolved — no more trades",
             );
         }
+        // Server-side end-time gate so we fail fast with a clean code instead
+        // of letting the Solana program reject with `MarketEnded (6006)`. The
+        // on-chain check uses Solana clock; ours uses wall-clock — close
+        // enough for UX, and the on-chain check still gates correctness.
+        if (row.endAt.getTime() <= Date.now()) {
+            throw new TradeError(
+                "MARKET_ENDED",
+                409,
+                "market has ended — no more trades",
+            );
+        }
+        // Per-market exposure cap. If the platform's unhedged USD on this
+        // market is already at or above the configured ceiling, don't take
+        // more risk. Bidirectional check (abs) — long and short exposure
+        // are equally bad.
+        if (
+            row.exposure
+            && Math.abs(row.exposure.unhedgedUsd) >= ENV.SERVER_UNHEDGED_DELTA_CAP_USD
+        ) {
+            throw new TradeError(
+                "EXPOSURE_LIMIT",
+                429,
+                `platform exposure on this market ($${Math.abs(row.exposure.unhedgedUsd)}) hit the configured cap of $${ENV.SERVER_UNHEDGED_DELTA_CAP_USD}`,
+            );
+        }
         if (!row.polymarket) {
             throw new TradeError(
                 "MARKET_NOT_FOUND",
@@ -259,6 +264,7 @@ export default class TradeOrchestratorService {
     private shape_market(
         row: {
             id: string;
+            polyMarketId: string;
             solanaMarketPda: string | null;
             polymarket: {
                 yesTokenId: string;
@@ -277,6 +283,7 @@ export default class TradeOrchestratorService {
         const polymarketSide: Side = side;
         return {
             id: row.id,
+            polyMarketId: row.polyMarketId,
             solanaMarketPda: row.solanaMarketPda!,
             yesTokenId: poly.yesTokenId,
             noTokenId: poly.noTokenId,
@@ -345,6 +352,26 @@ export default class TradeOrchestratorService {
     ): number | null {
         if (side === "BUY") return top.bestAskCents;
         return top.bestBidCents;
+    }
+
+    /**
+     * Pre-flight book read used for the BUY balance pre-check + min-notional
+     * gate. Returns null if Polymarket is unreachable so the validator can
+     * fall back to a conservative price. We don't reuse the result inside
+     * `fill_via_polymarket` — that path re-fetches with the latest book
+     * because the actual fill price matters more there than the pre-check.
+     */
+    private async fetch_top_or_null(market: ResolvedMarket): Promise<BookTop | null> {
+        try {
+            const poly = ServerPolymarketClientFactory.get();
+            return await poly.get_top_of_book(market.tokenId);
+        } catch (err) {
+            console.warn(
+                "[trade-orchestrator] pre-flight book fetch failed (proceeding with stale-book fallback)",
+                (err as Error)?.message ?? err,
+            );
+            return null;
+        }
     }
 
     private assert_filled(
