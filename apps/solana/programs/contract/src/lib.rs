@@ -20,7 +20,7 @@ pub mod utils;
 
 use crate::utils::discriminator::ix_disc;
 
-solana_program::declare_id!("2LEm66V2Ys8JbVoQfYbZqCy6YGM1wuPUc843xRx76t3P");
+solana_program::declare_id!("81yjrAJvTYg4U3s1KRN5xkZUGAAPqtyBTjePa7eMbpJs");
 
 #[cfg(not(feature = "no-entrypoint"))]
 solana_program::entrypoint!(process_instruction);

@@ -100,6 +100,53 @@ export default class TradeOrchestratorService {
     private readonly signer = new QuoteSignerService();
     private readonly solana = new SolanaTradeService();
 
+    /**
+     * TEST-ONLY shortcut: build a signed quote at a fixed test price,
+     * sign it with the quote signer, submit place_order on Solana, and
+     * return. NO Polymarket call, NO inventory netting, NO Quote / Fill /
+     * Hedge persistence (SolanaTradeService.place_order writes its own
+     * Fill row internally — that one stays so the portfolio reflects the
+     * test trade).
+     *
+     * Used by the temporary `execute_trade_skip_polymarket` path on
+     * TradeController to smoke-test the on-chain contract end-to-end
+     * without depending on Polymarket connectivity / credentials.
+     *
+     * REMOVE BEFORE PROD: this method bypasses the spread, the inventory
+     * accounting, and the orphan-recording safety net. Calling it in
+     * production silently leaks platform exposure.
+     */
+    public async execute_solana_only(req: TradeRequest): Promise<TradeResult> {
+        const TEST_PRICE_CENTS = 50;
+        const request_id = req.requestId ?? randomUUID();
+        const market = await this.validate(req.marketDbId, req.side, req.outcome);
+        const nonce = this.derive_nonce(request_id);
+        const expires_at_unix = Math.floor(Date.now() / 1000) + ENV.SERVER_QUOTE_EXPIRY_SECONDS;
+        const signed = this.sign_quote_internally({
+            market_pda: market.solanaMarketPda,
+            side: req.side,
+            outcome: req.outcome,
+            price_cents: TEST_PRICE_CENTS,
+            size_shares: req.sizeShares,
+            nonce,
+            expires_at_unix,
+        });
+        const solana_result = await this.solana.place_order({
+            userId: req.userId,
+            marketDbId: req.marketDbId,
+            signedQuote: signed,
+        });
+        return {
+            txSignature: solana_result.txSignature,
+            polymarketOrderId: "skipped-polymarket",
+            filledShares: req.sizeShares,
+            pricePaidCents: TEST_PRICE_CENTS,
+            totalUsd: this.compute_total_usd(req.sizeShares, TEST_PRICE_CENTS),
+            requestId: request_id,
+            nettedFromInventory: false,
+        };
+    }
+
     public async execute(req: TradeRequest): Promise<TradeResult> {
         const request_id = req.requestId ?? randomUUID();
         const market = await this.validate(req.marketDbId, req.side, req.outcome);

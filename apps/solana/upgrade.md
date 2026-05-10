@@ -6,6 +6,8 @@ The program ID never changes after first deploy. The Config PDA, all Market PDAs
 
 This program is plain Rust (no Anchor, no Pinocchio) so the entire flow uses `cargo build-sbf` and the `solana` CLI directly — no `anchor build`, no `anchor upgrade`, no on-chain IDL PDA to manage.
 
+> **TS SDK note.** Because there is no on-chain IDL, [packages/contract](../../packages/contract) is hand-written. **Any change in the on-chain instruction set, account list, account ordering, borsh layout, or event payload also requires a matching change in `packages/contract`.** Section §6 below covers this; do not skip it when the interface changes, or every TS caller starts sending malformed instructions the moment the upgrade lands.
+
 ---
 
 ## 1. Keys and roles
@@ -173,11 +175,45 @@ If `declare_id!()` and the keypair pubkey don't match, edit [programs/contract/s
 
 ---
 
-## 6. Upgrade the program
+## 6. Sync `packages/contract` with the new interface
+
+This step is mandatory whenever the on-chain interface changes — and it is **easy to forget** because there is no IDL to regenerate. Skip it and every TS caller (server, hedger, scripts) silently builds invalid instruction data the moment the new bytecode lands.
+
+The TS SDK lives at [packages/contract/src](../../packages/contract/src) and is hand-written. Map each Rust change to its TS counterpart:
+
+| Rust change | What to update in `packages/contract/src` |
+|---|---|
+| New `instructions/<name>.rs` added to dispatcher in `lib.rs` | Add `encode_<name>_args(...)` in `serialize.ts` and a method on `SolmarketClient` in `client.ts` that builds the `TransactionInstruction` (8-byte `ix_disc("<snake_name>")` + borsh args + positional account list in the **exact** order the Rust handler expects) |
+| Changed account order or signer flag for an existing handler | Update the `keys: [...]` array in the matching method in `client.ts` so `isSigner` / `isWritable` / position match the Rust handler 1:1 |
+| New field in an `Args` struct, or a struct reordered | Update the matching `encode_*_args` in `serialize.ts` and the param interface in `types.ts` |
+| New field in `state::*` (Config / Market / UserPosition / UsedNonce) | Update the matching account interface in `types.ts` and the matching `decode_*_account` reader in `decode.ts` (in field-declaration order) |
+| New `events::*` payload, or a field reordered | Update the matching event interface in `types.ts` and add/adjust the parser in `decode.ts` (e.g. `parse_order_filled`) plus the corresponding `decode_<name>` method on `EventLogDecoder` |
+| New error variant in `errors.rs` | Optional but recommended — surface a friendlier code/message mapping in whichever consumer translates `ProgramError::Custom(6000+n)` into user-facing text |
+
+Two cardinal rules — both encoded in the existing files but worth stating explicitly:
+
+1. **Account order is positional.** The Rust dispatcher uses `next_account_info(iter)?` repeatedly and expects accounts to arrive in the documented order from the matching `instructions/*.rs` doc-comment. A reordered `keys` array in TS produces silent misbehavior, not a clean error.
+2. **Borsh is byte-exact.** Field order in `BorshWriter` chains in `serialize.ts` and in `BorshReader.read_*` chains in `decode.ts` must match field declaration order in the Rust struct exactly. A swapped pair of fields produces nonsensical decoded values, no error.
+
+After updating, typecheck the whole graph:
+
+```sh
+cd /Users/anjan/utility/Projects/solmarket/packages/contract && bunx tsc --noEmit
+cd /Users/anjan/utility/Projects/solmarket/apps/server && bunx tsc --noEmit
+cd /Users/anjan/utility/Projects/solmarket/apps/hedger && bunx tsc --noEmit
+```
+
+All three must exit `0`. The TS package's `package.json` exports source directly (`"main": "./src/index.ts"`) so server / hedger pick up changes immediately on the next process restart — no separate build step.
+
+If you only changed Rust internals (logic inside an existing handler, no signature/layout change), nothing in `packages/contract` needs to move. The contract upgrade alone is enough.
+
+---
+
+## 7. Deploy the upgrade
 
 Two equivalent paths. Pick one.
 
-### 6a. Single-shot deploy (small programs, stable network)
+### 7a. Single-shot deploy (small programs, stable network)
 
 ```sh
 solana program deploy \
@@ -188,7 +224,7 @@ solana program deploy \
 
 This auto-detects that the program already exists, creates a buffer, copies bytes into it, invokes the loader's `Upgrade` instruction, and closes the buffer. Transactional from the user's perspective.
 
-### 6b. Two-phase via buffer (larger programs, flaky network)
+### 7b. Two-phase via buffer (larger programs, flaky network)
 
 Preferred for any program above ~100 KB or when the single-shot keeps timing out.
 
@@ -214,7 +250,7 @@ If step 1 succeeds and step 2 fails, the buffer holds your bytes safely — re-r
 
 ---
 
-## 7. Post-upgrade verification
+## 8. Post-upgrade verification
 
 ```sh
 # 1. Confirm the on-chain bytecode size changed and slot advanced
@@ -223,13 +259,18 @@ solana program show "$PROGRAM_ID"
 # Last Deployed In Slot should be higher than before
 # Authority should be unchanged
 
-# 2. Confirm pre-existing state is intact by reading the Config PDA.
-# Derive Config PDA: seeds = [b"config"], program = $PROGRAM_ID
-# Easiest: hit it through whatever client code or quick script you have.
-# It should return the same admin / oracle_signer / quote_signer / treasury_vault
-# / usdc_mint values as before the upgrade.
+# 2. Confirm pre-existing state is intact by reading the Config PDA
+#    via the TS SDK — this also validates that §6 changes didn't break
+#    the account decoder.
+#    Easiest: a one-liner script using SolmarketClient.fetchConfig().
+#    It should return the same admin / oracle_signer / quote_signer /
+#    treasury_vault / usdc_mint values as before the upgrade.
 
-# 3. Optional: smoke-test against a local validator with the new bytecode
+# 3. If §6 added new instructions, smoke-test ONE of them on devnet
+#    with the new SDK (a no-op-ish call is best). Catches dispatcher
+#    drift before traffic hits the path on mainnet.
+
+# 4. Optional: smoke-test against a local validator with the new bytecode
 solana-test-validator --bpf-program "$PROGRAM_ID" target/deploy/solmarket_contract.so
 ```
 
@@ -237,7 +278,7 @@ If the Config PDA reads back the same admin / oracle / quote / treasury / usdc_m
 
 ---
 
-## 8. Common failures and recovery
+## 9. Common failures and recovery
 
 ### Stranded buffer accounts
 
@@ -284,6 +325,12 @@ solana program show "$PROGRAM_ID"
 
 All three pubkeys must agree. Fix `declare_id!`, `cargo build-sbf`, and re-upgrade.
 
+### Every TS caller errors with `InvalidInstructionData` after upgrade
+
+You shipped a Rust interface change without updating `packages/contract` (§6). Either:
+- Roll the SDK forward (preferred) — apply the §6 deltas and restart server/hedger.
+- Roll the contract back — re-upgrade with the previous `.so` while you fix the SDK. Devnet is cheap; on mainnet, prefer rolling forward fast.
+
 ### Wrong cluster
 
 If `solana config get` points at devnet but you wanted mainnet (or vice versa):
@@ -302,7 +349,7 @@ Recovery: if you have the original keypair backed up anywhere (offline, password
 
 ---
 
-## 9. First-time deploy
+## 10. First-time deploy
 
 Only relevant once — for the first deploy on each cluster. Skip on every subsequent upgrade.
 
@@ -343,15 +390,19 @@ Mainnet vs devnet differs only in the cluster URL. Make sure `id.json` actually 
 
 ---
 
-## 10. One-line summary
+## 11. One-line summary
 
 ```
-Edit code  →  cargo build-sbf
+Edit Rust  →  cargo build-sbf
+           →  Update packages/contract (serialize / decode / client / types)
+              if instruction set, account order, borsh layout, or events changed
+           →  bunx tsc --noEmit  in packages/contract, apps/server, apps/hedger
            →  solana program deploy
                 --program-id target/deploy/solmarket_contract-keypair.json
                 --upgrade-authority ~/.config/solana/id.json
                 target/deploy/solmarket_contract.so
            →  solana program show $PROGRAM_ID  to confirm slot advanced
+           →  fetchConfig() through the SDK to confirm state intact
 ```
 
-Same program ID. Same on-chain state. New bytecode.
+Same program ID. Same on-chain state. New bytecode. Matching SDK.

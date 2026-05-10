@@ -48,7 +48,52 @@ export default class TradeController {
             return ResponseWriter.invalid_data(res, `Invalid trade payload: ${issue}`);
         }
 
-        return TradeController.run_with_idempotency(req.user.id, market_id, parsed.data, res);
+        // TEMP: contract smoke-test path. Bypasses Polymarket + idempotency
+        // cache so we exercise the on-chain place_order in isolation. Swap
+        // back to `run_with_idempotency` (kept below) when going live.
+        return TradeController.execute_trade_skip_polymarket(
+            req.user.id,
+            market_id,
+            parsed.data,
+            res,
+        );
+    }
+
+    /**
+     * TEMP test path. Calls `TradeOrchestratorService.execute_solana_only`,
+     * which signs a quote at a fixed 50¢ test price and sends place_order
+     * on-chain — no Polymarket call, no idempotency cache, no Quote /
+     * Hedge rows persisted. The Fill row is still written by
+     * SolanaTradeService so the trade shows up in the portfolio.
+     *
+     * REMOVE: revert `process()` above to call `run_with_idempotency`
+     * instead, drop this method, and drop `execute_solana_only` on
+     * TradeOrchestratorService.
+     */
+    private static async execute_trade_skip_polymarket(
+        user_id: string,
+        market_id: string,
+        body: z.infer<typeof body_schema>,
+        res: Response,
+    ): Promise<void> {
+        try {
+            const result = await TradeController.orchestrator.execute_solana_only({
+                userId: user_id,
+                marketDbId: market_id,
+                side: body.side,
+                outcome: body.outcome,
+                sizeShares: body.size,
+                requestId: body.requestId,
+            });
+            res.status(200).json(TradeController.build_success_body(result));
+        } catch (err) {
+            if (err instanceof TradeError) {
+                res.status(err.status).json(TradeController.build_error_body(err));
+                return;
+            }
+            console.error("[markets/trade:skip-polymarket]", err);
+            ResponseWriter.system_error(res);
+        }
     }
 
     private static async run_with_idempotency(

@@ -1,4 +1,3 @@
-import { BN } from "@coral-xyz/anchor";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
 import nacl from "tweetnacl";
@@ -47,8 +46,8 @@ export default class QuoteSignerService {
             side: fields.side,
             outcome: fields.outcome,
             price: fields.priceCents,
-            size: new BN(fields.sizeShares),
-            expiresAt: new BN(fields.expiresAt),
+            size: BigInt(fields.sizeShares),
+            expiresAt: BigInt(fields.expiresAt),
             nonce: fields.nonce,
         });
     }

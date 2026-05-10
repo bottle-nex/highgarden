@@ -1,0 +1,18 @@
+{
+    "name": "solana-contract-scripts",
+    "version": "0.1.0",
+    "description": "One-shot deploy / admin scripts for the native-Rust SolMarket program in apps/solana. Lives next to the Cargo workspace so the Rust contract and its deploy tooling sit under one roof.",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "init": "bun scripts/initialize-config.ts"
+    },
+    "dependencies": {
+        "@solana/web3.js": "^1.98.4",
+        "@solana/spl-token": "^0.4.14",
+        "bs58": "^6.0.0"
+    },
+    "devDependencies": {
+        "@types/bun": "latest"
+    }
+}

@@ -1,6 +1,4 @@
-import { AnchorProvider } from "@coral-xyz/anchor";
-import NodeWallet from "@coral-xyz/anchor/dist/esm/nodewallet.js";
-import { Connection, Keypair } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
 import { prisma } from "@solmarket/database";
 import { SolmarketClient } from "@solmarket/contract";
@@ -123,10 +121,10 @@ export default class NonceSweeperService {
 
     private static build_client(admin: Keypair): SolmarketClient {
         const connection = new Connection(ENV.SERVER_SOLANA_RPC_URL, "confirmed");
-        const provider = new AnchorProvider(connection, new NodeWallet(admin), {
-            commitment: "confirmed",
-            preflightCommitment: "confirmed",
+        return new SolmarketClient({
+            connection,
+            programId: new PublicKey(ENV.SERVER_SOLANA_PROGRAM_ID),
+            defaultSigner: admin,
         });
-        return new SolmarketClient(provider);
     }
 }

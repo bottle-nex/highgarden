@@ -1,5 +1,3 @@
-import { AnchorProvider, type Wallet as AnchorWallet } from "@coral-xyz/anchor";
-import NodeWallet from "@coral-xyz/anchor/dist/esm/nodewallet.js";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import type { Outcome } from "@solmarket/database";
 import { SolmarketClient } from "@solmarket/contract";
@@ -332,20 +330,19 @@ export default class Resolver {
     // ──────────────── Oracle client (lazy) ────────────────
 
     /**
-     * Lazily constructs an `AnchorProvider`-backed `SolmarketClient`
-     * signed with the oracle keypair. Separate from the `Hedger`'s admin
-     * client because (a) different keypair, (b) different responsibility
-     * (oracle signs `resolve_market`, admin signs `pause_market`).
+     * Lazily constructs a `SolmarketClient` whose `defaultSigner` is the
+     * oracle keypair. Separate from the `Hedger`'s admin client because
+     * (a) different keypair, (b) different responsibility (oracle signs
+     * `resolve_market`, admin signs `pause_market`).
      */
     private get_oracle_client(): SolmarketClient {
         if (!this.oracle_client) {
             const connection = new Connection(ENV.HEDGER_SOLANA_RPC_URL, "confirmed");
-            const wallet = new NodeWallet(this.get_oracle_keypair()) as unknown as AnchorWallet;
-            const provider = new AnchorProvider(connection, wallet, {
-                commitment: "confirmed",
-                preflightCommitment: "confirmed",
+            this.oracle_client = new SolmarketClient({
+                connection,
+                programId: new PublicKey(ENV.HEDGER_SOLANA_PROGRAM_ID),
+                defaultSigner: this.get_oracle_keypair(),
             });
-            this.oracle_client = new SolmarketClient(provider);
         }
         return this.oracle_client;
     }
