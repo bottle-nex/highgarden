@@ -1,56 +1,22 @@
 'use client';
-import { JSX, useState } from 'react';
+import { JSX, useMemo, useState } from 'react';
 import { MdArrowOutward } from 'react-icons/md';
 import { cn } from '@/lib/utils';
 import { doto } from './LandingTextContent';
 import { APP_NAME } from '@/utils/constants';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useCategoryStore, type Category } from '@/store/ui/useCategoryStore';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 
-const NAV_GROUPS = [
-    {
-        label: 'MARKETS',
-        links: [
-            { name: 'Explore', href: '#' },
-            { name: 'Politics', href: '#' },
-            { name: 'Crypto', href: '#' },
-            { name: 'Sports', href: '#' },
-        ],
-    },
-    {
-        label: 'TRADE',
-        links: [
-            { name: 'Portfolio', href: '#' },
-            { name: 'Leaderboard', href: '#' },
-            { name: 'Rewards', href: '#' },
-            { name: 'Activity', href: '#' },
-        ],
-    },
-    {
-        label: 'LEARN',
-        links: [
-            { name: 'How it Works', href: '/how-it-works' },
-            { name: 'FAQ', href: '/faq' },
-            { name: 'Resolution', href: '/docs/resolution' },
-            { name: 'Support', href: '/support' },
-        ],
-    },
-    {
-        label: 'PLATFORM',
-        links: [
-            { name: 'About', href: '/about' },
-            { name: 'Risk', href: '/legal/risk' },
-            { name: 'Disclosures', href: '/legal/disclosures' },
-            { name: 'Eligibility', href: '/legal/eligibility' },
-        ],
-    },
-] as const;
+type FooterLink =
+    | { name: string; href: string; external?: boolean }
+    | { name: string; onClick: () => void };
 
-const SOCIALS = [
-    { name: 'Twitter', href: '#' },
-    { name: 'GitHub', href: '#' },
-    { name: 'Discord', href: '#' },
-] as const;
+interface FooterGroup {
+    label: string;
+    links: readonly FooterLink[];
+}
 
 export default function LandingFooter(): JSX.Element {
     return (
@@ -90,6 +56,7 @@ function BrandRow(): JSX.Element {
                     Engineered to make future outcomes transparent, tradable, and verifiable.
                 </p>
                 <button
+                    type="button"
                     onClick={() => router.push('/dashboard')}
                     aria-label="test"
                     className="relative h-44 flex-1 rounded-full text-6xl uppercase border-2 border-black overflow-hidden font-semibold cursor-pointer"
@@ -110,19 +77,75 @@ function BrandRow(): JSX.Element {
 }
 
 function NavGrid(): JSX.Element {
+    const router = useRouter();
+    const set_active_category = useCategoryStore((s) => s.setActiveCategory);
+    const require_auth = useRequireAuth();
+
+    const groups = useMemo<readonly FooterGroup[]>(() => {
+        const go_to_category = (category: Category) => () => {
+            set_active_category(category);
+            router.push('/dashboard');
+        };
+
+        return [
+            {
+                label: 'MARKETS',
+                links: [
+                    { name: 'Explore', onClick: go_to_category('Trending') },
+                    { name: 'Politics', onClick: go_to_category('Politics') },
+                    { name: 'Crypto', onClick: go_to_category('Crypto') },
+                    { name: 'Sports', onClick: go_to_category('Sports') },
+                ],
+            },
+            {
+                label: 'TRADE',
+                links: [
+                    {
+                        name: 'Portfolio',
+                        onClick: () => require_auth(() => router.push('/portfolio')),
+                    },
+                ],
+            },
+            {
+                label: 'LEARN',
+                links: [
+                    { name: 'How it Works', href: '/how-it-works' },
+                    { name: 'FAQ', href: '/faq' },
+                    { name: 'Resolution', href: '/docs/resolution' },
+                    { name: 'Support', href: '/support' },
+                    { name: 'About', href: '/about' },
+                ],
+            },
+            {
+                label: 'CONNECT',
+                links: [
+                    {
+                        name: 'Twitter',
+                        href: 'https://x.com/highgardentrade',
+                        external: true,
+                    },
+                    {
+                        name: 'GitHub',
+                        href: 'https://github.com/bottle-nex/highgarden',
+                        external: true,
+                    },
+                ],
+            },
+        ];
+    }, [router, set_active_category, require_auth]);
+
     return (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-y-10 md:gap-x-10">
-            {NAV_GROUPS.map((g) => (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-y-10 md:gap-x-10">
+            {groups.map((g) => (
                 <LinkColumn key={g.label} label={g.label} links={g.links} />
             ))}
-            <LinkColumn label="CONNECT" links={SOCIALS} />
         </div>
     );
 }
 
 interface LinkColumnProps {
     label: string;
-    links: readonly { name: string; href: string }[];
+    links: readonly FooterLink[];
 }
 
 function LinkColumn({ label, links }: LinkColumnProps): JSX.Element {
@@ -132,31 +155,47 @@ function LinkColumn({ label, links }: LinkColumnProps): JSX.Element {
             <span className="text-[10px] uppercase tracking-[0.25em] text-black/90 mb-2">
                 {label}
             </span>
-            {links.map((l) => (
-                <a
-                    key={l.name}
-                    href={l.href}
-                    onMouseEnter={() => set_hovered_link(l.name)}
-                    onMouseLeave={() => set_hovered_link(null)}
-                    className="group/link inline-flex items-center gap-x-1.5 text-[16px] text-dark-base/75 hover:text-dark-base transition-colors duration-200 w-fit font-medium"
-                >
-                    <span>{l.name}</span>
-                    <AnimatePresence initial={false}>
-                        {hovered_link === l.name && (
-                            <motion.span
-                                key="arrow"
-                                initial={{ opacity: 0, x: -4, width: 0 }}
-                                animate={{ opacity: 1, x: 0, width: 'auto' }}
-                                exit={{ opacity: 0, x: -4, width: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="inline-flex overflow-hidden"
-                            >
-                                <MdArrowOutward className="size-3.5" />
-                            </motion.span>
-                        )}
-                    </AnimatePresence>
-                </a>
-            ))}
+            {links.map((l) => {
+                const is_handler = 'onClick' in l;
+                const href = is_handler ? '#' : l.href;
+                const is_external = !is_handler && l.external === true;
+
+                return (
+                    <a
+                        key={l.name}
+                        href={href}
+                        target={is_external ? '_blank' : undefined}
+                        rel={is_external ? 'noopener noreferrer' : undefined}
+                        onClick={
+                            is_handler
+                                ? (e) => {
+                                      e.preventDefault();
+                                      l.onClick();
+                                  }
+                                : undefined
+                        }
+                        onMouseEnter={() => set_hovered_link(l.name)}
+                        onMouseLeave={() => set_hovered_link(null)}
+                        className="group/link inline-flex items-center gap-x-1.5 text-[16px] text-dark-base/75 hover:text-dark-base transition-colors duration-200 w-fit font-medium"
+                    >
+                        <span>{l.name}</span>
+                        <AnimatePresence initial={false}>
+                            {hovered_link === l.name && (
+                                <motion.span
+                                    key="arrow"
+                                    initial={{ opacity: 0, x: -4, width: 0 }}
+                                    animate={{ opacity: 1, x: 0, width: 'auto' }}
+                                    exit={{ opacity: 0, x: -4, width: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="inline-flex overflow-hidden"
+                                >
+                                    <MdArrowOutward className="size-3.5" />
+                                </motion.span>
+                            )}
+                        </AnimatePresence>
+                    </a>
+                );
+            })}
         </div>
     );
 }
@@ -180,24 +219,6 @@ function BottomBar(): JSX.Element {
                     className="relative text-dark-base hover:text-black transition-colors duration-200 after:absolute after:-left-1 after:-right-1 after:-bottom-1 after:h-px after:bg-alpha after:origin-center after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300 after:ease-out"
                 >
                     Privacy
-                </a>
-                <a
-                    href="/legal/risk-disclosure"
-                    className="relative text-dark-base hover:text-black transition-colors duration-200 after:absolute after:-left-1 after:-right-1 after:-bottom-1 after:h-px after:bg-alpha after:origin-center after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300 after:ease-out"
-                >
-                    Risk
-                </a>
-                <a
-                    href="/legal/disclosures"
-                    className="relative text-dark-base hover:text-black transition-colors duration-200 after:absolute after:-left-1 after:-right-1 after:-bottom-1 after:h-px after:bg-alpha after:origin-center after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300 after:ease-out"
-                >
-                    Disclosures
-                </a>
-                <a
-                    href="/eligibility"
-                    className="relative text-dark-base hover:text-black transition-colors duration-200 after:absolute after:-left-1 after:-right-1 after:-bottom-1 after:h-px after:bg-black after:origin-center after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300 after:ease-out"
-                >
-                    Eligibility
                 </a>
             </div>
         </div>

@@ -89,7 +89,7 @@ function SignInModalInner({ onClose }: { onClose: () => void }) {
     }
 
     return (
-        <OpacityBackground onBackgroundClick={onClose} escapeClosing className="bg-neutral-900">
+        <OpacityBackground onBackgroundClick={onClose} escapeClosing className="bg-neutral-900/50">
             <UtilityCard
                 onClose={onClose}
                 className="w-full max-w-88 rounded-none border-white/10 px-0 py-0 backdrop-blur-md bg-neutral-950"

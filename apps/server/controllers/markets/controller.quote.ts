@@ -31,7 +31,6 @@ export default class QuoteController {
 
     static async process(req: Request, res: Response) {
         if (!req.user) return ResponseWriter.not_authorized(res);
-
         const market_id = typeof req.params.id === "string" ? req.params.id : "";
         if (!market_id) return ResponseWriter.invalid_data(res, "market id required");
 
