@@ -3,7 +3,12 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { FiExternalLink } from 'react-icons/fi';
-import { approveAndListOnSolana, approveListing, rejectListing } from '@/lib/api/admin';
+import {
+    adminResolveMarket,
+    approveAndListOnSolana,
+    approveListing,
+    rejectListing,
+} from '@/lib/api/admin';
 import type { AdminListingRow } from './AdminListings';
 
 function formatUsd(n: number | null): string {
@@ -29,6 +34,23 @@ export default function ListingRow({
     const [pending, setPending] = useState(false);
     const [showRejectInput, setShowRejectInput] = useState(false);
     const [reason, setReason] = useState('');
+    const [showResolveConfirm, setShowResolveConfirm] = useState<'YES' | 'NO' | null>(null);
+
+    const handleResolve = async (winning: 'YES' | 'NO') => {
+        if (pending) return;
+        setPending(true);
+        try {
+            const result = await adminResolveMarket(listing.marketId, winning);
+            const short = `${result.txSignature.slice(0, 8)}…${result.txSignature.slice(-6)}`;
+            toast.success(`Resolved as ${winning}`, { description: `Tx ${short}` });
+            setShowResolveConfirm(null);
+            onChange?.();
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'resolve failed');
+        } finally {
+            setPending(false);
+        }
+    };
 
     const handleApprove = async () => {
         if (pending) return;
@@ -154,16 +176,71 @@ export default function ListingRow({
                 )}
 
                 {listing.status === 'APPROVED' && (
+                    <div className="flex items-center gap-2 shrink-0">
+                        {listing.solanaMarketPda && (
+                            <>
+                                <button
+                                    type="button"
+                                    disabled={pending}
+                                    onClick={() => setShowResolveConfirm('YES')}
+                                    className="h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-40"
+                                    title="Mimic UMA resolution: sign resolve_market on-chain with YES as winner"
+                                >
+                                    Resolve YES
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={pending}
+                                    onClick={() => setShowResolveConfirm('NO')}
+                                    className="h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase bg-rose-500/15 text-rose-300 hover:bg-rose-500/25 disabled:opacity-40"
+                                    title="Mimic UMA resolution: sign resolve_market on-chain with NO as winner"
+                                >
+                                    Resolve NO
+                                </button>
+                            </>
+                        )}
+                        <button
+                            type="button"
+                            disabled={pending}
+                            onClick={() => setShowRejectInput((v) => !v)}
+                            className="red-btn h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase disabled:opacity-40"
+                        >
+                            Delist
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {showResolveConfirm && (
+                <div className="mt-3 flex items-center gap-2 p-3 bg-white/3 border border-white/10 rounded">
+                    <p className="text-xs text-white/70 flex-1">
+                        Resolve <span className="font-semibold text-white">{showResolveConfirm}</span>{' '}
+                        as winner? This signs <code className="text-white/85">resolve_market</code>{' '}
+                        on-chain and is <span className="text-rose-300">irreversible</span> — users
+                        on the losing side can no longer claim.
+                    </p>
                     <button
                         type="button"
                         disabled={pending}
-                        onClick={() => setShowRejectInput((v) => !v)}
-                        className="red-btn h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase disabled:opacity-40 shrink-0"
+                        onClick={() => setShowResolveConfirm(null)}
+                        className="h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase bg-white/5 text-white/70 hover:bg-white/10 disabled:opacity-40"
                     >
-                        Delist
+                        Cancel
                     </button>
-                )}
-            </div>
+                    <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => handleResolve(showResolveConfirm)}
+                        className={
+                            showResolveConfirm === 'YES'
+                                ? 'h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase bg-emerald-500/30 text-emerald-100 hover:bg-emerald-500/45 disabled:opacity-40'
+                                : 'h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase bg-rose-500/30 text-rose-100 hover:bg-rose-500/45 disabled:opacity-40'
+                        }
+                    >
+                        Confirm
+                    </button>
+                </div>
+            )}
 
             {showRejectInput && (
                 <div className="mt-3 flex items-center gap-2">

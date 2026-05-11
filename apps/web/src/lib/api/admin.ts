@@ -56,6 +56,32 @@ export async function rejectListing(marketId: string, reason?: string | null): P
     await apiClient.post(`/admin/reject/${marketId}`, reason ? { reason } : {});
 }
 
+export interface AdminResolveMarketResult {
+    marketId: string;
+    marketPda: string;
+    winningOutcome: 'YES' | 'NO';
+    txSignature: string;
+}
+
+/**
+ * Admin-only manual resolve. Mimics the hedger's automatic UMA-based
+ * resolver — used in dev / staging when Polymarket markets don't actually
+ * resolve on a useful cadence. Requires `SERVER_SOLANA_ORACLE_KEYPAIR`
+ * on the server, otherwise the endpoint returns 503 ORACLE_NOT_CONFIGURED.
+ */
+export async function adminResolveMarket(
+    marketId: string,
+    winningOutcome: 'YES' | 'NO',
+): Promise<AdminResolveMarketResult> {
+    const { data } = await apiClient.post(`/admin/resolve-market/${marketId}`, {
+        winningOutcome,
+    });
+    if (!data?.success) {
+        throw new Error(data?.message ?? 'resolve failed');
+    }
+    return data.data as AdminResolveMarketResult;
+}
+
 export interface FundUserResult {
     email: string;
     userId: string;

@@ -23,7 +23,8 @@ export type ClaimErrorCode =
     | "USER_NO_WALLET"
     | "MARKET_NOT_FOUND"
     | "MARKET_NOT_LISTED_ON_SOLANA"
-    | "MARKET_NOT_RESOLVED";
+    | "MARKET_NOT_RESOLVED"
+    | "MARKET_UMA_DISPUTE";
 
 export class ClaimError extends Error {
     public readonly code: ClaimErrorCode;
@@ -128,11 +129,22 @@ export default class SolanaClaimService {
     private async load_resolved_market(market_db_id: string): Promise<{ solanaMarketPda: string }> {
         const row = await prisma.market.findUnique({
             where: { id: market_db_id },
-            select: { solanaMarketPda: true, status: true },
+            select: { solanaMarketPda: true, status: true, pausedReason: true },
         });
         if (!row) throw new ClaimError("MARKET_NOT_FOUND", "market not found");
         if (!row.solanaMarketPda) {
             throw new ClaimError("MARKET_NOT_LISTED_ON_SOLANA", "market has no on-chain PDA");
+        }
+        // When Polymarket has closed the market but the winning outcome is
+        // not yet determinable (UMA dispute in progress), the hedger's
+        // market-status poller flips us to PAUSED with reason="UMA_DISPUTE".
+        // Catch it here so the user sees a meaningful message rather than
+        // the on-chain `MarketNotResolved` code.
+        if (row.status === "PAUSED" && row.pausedReason === "UMA_DISPUTE") {
+            throw new ClaimError(
+                "MARKET_UMA_DISPUTE",
+                "this market is closed due to a Polymarket UMA dispute — claims will resume once it's resolved",
+            );
         }
         // We don't strictly enforce row.status === RESOLVED here — the on-chain
         // contract will reject with MarketNotResolved if it isn't, and that

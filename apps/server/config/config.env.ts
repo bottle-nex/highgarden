@@ -22,6 +22,15 @@ const env_schema = z.object({
     SERVER_SOLANA_PROGRAM_ID: z.string().default("2LEm66V2Ys8JbVoQfYbZqCy6YGM1wuPUc843xRx76t3P"),
     SERVER_SOLANA_ADMIN_KEYPAIR: z.string().optional(),
     SERVER_QUOTE_SIGNER_KEYPAIR: z.string().optional(),
+    /**
+     * Oracle keypair (matches `Config.oracle_signer` on-chain) used by the
+     * admin "Resolve Market" button to sign `resolve_market`. Only needed
+     * for the manual-resolve flow — the hedger has its own
+     * HEDGER_SOLANA_ORACLE_SIGNER_KEYPAIR for the automatic UMA-based
+     * resolver. Leave unset in environments that don't expose admin
+     * resolve.
+     */
+    SERVER_SOLANA_ORACLE_KEYPAIR: z.string().optional(),
     SERVER_QUOTE_EXPIRY_SECONDS: z.coerce.number().default(5),
     SERVER_QUOTE_SPREAD_CENTS: z.coerce.number().default(2),
     SERVER_UNHEDGED_DELTA_CAP_USD: z.coerce.number().default(500),

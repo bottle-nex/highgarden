@@ -222,7 +222,14 @@ export default class TradeOrchestratorService {
             );
         }
         if (row.status === "PAUSED" || row.exposure?.paused) {
-            throw new TradeError("MARKET_PAUSED", 409, "market is paused");
+            // Surface the specific reason if the hedger's market-status poller
+            // set one (e.g. "UMA_DISPUTE") so the client can render a useful
+            // explanation rather than a generic "paused" toast.
+            const reason = row.pausedReason;
+            const detail = reason === "UMA_DISPUTE"
+                ? "this market is closed due to a Polymarket UMA dispute — trading will resume once it's resolved"
+                : "market is paused";
+            throw new TradeError("MARKET_PAUSED", 409, detail);
         }
         if (row.status === "RESOLVED") {
             throw new TradeError(

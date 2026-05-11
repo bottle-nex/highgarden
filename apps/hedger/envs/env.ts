@@ -68,6 +68,15 @@ const schema = z.object({
     // resolver loop tuning
     HEDGER_RESOLVER_POLL_INTERVAL_MS: z.coerce.number().default(60_000),
     HEDGER_RESOLVER_DISPUTE_WINDOW_HOURS: z.coerce.number().default(48),
+    /**
+     * Independent loop that polls Polymarket gamma for every approved
+     * market with a Solana PDA and reflects the resolution state into
+     * `Market.status` / `Market.pausedReason`. Separate from the on-chain
+     * resolver above because the DB write is cheap and should run on a
+     * tighter cadence than the on-chain resolve_market path (also runs
+     * even when the oracle keypair isn't configured).
+     */
+    HEDGER_MARKET_STATUS_POLL_INTERVAL_MS: z.coerce.number().default(60_000),
 
     // reconciler loop tuning
     HEDGER_RECONCILE_INTERVAL_MS: z.coerce.number().default(60_000),

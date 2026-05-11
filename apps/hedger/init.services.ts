@@ -6,6 +6,7 @@ import Resolver from "./resolver";
 import Reconciler from "./reconcile";
 import HealthServer from "./health";
 import PlatformInventoryLiquidator from "./inventory/liquidator";
+import MarketStatusPoller from "./market-status/poller";
 import { logger_for } from "./log/log";
 
 /**
@@ -30,6 +31,10 @@ export interface Services {
     readonly resolver: Resolver;
     readonly reconciler: Reconciler;
     readonly liquidator: PlatformInventoryLiquidator;
+    /** Polymarket → DB mirror loop. Sets `Market.status` to RESOLVED /
+     *  PAUSED based on gamma so the server's trade-time check can reject
+     *  closed markets without hitting Polymarket on every request. */
+    readonly marketStatusPoller: MarketStatusPoller;
     readonly health: HealthServer;
 }
 
@@ -69,6 +74,7 @@ export function init_services(): Services {
     const resolver = new Resolver(solana, poly);
     const reconciler = new Reconciler(hedger, poly);
     const liquidator = new PlatformInventoryLiquidator(poly);
+    const marketStatusPoller = new MarketStatusPoller(poly);
 
     return {
         solana,
@@ -78,6 +84,7 @@ export function init_services(): Services {
         resolver,
         reconciler,
         liquidator,
+        marketStatusPoller,
         health,
     };
 }
@@ -103,6 +110,7 @@ export async function start_services(s: Services): Promise<void> {
     s.resolver.start();
     s.reconciler.start();
     s.liquidator.start();
+    s.marketStatusPoller.start();
     s.health.start();
 }
 
@@ -131,6 +139,7 @@ export async function stop_services(s: Services): Promise<void> {
         }
     };
     await safe("liquidator", () => s.liquidator.stop());
+    await safe("marketStatusPoller", () => s.marketStatusPoller.stop());
     await safe("resolver", () => s.resolver.stop());
     await safe("reconciler", () => s.reconciler.stop());
     await safe("ingester", () => s.ingester.stop());

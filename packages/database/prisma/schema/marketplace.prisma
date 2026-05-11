@@ -10,6 +10,12 @@ model Market {
 
   status         MarketStatus @default(OPEN)
   winningOutcome Outcome?
+  /// Why the market is currently non-OPEN. Set by the hedger when it
+  /// detects external state changes on Polymarket — currently only
+  /// "UMA_DISPUTE" (Polymarket closed the market but the winning outcome
+  /// is not yet determinable because of an open UMA dispute). Null when
+  /// status is OPEN, or when RESOLVED with a known winner.
+  pausedReason   String?
 
   createdAt  DateTime  @default(now())
   endAt      DateTime

@@ -18,12 +18,67 @@ export interface CreateOnChainMarketResult {
     polymarketMarketIdHashHex: string;
 }
 
+export interface ResolveMarketInput {
+    marketPda: string;
+    winningOutcome: "YES" | "NO";
+}
+
+export interface ResolveMarketResult {
+    signature: string;
+    marketPda: string;
+    winningOutcome: "YES" | "NO";
+}
+
 export default class SolanaAdminService {
     private client: SolmarketClient | null = null;
     private admin_keypair: Keypair | null = null;
+    private oracle_keypair: Keypair | null = null;
 
     public is_configured(): boolean {
         return !!ENV.SERVER_SOLANA_ADMIN_KEYPAIR;
+    }
+
+    public is_resolve_configured(): boolean {
+        return !!ENV.SERVER_SOLANA_ORACLE_KEYPAIR;
+    }
+
+    /**
+     * Admin-triggered manual resolution. Signs `resolve_market` with the
+     * server's oracle keypair (must equal `Config.oracle_signer` on-chain
+     * or the program rejects with `Unauthorized`). Used by the
+     * `POST /admin/resolve-market/:marketId` endpoint to mimic the
+     * hedger's automatic UMA-based resolver flow during testing.
+     *
+     * No DB writes here — the controller updates `Market.status` /
+     * `ResolverState` after the on-chain tx confirms.
+     */
+    public async resolve_market(input: ResolveMarketInput): Promise<ResolveMarketResult> {
+        const client = this.get_client();
+        const oracle = this.get_oracle_keypair();
+        const winning_outcome = input.winningOutcome === "YES" ? 0 : 1;
+        const signature = await client.resolveMarket({
+            oracleSigner: oracle.publicKey,
+            market: new PublicKey(input.marketPda),
+            winningOutcome: winning_outcome,
+            signer: oracle,
+        });
+        return {
+            signature,
+            marketPda: input.marketPda,
+            winningOutcome: input.winningOutcome,
+        };
+    }
+
+    private get_oracle_keypair(): Keypair {
+        if (!ENV.SERVER_SOLANA_ORACLE_KEYPAIR) {
+            throw new Error(
+                "SERVER_SOLANA_ORACLE_KEYPAIR is not set; cannot sign resolve_market",
+            );
+        }
+        if (!this.oracle_keypair) {
+            this.oracle_keypair = this.load_admin_keypair(ENV.SERVER_SOLANA_ORACLE_KEYPAIR);
+        }
+        return this.oracle_keypair;
     }
 
     public async create_market(
