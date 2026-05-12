@@ -132,9 +132,15 @@ export default class ApproveAndListOnSolanaController {
             yesTokenId: prepared.yesTokenId,
             noTokenId: prepared.noTokenId,
         });
-        console.info(
-            `[admin/approve-and-list] create_market signature=${result.signature} pda=${result.marketPda}`,
-        );
+        if (result.recovered) {
+            console.warn(
+                `[admin/approve-and-list] recovered existing on-chain market pda=${result.marketPda} (previous create landed but DB didn't persist; adopting)`,
+            );
+        } else {
+            console.info(
+                `[admin/approve-and-list] create_market signature=${result.signature} pda=${result.marketPda}`,
+            );
+        }
         return result.marketPda;
     }
 

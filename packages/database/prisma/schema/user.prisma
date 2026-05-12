@@ -10,6 +10,7 @@ model User {
   custodialSecretEncrypted String?
 
   fills     Fill[]
+  claims    Claim[]
   comments  Comment[]
   bookmarks Bookmark[]
 }

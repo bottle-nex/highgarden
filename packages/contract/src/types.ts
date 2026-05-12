@@ -105,6 +105,13 @@ export interface ResolveMarketParams {
   winningOutcome: Outcome;
   /** Optional override; defaults to the SDK's `defaultSigner`. Must equal `oracleSigner`. */
   signer?: Keypair;
+  /**
+   * Optional fee payer. When provided, the tx is paid by `feePayer` while
+   * the oracle keypair only signs the resolve_market instruction —
+   * mirrors the place_order pattern so you don't need to keep the
+   * oracle wallet topped up with SOL. When absent, the oracle pays.
+   */
+  feePayer?: Keypair;
 }
 
 export interface AdminMarketParams {

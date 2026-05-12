@@ -90,6 +90,60 @@ export default class TradeOrchestratorService {
      *  survive across trades. */
     private readonly preflight = new PreTradeValidator();
 
+    /**
+     * TEST-ONLY: signs a quote at a fixed 50¢ price, persists the Quote
+     * row (so Fill's FK is satisfied), submits place_order on-chain, and
+     * marks the quote consumed. Skips Polymarket, inventory netting, the
+     * pre-flight validator, the spread, the Hedge row, the orphan
+     * inventory safety net, and the idempotency cache.
+     *
+     * Used by `execute_trade_skip_polymarket` on TradeController to
+     * smoke-test the Solana side in isolation. REMOVE BEFORE PROD:
+     * production callers must go through `execute()`.
+     */
+    public async execute_solana_only(req: TradeRequest): Promise<TradeResult> {
+        const TEST_PRICE_CENTS = 50;
+        const request_id = req.requestId ?? randomUUID();
+        const market = await this.validate(req.marketDbId, req.side, req.outcome);
+        const nonce = this.derive_nonce(request_id);
+        const expires_at_unix = Math.floor(Date.now() / 1000) + ENV.SERVER_QUOTE_EXPIRY_SECONDS;
+        const signed = this.sign_quote_internally({
+            market_pda: market.solanaMarketPda,
+            side: req.side,
+            outcome: req.outcome,
+            price_cents: TEST_PRICE_CENTS,
+            size_shares: req.sizeShares,
+            nonce,
+            expires_at_unix,
+        });
+        // Quote row must exist before Fill — Fill.nonce is a FK to
+        // Quote.nonce; without this, SolanaTradeService's record_fill
+        // blows up with P2003 and the portfolio stays empty.
+        await this.persist_quote(
+            market.id,
+            req,
+            TEST_PRICE_CENTS,
+            req.sizeShares,
+            signed,
+            expires_at_unix,
+        );
+        const solana_result = await this.solana.place_order({
+            userId: req.userId,
+            marketDbId: req.marketDbId,
+            signedQuote: signed,
+        });
+        await this.mark_quote_consumed(signed.nonceHex);
+        return {
+            txSignature: solana_result.txSignature,
+            polymarketOrderId: "skipped-polymarket",
+            filledShares: req.sizeShares,
+            pricePaidCents: TEST_PRICE_CENTS,
+            totalUsd: this.compute_total_usd(req.sizeShares, TEST_PRICE_CENTS),
+            requestId: request_id,
+            nettedFromInventory: false,
+        };
+    }
+
     public async execute(req: TradeRequest): Promise<TradeResult> {
         const request_id = req.requestId ?? randomUUID();
         const market = await this.validate(req.marketDbId, req.side, req.outcome);

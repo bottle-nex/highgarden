@@ -21,11 +21,12 @@ model Market {
   endAt      DateTime
   resolvedAt DateTime?
 
-  quotes    Quote[]
-  fills     Fill[]
-  exposure  Exposure?
-  listing   Listing?
-  bookmarks Bookmark[]
+  quotes            Quote[]
+  fills             Fill[]
+  claims            Claim[]
+  exposure          Exposure?
+  listing           Listing?
+  bookmarks         Bookmark[]
   platformInventory PlatformInventory[]
 
   @@unique([id, polyMarketId])
@@ -136,6 +137,30 @@ model Fill {
   createdAt DateTime @default(now())
 
   hedge Hedge?
+}
+
+/// Records a successful `claim` instruction. The on-chain claim zeroes the
+/// user's winning-side shares in their UserPosition PDA and transfers
+/// `shares × $1` USDC from the treasury vault to the user's ATA. The DB
+/// row exists so PortfolioService can hide already-claimed positions on
+/// page refresh — without it, the position keeps showing up with
+/// `claimableUsd > 0` because the Fill aggregation has no way to know
+/// the user already redeemed. One row per (user, market, outcome) by
+/// design — the on-chain handler drains the full balance in one shot.
+model Claim {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  marketId    String
+  market      Market   @relation(fields: [marketId], references: [id])
+  outcome     Outcome
+  shares      Int
+  payoutCents Int
+  txSignature String   @unique
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, marketId, outcome])
+  @@index([userId])
 }
 
 model Hedge {

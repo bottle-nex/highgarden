@@ -49,9 +49,12 @@ export default class ResolveMarketController {
                 winningOutcome: parsed.data.winningOutcome,
             });
 
+            // `result.winningOutcome` may differ from the requested value
+            // when the on-chain market was already resolved (we adopt the
+            // chain's winner). Persist whichever one actually lives on-chain.
             await ResolveMarketController.persist_resolution(
                 market_id,
-                parsed.data.winningOutcome,
+                result.winningOutcome,
                 result.signature,
             );
 
@@ -60,10 +63,13 @@ export default class ResolveMarketController {
                 {
                     marketId: market_id,
                     marketPda: prepared.data.solanaMarketPda,
-                    winningOutcome: parsed.data.winningOutcome,
+                    winningOutcome: result.winningOutcome,
                     txSignature: result.signature,
+                    recovered: result.recovered,
                 },
-                "Market resolved on-chain and persisted in DB",
+                result.recovered
+                    ? "Market was already resolved on-chain; DB updated to match"
+                    : "Market resolved on-chain and persisted in DB",
             );
         } catch (err) {
             console.error("[admin/resolve-market]", err);
