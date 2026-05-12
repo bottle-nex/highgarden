@@ -59,7 +59,7 @@ function BrandRow(): JSX.Element {
                     type="button"
                     onClick={() => router.push('/dashboard')}
                     aria-label="test"
-                    className="relative h-[clamp(6rem,16vh,11rem)] flex-1 rounded-full text-[clamp(1.5rem,4vw,3.75rem)] uppercase border-2 border-black overflow-hidden font-semibold cursor-pointer"
+                    className="relative h-[clamp(6rem,17vh,11rem)] flex-1 rounded-full text-[clamp(1.5rem,4vw,3.75rem)] uppercase border-2 border-black overflow-hidden font-semibold cursor-pointer"
                 >
                     <video
                         src="/videos/porsche.mp4"
