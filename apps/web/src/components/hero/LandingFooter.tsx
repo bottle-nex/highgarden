@@ -20,12 +20,12 @@ interface FooterGroup {
 
 export default function LandingFooter(): JSX.Element {
     return (
-        <footer className="relative w-full bg-white pt-40 md:pt-48 pb-10 px-6 md:px-10">
-            <div className="max-w-340 mx-auto w-full">
+        <footer className="relative w-full min-h-screen bg-white px-6 md:px-10 pt-[clamp(2rem,5vh,6rem)] pb-[clamp(1.5rem,3vh,2.5rem)] flex flex-col">
+            <div className="max-w-340 mx-auto w-full flex flex-col flex-1">
                 <BrandRow />
-                <div className="my-16 h-px bg-black/10" />
+                <div className="my-[clamp(1.5rem,3vh,4rem)] h-px bg-black/10" />
                 <NavGrid />
-                <div className="mt-16 pt-6 border-t border-black/10">
+                <div className="mt-auto pt-[clamp(1.5rem,3vh,4rem)] border-t border-black/10">
                     <BottomBar />
                 </div>
             </div>
@@ -45,7 +45,7 @@ function BrandRow(): JSX.Element {
                 transition={{ duration: 0.5 }}
                 className={cn(
                     'font-black tracking-tighter leading-[0.9] text-dark-base',
-                    'text-6xl sm:text-7xl md:text-[12rem]',
+                    'text-[clamp(3.5rem,10vw,12rem)]',
                     doto.className,
                 )}
             >
@@ -59,7 +59,7 @@ function BrandRow(): JSX.Element {
                     type="button"
                     onClick={() => router.push('/dashboard')}
                     aria-label="test"
-                    className="relative h-44 flex-1 rounded-full text-6xl uppercase border-2 border-black overflow-hidden font-semibold cursor-pointer"
+                    className="relative h-[clamp(6rem,16vh,11rem)] flex-1 rounded-full text-[clamp(1.5rem,4vw,3.75rem)] uppercase border-2 border-black overflow-hidden font-semibold cursor-pointer"
                 >
                     <video
                         src="/videos/porsche.mp4"
