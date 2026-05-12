@@ -104,7 +104,6 @@ export default function LiveStakingSection() {
         <StakingSection yesNoMarkets={yes_no} multiCandidateMarkets={[]} multiOptionMarkets={[]} />
     );
 }
-
 function Section({ children }: { children: React.ReactNode }) {
     return (
         <section>

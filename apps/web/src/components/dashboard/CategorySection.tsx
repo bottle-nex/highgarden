@@ -45,14 +45,6 @@ function TrendingSection(): JSX.Element {
 
             <LiveMarketGrid excludeFeatured />
 
-            <div className="flex items-center justify-center pt-6">
-                <button
-                    type="button"
-                    className="group relative h-11 px-8 rounded-md border border-white/15 hover:bg-white/5  text-[10px] sm:text-[11px] tracking-[0.3em] uppercase text-white/60 hover:text-white/85 transition-colors cursor-pointer"
-                >
-                    EXPLORE ALL MARKETS →
-                </button>
-            </div>
         </div>
     );
 }
