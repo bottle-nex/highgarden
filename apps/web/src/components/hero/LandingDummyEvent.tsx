@@ -30,6 +30,10 @@ function build_dummy_market(): MarketDTO {
         imageUrl: null,
         eventId: null,
         eventSlug: null,
+        kind: 'STANDARD',
+        fastSeriesKey: null,
+        winningOutcome: null,
+        resolvedAt: null,
         tags: ['Politics', 'Geopolitics', 'World'],
     };
 }

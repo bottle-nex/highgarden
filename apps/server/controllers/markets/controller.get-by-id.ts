@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "@solmarket/database";
-import { ListingStatus, type MarketDTO, type MarketStatus } from "@solmarket/types";
+import { ListingStatus, type MarketDTO, type MarketStatus, type Outcome } from "@solmarket/types";
 import ResponseWriter from "../../services/service.response";
 
 export default class GetMarketByIdController {
@@ -44,6 +44,10 @@ export default class GetMarketByIdController {
                 imageUrl: p.imageUrl,
                 eventId: p.eventId,
                 eventSlug: p.eventSlug,
+                kind: m.kind,
+                fastSeriesKey: m.fastSeriesKey,
+                winningOutcome: m.winningOutcome as Outcome | null,
+                resolvedAt: m.resolvedAt?.toISOString() ?? null,
                 tags: p.tags,
             };
 

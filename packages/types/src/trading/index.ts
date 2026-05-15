@@ -77,8 +77,31 @@ export interface MarketDTO {
   imageUrl: string | null;
   eventId: string | null;
   eventSlug: string | null;
+  /** STANDARD = long-form market. FAST_MOVING = rolling crypto Up-or-Down
+   *  ladder (5m / 15m / 1h slots). The dashboard groups FAST_MOVING rows
+   *  by fastSeriesKey into a single card per series. */
+  kind: "STANDARD" | "FAST_MOVING";
+  /** Stable series identifier (e.g. "bitcoin-updown-5m"). Only set for
+   *  FAST_MOVING markets whose Polymarket slug matched the recognised
+   *  pattern; null on every STANDARD market. */
+  fastSeriesKey: string | null;
+  /** Winner (YES or NO) once the market is RESOLVED. Null while open or
+   *  paused. The trade panel uses this together with `status === RESOLVED`
+   *  to label the post-resolution claim banner. */
+  winningOutcome: Outcome | null;
+  /** ISO timestamp the market entered RESOLVED status. Null while open. */
+  resolvedAt: string | null;
   /** Polymarket tag labels, e.g. ["Crypto", "Bitcoin"]. Empty array if untagged. */
   tags: string[];
+}
+
+/** Pushed by the server WS layer when a market transitions to RESOLVED.
+ *  Lets every open client (anyone who has the event page open) flip
+ *  immediately to the "Claim payout" UI without polling. */
+export interface MarketResolvedPayload {
+  marketId: string;
+  winningOutcome: Outcome;
+  resolvedAt: string;
 }
 
 /** Toggle/list response for bookmarks. */

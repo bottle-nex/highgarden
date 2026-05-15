@@ -10,6 +10,19 @@ model Market {
 
   status         MarketStatus @default(OPEN)
   winningOutcome Outcome?
+  /// STANDARD = regular long-form market (default).
+  /// FAST_MOVING = short-window auto-rolling market (Polymarket BTC/ETH/SOL
+  /// Up-or-Down ladders). Surfaced in a dedicated admin tab and resolved
+  /// on-chain immediately by MarketStatusPoller — the hedger's 48h dispute
+  /// window doesn't apply to these.
+  kind           MarketKind   @default(STANDARD)
+  /// For FAST_MOVING markets, the stable identifier of the rolling
+  /// series they belong to — e.g. "bitcoin-updown-5m",
+  /// "dogecoin-updown-15m". Derived from the Polymarket slug. Used by
+  /// FastMarketSubscription to auto-approve every new market that lands
+  /// in a subscribed series. Null for STANDARD markets and for
+  /// FAST_MOVING ones whose slug doesn't match the recognised pattern.
+  fastSeriesKey  String?
   /// Why the market is currently non-OPEN. Set by the hedger when it
   /// detects external state changes on Polymarket — currently only
   /// "UMA_DISPUTE" (Polymarket closed the market but the winning outcome
