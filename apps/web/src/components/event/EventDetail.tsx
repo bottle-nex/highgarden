@@ -1,12 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { HiArrowLeft } from 'react-icons/hi2';
 import type { MarketDTO } from '@solmarket/types';
 import { Outcome } from '@solmarket/types';
 import { fetch_market_by_id, fetch_market_orderbook } from '@/lib/api/markets';
-import { useMarketsStore } from '@/store/markets/useMarketsStore';
+import { selectMarketById, useMarketsStore } from '@/store/markets/useMarketsStore';
 import { useMarketStream } from '@/lib/socket/useWebSocket';
 import { useSubscribeEventHandlers } from '@/lib/socket/useSubscribeEventHandlers';
 import { enqueueBookUpdate } from '@/store/book/useOrderBookStore';
@@ -19,6 +19,8 @@ import EventTradePanel from './EventTradePanel';
 import EventTabs from './EventTabs';
 import EventNews from './EventNews';
 import EventRelatedMarkets from './EventRelatedMarkets';
+import EventGoLiveBanner from './EventGoLiveBanner';
+import LiveAssetPrice from './LiveAssetPrice';
 import MarketComments from '../market/comments/MarketComments';
 
 function format_usd(usd: number | null): string {
@@ -49,6 +51,15 @@ export default function EventDetail({ id }: { id: string }) {
 
     useEffect(() => {
         let cancelled = false;
+        // Reset to 'loading' on every id change. This unmounts Body
+        // (and with it useMarketStream's effect), which runs the WS
+        // UNSUBSCRIBE for the OLD market's tokens before we subscribe
+        // the new ones. Without this reset, navigation between two
+        // /event/:id pages would just rerender Body with the new
+        // market prop — and during the in-flight fetch the WS stays
+        // subscribed to the previous market, so the new market's
+        // book events never get routed and the orderbook freezes.
+        set_state({ status: 'loading' });
         fetch_market_by_id(id).then((m) => {
             if (cancelled) return;
             if (m) {
@@ -72,7 +83,13 @@ export default function EventDetail({ id }: { id: string }) {
             {state.status === 'not_found' && (
                 <Frame>Market not found. It may not be approved yet, or the link is wrong.</Frame>
             )}
-            {state.status === 'ready' && <Body market={state.market} />}
+            {state.status === 'ready' && (
+                // `key` forces a full remount when the market id changes —
+                // belt-and-suspenders with the state reset above so every
+                // child hook (useMarketStream, useOrderBook, the trade
+                // panel) starts from a clean slate on navigation.
+                <Body key={state.market.id} market={state.market} />
+            )}
         </main>
     );
 }
@@ -80,6 +97,21 @@ export default function EventDetail({ id }: { id: string }) {
 function Body({ market }: { market: MarketDTO }) {
     useSubscribeEventHandlers();
     useMarketStream(market.id);
+
+    // Subscribe to the live store entry. The initial fetch seeds it; the
+    // WS `MARKET_RESOLVED` handler flips status + winningOutcome when the
+    // resolver lands on-chain — that's the signal that drives the trade
+    // panel from Buy/Sell to "Claim payout" without a page reload.
+    const live = useMarketsStore(selectMarketById(market.id));
+    const live_market = useMemo<MarketDTO>(() => {
+        if (!live) return market;
+        return {
+            ...market,
+            status: live.status,
+            winningOutcome: live.winningOutcome,
+            resolvedAt: live.resolvedAt?.toISOString() ?? market.resolvedAt,
+        };
+    }, [market, live]);
 
     const [delta24h, set_delta24h] = useState<number | null>(null);
     const [is_title_stuck, set_is_title_stuck] = useState(false);
@@ -143,12 +175,16 @@ function Body({ market }: { market: MarketDTO }) {
                     </div>
                     <div className="contents xl:grid xl:grid-cols-[1fr_320px] xl:gap-3">
                         <div className="order-2 lg:order-0 min-w-0">
+                            {live_market.fastSeriesKey && (
+                                <LiveAssetPrice seriesKey={live_market.fastSeriesKey} />
+                            )}
                             <EventPriceChart
                                 marketId={market.id}
                                 volumeLabel={format_usd(market.volume24hUsd)}
                                 closeLabel={format_close_label(market.endAt)}
                                 delta24hPct={delta24h}
                                 onLoaded={handle_chart_loaded}
+                                fastSeriesKey={live_market.fastSeriesKey}
                             />
                         </div>
                         <div className="order-4 lg:order-0">
@@ -163,8 +199,9 @@ function Body({ market }: { market: MarketDTO }) {
                     </div>
                 </div>
                 <div className="contents lg:flex lg:flex-col lg:gap-3 lg:sticky lg:top-24 lg:h-[calc(100vh-6rem)]">
-                    <div className="order-3 lg:order-0">
-                        <EventTradePanel market={market} />
+                    <div className="order-3 lg:order-0 space-y-3">
+                        <EventGoLiveBanner market={live_market} />
+                        <EventTradePanel market={live_market} />
                     </div>
                     <div className="custom-scrollbar order-5 lg:order-0 lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
                         <EventNews marketId={market.id} />

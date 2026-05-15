@@ -79,6 +79,25 @@ export function useOrderBook(
         void hydrate_book();
     }, [hydrate_book]);
 
+    // WS is the primary update path:
+    //   • On SUBSCRIBE the server pushes an initial book snapshot back over
+    //     the same socket (fetched directly from Polymarket's CLOB), so the
+    //     client never waits on the mirror for first paint.
+    //   • Subsequent price_change / book events stream live via the mirror
+    //     → redis → ws fan-out and apply through SocketEventHandlers.
+    //
+    // This interval is a sparse safety net — only catches the rare case
+    // where a price_change packet is dropped between mirror and client.
+    // 15s is long enough to stay out of the WS's way but short enough that
+    // a missed tick doesn't leave a 5-min crypto market visibly stale.
+    useEffect(() => {
+        if (!marketId) return;
+        const handle = setInterval(() => {
+            void hydrate_book();
+        }, 15_000);
+        return () => clearInterval(handle);
+    }, [marketId, hydrate_book]);
+
     const refetch = useCallback((): void => {
         void hydrate_book();
     }, [hydrate_book]);
