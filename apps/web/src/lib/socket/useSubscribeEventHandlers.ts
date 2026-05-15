@@ -17,6 +17,7 @@ export function useSubscribeEventHandlers() {
             [SERVER_MESSAGE_TYPE.UNSUBSCRIBED]: SocketEventHandlers.handle_unsubscribed,
             [SERVER_MESSAGE_TYPE.ERROR]: SocketEventHandlers.handle_error,
             [SERVER_MESSAGE_TYPE.PONG]: SocketEventHandlers.handle_pong,
+            [SERVER_MESSAGE_TYPE.MARKET_RESOLVED]: SocketEventHandlers.handle_market_resolved,
         };
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

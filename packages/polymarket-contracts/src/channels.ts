@@ -33,4 +33,11 @@ export const REDIS_CHANNELS = {
   market_book: (token_id: string) => `polymarket:market:book:${token_id}`,
   market_price: (token_id: string) => `polymarket:market:price:${token_id}`,
   market_tick: (token_id: string) => `polymarket:market:tick:${token_id}`,
+
+  // Single global pub/sub channel for low-rate solmarket-internal lifecycle
+  // nudges (resolution today; status flips and other broadcasts in the
+  // future). Writers: server + hedger. Reader: server's WS layer, which
+  // fans out to every connected socket as a typed ServerMessage so the
+  // client can react (e.g. surface the Claim button) without polling.
+  market_lifecycle: "solmarket:market:lifecycle",
 } as const;

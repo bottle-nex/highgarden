@@ -9,6 +9,7 @@ import type { ServerMessage, ClientMessage, CustomWebSocketFields } from "@solma
 import type MirrorControlPublisher from "../services/service.mirror-control";
 import type BookCache from "../services/service.book-cache";
 import SpreadService from "../services/service.spread";
+import type { MarketLifecycleEvent } from "../services/service.market-lifecycle";
 
 export interface CustomWebSocket extends WebSocket, CustomWebSocketFields {}
 
@@ -59,6 +60,7 @@ export default class SocketServer {
             this.route_redis_message.bind(this),
             mirror_control,
             book_cache,
+            this.handle_lifecycle.bind(this),
         );
 
         this.allowed_origins = this.build_allowed_origins();
@@ -274,8 +276,6 @@ export default class SocketServer {
         }
         clients.add(ws.id);
 
-        console.log("→ subscribe  ", this.label_for(ws), token_id);
-
         this.subscriber.subscribe(token_id);
         this.fetch_and_send_book(ws, token_id);
         this.send(ws, { type: SERVER_MESSAGE_TYPE.SUBSCRIBED, token_id });
@@ -299,8 +299,6 @@ export default class SocketServer {
                 this.token_clients.delete(token_id);
             }
         }
-
-        console.log("← unsubscribe", this.label_for(ws), token_id);
 
         this.subscriber.unsubscribe(token_id);
         this.send(ws, { type: SERVER_MESSAGE_TYPE.UNSUBSCRIBED, token_id });
@@ -353,26 +351,11 @@ export default class SocketServer {
      * amplify into upstream rate limiting.
      */
     private fetch_and_send_book(ws: CustomWebSocket, token_id: string): void {
-        const label = this.label_for(ws);
-        console.log("[ws:book] fetching", label, token_id);
         void (async () => {
             try {
                 const snapshot = await this.get_book_snapshot(token_id);
                 if (!snapshot) return;
-                if (ws.readyState !== ws.OPEN) {
-                    console.warn(
-                        "[ws:book] ws closed before send",
-                        token_id,
-                        `ws_state=${ws.readyState}`,
-                    );
-                    return;
-                }
-                console.log(
-                    "→ book fetch ",
-                    label,
-                    token_id,
-                    `bids=${snapshot.bids.length} asks=${snapshot.asks.length}`,
-                );
+                if (ws.readyState !== ws.OPEN) return;
                 this.send(ws, { type: SERVER_MESSAGE_TYPE.MARKET, event: snapshot });
             } catch (err) {
                 console.warn("[ws:book] fetch error", token_id, err);
@@ -455,6 +438,38 @@ export default class SocketServer {
                 ws.send(payload);
             }
         }
+    }
+
+    /**
+     * Fan a lifecycle event out as a typed ServerMessage to every connected
+     * socket. Clients filter by marketId locally — broadcasting is much
+     * cheaper than tracking a per-market subscriber set just for the rare
+     * resolution event. The event page picks it up and flips its UI from
+     * "Buy / Sell" to "Claim payout" with no page reload required.
+     */
+    private handle_lifecycle(event: MarketLifecycleEvent): void {
+        if (event.kind !== "resolved") return;
+        const payload = JSON.stringify({
+            type: SERVER_MESSAGE_TYPE.MARKET_RESOLVED,
+            payload: {
+                marketId: event.marketId,
+                winningOutcome: event.winningOutcome,
+                resolvedAt: event.resolvedAt,
+            },
+        });
+        let sent = 0;
+        for (const ws of this.socket_mapping.values()) {
+            if (ws.readyState === ws.OPEN) {
+                ws.send(payload);
+                sent++;
+            }
+        }
+        console.log(
+            "[ws:lifecycle] resolved broadcast",
+            `marketId=${event.marketId}`,
+            `winningOutcome=${event.winningOutcome}`,
+            `sent=${sent}`,
+        );
     }
 
     public snapshot_clients(): Map<string, number> {

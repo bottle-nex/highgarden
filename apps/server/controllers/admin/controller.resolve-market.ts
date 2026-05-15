@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "@solmarket/database";
+import { Outcome } from "@solmarket/types";
 import ResponseWriter from "../../services/service.response";
 import { services } from "../../index";
 
@@ -52,11 +53,25 @@ export default class ResolveMarketController {
             // `result.winningOutcome` may differ from the requested value
             // when the on-chain market was already resolved (we adopt the
             // chain's winner). Persist whichever one actually lives on-chain.
-            await ResolveMarketController.persist_resolution(
+            const resolved_at = await ResolveMarketController.persist_resolution(
                 market_id,
                 result.winningOutcome,
                 result.signature,
             );
+
+            // Push the resolution out to every connected WS client so the
+            // event page flips from Buy/Sell to "Claim payout" immediately.
+            // Failure here only affects live UX (a refresh recovers), so
+            // we log + continue rather than failing the admin response.
+            try {
+                await services.market_lifecycle.publish_resolved({
+                    marketId: market_id,
+                    winningOutcome: result.winningOutcome as Outcome,
+                    resolvedAt: resolved_at.toISOString(),
+                });
+            } catch (err) {
+                console.error("[admin/resolve-market] lifecycle publish failed", err);
+            }
 
             return ResponseWriter.success(
                 res,
@@ -155,7 +170,7 @@ export default class ResolveMarketController {
         market_id: string,
         winning_outcome: "YES" | "NO",
         tx_signature: string,
-    ): Promise<void> {
+    ): Promise<Date> {
         const now = new Date();
         await prisma.$transaction(async (tx) => {
             await tx.market.update({
@@ -187,5 +202,6 @@ export default class ResolveMarketController {
                 },
             });
         });
+        return now;
     }
 }

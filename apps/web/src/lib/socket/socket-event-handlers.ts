@@ -4,6 +4,7 @@ import {
     ServerMessage,
     MarketEvent,
     PriceUpdatePayload,
+    MarketStatus,
 } from '@solmarket/types';
 
 import { useMarketsStore } from '@/store/markets/useMarketsStore';
@@ -210,6 +211,36 @@ export class SocketEventHandlers {
         toast.success('PONG');
     }
 
+    /**
+     * Live nudge that a market just transitioned to RESOLVED. Updates the
+     * markets store so any component subscribed to that market's entry
+     * (notably the event page's trade panel) flips immediately from the
+     * Buy/Sell UI to the Claim payout banner without polling. We also
+     * surface a small toast — the user might be looking at a different
+     * page when the resolution arrives.
+     */
+    static handle_market_resolved(
+        msg: Extract<ServerMessage, { type: SERVER_MESSAGE_TYPE.MARKET_RESOLVED }>,
+    ): void {
+        const { marketId, winningOutcome, resolvedAt } = msg.payload;
+        const store = useMarketsStore.getState();
+        const existing = store.byId[marketId];
+        if (!existing) return; // user has never opened this market — nothing to update
+        store.applyResolution(
+            marketId,
+            winningOutcome === 'YES' ? Outcome.YES : Outcome.NO,
+            new Date(resolvedAt),
+        );
+        // Only toast the first time we observe the transition — a repeat
+        // broadcast (e.g. server restart re-emitting a recent event) on an
+        // already-resolved row shouldn't spam the user.
+        if (existing.status !== MarketStatus.RESOLVED) {
+            toast.info('Market resolved', {
+                description: `${existing.name} resolved ${winningOutcome}`,
+            });
+        }
+    }
+
     static dispatch(msg: ServerMessage): void {
         switch (msg.type) {
             case SERVER_MESSAGE_TYPE.MARKET:
@@ -226,6 +257,9 @@ export class SocketEventHandlers {
                 break;
             case SERVER_MESSAGE_TYPE.PONG:
                 SocketEventHandlers.handle_pong();
+                break;
+            case SERVER_MESSAGE_TYPE.MARKET_RESOLVED:
+                SocketEventHandlers.handle_market_resolved(msg);
                 break;
         }
     }

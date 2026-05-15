@@ -7,6 +7,7 @@ import Reconciler from "./reconcile";
 import HealthServer from "./health";
 import PlatformInventoryLiquidator from "./inventory/liquidator";
 import MarketStatusPoller from "./market-status/poller";
+import HedgerRedisPublisher from "./redis-publisher";
 import { logger_for } from "./log/log";
 
 /**
@@ -35,6 +36,10 @@ export interface Services {
      *  PAUSED based on gamma so the server's trade-time check can reject
      *  closed markets without hitting Polymarket on every request. */
     readonly marketStatusPoller: MarketStatusPoller;
+    /** Pub-only Redis client the hedger uses to push lifecycle nudges
+     *  (market resolutions) onto the shared lifecycle channel. The
+     *  server-side WS layer fans these out to connected clients. */
+    readonly publisher: HedgerRedisPublisher;
     readonly health: HealthServer;
 }
 
@@ -74,7 +79,8 @@ export function init_services(): Services {
     const resolver = new Resolver(solana, poly);
     const reconciler = new Reconciler(hedger, poly);
     const liquidator = new PlatformInventoryLiquidator(poly);
-    const marketStatusPoller = new MarketStatusPoller(poly);
+    const publisher = new HedgerRedisPublisher();
+    const marketStatusPoller = new MarketStatusPoller(poly, publisher);
 
     return {
         solana,
@@ -85,6 +91,7 @@ export function init_services(): Services {
         reconciler,
         liquidator,
         marketStatusPoller,
+        publisher,
         health,
     };
 }
@@ -145,4 +152,5 @@ export async function stop_services(s: Services): Promise<void> {
     await safe("ingester", () => s.ingester.stop());
     await safe("hedger", () => s.hedger.stop());
     await safe("health", () => s.health.stop());
+    await safe("publisher", () => s.publisher.shutdown());
 }

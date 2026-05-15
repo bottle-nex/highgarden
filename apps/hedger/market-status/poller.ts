@@ -3,6 +3,7 @@ import type { GammaResolution } from "@solmarket/polymarket-client";
 import { ENV } from "../envs/env";
 import { logger_for } from "../log/log";
 import type PolymarketClient from "../clients/polymarket";
+import type HedgerRedisPublisher from "../redis-publisher";
 
 /** Reason string written to `Market.pausedReason` when Polymarket has
  *  closed the market but the winner is not yet determinable because of
@@ -63,7 +64,10 @@ export default class MarketStatusPoller {
     private interval_handle: ReturnType<typeof setInterval> | null = null;
     private running = false;
 
-    constructor(private readonly poly: PolymarketClient) {}
+    constructor(
+        private readonly poly: PolymarketClient,
+        private readonly publisher: HedgerRedisPublisher,
+    ) {}
 
     public start(): void {
         if (this.interval_handle) return;
@@ -239,5 +243,21 @@ export default class MarketStatusPoller {
             },
             ">>> MARKET-STATUS: DB state updated from gamma",
         );
+        // Fan the resolution out to the web so any user with the event
+        // page open flips to "Claim payout" without polling. Only the
+        // fully-resolved transition is published — UMA-pause flips don't
+        // need a live nudge, since the trade panel already handles pause
+        // states based on a periodic refetch.
+        if (
+            target.status === "RESOLVED"
+            && target.winningOutcome !== null
+            && target.resolvedAt !== null
+        ) {
+            await this.publisher.publish_resolved(
+                market.id,
+                target.winningOutcome,
+                target.resolvedAt,
+            );
+        }
     }
 }
