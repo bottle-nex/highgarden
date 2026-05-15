@@ -1,0 +1,20 @@
+/// Admin "subscribe to a fast-moving series" preference. When the
+/// auto-lister discovers a new FAST_MOVING market whose
+/// `fastSeriesKey` matches one of these rows, it auto-approves and
+/// lists the market on Solana — no manual click per 5-minute slot.
+///
+/// `seriesKey` is the natural unique identifier (e.g.
+/// "bitcoin-updown-5m"). `label` is a human-readable name for the
+/// admin UI ("Bitcoin Up or Down (5 min)"). Disabling without
+/// deleting is supported via `enabled` so admin can pause / resume
+/// a subscription without losing the row.
+model FastMarketSubscription {
+  id        String   @id @default(cuid())
+  seriesKey String   @unique
+  label     String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  createdBy String?
+
+  @@index([enabled])
+}

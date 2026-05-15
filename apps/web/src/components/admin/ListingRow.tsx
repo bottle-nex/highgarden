@@ -8,6 +8,7 @@ import {
     approveAndListOnSolana,
     approveListing,
     rejectListing,
+    subscribeFastSeries,
 } from '@/lib/api/admin';
 import type { AdminListingRow } from './AdminListings';
 
@@ -35,6 +36,29 @@ export default function ListingRow({
     const [showRejectInput, setShowRejectInput] = useState(false);
     const [reason, setReason] = useState('');
     const [showResolveConfirm, setShowResolveConfirm] = useState<'YES' | 'NO' | null>(null);
+
+    const handleSubscribe = async () => {
+        if (pending) return;
+        if (!listing.fastSeriesKey) {
+            toast.error('No series key on this market — cannot subscribe');
+            return;
+        }
+        setPending(true);
+        try {
+            const result = await subscribeFastSeries({ fromMarketId: listing.marketId });
+            const ap = result.backfill.approved.length;
+            const fl = result.backfill.failed.length;
+            toast.success(
+                `Subscribed to ${result.subscription.label}`,
+                { description: ap > 0 || fl > 0 ? `Backfilled ${ap} approved, ${fl} failed` : 'All future markets will be auto-listed' },
+            );
+            onChange?.();
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'subscribe failed');
+        } finally {
+            setPending(false);
+        }
+    };
 
     const handleResolve = async (winning: 'YES' | 'NO') => {
         if (pending) return;
@@ -109,6 +133,14 @@ export default function ListingRow({
                 )}
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 min-w-0">
+                        {listing.kind === 'FAST_MOVING' && (
+                            <span
+                                className="shrink-0 text-[9px] tracking-[0.18em] uppercase font-semibold px-1.5 py-0.5 rounded bg-amber-400/15 text-amber-300 border border-amber-400/30"
+                                title="Short-window market (sub-hour). Resolved on-chain without the dispute window."
+                            >
+                                FAST
+                            </span>
+                        )}
                         <p className="text-sm text-white truncate">{listing.question}</p>
                         {listing.polyMarketSlug && (
                             <a
@@ -147,6 +179,17 @@ export default function ListingRow({
 
                 {listing.status === 'PENDING' && (
                     <div className="flex items-center gap-2 shrink-0">
+                        {listing.kind === 'FAST_MOVING' && listing.fastSeriesKey && (
+                            <button
+                                type="button"
+                                disabled={pending}
+                                onClick={handleSubscribe}
+                                className="h-8 px-3 rounded text-[10px] tracking-[0.2em] uppercase bg-amber-400/15 text-amber-300 hover:bg-amber-400/25 border border-amber-400/30 disabled:opacity-40"
+                                title="Subscribe to this rolling series — auto-approve every new market in it"
+                            >
+                                Subscribe
+                            </button>
+                        )}
                         <button
                             type="button"
                             disabled={pending}

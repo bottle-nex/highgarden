@@ -12,6 +12,8 @@ function toRow(l: AdminListingApi): AdminListingRow {
     return {
         marketId: l.marketId,
         status: l.status,
+        kind: l.market?.kind ?? 'STANDARD',
+        fastSeriesKey: l.market?.fastSeriesKey ?? null,
         question: l.market?.name ?? '(unknown market)',
         description: l.market?.description ?? '',
         endAt: l.market?.endAt ?? null,

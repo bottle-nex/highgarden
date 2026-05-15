@@ -10,6 +10,7 @@ import DiagnosticController from "../../controllers/admin/controller.diagnostic"
 import TestFundController from "../../controllers/admin/controller.test-fund";
 import FundByEmailController from "../../controllers/admin/controller.fund-by-email";
 import BalancesController from "../../controllers/admin/controller.balances";
+import FastSubscriptionsController from "../../controllers/admin/controller.fast-subscriptions";
 import { requireAuth } from "../../middleware/middleware.auth";
 
 const admin_router: Router = Router();
@@ -25,5 +26,9 @@ admin_router.post("/lister/run", RunListerController.process);
 admin_router.post("/test-fund/:userId", requireAuth, TestFundController.process);
 admin_router.post("/fund-by-email", requireAuth, FundByEmailController.process);
 admin_router.get("/balances", requireAuth, BalancesController.process);
+
+admin_router.get("/fast-subscriptions", FastSubscriptionsController.list);
+admin_router.post("/fast-subscriptions", requireAuth, FastSubscriptionsController.create);
+admin_router.delete("/fast-subscriptions/:id", requireAuth, FastSubscriptionsController.remove);
 
 export default admin_router;
