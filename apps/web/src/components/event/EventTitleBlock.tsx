@@ -11,6 +11,7 @@ import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { cn } from '@/lib/utils';
 import { IoCheckmarkOutline } from 'react-icons/io5';
 import { AnimatePresence, motion } from 'framer-motion';
+import { localize_market_title } from '@/utils/localize-et';
 
 function placeholder_gradient(seed: string): string {
     let h = 0;
@@ -27,6 +28,7 @@ interface Props {
 export default function EventTitleBlock({ market, is_stuck }: Props): JSX.Element {
     const [img_error, set_img_error] = useState<boolean>(false);
     const [copied, setCopied] = useState<boolean>(false);
+    const display_name = localize_market_title(market.name);
 
     const handle_share = async () => {
         const url = `${window.location.origin}/event/${market.id}`;
@@ -117,7 +119,7 @@ export default function EventTitleBlock({ market, is_stuck }: Props): JSX.Elemen
                         compact && 'lg:text-lg',
                     )}
                 >
-                    {market.name}
+                    {display_name}
                 </h1>
                 {(market.description || market.tags.length > 0) && (
                     <div

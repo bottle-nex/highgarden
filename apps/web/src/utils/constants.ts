@@ -30,6 +30,13 @@ export interface Market {
     volume: string;
     change24h: number;
     endsIn: string;
+    /** Present when the card represents a rolling FAST_MOVING series
+     *  rather than a single market. The card shows the next-resolving
+     *  slot as its representative and surfaces "N upcoming" so users
+     *  know more slots roll in behind it. */
+    series?: {
+        upcomingCount: number;
+    };
 }
 
 export interface BreakingNewsItem {

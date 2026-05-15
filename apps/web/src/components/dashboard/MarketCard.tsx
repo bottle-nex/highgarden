@@ -30,17 +30,44 @@ export default function MarketCard({
                 </div>
             )}
             <div className="flex items-center justify-between text-[11px] tracking-[0.22em] uppercase">
-                <span className="text-white/55">{market.category}</span>
-                <span className="text-white/45">ENDS IN {market.endsIn}</span>
+                {market.series ? (
+                    <span className="inline-flex items-center gap-1.5 text-rose-300/85">
+                        <span className="relative flex size-1.5">
+                            <span className="absolute inset-0 size-1.5 rounded-full bg-rose-400/70 animate-ping" />
+                            <span className="relative size-1.5 rounded-full bg-rose-400" />
+                        </span>
+                        LIVE
+                    </span>
+                ) : (
+                    <span className="text-white/55">{market.category}</span>
+                )}
+                <span className="text-white/45">
+                    {market.series ? 'NEXT IN' : 'ENDS IN'} {market.endsIn}
+                </span>
             </div>
 
             <h3 className="mt-3 sm:mt-5 text-[13px] sm:text-[15px] text-white/75 font-medium leading-snug min-h-10 sm:min-h-12 line-clamp-2 hover:underline">
                 {market.title}
             </h3>
 
+            {market.series && market.series.upcomingCount > 0 && (
+                <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] tracking-[0.2em] uppercase text-amber-300/80">
+                    <span className="size-1.5 rounded-full bg-amber-300/70" />
+                    +{market.series.upcomingCount} upcoming slots
+                </div>
+            )}
+
             <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-2.5">
-                <ProbBar label="YES" value={market.yesPrice} color="bg-green-500/90" />
-                <ProbBar label="NO" value={market.noPrice} color="bg-red-500/90" />
+                <ProbBar
+                    label={market.series ? 'UP' : 'YES'}
+                    value={market.yesPrice}
+                    color="bg-green-500/90"
+                />
+                <ProbBar
+                    label={market.series ? 'DOWN' : 'NO'}
+                    value={market.noPrice}
+                    color="bg-red-500/90"
+                />
             </div>
 
             <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-white/10 flex items-center justify-between gap-2 sm:gap-4 text-[11px] tracking-[0.18em] uppercase flex-wrap">

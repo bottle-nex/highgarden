@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import trading_api, { TradingError } from '@/lib/api/trading';
 import { usePositionsStore } from '@/store/portfolio/usePositionsStore';
 import Image from 'next/image';
+import { localize_market_title } from '@/utils/localize-et';
 
 const FALLBACK_IMAGE = '/images/icons/btc.webp';
 
@@ -79,7 +80,7 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
                 </MarketIcon>
                 <div className="min-w-0">
                     <p className="text-sm text-white/95 truncate font-medium">
-                        {position.marketName}
+                        {localize_market_title(position.marketName)}
                     </p>
                     <div className="flex items-center gap-x-2 mt-1.5">
                         <span

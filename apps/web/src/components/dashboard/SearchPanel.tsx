@@ -12,6 +12,7 @@ import UtilityCard from '@/components/ui/utility-card';
 import { fetchPublicMarkets } from '@/lib/api/markets';
 import { getMarketById } from '@/utils/constants';
 import { cn } from '@/lib/utils';
+import { localize_market_title } from '@/utils/localize-et';
 import { useSearchPanelStore } from '@/store/ui/useSearchPanelStore';
 import { useBookmarksStore } from '@/store/bookmarks/useBookmarksStore';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
@@ -296,7 +297,7 @@ function ResultRow({
         >
             <MarketLogo src={market.imageUrl} alt={market.name} />
             <span className="flex-1 min-w-0 text-[13px] text-white/85 line-clamp-1">
-                {market.name}
+                {localize_market_title(market.name)}
             </span>
             <span className="shrink-0 text-[12px] tabular-nums text-white/70">
                 {formatVolume(market.volume24hUsd)}

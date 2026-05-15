@@ -6,6 +6,7 @@ import type { MarketDTO, PriceHistoryPoint } from '@solmarket/types';
 import FeaturedMarketCard from './FeaturedMarketCard';
 import { fetchPublicMarkets, fetch_market_price_history } from '@/lib/api/markets';
 import type { FeaturedMarket, ProbabilityPoint } from '@/utils/constants';
+import { localize_market_title } from '@/utils/localize-et';
 
 function format_usd(usd: number | null): string {
     if (usd === null) return '—';
@@ -54,7 +55,7 @@ function dto_to_featured(m: MarketDTO, history: PriceHistoryPoint[]): FeaturedMa
 
     return {
         id: m.id,
-        title: m.name,
+        title: localize_market_title(m.name),
         category: 'MARKET',
         description: m.description,
         imageUrl: m.imageUrl,
@@ -82,7 +83,13 @@ export default function LiveFeaturedMarket() {
         fetchPublicMarkets()
             .then(async (markets) => {
                 if (cancelled) return;
-                const sorted = [...markets].sort(
+                // The featured card is a long-form hero slot — a single 5-min
+                // FAST_MOVING slot doesn't make sense there even if it wins
+                // on volume. Prefer STANDARD; fall back to any market only
+                // when nothing standard exists yet.
+                const standard = markets.filter((m) => m.kind === 'STANDARD');
+                const pool = standard.length > 0 ? standard : markets;
+                const sorted = [...pool].sort(
                     (a, b) => (b.volume24hUsd ?? 0) - (a.volume24hUsd ?? 0),
                 );
                 const market = sorted[0] ?? null;

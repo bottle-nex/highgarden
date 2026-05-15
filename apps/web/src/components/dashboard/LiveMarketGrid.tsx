@@ -9,6 +9,8 @@ import { fetchPublicMarkets } from '@/lib/api/markets';
 import type { Market as CardMarket } from '@/utils/constants';
 import type { Category } from '@/store/ui/useCategoryStore';
 import { category_to_tags } from '@/utils/category-tags';
+import { localize_market_title } from '@/utils/localize-et';
+import { cadence_ms_for_series } from '@/utils/fast-series';
 
 function format_volume(usd: number | null): string {
     if (usd === null) return '—';
@@ -23,13 +25,15 @@ function format_ends_in(iso: string): string {
     const days = Math.floor(ms / (1000 * 60 * 60 * 24));
     if (days >= 1) return `${days}D`;
     const hours = Math.floor(ms / (1000 * 60 * 60));
-    return `${hours}H`;
+    if (hours >= 1) return `${hours}H`;
+    const mins = Math.max(1, Math.floor(ms / (1000 * 60)));
+    return `${mins}M`;
 }
 
 function dto_to_card(m: MarketDTO): CardMarket {
     return {
         id: m.id,
-        title: m.name,
+        title: localize_market_title(m.name),
         // Use the first Polymarket tag as the chip label (uppercased to match
         // the rest of the card's typography). Falls back to "MARKET" so the
         // card never renders an empty pill.
@@ -41,6 +45,77 @@ function dto_to_card(m: MarketDTO): CardMarket {
         change24h: 0,
         endsIn: format_ends_in(m.endAt),
     };
+}
+
+/** Title shown on the collapsed series card — e.g. "Bitcoin Up or Down · 5m".
+ *  Falls back to the representative market's name when the series key can't
+ *  be parsed (defensive — derive_fast_series_key on the server already
+ *  guards the slug shape). */
+function series_title(series_key: string, fallback: string): string {
+    const m = series_key.match(/^([a-z0-9]+)-updown-([0-9]+[a-z])$/i);
+    if (!m) return fallback;
+    const asset = m[1]!;
+    const cadence = m[2]!;
+    const display_asset = asset.charAt(0).toUpperCase() + asset.slice(1);
+    return `${display_asset} Up or Down · ${cadence}`;
+}
+
+
+/** Collapses every FAST_MOVING market sharing a `fastSeriesKey` into a
+ *  single representative card. The representative is the next-to-resolve
+ *  slot, so clicking the card lands you on a market you can still trade.
+ *  Standard markets and any fast-moving ones with a null series key pass
+ *  through untouched. */
+function collapse_fast_series(
+    markets: MarketDTO[],
+): Array<{ dto: MarketDTO; series?: { upcomingCount: number; title: string } }> {
+    const now = Date.now();
+    const buckets = new Map<string, MarketDTO[]>();
+    const passthrough: MarketDTO[] = [];
+
+    for (const m of markets) {
+        if (m.kind === 'FAST_MOVING' && m.fastSeriesKey) {
+            const list = buckets.get(m.fastSeriesKey) ?? [];
+            list.push(m);
+            buckets.set(m.fastSeriesKey, list);
+        } else {
+            passthrough.push(m);
+        }
+    }
+
+    const out: Array<{ dto: MarketDTO; series?: { upcomingCount: number; title: string } }> = [];
+    for (const m of passthrough) out.push({ dto: m });
+
+    for (const [series_key, bucket] of buckets) {
+        const upcoming = bucket
+            .filter((m) => new Date(m.endAt).getTime() > now)
+            .sort((a, b) => new Date(a.endAt).getTime() - new Date(b.endAt).getTime());
+        // Prefer the slot that's CURRENTLY being traded — Polymarket
+        // discovers slots in batches so the "earliest future endAt" can
+        // be hours ahead even when a slot is live right now. We use the
+        // series cadence (5m / 15m / 1h, parsed from the key) to compute
+        // each slot's start and pick the one where start ≤ now < end.
+        // If none qualifies (no live slot — e.g. between batches) we
+        // fall back to the soonest future slot.
+        const cadence_ms = cadence_ms_for_series(series_key);
+        const live = cadence_ms > 0
+            ? upcoming.find((m) => {
+                  const end = new Date(m.endAt).getTime();
+                  const start = end - cadence_ms;
+                  return start <= now && now < end;
+              })
+            : undefined;
+        const representative = live ?? upcoming[0] ?? bucket[0]!;
+        out.push({
+            dto: representative,
+            series: {
+                upcomingCount: Math.max(0, upcoming.length - 1),
+                title: series_title(series_key, representative.name),
+            },
+        });
+    }
+
+    return out;
 }
 
 type State =
@@ -67,20 +142,37 @@ export default function LiveMarketGrid({ category, excludeFeatured = false }: Pr
 
     useEffect(() => {
         let cancelled = false;
-        fetchPublicMarkets(tag_filter ?? undefined)
-            .then((markets) => {
-                if (!cancelled) set_state({ status: 'ready', markets });
-            })
-            .catch((err) => {
-                if (!cancelled) {
-                    set_state({
-                        status: 'error',
-                        message: err instanceof Error ? err.message : 'failed to load markets',
-                    });
-                }
-            });
+        const load = (initial: boolean) => {
+            fetchPublicMarkets(tag_filter ?? undefined)
+                .then((markets) => {
+                    if (cancelled) return;
+                    set_state({ status: 'ready', markets });
+                })
+                .catch((err) => {
+                    if (cancelled) return;
+                    // Background refresh failures are silent — the user
+                    // still has the last successful snapshot. Only the
+                    // initial fetch surfaces an error state.
+                    if (initial) {
+                        set_state({
+                            status: 'error',
+                            message: err instanceof Error ? err.message : 'failed to load markets',
+                        });
+                    }
+                });
+        };
+        load(true);
+        // The auto-lister mints new fast-moving slots every minute and
+        // old ones resolve every 5. We want the series card to point at
+        // the LIVE slot within a few seconds of one resolving — 20s was
+        // wide enough that "go back, click card again" could still land
+        // on the slot that just ended. 8s keeps the dashboard close to
+        // real-time without flooding the public-list endpoint (one call
+        // every 8 seconds per open tab is cheap).
+        const handle = setInterval(() => load(false), 8_000);
         return () => {
             cancelled = true;
+            clearInterval(handle);
         };
     }, [tag_key]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -103,10 +195,18 @@ export default function LiveMarketGrid({ category, excludeFeatured = false }: Pr
         );
     }
 
+    // Collapse FAST_MOVING ladders into one card per series BEFORE sorting,
+    // so a series with 30 noisy 5-min slots doesn't dominate the grid by
+    // sheer count and so the volume sort sees the representative slot's
+    // numbers rather than 30 separate rows.
+    const collapsed = collapse_fast_series(state.markets);
+
     // Sort by 24h volume desc. On the trending dashboard the highest-volume
     // market is shown separately as the featured card — drop it from the grid
     // there. Other category views render the full list.
-    const sorted = [...state.markets].sort((a, b) => (b.volume24hUsd ?? 0) - (a.volume24hUsd ?? 0));
+    const sorted = [...collapsed].sort(
+        (a, b) => (b.dto.volume24hUsd ?? 0) - (a.dto.volume24hUsd ?? 0),
+    );
     const grid_markets = excludeFeatured ? sorted.slice(1, 10) : sorted.slice(0, 12);
 
     if (grid_markets.length === 0) {
@@ -136,9 +236,20 @@ export default function LiveMarketGrid({ category, excludeFeatured = false }: Pr
         );
     }
 
-    return (
-        <MarketGrid markets={grid_markets.map(dto_to_card)} get_href={(m) => `/event/${m.id}`} />
-    );
+    // Series entries override the card title with the series label (e.g.
+    // "Bitcoin Up or Down · 5m") and attach a small upcoming-count badge so
+    // the user knows more slots roll in behind the currently-tradable one.
+    const cards: CardMarket[] = grid_markets.map(({ dto, series }) => {
+        const base = dto_to_card(dto);
+        if (!series) return base;
+        return {
+            ...base,
+            title: series.title,
+            series: { upcomingCount: series.upcomingCount },
+        };
+    });
+
+    return <MarketGrid markets={cards} get_href={(m) => `/event/${m.id}`} />;
 }
 
 function Section({
