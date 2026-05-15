@@ -32,15 +32,20 @@ export interface GammaMarket {
 export interface FetchMarketsParams {
     limit?: number;
     offset?: number;
-    order?: "volume_24hr" | "liquidity" | "start_date";
+    order?: "volume_24hr" | "liquidity" | "start_date" | "end_date";
     ascending?: boolean;
+    /** ISO-8601 lower bound on `endDate`. Use this to filter out zombie
+     *  markets that are flagged active but already past their end —
+     *  Polymarket leaves them in that state pending operator close. */
+    end_date_min?: string;
 }
 
 export interface FetchEventsParams {
     limit?: number;
     offset?: number;
-    order?: "volume_24hr" | "liquidity" | "start_date";
+    order?: "volume_24hr" | "liquidity" | "start_date" | "end_date";
     ascending?: boolean;
+    end_date_min?: string;
 }
 
 export type CommentParentEntityType = "Event" | "Series";
@@ -157,9 +162,35 @@ const ORDER_FIELD_MAP: Record<NonNullable<FetchMarketsParams["order"]>, string> 
     volume_24hr: "volume24hr",
     liquidity: "liquidityNum",
     start_date: "startDate",
+    /** Ascending by `endDate` surfaces the soonest-to-resolve markets first
+     *  — exactly the 5-min ladders the standard volume-ordered discovery
+     *  misses. */
+    end_date: "endDate",
 };
 
 const DEFAULT_GAMMA_URL = "https://gamma-api.polymarket.com";
+
+/**
+ * Polymarket flags some binary markets with non-Yes/No outcome labels.
+ * The most common are the crypto Up-or-Down ladders ("Up"/"Down") that
+ * we want to surface as fast-moving markets. We map them onto our
+ * canonical Yes/No so the rest of the stack — orchestrator, on-chain
+ * `place_order`, portfolio aggregation — doesn't need to learn new
+ * outcome strings.
+ *
+ *   "Up"     → Yes (price went up, payout on the bullish side)
+ *   "Down"   → No  (price went down)
+ *   "Higher" → Yes
+ *   "Lower"  → No
+ */
+const BINARY_OUTCOME_ALIASES: Record<string, "Yes" | "No"> = {
+    Yes: "Yes",
+    No: "No",
+    Up: "Yes",
+    Down: "No",
+    Higher: "Yes",
+    Lower: "No",
+};
 
 export class GammaClient {
     private readonly base_url: string;
@@ -182,6 +213,9 @@ export class GammaClient {
         url.searchParams.set("active", "true");
         url.searchParams.set("closed", "false");
         url.searchParams.set("archived", "false");
+        if (params.end_date_min) {
+            url.searchParams.set("end_date_min", params.end_date_min);
+        }
 
         const res = await fetch(url);
         if (!res.ok) {
@@ -391,8 +425,13 @@ function normalise(
 
     const tokens: GammaToken[] = [];
     for (let i = 0; i < token_ids.length; i++) {
-        const outcome = outcomes[i];
-        if (outcome !== "Yes" && outcome !== "No") return null;
+        const raw_outcome = outcomes[i];
+        const outcome = raw_outcome ? BINARY_OUTCOME_ALIASES[raw_outcome] : undefined;
+        // Drop markets with non-binary outcome labels (multi-outcome
+        // composites, exotic naming). The alias table keeps the canonical
+        // Yes/No plus the Up/Down + Higher/Lower mappings used by
+        // Polymarket's crypto fast-moving ladders.
+        if (!outcome) return null;
         tokens.push({ token_id: token_ids[i]!, outcome });
     }
     if (!tokens.some((t) => t.outcome === "Yes") || !tokens.some((t) => t.outcome === "No")) {
