@@ -13,8 +13,13 @@ import {
 } from 'recharts';
 import { Outcome, type PriceHistoryPoint, type PriceHistoryRange } from '@solmarket/types';
 import { fetch_market_price_history } from '@/lib/api/markets';
-import { TbSettings } from 'react-icons/tb';
+import { TbSettings, TbChartLine, TbChartCandle } from 'react-icons/tb';
+import { FaBitcoin } from 'react-icons/fa6';
+import { cn } from '@/lib/utils';
 import ProbabilityHeadline from './ProbabilityHeadline';
+import EventBtcPriceChart from './EventBtcPriceChart';
+import { binance_symbol_for_series } from '@/lib/binance-price';
+import { selectLastTrade, useLastTradeStore } from '@/store/book/useLastTradeStore';
 
 const RANGES: ReadonlyArray<{ key: PriceHistoryRange; label: string }> = [
     { key: '1h', label: '1H' },
@@ -37,7 +42,13 @@ interface Props {
     closeLabel: string;
     delta24hPct: number | null;
     onLoaded?: (latestPct: number, delta24hPct: number | null) => void;
+    /** When set, the chart exposes a mode selector with the underlying-
+     *  asset price line and OHLC candlestick views. Hidden for STANDARD
+     *  markets (no underlying spot asset). */
+    fastSeriesKey?: string | null;
 }
+
+type ChartMode = 'probability' | 'price' | 'candles';
 
 function format_x_label(t: number, range: PriceHistoryRange): string {
     const d = new Date(t * 1000);
@@ -95,8 +106,36 @@ export default function EventPriceChart({
     closeLabel,
     delta24hPct,
     onLoaded,
+    fastSeriesKey,
 }: Props): JSX.Element {
-    const [range, set_range] = useState<PriceHistoryRange>('1m');
+    // Fast-moving markets (BTC / ETH / SOL Up-or-Down 5-min etc.) only
+    // live for a few minutes, so a 1-month or 1-week range view is
+    // meaningless — pin them to "1h" so the chart shows the most recent
+    // hour of candles, matching Polymarket's slot view. The range
+    // selector is hidden entirely for these (see render below).
+    const is_fast = !!fastSeriesKey;
+    const [range, set_range] = useState<PriceHistoryRange>(is_fast ? '1h' : '1m');
+    // Chart-source toggle. Only "probability" is available for STANDARD
+    // markets — the asset-price modes need a Binance spot symbol mapped
+    // from the series key (see binance_symbol_for_series).
+    const has_underlying =
+        !!fastSeriesKey && !!binance_symbol_for_series(fastSeriesKey);
+    const [chart_mode, set_chart_mode] = useState<ChartMode>(
+        // Fast-moving rounds are about the underlying asset price, not
+        // the implied probability — show the candle view by default so
+        // the user sees what actually determines the resolution.
+        is_fast ? 'candles' : 'probability',
+    );
+
+    // If the user navigates between markets of different kinds while the
+    // component is mounted (rare, but possible), make sure range and
+    // chart_mode are reset to sane defaults for the new market's kind
+    // instead of carrying stale settings over.
+    useEffect(() => {
+        if (is_fast) {
+            set_range('1h');
+        }
+    }, [is_fast]);
     const [activeCoord, set_active_coord] = useState<{ x: number; y: number } | null>(null);
     const [exit_opacity, set_exit_opacity] = useState(1);
     const exit_raf_ref = useRef<number | null>(null);
@@ -237,14 +276,65 @@ export default function EventPriceChart({
         };
     }, [marketId, range]);
 
+    // Live YES probability from the CLOB WSS — every `book` /
+    // `price_change` event Polymarket pushes lands in this store as
+    // (bestBid + bestAsk) / 2. We append it to the chart so the line
+    // ticks in real-time instead of sitting on the last REST snapshot.
+    const live_yes = useLastTradeStore(selectLastTrade(marketId, Outcome.YES));
+    const [live_ticks, set_live_ticks] = useState<{ t: number; p: number }[]>([]);
+
+    // Reset the live trail whenever marketId or range changes — the
+    // static REST history starts a new bucket and the old live ticks
+    // wouldn't fit the new x-axis anyway.
+    useEffect(() => {
+        set_live_ticks([]);
+    }, [marketId, range]);
+
+    useEffect(() => {
+        if (!live_yes) return;
+        const t_sec = Math.floor(live_yes.updatedAt / 1000);
+        const p = live_yes.price;
+        if (!Number.isFinite(p) || p < 0 || p > 1) return;
+        set_live_ticks((prev) => {
+            // Dedupe by second to keep the trail compact even when
+            // multiple book frames arrive within the same wall-clock
+            // second; replace the last point in that case so we always
+            // show the latest probability.
+            if (prev.length > 0 && prev[prev.length - 1]!.t === t_sec) {
+                const next = prev.slice(0, -1);
+                next.push({ t: t_sec, p });
+                return next;
+            }
+            // Cap the live trail so a long session doesn't grow it
+            // unbounded — older ticks past the cap roll off the head.
+            const next = prev.length >= 1000 ? prev.slice(prev.length - 999) : prev.slice();
+            next.push({ t: t_sec, p });
+            return next;
+        });
+    }, [live_yes]);
+
     const points = useMemo<ChartPoint[]>(() => {
         if (!is_current || !snapshot) return [];
-        return snapshot.history.map((p) => ({
+        const base: ChartPoint[] = snapshot.history.map((p) => ({
             t: p.t,
             pct: selectedOutcome === Outcome.NO ? 100 - p.p * 100 : p.p * 100,
             label: format_x_label(p.t, range),
         }));
-    }, [is_current, snapshot, range, selectedOutcome]);
+        // Append live ticks that occurred after the tail of the static
+        // history. Polymarket's price_history endpoint returns
+        // bucketed points, so the most recent bucket may already
+        // exceed the first live tick — guard against duplicates.
+        const last_static_t = base.length > 0 ? base[base.length - 1]!.t : 0;
+        for (const tick of live_ticks) {
+            if (tick.t <= last_static_t) continue;
+            base.push({
+                t: tick.t,
+                pct: selectedOutcome === Outcome.NO ? 100 - tick.p * 100 : tick.p * 100,
+                label: format_x_label(tick.t, range),
+            });
+        }
+        return base;
+    }, [is_current, snapshot, range, selectedOutcome, live_ticks]);
 
     const xTicks = useMemo(() => {
         if (points.length === 0) return [];
@@ -327,22 +417,33 @@ export default function EventPriceChart({
                     else set_active_coord(null);
                 }}
             >
-                {status === 'loading' && points.length === 0 && (
+                {chart_mode !== 'probability' && fastSeriesKey && (
+                    <EventBtcPriceChart
+                        seriesKey={fastSeriesKey}
+                        range={range}
+                        mode={chart_mode === 'candles' ? 'candles' : 'price'}
+                        showXAxis={showXAxis}
+                        showYAxis={showYAxis}
+                        showHorizontalGrid={showHorizontalGrid}
+                        showVerticalGrid={showVerticalGrid}
+                    />
+                )}
+                {chart_mode === 'probability' && status === 'loading' && points.length === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.25em] uppercase text-white/30">
                         Loading…
                     </div>
                 )}
-                {status === 'error' && (
+                {chart_mode === 'probability' && status === 'error' && (
                     <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.25em] uppercase text-rose-300/60">
                         Couldn&apos;t load price history
                     </div>
                 )}
-                {status === 'ready' && points.length === 0 && (
+                {chart_mode === 'probability' && status === 'ready' && points.length === 0 && (
                     <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.25em] uppercase text-white/30">
                         No price data for this range
                     </div>
                 )}
-                {points.length > 0 && (
+                {chart_mode === 'probability' && points.length > 0 && (
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart
                             data={points}
@@ -518,7 +619,7 @@ export default function EventPriceChart({
                         </AreaChart>
                     </ResponsiveContainer>
                 )}
-                {activeCoord && chart_svg_width > 0 && (
+                {chart_mode === 'probability' && activeCoord && chart_svg_width > 0 && (
                     <div
                         className="absolute inset-y-0 pointer-events-none"
                         style={{ left: 8, right: 8, opacity: exit_opacity }}
@@ -581,34 +682,98 @@ export default function EventPriceChart({
                         );
                     })}
                 </div>
-                <div className="flex items-center gap-1">
-                    <div className="flex gap-1 overflow-x-auto custom-scrollbar max-w-full">
-                        {RANGES.map((r) => (
-                            <button
-                                key={r.key}
-                                type="button"
-                                onClick={() => set_range(r.key)}
-                                className={`relative px-2 py-1 rounded text-[9px] tracking-[0.2em] uppercase transition-colors cursor-pointer whitespace-nowrap ${
-                                    range === r.key
-                                        ? 'text-white'
-                                        : 'text-white/45 hover:text-white/75'
-                                }`}
-                            >
-                                {range === r.key && (
-                                    <motion.span
-                                        layoutId="chart-range-pill"
-                                        className="absolute inset-0 rounded bg-white/[0.07]"
-                                        transition={{
-                                            type: 'spring',
-                                            stiffness: 400,
-                                            damping: 32,
-                                        }}
+                {has_underlying && (
+                    <div className="relative flex gap-0.5 bg-white/2.5 border border-white/8 rounded-md p-0.75">
+                        {(
+                            [
+                                {
+                                    key: 'probability' as const,
+                                    Icon: TbChartLine,
+                                    label: 'Probability',
+                                },
+                                {
+                                    key: 'price' as const,
+                                    Icon: FaBitcoin,
+                                    label: 'Underlying price',
+                                },
+                                {
+                                    key: 'candles' as const,
+                                    Icon: TbChartCandle,
+                                    label: 'Candlesticks',
+                                },
+                            ]
+                        ).map(({ key, Icon, label }) => {
+                            const is_selected = chart_mode === key;
+                            return (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    title={label}
+                                    aria-label={label}
+                                    onClick={() => set_chart_mode(key)}
+                                    className={cn(
+                                        'relative px-2 py-1 rounded transition-colors cursor-pointer flex items-center',
+                                        is_selected
+                                            ? 'text-white'
+                                            : 'text-white/45 hover:text-white/75',
+                                    )}
+                                >
+                                    {is_selected && (
+                                        <motion.span
+                                            layoutId="chart-mode-pill"
+                                            className="absolute inset-0 rounded bg-amber-500/25"
+                                            transition={{
+                                                type: 'spring',
+                                                stiffness: 400,
+                                                damping: 32,
+                                            }}
+                                        />
+                                    )}
+                                    <Icon
+                                        className={cn(
+                                            'relative z-10 w-3.5 h-3.5',
+                                            key === 'price' && is_selected && 'text-amber-300',
+                                        )}
                                     />
-                                )}
-                                <span className="relative z-10">{r.label}</span>
-                            </button>
-                        ))}
+                                </button>
+                            );
+                        })}
                     </div>
+                )}
+                <div className="flex items-center gap-1">
+                    {/* Range selector hidden for fast-moving markets — a
+                        5-min crypto Up/Down slot doesn't have a meaningful
+                        1-week or 1-month view, and Polymarket's own UI
+                        pins these to the most recent hour of candles. */}
+                    {!is_fast && (
+                        <div className="flex gap-1 overflow-x-auto custom-scrollbar max-w-full">
+                            {RANGES.map((r) => (
+                                <button
+                                    key={r.key}
+                                    type="button"
+                                    onClick={() => set_range(r.key)}
+                                    className={`relative px-2 py-1 rounded text-[9px] tracking-[0.2em] uppercase transition-colors cursor-pointer whitespace-nowrap ${
+                                        range === r.key
+                                            ? 'text-white'
+                                            : 'text-white/45 hover:text-white/75'
+                                    }`}
+                                >
+                                    {range === r.key && (
+                                        <motion.span
+                                            layoutId="chart-range-pill"
+                                            className="absolute inset-0 rounded bg-white/[0.07]"
+                                            transition={{
+                                                type: 'spring',
+                                                stiffness: 400,
+                                                damping: 32,
+                                            }}
+                                        />
+                                    )}
+                                    <span className="relative z-10">{r.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
                     <div ref={settings_ref} className="relative ml-1">
                         <button
                             aria-label="settings"
