@@ -11,13 +11,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tool
 import { Input } from './input';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { useExternalWalletUsdc } from '@/hooks/useExternalWalletUsdc';
+import { useExternalWalletSol } from '@/hooks/useExternalWalletSol';
 import { useDepositFromWallet } from '@/hooks/useDepositFromWallet';
+import { useDepositSolFromWallet } from '@/hooks/useDepositSolFromWallet';
 import { useWallet } from '@solana/wallet-adapter-react';
 import ConnectWalletButton from '@/components/wallet/ConnectWalletButton';
 import { PiSignOut, PiWallet } from 'react-icons/pi';
 import { cn } from '@/lib/utils';
 
-type Mode = 'wallet' | 'address';
+type Mode = 'sol' | 'wallet' | 'address';
 
 interface DepositDialogProps {
     onClose: () => void;
@@ -80,7 +82,10 @@ function shorten_address(addr: string): string {
 }
 
 export default function DepositDialog({ onClose }: DepositDialogProps): JSX.Element {
-    const [mode, set_mode] = useState<Mode>('wallet');
+    // 'sol' is the default — that's the primary flow now (auto-converts to
+    // USDC via the server's SolDepositPoller). The legacy direct-USDC mode
+    // ('wallet') and QR-receive mode ('address') stay for power users.
+    const [mode, set_mode] = useState<Mode>('sol');
     const wallet = useWalletBalance({ enabled: true });
 
     const measure_ref = useRef<HTMLDivElement>(null);
@@ -131,7 +136,12 @@ export default function DepositDialog({ onClose }: DepositDialogProps): JSX.Elem
                                         ease: [0.25, 0.46, 0.45, 0.94],
                                     }}
                                 >
-                                    {mode === 'wallet' ? (
+                                    {mode === 'sol' ? (
+                                        <SendSolFromWalletPanel
+                                            recipient={address}
+                                            on_deposit_success={() => void wallet.refetch()}
+                                        />
+                                    ) : mode === 'wallet' ? (
                                         <SendFromWalletPanel
                                             recipient={address}
                                             on_deposit_success={() => void wallet.refetch()}
@@ -206,8 +216,9 @@ function DialogHeader({ balance_text, onClose }: DialogHeaderProps) {
 
 function ModeToggle({ mode, on_change }: ModeToggleProps) {
     const options: Array<{ value: Mode; label: string }> = [
-        { value: 'wallet', label: 'Send from wallet' },
-        { value: 'address', label: 'Receive to address' },
+        { value: 'sol', label: 'Deposit SOL' },
+        { value: 'wallet', label: 'Send USDC' },
+        { value: 'address', label: 'Receive' },
     ];
     return (
         <div className="flex p-1 rounded-full bg-dark-base/60 border border-dark-faded/30 mb-4 shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]">
@@ -485,6 +496,235 @@ function parse_amount(raw: string): number | null {
     const n = Number(trimmed);
     if (!Number.isFinite(n) || n <= 0) return null;
     return n;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Send-SOL-from-wallet panel (auto-converts to USDC on the server)
+// ────────────────────────────────────────────────────────────────────────────
+
+interface SendSolFromWalletPanelProps {
+    recipient: string;
+    on_deposit_success: () => void;
+}
+
+function SendSolFromWalletPanel({ recipient, on_deposit_success }: SendSolFromWalletPanelProps) {
+    const { publicKey } = useWallet();
+    const {
+        ui_amount: wallet_balance,
+        loading: balance_loading,
+        refetch: refetch_balance,
+    } = useExternalWalletSol();
+    const { phase, error, last_signature, deposit, reset } = useDepositSolFromWallet();
+    const [amount_input, set_amount_input] = useState('');
+
+    const has_wallet = Boolean(publicKey);
+    const balance_known = wallet_balance !== null && !balance_loading;
+    const max = wallet_balance ?? 0;
+    const parsed = parse_amount(amount_input);
+    // Reserve a tiny buffer for the network fee (~0.000005 SOL); rejecting
+    // amounts that would leave the wallet unable to pay the fee avoids
+    // the "insufficient lamports" error after the user has already
+    // approved in their wallet.
+    const SOL_FEE_BUFFER = 0.0001;
+    const insufficient =
+        balance_known && parsed !== null && parsed + SOL_FEE_BUFFER > max;
+    const in_flight =
+        phase === 'awaiting-signature'
+        || phase === 'building'
+        || phase === 'simulating'
+        || phase === 'sending'
+        || phase === 'confirming'
+        || phase === 'notifying-server';
+    const can_submit = has_wallet && parsed !== null && parsed > 0 && !insufficient && !in_flight;
+
+    useEffect(() => {
+        if (phase === 'success') {
+            toast.success('SOL deposited — converting to USDC');
+            void refetch_balance();
+            on_deposit_success();
+        }
+    }, [phase, refetch_balance, on_deposit_success]);
+
+    if (!has_wallet) {
+        return (
+            <div className="rounded-lg border border-dark-faded/60 bg-dark-base/40 px-5 py-6 flex flex-col items-center gap-4">
+                <div className="size-11 rounded-full bg-dark-faded flex items-center justify-center">
+                    <PiWallet className="size-5 text-light-alpha/70" />
+                </div>
+                <div className="text-center space-y-1">
+                    <p className="text-sm font-medium text-light-alpha/90">
+                        Connect your Solana wallet
+                    </p>
+                    <p className="text-xs text-light-alpha/55">
+                        Send SOL — we&apos;ll auto-convert it to USDC at the current rate
+                    </p>
+                </div>
+                <ConnectWalletButton className="w-full text-sm font-[550] tracking-wide h-11 rounded-full bg-[#0394fc] text-white border border-white/6 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.05)]" />
+            </div>
+        );
+    }
+
+    const submit_label = (() => {
+        switch (phase) {
+            case 'building':
+                return 'Preparing…';
+            case 'simulating':
+                return 'Simulating…';
+            case 'awaiting-signature':
+                return 'Confirm in wallet…';
+            case 'sending':
+                return 'Submitting…';
+            case 'confirming':
+                return 'Confirming on-chain…';
+            case 'notifying-server':
+                return 'Converting to USDC…';
+            case 'success':
+                return 'Deposit again';
+            default:
+                return parsed && !insufficient ? `Deposit ${parsed} SOL` : 'Deposit SOL';
+        }
+    })();
+
+    return (
+        <div className="space-y-3">
+            <SolConnectedWalletRow
+                wallet_balance={wallet_balance}
+                balance_loading={balance_loading}
+            />
+
+            <AmountInput
+                value={amount_input}
+                on_change={(v) => {
+                    if (phase === 'success' || phase === 'error') reset();
+                    set_amount_input(v);
+                }}
+                on_max={() =>
+                    set_amount_input(max > SOL_FEE_BUFFER ? String(max - SOL_FEE_BUFFER) : '')
+                }
+                max_disabled={max <= SOL_FEE_BUFFER}
+            />
+
+            <SolPresetChips
+                disabled={max <= SOL_FEE_BUFFER}
+                on_pick={(amt) => {
+                    if (phase === 'success' || phase === 'error') reset();
+                    set_amount_input(String(amt));
+                }}
+            />
+
+            <StatusLine
+                insufficient={insufficient}
+                error={error}
+                success_signature={phase === 'success' ? last_signature : null}
+            />
+
+            <Button
+                type="button"
+                disabled={!can_submit}
+                onClick={() => {
+                    if (phase === 'success') {
+                        reset();
+                        set_amount_input('');
+                        return;
+                    }
+                    if (parsed !== null) void deposit({ recipient, sol_amount: parsed });
+                }}
+                className="w-full h-12 rounded-full text-[15px] font-semibold tracking-wide text-white hover:text-white border border-white/6 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.05)] disabled:cursor-not-allowed transition-all duration-200 bg-[#0394fc] hover:bg-[#21a3ff]"
+            >
+                {submit_label}
+            </Button>
+        </div>
+    );
+}
+
+interface SolConnectedWalletRowProps {
+    wallet_balance: number | null;
+    balance_loading: boolean;
+}
+
+function SolConnectedWalletRow({ wallet_balance, balance_loading }: SolConnectedWalletRowProps) {
+    const { wallet, publicKey, disconnect } = useWallet();
+    const wallet_name = wallet?.adapter.name ?? 'Wallet';
+    const wallet_icon = wallet?.adapter.icon;
+    const address = publicKey?.toBase58() ?? '';
+
+    return (
+        <div className="flex items-center justify-between rounded-xl border border-dark-faded/60 bg-dark-base px-3 py-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
+                <div className="size-8 rounded-full bg-dark-faded flex items-center justify-center shrink-0 overflow-hidden">
+                    {wallet_icon ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={wallet_icon} alt={wallet_name} className="size-5" />
+                    ) : (
+                        <PiWallet className="size-4 text-light-alpha/70" />
+                    )}
+                </div>
+                <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wider text-light-alpha/40 leading-tight">
+                        {wallet_name}
+                    </div>
+                    <div className="text-sm font-mono text-light-alpha/90 leading-tight truncate">
+                        {shorten_address(address)}
+                    </div>
+                </div>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+                <div className="text-right">
+                    <div className="text-[10px] uppercase tracking-wider text-light-alpha/40 leading-tight">
+                        Balance
+                    </div>
+                    <div className="text-sm font-medium tabular-nums text-light-alpha/90 leading-tight">
+                        {balance_loading ? '…' : `${(wallet_balance ?? 0).toFixed(4)} SOL`}
+                    </div>
+                </div>
+                <Tooltip>
+                    <TooltipTrigger
+                        render={(props) => (
+                            <Button
+                                {...props}
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label="Disconnect wallet"
+                                onClick={() => void disconnect()}
+                                className="text-light-alpha/40 hover:text-light-alpha/80"
+                            >
+                                <PiSignOut />
+                            </Button>
+                        )}
+                    />
+                    <TooltipContent>Disconnect</TooltipContent>
+                </Tooltip>
+            </div>
+        </div>
+    );
+}
+
+const SOL_PRESETS = [0.1, 0.5, 1] as const;
+
+function SolPresetChips({
+    disabled,
+    on_pick,
+}: {
+    disabled: boolean;
+    on_pick: (amount: number) => void;
+}) {
+    return (
+        <div className="grid grid-cols-3 gap-2">
+            {SOL_PRESETS.map((amt) => (
+                <Button
+                    key={amt}
+                    type="button"
+                    variant="outline"
+                    disabled={disabled}
+                    onClick={() => on_pick(amt)}
+                    className="h-9 rounded-full text-xs font-medium border-dark-faded/80 text-light-alpha/70 hover:text-light-alpha hover:bg-dark-base bg-dark-base/20"
+                >
+                    {amt} SOL
+                </Button>
+            ))}
+        </div>
+    );
 }
 
 // ────────────────────────────────────────────────────────────────────────────

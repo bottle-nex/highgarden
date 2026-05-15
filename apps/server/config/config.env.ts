@@ -17,7 +17,7 @@ const env_schema = z.object({
             (s) => Buffer.from(s, "base64").length === 32,
             "SERVER_KEY_ENCRYPTION_KEY must be 32 bytes when base64-decoded",
         ),
-    SERVER_SOLANA_RPC_URL: z.url().default("https://api.mainnet-beta.solana.com"),
+    SERVER_SOLANA_RPC_URL: z.url().default("https://api.devnet.solana.com"),
     SERVER_USDC_MINT: z.string().default("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
     SERVER_SOLANA_PROGRAM_ID: z.string().default("2LEm66V2Ys8JbVoQfYbZqCy6YGM1wuPUc843xRx76t3P"),
     SERVER_SOLANA_ADMIN_KEYPAIR: z.string().optional(),
@@ -59,6 +59,34 @@ const env_schema = z.object({
     SERVER_TRADE_ENDPOINT_ENABLED: z
         .enum(["true", "false"])
         .default("false")
+        .transform((s) => s === "true"),
+
+    // SOL → USDC deposit polling (see SolDepositPoller).
+    /**
+     * How often the poller scans every user's custodial wallet for new
+     * SOL deposits. 30s is a balance between UX latency and Helius rate
+     * limits; bump up if you have many users.
+     */
+    SERVER_DEPOSIT_POLL_INTERVAL_MS: z.coerce.number().default(30_000),
+    /**
+     * Lamports kept on the custodial wallet after a sweep — must cover at
+     * least one SystemProgram::transfer fee for safety. 10_000 = 2x the
+     * 5_000 lamport tx fee.
+     */
+    SERVER_DEPOSIT_SWEEP_RESERVE_LAMPORTS: z.coerce.number().default(10_000),
+    /**
+     * Minimum balance above the reserve that counts as a "deposit". Lower
+     * values surface dust deposits but waste tx fees on tiny amounts.
+     * 100_000 lamports (~0.0001 SOL) is roughly $0.014 at SOL = $140.
+     */
+    SERVER_DEPOSIT_MIN_LAMPORTS: z.coerce.number().default(100_000),
+    /**
+     * Feature flag. When false the poller never starts — useful if you
+     * want the rest of the server up without auto-converting deposits.
+     */
+    SERVER_DEPOSIT_POLLER_ENABLED: z
+        .enum(["true", "false"])
+        .default("true")
         .transform((s) => s === "true"),
 });
 export let ENV: z.infer<typeof env_schema>;

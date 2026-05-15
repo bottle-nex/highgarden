@@ -1,0 +1,37 @@
+/// One row per inbound SOL deposit detected on a user's custodial wallet.
+/// Written by SolDepositPoller as the deposit moves through DETECTED →
+/// SWEEPING → SWEPT → COMPLETED. The two tx signatures are recorded
+/// independently so a crash mid-flow is recoverable on next boot.
+model SolDeposit {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id])
+  /// Custodial pubkey on which the balance jump was observed. Stored
+  /// for indexing + ops triage even though it's derivable from userId.
+  custodialPubkey String
+
+  /// Raw lamports detected as new (above the configured reserve).
+  solLamports     BigInt
+  /// SOL/USD rate at swap time, in cents (e.g. 14000 = $140.00).
+  solUsdRateCents Int
+  /// USDC raw amount minted to the user's ATA (6-decimal micro-USDC).
+  usdcMintedRaw   BigInt
+
+  /// SystemProgram::transfer that moved SOL custodial → admin. Unique so
+  /// a retry can't double-account for the same on-chain tx.
+  sweepTxSig      String?          @unique
+  /// SPL Token mintTo that credited the user's USDC ATA. Unique for
+  /// the same idempotency reason.
+  mintTxSig       String?          @unique
+
+  status          SolDepositStatus @default(DETECTED)
+  /// Last error message when status == FAILED. Truncated to 500 chars.
+  error           String?
+
+  createdAt       DateTime         @default(now())
+  completedAt     DateTime?
+
+  @@index([userId, createdAt])
+  @@index([status])
+  @@index([custodialPubkey])
+}
