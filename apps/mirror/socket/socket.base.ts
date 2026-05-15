@@ -129,7 +129,7 @@ export abstract class SocketBase {
         } catch {
             return;
         }
-        console.log("parsed data is : ", parsed);
+        // console.log("parsed data is : ", parsed);
 
         let log_data_1;
         let log_data_2;

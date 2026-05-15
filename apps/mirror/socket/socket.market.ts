@@ -12,6 +12,10 @@ export default class MarketSocket extends SocketBase {
     // back) doesn't tear down and rebuild the Polymarket WSS for nothing.
     private idle_close_timer: ReturnType<typeof setTimeout> | null = null;
     private readonly idle_close_grace_ms = 3_000;
+    // Debounce timer for the "refresh subscriptions via reconnect" path —
+    // see `schedule_refresh_reconnect` for why this exists.
+    private refresh_timer: ReturnType<typeof setTimeout> | null = null;
+    private readonly refresh_debounce_ms = 250;
 
     constructor(publisher: PolymarketPublisher, token_index: TokenIndex) {
         super("market", publisher, token_index);
@@ -45,7 +49,18 @@ export default class MarketSocket extends SocketBase {
         // Polymarket drops idle sockets, so we only open the connection on the
         // first subscription. Later acquires ride on the existing socket.
         if (this.state === "open") {
-            this.send({ type: "MARKET", assets_ids: [token_id] });
+            // Polymarket's CLOB WSS treats the *initial* subscribe frame at
+            // connect time as authoritative — additional subscribe frames
+            // sent on the same connection are silently dropped for some
+            // markets, leaving the new token never streaming. Manually
+            // restarting the mirror is what fixes it, because the fresh
+            // connect emits get_subscribe_frame() with the full registry.
+            //
+            // So we replicate that: on every new token while open, schedule
+            // a reconnect to re-send the full registry. Debounced so a
+            // YES+NO pair on one market navigation collapses into a single
+            // round-trip instead of two.
+            this.schedule_refresh_reconnect();
         } else if (
             this.state === "idle" ||
             this.state === "closed" ||
@@ -64,6 +79,36 @@ export default class MarketSocket extends SocketBase {
                 `state=${this.state} registry=${this.registry.size()}`,
             );
         }
+    }
+
+    /**
+     * Cycle the Polymarket WSS connection so the full registry is re-sent
+     * as one subscribe frame on the next `on_open`. Debounced — back-to-
+     * back subscribes (typically yes + no tokens of the same market) get
+     * a single reconnect rather than two. Skip if a refresh is already
+     * scheduled or if the socket isn't currently open.
+     */
+    private schedule_refresh_reconnect(): void {
+        if (this.refresh_timer) return;
+        if (this.state !== "open") return;
+        this.refresh_timer = setTimeout(() => {
+            this.refresh_timer = null;
+            if (this.state !== "open") return;
+            console.log(
+                "[poly:market] cycling WSS to refresh subscriptions",
+                `registry=${this.registry.size()}`,
+            );
+            // Closing triggers `on_close` → `schedule_reconnect` → `connect`
+            // → `on_open` → subscribe frame with the full registry. The
+            // 1000 code is a clean closure so reconnect_delay resets to
+            // POLY_WS.reconnect_initial_ms (usually ~250ms), keeping the
+            // gap tight.
+            try {
+                this.ws?.close(1000, "refresh subscriptions");
+            } catch (err) {
+                console.warn("[poly:market] refresh close threw", err);
+            }
+        }, this.refresh_debounce_ms);
     }
 
     public unsubscribe(token_id: string): void {
