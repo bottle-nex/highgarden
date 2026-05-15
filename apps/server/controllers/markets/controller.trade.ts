@@ -46,10 +46,12 @@ export default class TradeController {
             return ResponseWriter.invalid_data(res, `Invalid trade payload: ${issue}`);
         }
 
-        // TEMP: contract smoke-test path. Bypasses Polymarket + idempotency
-        // cache so we exercise the on-chain place_order in isolation. Swap
-        // back to `run_with_idempotency` (kept below) when going live.
-        return TradeController.execute_trade_skip_polymarket(
+        // ACTIVE MODE: Solana-only execution with REAL Polymarket pricing.
+        // Trades execute on Solana but no Polymarket order is placed —
+        // platform takes 100% of user exposure. Production `run_with_idempotency`
+        // (kept below) is the path to switch to when re-enabling Polymarket
+        // hedging.
+        return TradeController.execute_trade_no_hedge(
             req.user.id,
             market_id,
             parsed.data,
@@ -58,24 +60,29 @@ export default class TradeController {
     }
 
     /**
-     * TEMP test path. Calls `TradeOrchestratorService.execute_solana_only`,
-     * which signs a quote at a fixed 50¢ test price and sends place_order
-     * on-chain — no Polymarket call, no idempotency cache, no Hedge row
-     * persisted. The Quote + Fill rows are written so the portfolio
-     * reflects the trade.
+     * Calls `TradeOrchestratorService.execute_no_hedge`, which reads the
+     * live Polymarket book for the price reference, applies the spread,
+     * signs the quote, and submits place_order on-chain. No Polymarket
+     * order is placed and no Hedge row is written. Quote + Fill + Claim
+     * are still persisted, so the portfolio + resolution + claim flow
+     * works end-to-end.
      *
-     * REMOVE: revert `process()` above to call `run_with_idempotency`
-     * instead, drop this method, and drop `execute_solana_only` on
-     * TradeOrchestratorService.
+     * Fails with `STALE_BOOK` 503 if the Polymarket book has no liquidity
+     * on the side we'd be referencing — never falls back to a hardcoded
+     * price.
+     *
+     * To re-enable Polymarket hedging:
+     *   1. Change the `process()` call above back to `run_with_idempotency`.
+     *   2. Delete this method (optional — it stays harmless if unused).
      */
-    private static async execute_trade_skip_polymarket(
+    private static async execute_trade_no_hedge(
         user_id: string,
         market_id: string,
         body: z.infer<typeof body_schema>,
         res: Response,
     ): Promise<void> {
         try {
-            const result = await TradeController.orchestrator.execute_solana_only({
+            const result = await TradeController.orchestrator.execute_no_hedge({
                 userId: user_id,
                 marketDbId: market_id,
                 side: body.side,
@@ -89,7 +96,7 @@ export default class TradeController {
                 res.status(err.status).json(TradeController.build_error_body(err));
                 return;
             }
-            console.error("[markets/trade:skip-polymarket]", err);
+            console.error("[markets/trade:no-hedge]", err);
             ResponseWriter.system_error(res);
         }
     }

@@ -53,6 +53,13 @@ export interface ValidateInput {
      * is not yet warmed — that fails closed.
      */
     polymarketNotionalUsd: number;
+    /**
+     * When "no-hedge" the trade settles only on Solana — no Polymarket
+     * order is placed — so we skip the Polymarket-specific gates
+     * (`BELOW_HEDGE_MIN_NOTIONAL`, `INSUFFICIENT_FUNDER_BALANCE`). Defaults
+     * to "hedge" for backward compatibility with the legacy quote flow.
+     */
+    mode?: "hedge" | "no-hedge";
 }
 
 export default class PreTradeValidator {
@@ -89,6 +96,11 @@ export default class PreTradeValidator {
         polymarketSide: Side;
         topAskCents: number | null;
         topBidCents: number | null;
+        /** Set to "no-hedge" when the orchestrator's `execute_no_hedge`
+         *  path is in use — skips Polymarket-only gates (min notional,
+         *  funder balance) that don't apply when we're not placing a
+         *  Polymarket order. Defaults to "hedge". */
+        mode?: "hedge" | "no-hedge";
     }): Promise<void> {
         const reference_cents = this.reference_price_cents(
             args.polymarketSide,
@@ -101,6 +113,7 @@ export default class PreTradeValidator {
             side: args.side,
             estimatedHedgeCostUsd: notional_usd,
             polymarketNotionalUsd: notional_usd,
+            mode: args.mode ?? "hedge",
         });
         if (!market_validation.ok) throw this.translate_validation_failure(market_validation);
         await this.assert_user_can_trade(args);
@@ -292,6 +305,12 @@ export default class PreTradeValidator {
     public async validate(input: ValidateInput): Promise<ValidationResult> {
         const market_check = await this.check_market_status(input.polymarketMarketId);
         if (market_check && !market_check.ok) return market_check;
+
+        // No-hedge mode skips every Polymarket-execution-specific gate.
+        // We still ran the market status check above because closed/
+        // resolved markets must reject regardless of mode — that's about
+        // staleness of the underlying truth, not about hedging.
+        if (input.mode === "no-hedge") return { ok: true };
 
         if (input.polymarketNotionalUsd < POLYMARKET_MIN_NOTIONAL_USD) {
             return {
