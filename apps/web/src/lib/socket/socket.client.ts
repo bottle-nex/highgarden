@@ -49,7 +49,6 @@ export default class WebSocketClient {
         this.ws.onmessage = (event: MessageEvent<string>) => {
             try {
                 const msg: ServerMessage = JSON.parse(event.data);
-                console.log('incoming message is : ', msg);
                 this.handle_incoming_message(msg);
             } catch (error) {
                 console.error('[ws:client] failed to parse message:', event.data, error);

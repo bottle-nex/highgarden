@@ -43,6 +43,12 @@ export default class PortfolioService {
     public async list_positions(user_id: string): Promise<PositionDTO[]> {
         const fills = await PortfolioService.fetch_user_fills(user_id);
         const grouped = PortfolioService.group_by_market(fills);
+        // Pre-fetch every (market, outcome) the user has already claimed
+        // so we can hide those rows below. One query for the whole
+        // portfolio — cheaper than checking on-chain UserPosition per
+        // resolved market, and authoritative because we write the row
+        // synchronously inside the claim service after the on-chain tx.
+        const claimed = await PortfolioService.fetch_claimed_keys(user_id);
 
         const positions: PositionDTO[] = [];
         for (const [, market_fills] of grouped) {
@@ -57,14 +63,32 @@ export default class PortfolioService {
                 first.market.polymarket.noTokenId,
             );
 
-            if (yes_agg.shares > 0) {
+            const yes_claimed = claimed.has(`${first.marketId}:YES`);
+            const no_claimed = claimed.has(`${first.marketId}:NO`);
+
+            if (yes_agg.shares > 0 && !yes_claimed) {
                 positions.push(PortfolioService.build_position(first, "YES", yes_agg, yes_price));
             }
-            if (no_agg.shares > 0) {
+            if (no_agg.shares > 0 && !no_claimed) {
                 positions.push(PortfolioService.build_position(first, "NO", no_agg, no_price));
             }
         }
         return positions;
+    }
+
+    /**
+     * Returns a set of `${marketId}:${outcome}` keys for every Claim row
+     * the user already has. Used by {@link list_positions} to hide
+     * already-redeemed positions on page refresh — without this, the
+     * Fill-based aggregation has no way to know the on-chain claim ran
+     * and the position keeps showing up with `claimableUsd > 0`.
+     */
+    private static async fetch_claimed_keys(user_id: string): Promise<Set<string>> {
+        const rows = await prisma.claim.findMany({
+            where: { userId: user_id },
+            select: { marketId: true, outcome: true },
+        });
+        return new Set(rows.map((r) => `${r.marketId}:${r.outcome}`));
     }
 
     public async list_fills(user_id: string): Promise<FillDTO[]> {

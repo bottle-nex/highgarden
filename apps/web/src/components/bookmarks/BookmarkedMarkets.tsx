@@ -11,6 +11,7 @@ import { fetch_bookmarked_markets } from '@/lib/api/bookmarks';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { useBookmarksStore } from '@/store/bookmarks/useBookmarksStore';
 import type { Market as CardMarket } from '@/utils/constants';
+import { localize_market_title } from '@/utils/localize-et';
 
 function format_volume(usd: number | null): string {
     if (usd === null) return '—';
@@ -31,7 +32,7 @@ function format_ends_in(iso: string): string {
 function dto_to_card(m: MarketDTO): CardMarket {
     return {
         id: m.id,
-        title: m.name,
+        title: localize_market_title(m.name),
         category: m.tags[0]?.toUpperCase() ?? 'MARKET',
         yesPrice: 50,
         noPrice: 50,

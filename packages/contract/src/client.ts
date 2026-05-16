@@ -346,6 +346,17 @@ export class SolmarketClient {
         encode_resolve_market_args(params.winningOutcome),
       ]),
     });
+    // When a separate `feePayer` is supplied, both keypairs sign but the
+    // tx fee comes off `feePayer` — so the oracle wallet doesn't have to
+    // hold SOL. Mirrors the place_order pattern. When absent, the oracle
+    // pays its own fee (legacy single-signer behaviour).
+    if (params.feePayer) {
+      return this.send_with_fee_payer(
+        new Transaction().add(ix),
+        params.feePayer,
+        [params.feePayer, signer],
+      );
+    }
     return this.send_with_signers(new Transaction().add(ix), [signer]);
   }
 

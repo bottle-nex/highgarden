@@ -55,6 +55,12 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
     const requireAuth = useRequireAuth();
 
     const is_resolved = market.status === 'RESOLVED';
+    const winner_label =
+        market.winningOutcome === 'YES'
+            ? 'YES'
+            : market.winningOutcome === 'NO'
+              ? 'NO'
+              : null;
 
     const yes_depth = useOrderBookDepthStore(selectDepth(market.id, Outcome.YES));
     const no_depth = useOrderBookDepthStore(selectDepth(market.id, Outcome.NO));
@@ -301,9 +307,25 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                         <div className="text-[10px] tracking-[0.2em] uppercase text-white/45">
                             Resolved
                         </div>
-                        <div className="text-[13px] text-white/85 mt-1">
-                            This market has been resolved.
-                        </div>
+                        {winner_label ? (
+                            <div className="text-[13px] text-white/85 mt-1">
+                                <span
+                                    className={cn(
+                                        'font-semibold',
+                                        winner_label === 'YES'
+                                            ? 'text-emerald-300'
+                                            : 'text-rose-300',
+                                    )}
+                                >
+                                    {winner_label}
+                                </span>{' '}
+                                won — market settled.
+                            </div>
+                        ) : (
+                            <div className="text-[13px] text-white/85 mt-1">
+                                This market has been resolved.
+                            </div>
+                        )}
                         <p className="text-[11px] text-white/45 mt-2">
                             If you held winning shares, you can claim your USDC payout now.
                         </p>

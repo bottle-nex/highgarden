@@ -79,21 +79,38 @@ export default class Resolver {
     }
 
     /**
-     * Returns the markets where Polymarket has settled and the dispute
-     * window has elapsed but we haven't yet forwarded the outcome on-chain.
-     * `max_resolved_at` is "now − dispute_window" — only resolutions older
-     * than the window are considered authoritative.
+     * Returns markets ready for on-chain `resolve_market` submission.
+     * Standard markets must have cleared the dispute window
+     * (`polymarketResolvedAt <= max_resolved_at`); FAST_MOVING markets
+     * (sub-hour ladders) bypass the window entirely — there's no UMA
+     * dispute risk on those and the whole point is fast settlement so
+     * the auto-resolver can be tested without 48h waits.
+     *
+     * No Market relation is defined on ResolverState, so the FAST_MOVING
+     * bypass is applied in TS: pull every awaiting row, then look up its
+     * `Market.kind` and keep it if either (a) it's FAST_MOVING or (b)
+     * its `polymarketResolvedAt` is past the cutoff.
      */
     static async list_awaiting_solana_submission(
         max_resolved_at: Date,
     ): Promise<ResolverStateRow[]> {
-        return prisma.resolverState.findMany({
+        const rows = await prisma.resolverState.findMany({
             where: {
                 stage: "POLYMARKET_RESOLVED",
-                polymarketResolvedAt: { lte: max_resolved_at },
                 solanaResolveTxSig: null,
                 winningOutcome: { not: null },
             },
+        });
+        if (rows.length === 0) return rows;
+        const market_ids = rows.map((r) => r.marketId);
+        const markets = await prisma.market.findMany({
+            where: { id: { in: market_ids } },
+            select: { id: true, kind: true },
+        });
+        const kind_by_id = new Map(markets.map((m) => [m.id, m.kind] as const));
+        return rows.filter((r) => {
+            if (kind_by_id.get(r.marketId) === "FAST_MOVING") return true;
+            return r.polymarketResolvedAt !== null && r.polymarketResolvedAt <= max_resolved_at;
         });
     }
 

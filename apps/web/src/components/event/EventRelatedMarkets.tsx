@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { MarketDTO } from '@solmarket/types';
 import { fetchPublicMarkets } from '@/lib/api/markets';
+import { localize_market_title } from '@/utils/localize-et';
 
 interface Props {
     excludeId: string;
@@ -76,7 +77,7 @@ export default function EventRelatedMarkets({ excludeId }: Props): JSX.Element |
                                 <div className="w-12 h-12 rounded-lg bg-white/5 shrink-0" />
                             )}
                             <h3 className="text-[15px] font-medium text-white leading-snug line-clamp-3 flex-1">
-                                {m.name}
+                                {localize_market_title(m.name)}
                             </h3>
                         </div>
 

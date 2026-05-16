@@ -61,6 +61,7 @@ export type TradingErrorReason =
     | 'CLAIM_FAILED'
     | 'MARKET_NOT_RESOLVED'
     | 'NO_WINNING_SHARES'
+    | 'ALREADY_CLAIMED'
     | 'MARKET_CLOSED_ON_POLYMARKET'
     | 'MARKET_NOT_ACCEPTING_ORDERS'
     | 'INSUFFICIENT_FUNDER_BALANCE'
@@ -261,7 +262,14 @@ class TradingApi {
                 'Market is not resolved yet. Try again after the result is final.',
             );
         }
-        if (lower.includes('nowinningshares') || lower.includes('no winning shares')) {
+        if (code === 'ALREADY_CLAIMED' || lower.includes('already claimed') || lower.includes('already redeemed')) {
+            return new TradingError(
+                'ALREADY_CLAIMED',
+                raw,
+                'You’ve already redeemed this market — refresh to clear the stale row.',
+            );
+        }
+        if (code === 'NO_WINNING_SHARES' || lower.includes('nowinningshares') || lower.includes('no winning shares')) {
             return new TradingError(
                 'NO_WINNING_SHARES',
                 raw,

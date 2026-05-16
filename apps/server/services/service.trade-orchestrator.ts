@@ -90,6 +90,162 @@ export default class TradeOrchestratorService {
      *  survive across trades. */
     private readonly preflight = new PreTradeValidator();
 
+    /**
+     * TEST-ONLY: signs a quote at a fixed 50¢ price, persists the Quote
+     * row (so Fill's FK is satisfied), submits place_order on-chain, and
+     * marks the quote consumed. Skips Polymarket, inventory netting, the
+     * pre-flight validator, the spread, the Hedge row, the orphan
+     * inventory safety net, and the idempotency cache.
+     *
+     * Used by `execute_trade_skip_polymarket` on TradeController to
+     * smoke-test the Solana side in isolation. REMOVE BEFORE PROD:
+     * production callers must go through `execute()`.
+     */
+    public async execute_solana_only(req: TradeRequest): Promise<TradeResult> {
+        const TEST_PRICE_CENTS = 50;
+        const request_id = req.requestId ?? randomUUID();
+        const market = await this.validate(req.marketDbId, req.side, req.outcome);
+        const nonce = this.derive_nonce(request_id);
+        const expires_at_unix = Math.floor(Date.now() / 1000) + ENV.SERVER_QUOTE_EXPIRY_SECONDS;
+        const signed = this.sign_quote_internally({
+            market_pda: market.solanaMarketPda,
+            side: req.side,
+            outcome: req.outcome,
+            price_cents: TEST_PRICE_CENTS,
+            size_shares: req.sizeShares,
+            nonce,
+            expires_at_unix,
+        });
+        // Quote row must exist before Fill — Fill.nonce is a FK to
+        // Quote.nonce; without this, SolanaTradeService's record_fill
+        // blows up with P2003 and the portfolio stays empty.
+        await this.persist_quote(
+            market.id,
+            req,
+            TEST_PRICE_CENTS,
+            req.sizeShares,
+            signed,
+            expires_at_unix,
+        );
+        const solana_result = await this.solana.place_order({
+            userId: req.userId,
+            marketDbId: req.marketDbId,
+            signedQuote: signed,
+        });
+        await this.mark_quote_consumed(signed.nonceHex);
+        return {
+            txSignature: solana_result.txSignature,
+            polymarketOrderId: "skipped-polymarket",
+            filledShares: req.sizeShares,
+            pricePaidCents: TEST_PRICE_CENTS,
+            totalUsd: this.compute_total_usd(req.sizeShares, TEST_PRICE_CENTS),
+            requestId: request_id,
+            nettedFromInventory: false,
+        };
+    }
+
+    /**
+     * Solana-only execution with REAL Polymarket pricing. Reads the live
+     * Polymarket book for the price reference, applies the configured
+     * spread, signs the quote, submits `place_order` on Solana — but does
+     * NOT place a Polymarket order, write a Hedge row, or touch
+     * PlatformInventory. The platform takes 100% of the user's exposure;
+     * the orchestrator's existing `execute()` method (with full hedging)
+     * is left intact for the day you flip back.
+     *
+     * Failure modes:
+     *   - Empty / unreachable Polymarket book → STALE_BOOK. No silent
+     *     fallback price; users would otherwise pay or receive an
+     *     arbitrary amount.
+     *   - Standard pre-flight gates still apply (gamma freshness, user
+     *     USDC for BUY, user shares for SELL, treasury solvency for
+     *     SELL, exposure cap).
+     */
+    public async execute_no_hedge(req: TradeRequest): Promise<TradeResult> {
+        const request_id = req.requestId ?? randomUUID();
+        const market = await this.validate(req.marketDbId, req.side, req.outcome);
+
+        // Pre-flight gates — `mode: "no-hedge"` tells the validator to
+        // skip Polymarket-execution-only checks (min notional, funder
+        // pUSD balance). Gamma resolution / market-status checks still
+        // run because they're about the truth of the underlying market,
+        // not hedging.
+        const top = await this.fetch_top_or_null(market);
+        await this.preflight.assert_pretrade({
+            userId: req.userId,
+            side: req.side,
+            outcome: req.outcome,
+            sizeShares: req.sizeShares,
+            marketPda: market.solanaMarketPda,
+            polymarketMarketId: market.polyMarketId,
+            tokenId: market.tokenId,
+            polymarketSide: market.polymarketSide,
+            topAskCents: top?.bestAskCents ?? null,
+            topBidCents: top?.bestBidCents ?? null,
+            mode: "no-hedge",
+        });
+
+        // Reference price from the live book. Fail fast if the side we'd
+        // be filling against has no liquidity — never default to 50¢.
+        const reference_cents = this.pick_target_price(
+            top ?? { bestAskCents: null, bestBidCents: null },
+            market.polymarketSide,
+        );
+        if (reference_cents === null) {
+            throw new TradeError(
+                "STALE_BOOK",
+                503,
+                `polymarket book has no ${req.side === "BUY" ? "ask" : "bid"} for this market — cannot price trade`,
+            );
+        }
+        const user_price_cents = this.derive_user_price(reference_cents, req.side);
+
+        // SELL treasury solvency check at the exact user_price. Cheap to
+        // do here since we know the price up-front (no fill round-trip).
+        if (req.side === "SELL") {
+            await this.preflight.assert_treasury_can_cover(req.sizeShares, user_price_cents);
+        }
+
+        const nonce = this.derive_nonce(request_id);
+        const expires_at_unix = Math.floor(Date.now() / 1000) + ENV.SERVER_QUOTE_EXPIRY_SECONDS;
+        const signed = this.sign_quote_internally({
+            market_pda: market.solanaMarketPda,
+            side: req.side,
+            outcome: req.outcome,
+            price_cents: user_price_cents,
+            size_shares: req.sizeShares,
+            nonce,
+            expires_at_unix,
+        });
+
+        // Quote row must exist before Fill (FK on Fill.nonce → Quote.nonce).
+        await this.persist_quote(
+            market.id,
+            req,
+            user_price_cents,
+            req.sizeShares,
+            signed,
+            expires_at_unix,
+        );
+
+        const solana_result = await this.solana.place_order({
+            userId: req.userId,
+            marketDbId: req.marketDbId,
+            signedQuote: signed,
+        });
+        await this.mark_quote_consumed(signed.nonceHex);
+
+        return {
+            txSignature: solana_result.txSignature,
+            polymarketOrderId: "no-hedge",
+            filledShares: req.sizeShares,
+            pricePaidCents: user_price_cents,
+            totalUsd: this.compute_total_usd(req.sizeShares, user_price_cents),
+            requestId: request_id,
+            nettedFromInventory: false,
+        };
+    }
+
     public async execute(req: TradeRequest): Promise<TradeResult> {
         const request_id = req.requestId ?? randomUUID();
         const market = await this.validate(req.marketDbId, req.side, req.outcome);
@@ -222,7 +378,14 @@ export default class TradeOrchestratorService {
             );
         }
         if (row.status === "PAUSED" || row.exposure?.paused) {
-            throw new TradeError("MARKET_PAUSED", 409, "market is paused");
+            // Surface the specific reason if the hedger's market-status poller
+            // set one (e.g. "UMA_DISPUTE") so the client can render a useful
+            // explanation rather than a generic "paused" toast.
+            const reason = row.pausedReason;
+            const detail = reason === "UMA_DISPUTE"
+                ? "this market is closed due to a Polymarket UMA dispute — trading will resume once it's resolved"
+                : "market is paused";
+            throw new TradeError("MARKET_PAUSED", 409, detail);
         }
         if (row.status === "RESOLVED") {
             throw new TradeError(
@@ -469,7 +632,18 @@ export default class TradeOrchestratorService {
         b_avg: number | null,
     ): number {
         const total = a_shares + b_shares;
-        if (total === 0) return 50; // last-resort default; assert_filled guards above
+        if (total === 0) {
+            // Should be unreachable — `assert_filled()` rejects polymarket
+            // fills with 0 shares earlier, and netting can't add zero
+            // shares while reaching this branch. We throw rather than
+            // returning a 50¢ default so a regression upstream never
+            // results in users silently transacting at a hardcoded price.
+            throw new TradeError(
+                "STALE_BOOK",
+                503,
+                "no fill data — cannot derive price (programmer error or upstream regression)",
+            );
+        }
         const a_total = (a_avg ?? 0) * a_shares;
         const b_total = (b_avg ?? 0) * b_shares;
         return Math.round((a_total + b_total) / total);

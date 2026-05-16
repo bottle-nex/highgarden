@@ -13,6 +13,98 @@ import ResponseWriter from "../../services/service.response";
 const DEFAULT_DEPTH = 10;
 const MAX_DEPTH = 50;
 
+/** Time the Polymarket-direct fallback waits before bailing. The CLOB
+ *  REST endpoint usually responds in <300ms; 2s is generous without
+ *  letting a stuck connection block the entire orderbook handler. */
+const POLYMARKET_FALLBACK_TIMEOUT_MS = 2_000;
+
+/** Short shared cache for the direct-Polymarket fallback. Multiple
+ *  concurrent clients hitting the same token within this window reuse
+ *  one upstream fetch, so a hundred users polling a freshly-listed
+ *  market every 1.5s don't translate into hundreds of CLOB hits. */
+const FALLBACK_CACHE_TTL_MS = 750;
+
+interface RawLevels {
+    bids: Array<{ price: number; size: number }>;
+    asks: Array<{ price: number; size: number }>;
+}
+
+interface FallbackCacheEntry {
+    snap: RawLevels | null;
+    fetched_at: number;
+    in_flight: Promise<RawLevels | null> | null;
+}
+
+const fallback_cache = new Map<string, FallbackCacheEntry>();
+
+function parse_polymarket_levels(raw: unknown): Array<{ price: number; size: number }> {
+    if (!Array.isArray(raw)) return [];
+    const out: Array<{ price: number; size: number }> = [];
+    for (const x of raw) {
+        const o = x as { price?: string; size?: string };
+        const p = Number(o.price);
+        const s = Number(o.size);
+        if (Number.isFinite(p) && s > 0) out.push({ price: p, size: s });
+    }
+    return out;
+}
+
+async function do_fetch_polymarket(token_id: string): Promise<RawLevels | null> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), POLYMARKET_FALLBACK_TIMEOUT_MS);
+    try {
+        const res = await fetch(`https://clob.polymarket.com/book?token_id=${token_id}`, {
+            signal: controller.signal,
+        });
+        if (!res.ok) return null;
+        const data = (await res.json()) as { bids?: unknown; asks?: unknown };
+        const bids = parse_polymarket_levels(data.bids).sort((a, b) => b.price - a.price);
+        const asks = parse_polymarket_levels(data.asks).sort((a, b) => a.price - b.price);
+        return { bids, asks };
+    } catch (err) {
+        console.warn("[orderbook:fallback] polymarket fetch failed", token_id, err);
+        return null;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+/**
+ * Direct-Polymarket fallback used when the mirror-fed cache is empty —
+ * which happens for the few seconds after a freshly-auto-approved
+ * FAST_MOVING slot is first viewed. Without this fallback the user
+ * sees a static "no open orders" frame until the mirror's WS subscribe
+ * round-trip completes. Coalesces concurrent calls and serves a recent
+ * snapshot for FALLBACK_CACHE_TTL_MS to keep upstream load sane.
+ */
+async function fetch_polymarket_fallback(token_id: string): Promise<RawLevels | null> {
+    const now = Date.now();
+    const existing = fallback_cache.get(token_id);
+    if (existing) {
+        if (existing.in_flight) return existing.in_flight;
+        if (existing.snap && now - existing.fetched_at < FALLBACK_CACHE_TTL_MS) {
+            return existing.snap;
+        }
+    }
+    const promise = do_fetch_polymarket(token_id);
+    const entry: FallbackCacheEntry = {
+        snap: existing?.snap ?? null,
+        fetched_at: existing?.fetched_at ?? 0,
+        in_flight: promise,
+    };
+    fallback_cache.set(token_id, entry);
+    try {
+        const snap = await promise;
+        entry.snap = snap;
+        entry.fetched_at = Date.now();
+        entry.in_flight = null;
+        return snap;
+    } catch {
+        entry.in_flight = null;
+        return null;
+    }
+}
+
 export default class GetOrderBookController {
     static async process(req: Request, res: Response) {
         const id = typeof req.params.id === "string" ? req.params.id : "";
@@ -56,8 +148,15 @@ export default class GetOrderBookController {
             const tracked = services.book_cache.has_token(token_id);
             const depth_view = services.book_cache.get_depth(token_id, depth);
             const top = services.book_cache.getTopOfBook(token_id);
-            console.log("depth view is : ", depth_view);
+
             let status: OrderBookStatus;
+            let raw_bids = depth_view?.bids ?? [];
+            let raw_asks = depth_view?.asks ?? [];
+            let raw_best_bid = top?.bestBid ?? null;
+            let raw_best_ask = top?.bestAsk ?? null;
+            let raw_mid = top?.midPrice ?? null;
+            let updated_at = top?.updatedAt ?? Date.now();
+
             if (!tracked) {
                 status = "NOT_TRACKED";
                 // Mirror subscribe is handled above by touch_http. Here we just
@@ -83,23 +182,42 @@ export default class GetOrderBookController {
                         },
                     ])
                     .catch(() => {});
-            } else if (
-                (depth_view?.bids.length ?? 0) === 0 &&
-                (depth_view?.asks.length ?? 0) === 0
-            ) {
+            } else if (raw_bids.length === 0 && raw_asks.length === 0) {
                 status = "TRACKED_EMPTY";
             } else {
                 status = "TRACKED";
             }
 
-            const shifted_bids = SpreadService.shift_numeric_levels(depth_view?.bids ?? [], "BID");
-            const shifted_asks = SpreadService.shift_numeric_levels(depth_view?.asks ?? [], "ASK");
-            const best_bid = SpreadService.shift_top(top?.bestBid ?? null, "BID");
-            const best_ask = SpreadService.shift_top(top?.bestAsk ?? null, "ASK");
+            // Cold-start fallback: when the mirror hasn't started streaming
+            // for this token yet (NOT_TRACKED) or has but Polymarket's first
+            // book event hasn't arrived (TRACKED_EMPTY), reach directly into
+            // Polymarket's CLOB so the client doesn't sit on an empty frame
+            // for several seconds. The mirror will warm up via touch_http
+            // above and subsequent polls will read from the live cache.
+            if (raw_bids.length === 0 && raw_asks.length === 0) {
+                const fresh = await fetch_polymarket_fallback(token_id);
+                if (fresh && (fresh.bids.length > 0 || fresh.asks.length > 0)) {
+                    raw_bids = fresh.bids.slice(0, depth);
+                    raw_asks = fresh.asks.slice(0, depth);
+                    raw_best_bid = raw_bids[0]?.price ?? null;
+                    raw_best_ask = raw_asks[0]?.price ?? null;
+                    raw_mid =
+                        raw_best_bid !== null && raw_best_ask !== null
+                            ? (raw_best_bid + raw_best_ask) / 2
+                            : null;
+                    updated_at = Date.now();
+                    status = "TRACKED";
+                }
+            }
+
+            const shifted_bids = SpreadService.shift_numeric_levels(raw_bids, "BID");
+            const shifted_asks = SpreadService.shift_numeric_levels(raw_asks, "ASK");
+            const best_bid = SpreadService.shift_top(raw_best_bid, "BID");
+            const best_ask = SpreadService.shift_top(raw_best_ask, "ASK");
             const mid_price =
                 best_bid !== null && best_ask !== null
                     ? +((best_bid + best_ask) / 2).toFixed(4)
-                    : (top?.midPrice ?? null);
+                    : raw_mid;
 
             const dto: OrderBookSnapshotDTO = {
                 marketId: id,
@@ -111,7 +229,7 @@ export default class GetOrderBookController {
                 bestBid: best_bid,
                 bestAsk: best_ask,
                 midPrice: mid_price,
-                updatedAt: top?.updatedAt ?? Date.now(),
+                updatedAt: updated_at,
             };
 
             return ResponseWriter.success(res, dto, "OrderBook");

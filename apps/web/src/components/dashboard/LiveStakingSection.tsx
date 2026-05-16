@@ -7,6 +7,7 @@ import StakingSection from './StakingSection';
 import SectionHeading from './SectionHeading';
 import { fetchPublicMarkets } from '@/lib/api/markets';
 import type { YesNoMarket } from '@/utils/constants';
+import { localize_market_title } from '@/utils/localize-et';
 
 function format_volume(usd: number | null): string {
     if (usd === null) return '—';
@@ -27,7 +28,7 @@ function format_ends_in(iso: string): string {
 function dto_to_yes_no_market(m: MarketDTO): YesNoMarket {
     return {
         id: m.id,
-        title: m.name,
+        title: localize_market_title(m.name),
         category: 'MARKET',
         // Static 50/50 until live book hydration is wired into the dashboard.
         yesPrice: 50,
@@ -98,7 +99,13 @@ export default function LiveStakingSection() {
         );
     }
 
-    const yes_no = state.markets.map(dto_to_yes_no_market);
+    // Staking is the "curated featured" strip — hand-picked long-form
+    // markets. FAST_MOVING rolling ladders (BTC / ETH 5-min) get their
+    // own collapsed card in the grid below; surfacing every individual
+    // slot here would drown the section in near-identical cards.
+    const standard_only = state.markets.filter((m) => m.kind !== 'FAST_MOVING');
+    if (standard_only.length === 0) return null;
+    const yes_no = standard_only.map(dto_to_yes_no_market);
 
     return (
         <StakingSection yesNoMarkets={yes_no} multiCandidateMarkets={[]} multiOptionMarkets={[]} />

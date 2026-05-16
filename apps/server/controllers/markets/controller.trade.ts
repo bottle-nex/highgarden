@@ -46,7 +46,59 @@ export default class TradeController {
             return ResponseWriter.invalid_data(res, `Invalid trade payload: ${issue}`);
         }
 
-        return TradeController.run_with_idempotency(req.user.id, market_id, parsed.data, res);
+        // ACTIVE MODE: Solana-only execution with REAL Polymarket pricing.
+        // Trades execute on Solana but no Polymarket order is placed —
+        // platform takes 100% of user exposure. Production `run_with_idempotency`
+        // (kept below) is the path to switch to when re-enabling Polymarket
+        // hedging.
+        return TradeController.execute_trade_no_hedge(
+            req.user.id,
+            market_id,
+            parsed.data,
+            res,
+        );
+    }
+
+    /**
+     * Calls `TradeOrchestratorService.execute_no_hedge`, which reads the
+     * live Polymarket book for the price reference, applies the spread,
+     * signs the quote, and submits place_order on-chain. No Polymarket
+     * order is placed and no Hedge row is written. Quote + Fill + Claim
+     * are still persisted, so the portfolio + resolution + claim flow
+     * works end-to-end.
+     *
+     * Fails with `STALE_BOOK` 503 if the Polymarket book has no liquidity
+     * on the side we'd be referencing — never falls back to a hardcoded
+     * price.
+     *
+     * To re-enable Polymarket hedging:
+     *   1. Change the `process()` call above back to `run_with_idempotency`.
+     *   2. Delete this method (optional — it stays harmless if unused).
+     */
+    private static async execute_trade_no_hedge(
+        user_id: string,
+        market_id: string,
+        body: z.infer<typeof body_schema>,
+        res: Response,
+    ): Promise<void> {
+        try {
+            const result = await TradeController.orchestrator.execute_no_hedge({
+                userId: user_id,
+                marketDbId: market_id,
+                side: body.side,
+                outcome: body.outcome,
+                sizeShares: body.size,
+                requestId: body.requestId,
+            });
+            res.status(200).json(TradeController.build_success_body(result));
+        } catch (err) {
+            if (err instanceof TradeError) {
+                res.status(err.status).json(TradeController.build_error_body(err));
+                return;
+            }
+            console.error("[markets/trade:no-hedge]", err);
+            ResponseWriter.system_error(res);
+        }
     }
 
     private static async run_with_idempotency(

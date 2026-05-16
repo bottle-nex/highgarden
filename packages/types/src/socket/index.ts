@@ -9,6 +9,7 @@ export type {
 } from "@solmarket/polymarket-contracts";
 export { REDIS_CHANNELS } from "@solmarket/polymarket-contracts";
 import type { Outcome } from "../prisma/enums.prisma";
+import type { MarketResolvedPayload } from "../trading";
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -18,6 +19,10 @@ export enum SERVER_MESSAGE_TYPE {
   SUBSCRIBED = "subscribed",
   UNSUBSCRIBED = "unsubscribed",
   PONG = "pong",
+  /** Solmarket-internal lifecycle nudge: a market transitioned to
+   *  RESOLVED. Broadcast to every connected socket — recipients filter
+   *  by marketId locally to avoid round-tripping a per-market sub. */
+  MARKET_RESOLVED = "market_resolved",
 }
 
 export enum CLIENT_MESSAGE_TYPE {
@@ -40,7 +45,8 @@ export type ServerMessage =
   | { type: SERVER_MESSAGE_TYPE.ERROR; message: string }
   | { type: SERVER_MESSAGE_TYPE.SUBSCRIBED; token_id: string }
   | { type: SERVER_MESSAGE_TYPE.UNSUBSCRIBED; token_id: string }
-  | { type: SERVER_MESSAGE_TYPE.PONG };
+  | { type: SERVER_MESSAGE_TYPE.PONG }
+  | { type: SERVER_MESSAGE_TYPE.MARKET_RESOLVED; payload: MarketResolvedPayload };
 
 export type ClientMessage =
   | { type: CLIENT_MESSAGE_TYPE.SUBSCRIBE; token_id: string }

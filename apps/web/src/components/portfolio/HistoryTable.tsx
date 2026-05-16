@@ -6,6 +6,7 @@ import { Outcome, Side } from '@solmarket/types';
 import { cn } from '@/lib/utils';
 import { selectAllFills, selectFillsLoading, useFillsStore } from '@/store/portfolio/useFillsStore';
 import EmptyTabState from './EmptyTabState';
+import { localize_market_title } from '@/utils/localize-et';
 
 const COLUMN_HEADERS = ['Market', 'Action', 'Price', 'Shares', 'Total', 'When'];
 
@@ -58,7 +59,9 @@ function HistoryRow({ fill }: { fill: FillDTO }): JSX.Element {
     return (
         <div className="grid grid-cols-[3fr_1fr_1fr_1fr_1fr_1fr_auto] gap-x-4 items-center px-2 py-3 border-t border-neutral-900">
             <div className="min-w-0">
-                <p className="text-sm text-white truncate">{fill.marketName}</p>
+                <p className="text-sm text-white truncate">
+                    {localize_market_title(fill.marketName)}
+                </p>
             </div>
             <div className="flex items-center gap-x-2">
                 <span

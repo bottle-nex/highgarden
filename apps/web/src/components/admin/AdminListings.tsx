@@ -3,10 +3,19 @@
 import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import ListingRow from './ListingRow';
+import FastSubscriptionsPanel from './FastSubscriptionsPanel';
 
 export interface AdminListingRow {
     marketId: string;
     status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    /** STANDARD = regular multi-day market. FAST_MOVING = short-window
+     *  Polymarket ladder (BTC/ETH/SOL Up-or-Down, etc) — surfaced in its
+     *  own tab and resolved on-chain without the dispute window. */
+    kind: 'STANDARD' | 'FAST_MOVING';
+    /** For FAST_MOVING markets, the rolling-series identifier
+     *  (e.g. "bitcoin-updown-5m"). Used by the Subscribe button to
+     *  enrol all future markets in this series automatically. */
+    fastSeriesKey: string | null;
     question: string;
     description: string;
     endAt: string | null;
@@ -25,9 +34,16 @@ export interface AdminListingRow {
     rejectionReason: string | null;
 }
 
-type Tab = 'PENDING' | 'APPROVED' | 'REJECTED';
+type Tab = 'PENDING' | 'APPROVED' | 'REJECTED' | 'FAST_MOVING';
 
-const TABS: Tab[] = ['PENDING', 'APPROVED', 'REJECTED'];
+const TABS: Tab[] = ['PENDING', 'APPROVED', 'REJECTED', 'FAST_MOVING'];
+
+const TAB_LABEL: Record<Tab, string> = {
+    PENDING: 'Pending',
+    APPROVED: 'Approved',
+    REJECTED: 'Rejected',
+    FAST_MOVING: 'Fast-moving',
+};
 
 export default function AdminListings({
     listings,
@@ -39,12 +55,30 @@ export default function AdminListings({
     const [active, setActive] = useState<Tab>('PENDING');
 
     const counts = useMemo(() => {
-        const c = { PENDING: 0, APPROVED: 0, REJECTED: 0 } as Record<Tab, number>;
-        for (const l of listings) c[l.status] += 1;
+        const c: Record<Tab, number> = {
+            PENDING: 0,
+            APPROVED: 0,
+            REJECTED: 0,
+            FAST_MOVING: 0,
+        };
+        for (const l of listings) {
+            c[l.status] += 1;
+            // Fast-moving tab shows pending fast-moving markets only —
+            // the ones the admin still needs to act on. After approval
+            // they appear in the standard APPROVED tab (kind doesn't change).
+            if (l.kind === 'FAST_MOVING' && l.status === 'PENDING') c.FAST_MOVING += 1;
+        }
         return c;
     }, [listings]);
 
-    const visible = useMemo(() => listings.filter((l) => l.status === active), [listings, active]);
+    const visible = useMemo(() => {
+        if (active === 'FAST_MOVING') {
+            return listings.filter((l) => l.kind === 'FAST_MOVING' && l.status === 'PENDING');
+        }
+        // Standard tabs hide fast-moving rows so the noisy 5-min ladders
+        // don't drown out the long-form listings the admin actually curates.
+        return listings.filter((l) => l.status === active && l.kind !== 'FAST_MOVING');
+    }, [listings, active]);
 
     return (
         <div className="space-y-5">
@@ -61,7 +95,7 @@ export default function AdminListings({
                                 : 'border-transparent text-white/45 hover:text-white/75',
                         )}
                     >
-                        {tab}{' '}
+                        {TAB_LABEL[tab]}{' '}
                         <span className="ml-1 text-white/30 normal-case tracking-normal">
                             ({counts[tab]})
                         </span>
@@ -69,9 +103,32 @@ export default function AdminListings({
                 ))}
             </div>
 
+            {active === 'FAST_MOVING' && (
+                <section className="space-y-3">
+                    <div>
+                        <h3 className="text-[11px] tracking-[0.25em] uppercase text-white/55 mb-2">
+                            Active subscriptions
+                        </h3>
+                        <p className="text-[11px] text-white/40 mb-3">
+                            Subscribed series auto-approve every new market the auto-lister
+                            discovers in that series. Unsubscribing stops future auto-approvals;
+                            already-approved markets keep running until they resolve.
+                        </p>
+                        <FastSubscriptionsPanel onChange={onChange} />
+                    </div>
+                    <div>
+                        <h3 className="text-[11px] tracking-[0.25em] uppercase text-white/55 mb-2 mt-6">
+                            Pending fast markets
+                        </h3>
+                    </div>
+                </section>
+            )}
+
             {visible.length === 0 ? (
                 <div className="border border-dashed border-white/10 rounded p-12 text-center text-xs text-white/40">
-                    No {active.toLowerCase()} listings.
+                    {active === 'FAST_MOVING'
+                        ? 'No fast-moving markets waiting for approval.'
+                        : `No ${TAB_LABEL[active].toLowerCase()} listings.`}
                 </div>
             ) : (
                 <ul className="space-y-2">

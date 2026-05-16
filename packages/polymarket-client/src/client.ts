@@ -431,9 +431,14 @@ export class PolymarketClient {
   // ──────────────── Internals: Gamma ────────────────
 
   private async fetch_raw_gamma_market(market_id: string): Promise<RawGammaMarket | null> {
-    const url = new URL("/markets", this.cfg.gammaUrl);
-    url.searchParams.set("id", market_id);
-    url.searchParams.set("limit", "1");
+    // Use the direct path `/markets/<id>` instead of the list endpoint
+    // `/markets?id=…` — gamma's list endpoint silently filters out
+    // closed markets (no way to override that without an explicit
+    // `closed=true`), which means our resolver poll returns null for
+    // every market that has actually resolved and the auto-resolver
+    // never fires. The direct path returns the market regardless of
+    // closed/archived state.
+    const url = new URL(`/markets/${encodeURIComponent(market_id)}`, this.cfg.gammaUrl);
     const res = await fetch(url);
     if (!res.ok) {
       this.log.warn({ market_id, status: res.status }, "gamma fetch returned non-ok");

@@ -15,6 +15,16 @@ enum MarketStatus {
   CANCELLED
 }
 
+/// Tracks whether a market is a normal multi-day listing or a short-window
+/// auto-rolling listing (e.g. Polymarket's hourly Bitcoin Up/Down ladders).
+/// Fast-moving markets bypass the auto-lister's standard volume/lifespan
+/// filter, surface in their own admin tab, and are resolved on-chain
+/// immediately when Polymarket closes them (no dispute window).
+enum MarketKind {
+  STANDARD
+  FAST_MOVING
+}
+
 enum HedgeStatus {
   PENDING
   HEDGING
@@ -58,4 +68,20 @@ enum InventoryReason {
   SOLANA_FAILED_AFTER_HEDGE
   MANUAL
   OTHER
+}
+
+/// Lifecycle of an inbound SOL → USDC deposit detected on a user's
+/// custodial wallet. Polled by SolDepositPoller; one row per detected
+/// balance jump.
+///   DETECTED   — balance jump observed, no on-chain action yet
+///   SWEEPING   — sweep tx (custodial → admin) submitted, not confirmed
+///   SWEPT      — sweep confirmed; USDC mint still pending
+///   COMPLETED  — USDC mint confirmed; user's ATA credited
+///   FAILED     — unrecoverable error mid-flow; operator cleanup needed
+enum SolDepositStatus {
+  DETECTED
+  SWEEPING
+  SWEPT
+  COMPLETED
+  FAILED
 }

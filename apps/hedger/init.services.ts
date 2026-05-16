@@ -6,6 +6,8 @@ import Resolver from "./resolver";
 import Reconciler from "./reconcile";
 import HealthServer from "./health";
 import PlatformInventoryLiquidator from "./inventory/liquidator";
+import MarketStatusPoller from "./market-status/poller";
+import HedgerRedisPublisher from "./redis-publisher";
 import { logger_for } from "./log/log";
 
 /**
@@ -30,6 +32,14 @@ export interface Services {
     readonly resolver: Resolver;
     readonly reconciler: Reconciler;
     readonly liquidator: PlatformInventoryLiquidator;
+    /** Polymarket → DB mirror loop. Sets `Market.status` to RESOLVED /
+     *  PAUSED based on gamma so the server's trade-time check can reject
+     *  closed markets without hitting Polymarket on every request. */
+    readonly marketStatusPoller: MarketStatusPoller;
+    /** Pub-only Redis client the hedger uses to push lifecycle nudges
+     *  (market resolutions) onto the shared lifecycle channel. The
+     *  server-side WS layer fans these out to connected clients. */
+    readonly publisher: HedgerRedisPublisher;
     readonly health: HealthServer;
 }
 
@@ -69,6 +79,8 @@ export function init_services(): Services {
     const resolver = new Resolver(solana, poly);
     const reconciler = new Reconciler(hedger, poly);
     const liquidator = new PlatformInventoryLiquidator(poly);
+    const publisher = new HedgerRedisPublisher();
+    const marketStatusPoller = new MarketStatusPoller(poly, publisher);
 
     return {
         solana,
@@ -78,6 +90,8 @@ export function init_services(): Services {
         resolver,
         reconciler,
         liquidator,
+        marketStatusPoller,
+        publisher,
         health,
     };
 }
@@ -103,6 +117,7 @@ export async function start_services(s: Services): Promise<void> {
     s.resolver.start();
     s.reconciler.start();
     s.liquidator.start();
+    s.marketStatusPoller.start();
     s.health.start();
 }
 
@@ -131,9 +146,11 @@ export async function stop_services(s: Services): Promise<void> {
         }
     };
     await safe("liquidator", () => s.liquidator.stop());
+    await safe("marketStatusPoller", () => s.marketStatusPoller.stop());
     await safe("resolver", () => s.resolver.stop());
     await safe("reconciler", () => s.reconciler.stop());
     await safe("ingester", () => s.ingester.stop());
     await safe("hedger", () => s.hedger.stop());
     await safe("health", () => s.health.stop());
+    await safe("publisher", () => s.publisher.shutdown());
 }
