@@ -30,7 +30,7 @@ export default function FastSubscriptionsPanel({ onChange }: { onChange?: () => 
     }, []);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         void refresh();
     }, [refresh]);
 

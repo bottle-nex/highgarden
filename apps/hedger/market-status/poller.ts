@@ -65,7 +65,9 @@ export default class MarketStatusPoller {
     private running = false;
 
     constructor(
+        // eslint-disable-next-line no-unused-vars
         private readonly poly: PolymarketClient,
+        // eslint-disable-next-line no-unused-vars
         private readonly publisher: HedgerRedisPublisher,
     ) {}
 

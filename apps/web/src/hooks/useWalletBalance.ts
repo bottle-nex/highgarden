@@ -37,7 +37,7 @@ export function useWalletBalance(opts: { enabled: boolean }): State {
     useEffect(() => {
         if (!opts.enabled) return;
         if (!session) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             set_data(null);
             set_error(null);
             return;

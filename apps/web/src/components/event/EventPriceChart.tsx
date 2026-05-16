@@ -133,6 +133,7 @@ export default function EventPriceChart({
     // instead of carrying stale settings over.
     useEffect(() => {
         if (is_fast) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             set_range('1h');
         }
     }, [is_fast]);
@@ -287,6 +288,7 @@ export default function EventPriceChart({
     // static REST history starts a new bucket and the old live ticks
     // wouldn't fit the new x-axis anyway.
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         set_live_ticks([]);
     }, [marketId, range]);
 
@@ -295,6 +297,7 @@ export default function EventPriceChart({
         const t_sec = Math.floor(live_yes.updatedAt / 1000);
         const p = live_yes.price;
         if (!Number.isFinite(p) || p < 0 || p > 1) return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         set_live_ticks((prev) => {
             // Dedupe by second to keep the trail compact even when
             // multiple book frames arrive within the same wall-clock

@@ -236,7 +236,9 @@ export default function EventBtcPriceChart({
         const { interval, limit } = range_to_klines(range);
         let cancelled = false;
         let teardown: (() => void) | null = null;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         set_status('loading');
+         
         set_klines([]);
 
         void fetch_binance_klines(symbol, interval, limit).then((rows) => {
@@ -391,9 +393,9 @@ export default function EventBtcPriceChart({
                         cursor={DottedCursor as any}
                         isAnimationActive={false}
                     />
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <Bar
                         dataKey={(d: Kline) => [d.l, d.h] as [number, number]}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         shape={Candle as any}
                         isAnimationActive={false}
                     />

@@ -59,6 +59,7 @@ export default function EventDetail({ id }: { id: string }) {
         // market prop — and during the in-flight fetch the WS stays
         // subscribed to the previous market, so the new market's
         // book events never get routed and the orderbook freezes.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         set_state({ status: 'loading' });
         fetch_market_by_id(id).then((m) => {
             if (cancelled) return;

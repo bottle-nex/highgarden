@@ -46,7 +46,7 @@ export const SOLANA_NETWORK_LABEL: 'mainnet-beta' | 'devnet' | 'testnet' | 'loca
  * mysterious Phantom "simulation reverted" warning.
  */
 if (typeof window !== 'undefined' && SOLANA_NETWORK_LABEL === 'mainnet-beta') {
-    // eslint-disable-next-line no-console
+     
     console.warn(
         '[network] Frontend is on MAINNET — if you intended devnet, set NEXT_PUBLIC_SOLANA_RPC_URL in apps/web/.env and restart `next dev`.',
     );

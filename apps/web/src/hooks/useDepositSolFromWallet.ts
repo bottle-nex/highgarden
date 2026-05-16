@@ -81,7 +81,7 @@ export function useDepositSolFromWallet(): State {
                 const lamports = Math.round(sol_amount * LAMPORTS_PER_SOL);
                 // Helpful diagnostic if the env-driven RPC ever falls back
                 // to mainnet by accident — one glance at DevTools tells you.
-                // eslint-disable-next-line no-console
+                 
                 console.log('[sol-deposit] rpc endpoint:', connection.rpcEndpoint);
                 const latest = await connection.getLatestBlockhash('confirmed');
                 const tx = new Transaction({

@@ -51,6 +51,7 @@ export default class SolDepositPoller {
      *  only ever fetch it once per process. */
     private rent_exempt_min_lamports: number | null = null;
 
+    // eslint-disable-next-line no-unused-vars
     constructor(private readonly price_feed: CoinGeckoPriceFeed) {}
 
     public start(): void {
