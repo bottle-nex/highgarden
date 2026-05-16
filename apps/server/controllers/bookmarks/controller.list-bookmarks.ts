@@ -24,6 +24,23 @@ export default class ListBookmarksController {
                 },
             });
 
+            // Same claimable derivation as the public list — single batched
+            // ResolverState fetch keyed by marketId, then a per-row map
+            // lookup below.
+            const market_ids = bookmarks
+                .map((b) => b.market?.id)
+                .filter((id): id is string => !!id);
+            const resolver_rows =
+                market_ids.length > 0
+                    ? await prisma.resolverState.findMany({
+                          where: { marketId: { in: market_ids } },
+                          select: { marketId: true, stage: true },
+                      })
+                    : [];
+            const stage_by_market = new Map(
+                resolver_rows.map((r) => [r.marketId, r.stage] as const),
+            );
+
             const markets: MarketDTO[] = [];
             for (const b of bookmarks) {
                 const m = b.market;
@@ -55,6 +72,9 @@ export default class ListBookmarksController {
                     fastSeriesKey: m.fastSeriesKey,
                     winningOutcome: m.winningOutcome as Outcome | null,
                     resolvedAt: m.resolvedAt?.toISOString() ?? null,
+                    claimable:
+                        stage_by_market.get(m.id) === "SOLANA_RESOLVED"
+                        || stage_by_market.get(m.id) === "REDEEMED",
                     tags: p.tags,
                 });
             }

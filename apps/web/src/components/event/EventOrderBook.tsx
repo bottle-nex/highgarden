@@ -55,6 +55,15 @@ function BookViewIcon({
 
 interface Props {
     marketId: string;
+    /** When set, used to detect "slot ended" so the book is frozen and
+     *  the panel renders a "round closed" placeholder instead of live
+     *  rows. Mostly relevant for fast-moving markets — long-form ones
+     *  keep the book displayed right up to resolution. */
+    endAt?: string;
+    /** Once status flips to RESOLVED there's no live book to show, so
+     *  we render a static "round resolved" placeholder regardless of
+     *  what stale levels are sitting in the depth store. */
+    status?: string;
 }
 
 const VISIBLE_LEVELS = 10;
@@ -81,9 +90,16 @@ function format_total(usd: number): string {
     })}`;
 }
 
-export default function EventOrderBook({ marketId }: Props): JSX.Element {
+export default function EventOrderBook({ marketId, endAt, status }: Props): JSX.Element {
     const [selectedOutcome, setSelectedOutcome] = useState<Outcome>(Outcome.YES);
-    const book = useOrderBook(marketId, selectedOutcome);
+    // Detect "slot closed" — endAt has passed or the market is RESOLVED.
+    // Once true, the book is no longer a useful trading surface (the CLOB
+    // stopped accepting orders, the mirror is winding down, any incoming
+    // ticks would be the last stragglers). We freeze the view here AND
+    // skip the safety-net REST poll inside useOrderBook below.
+    const slot_closed =
+        status === 'RESOLVED' || (endAt !== undefined && new Date(endAt).getTime() < Date.now());
+    const book = useOrderBook(marketId, selectedOutcome, slot_closed);
     const { refetch, isRefetching } = book;
     const scroll_ref = useRef<HTMLDivElement | null>(null);
     const spread_ref = useRef<HTMLDivElement | null>(null);
@@ -235,13 +251,26 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                             <span className="text-right">Total</span>
                         </div>
 
-                        {!book.isHydrated && (
+                        {slot_closed && (
+                            <div className="py-12 text-center space-y-2">
+                                <div className="text-[10px] tracking-[0.3em] uppercase text-amber-300/70">
+                                    Round closed
+                                </div>
+                                <div className="text-[11.5px] text-white/45 leading-relaxed">
+                                    {status === 'RESOLVED'
+                                        ? 'Market resolved — no live book.'
+                                        : 'Slot window ended — awaiting resolution.'}
+                                </div>
+                            </div>
+                        )}
+
+                        {!slot_closed && !book.isHydrated && (
                             <div className="py-12 text-center text-[10px] tracking-[0.3em] uppercase text-white/30">
                                 Loading book…
                             </div>
                         )}
 
-                        {book.isHydrated && book.status === 'NOT_TRACKED' && (
+                        {!slot_closed && book.isHydrated && book.status === 'NOT_TRACKED' && (
                             <div className="py-12 text-center space-y-3">
                                 <div className="text-[10px] tracking-[0.3em] uppercase text-amber-300/70">
                                     Market data starting up
@@ -259,7 +288,8 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                             </div>
                         )}
 
-                        {book.isHydrated &&
+                        {!slot_closed &&
+                            book.isHydrated &&
                             book.status !== 'NOT_TRACKED' &&
                             asks.length === 0 &&
                             bids.length === 0 && (
@@ -268,7 +298,7 @@ export default function EventOrderBook({ marketId }: Props): JSX.Element {
                                 </div>
                             )}
 
-                        {book.isHydrated && (asks.length > 0 || bids.length > 0) && (
+                        {!slot_closed && book.isHydrated && (asks.length > 0 || bids.length > 0) && (
                             <div
                                 ref={scroll_ref}
                                 className="h-72 sm:h-96 lg:h-105 overflow-y-auto overscroll-contain custom-scrollbar [overflow-anchor:auto]"

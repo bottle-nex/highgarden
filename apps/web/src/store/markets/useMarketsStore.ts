@@ -14,6 +14,11 @@ export interface MarketEntry {
     winningOutcome: Outcome | null;
     endAt: Date;
     resolvedAt: Date | null;
+    /** Server tells us when the on-chain `resolve_market` instruction
+     *  has landed. Independent of status=RESOLVED: outcome is visible
+     *  the moment gamma publishes (status flips) but the Claim button
+     *  only enables once this goes true. */
+    claimable: boolean;
     // From PolyMarket relation
     yesTokenId: string;
     noTokenId: string;
@@ -38,6 +43,10 @@ function toMarketEntry(
         winningOutcome: m.winningOutcome,
         endAt: m.endAt,
         resolvedAt: m.resolvedAt,
+        // Server-side hydration path doesn't fetch ResolverState — used
+        // by tests / scripts where on-chain status isn't material.
+        // The DTO path (dto_to_market_entry) carries the real value.
+        claimable: false,
         yesTokenId: m.polymarket?.yesTokenId ?? '',
         noTokenId: m.polymarket?.noTokenId ?? '',
         tickSize: m.polymarket?.tickSize ?? '0.01',
@@ -56,9 +65,10 @@ function dto_to_market_entry(m: MarketDTO): MarketEntry {
         solanaMarketPda: m.solanaMarketPda,
         polyMarketId: m.polyMarketId,
         status: m.status,
-        winningOutcome: null,
+        winningOutcome: m.winningOutcome,
         endAt: new Date(m.endAt),
-        resolvedAt: null,
+        resolvedAt: m.resolvedAt ? new Date(m.resolvedAt) : null,
+        claimable: m.claimable,
         yesTokenId: m.yesTokenId,
         noTokenId: m.noTokenId,
         tickSize: m.tickSize,
@@ -82,8 +92,21 @@ interface MarketsState {
     setFetchStatus: (s: MarketsState['fetchStatus'], error?: string) => void;
     /** Called when a MARKET_STATUS_CHANGE WS event arrives */
     applyStatusChange: (marketId: string, status: MarketStatus) => void;
-    /** Called when a MARKET_RESOLVED WS event arrives */
-    applyResolution: (marketId: string, winningOutcome: Outcome, resolvedAt: Date) => void;
+    /** Called when a MARKET_RESOLVED WS event arrives. Fires twice per
+     *  market: once with claimable=false right after gamma publishes
+     *  (so the outcome is visible immediately), once with claimable=true
+     *  after the on-chain `resolve_market` confirms (so the Claim
+     *  button enables). */
+    applyResolution: (
+        // eslint-disable-next-line no-unused-vars
+        marketId: string,
+        // eslint-disable-next-line no-unused-vars
+        winningOutcome: Outcome,
+        // eslint-disable-next-line no-unused-vars
+        resolvedAt: Date,
+        // eslint-disable-next-line no-unused-vars
+        claimable: boolean,
+    ) => void;
 }
 
 export const useMarketsStore = create<MarketsState>()(
@@ -139,11 +162,17 @@ export const useMarketsStore = create<MarketsState>()(
                     'markets/applyStatusChange',
                 ),
 
-            applyResolution: (marketId, winningOutcome, resolvedAt) =>
+            applyResolution: (marketId, winningOutcome, resolvedAt, claimable) =>
                 set(
                     (s) => {
                         const prev = s.byId[marketId];
                         if (!prev) return s;
+                        // Never regress claimable=true back to false —
+                        // protects against the rare case where the
+                        // outcome-pending broadcast arrives AFTER the
+                        // claimable=true follow-up (e.g. reordered
+                        // redis delivery).
+                        const next_claimable = prev.claimable || claimable;
                         return {
                             byId: {
                                 ...s.byId,
@@ -152,6 +181,7 @@ export const useMarketsStore = create<MarketsState>()(
                                     status: MarketStatus.RESOLVED,
                                     winningOutcome,
                                     resolvedAt,
+                                    claimable: next_claimable,
                                 },
                             },
                         };

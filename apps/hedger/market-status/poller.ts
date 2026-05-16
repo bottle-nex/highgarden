@@ -1,9 +1,34 @@
 import { prisma } from "@solmarket/database";
 import type { GammaResolution } from "@solmarket/polymarket-client";
+import chalk from "chalk";
 import { ENV } from "../envs/env";
 import { logger_for } from "../log/log";
 import type PolymarketClient from "../clients/polymarket";
 import type HedgerRedisPublisher from "../redis-publisher";
+import { SolanaResolveOracle } from "../resolver/oracle";
+import ResolverDb from "../db/resolver";
+
+// Colour-tagged single-line traces so the fast-moving auto-resolution
+// path stands out in the hedger's log stream. The four prefixes
+// correspond to the four hops the poller does per FAST_MOVING market:
+// detect (gamma), submit (Solana resolve_market), confirm (signature
+// in hand), and broadcast (lifecycle redis pub).
+const FAST_TAG = {
+    detect: chalk.bgYellow.black(" FAST:DETECT "),
+    submit: chalk.bgBlue.white(" FAST:SUBMIT "),
+    confirm: chalk.bgGreen.black(" FAST:CONFIRM "),
+    bcast: chalk.bgMagenta.white(" FAST:BCAST "),
+    fail: chalk.bgRed.white(" FAST:FAIL "),
+};
+
+/** Pulls the time-window portion out of a Polymarket fast-market name
+ *  (e.g. "Bitcoin Up or Down - May 14, 14:05-14:10 ET" → "May 14, 14:05-14:10 ET").
+ *  Falls back to the whole name when the pattern doesn't match, so a
+ *  malformed title still produces a readable log line. */
+function format_fast_interval(name: string): string {
+    const m = name.match(/-\s*(.+?)\s*$/);
+    return m?.[1] ?? name;
+}
 
 /** Reason string written to `Market.pausedReason` when Polymarket has
  *  closed the market but the winner is not yet determinable because of
@@ -18,6 +43,8 @@ interface CandidateMarket {
     status: "OPEN" | "PAUSED" | "RESOLVED" | "CANCELLED";
     winningOutcome: "YES" | "NO" | null;
     pausedReason: string | null;
+    kind: "STANDARD" | "FAST_MOVING";
+    solanaMarketPda: string | null;
 }
 
 interface TargetState {
@@ -135,6 +162,8 @@ export default class MarketStatusPoller {
                 status: true,
                 winningOutcome: true,
                 pausedReason: true,
+                kind: true,
+                solanaMarketPda: true,
             },
         });
         return rows.filter((r) => !this.is_terminal(r));
@@ -245,21 +274,106 @@ export default class MarketStatusPoller {
             },
             ">>> MARKET-STATUS: DB state updated from gamma",
         );
-        // Fan the resolution out to the web so any user with the event
-        // page open flips to "Claim payout" without polling. Only the
-        // fully-resolved transition is published — UMA-pause flips don't
-        // need a live nudge, since the trade panel already handles pause
-        // states based on a periodic refetch.
-        if (
+        const is_resolved_target =
             target.status === "RESOLVED"
             && target.winningOutcome !== null
-            && target.resolvedAt !== null
-        ) {
+            && target.resolvedAt !== null;
+
+        // Phase 1: surface the outcome to clients the moment we have it,
+        // before the on-chain submit. The Claim button stays disabled on
+        // the client (claimable=false) but the trade panel can show
+        // "YES won" immediately so users aren't stuck on an awaiting
+        // banner while we wait for Solana to confirm.
+        if (is_resolved_target) {
             await this.publisher.publish_resolved(
                 market.id,
-                target.winningOutcome,
-                target.resolvedAt,
+                target.winningOutcome!,
+                target.resolvedAt!,
+                false,
             );
+            if (market.kind === "FAST_MOVING") {
+                console.log(
+                    FAST_TAG.bcast,
+                    chalk.yellow(market.name),
+                    chalk.gray(`[${format_fast_interval(market.name)}]`),
+                    chalk.cyan(`outcome=${target.winningOutcome} (pending settle)`),
+                );
+            }
+        }
+
+        // Phase 2: FAST_MOVING fast-path — collapse the on-chain
+        // `resolve_market` submission into this same tick instead of
+        // waiting for the separate Resolver loop. On success we fire a
+        // second lifecycle broadcast with claimable=true so the
+        // client's Claim button enables. The two-broadcast split means
+        // a failed on-chain submit doesn't strand the user on the
+        // awaiting state — they see the outcome from phase 1 and only
+        // miss the live claim-enable nudge (which the periodic
+        // Resolver loop will publish on retry).
+        if (
+            is_resolved_target
+            && market.kind === "FAST_MOVING"
+            && market.solanaMarketPda
+            && SolanaResolveOracle.is_configured()
+        ) {
+            const interval_label = format_fast_interval(market.name);
+            console.log(
+                FAST_TAG.detect,
+                chalk.yellow(market.name),
+                chalk.gray(`[${interval_label}]`),
+                chalk.cyan(`→ ${target.winningOutcome}`),
+            );
+            try {
+                console.log(
+                    FAST_TAG.submit,
+                    chalk.yellow(market.name),
+                    chalk.gray(
+                        `pda=${market.solanaMarketPda.slice(0, 6)}…${market.solanaMarketPda.slice(-4)}`,
+                    ),
+                );
+                const signature = await SolanaResolveOracle.resolve(
+                    market.solanaMarketPda,
+                    target.winningOutcome!,
+                );
+                const now = new Date();
+                await ResolverDb.record_polymarket_resolved(
+                    market.id,
+                    target.winningOutcome!,
+                    target.resolvedAt!,
+                );
+                await ResolverDb.record_solana_resolved(market.id, signature, now);
+                console.log(
+                    FAST_TAG.confirm,
+                    chalk.yellow(market.name),
+                    chalk.green(`won=${target.winningOutcome}`),
+                    chalk.gray(`tx=${signature.slice(0, 8)}…${signature.slice(-6)}`),
+                );
+                // Phase 2b: tell clients the on-chain market is now
+                // resolved → Claim button enables.
+                await this.publisher.publish_resolved(
+                    market.id,
+                    target.winningOutcome!,
+                    target.resolvedAt!,
+                    true,
+                );
+                console.log(
+                    FAST_TAG.bcast,
+                    chalk.yellow(market.name),
+                    chalk.green(`claimable=true won=${target.winningOutcome}`),
+                );
+            } catch (err) {
+                // Falling back to the periodic Resolver loop is safe — it
+                // will retry on its own tick. The phase-1 broadcast
+                // already went out so the user sees the outcome; the
+                // Claim button just stays disabled until the chain catches
+                // up.
+                console.warn(
+                    FAST_TAG.fail,
+                    chalk.yellow(market.name),
+                    chalk.red("on-chain submit failed — periodic Resolver will retry"),
+                    err,
+                );
+            }
         }
     }
 }

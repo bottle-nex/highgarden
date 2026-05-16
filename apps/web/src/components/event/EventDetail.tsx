@@ -111,12 +111,39 @@ function Body({ market }: { market: MarketDTO }) {
             status: live.status,
             winningOutcome: live.winningOutcome,
             resolvedAt: live.resolvedAt?.toISOString() ?? market.resolvedAt,
+            // Claimable can only ever go OPEN→true (never regress), so
+            // keep the stronger of the two values when overlaying.
+            claimable: market.claimable || live.claimable,
         };
     }, [market, live]);
 
     const [delta24h, set_delta24h] = useState<number | null>(null);
     const [is_title_stuck, set_is_title_stuck] = useState(false);
     const sticky_title_ref = useRef<HTMLDivElement>(null);
+
+    // Catch-up poller for the "slot ended but the user's WS missed the
+    // MARKET_RESOLVED broadcast" case (tab was backgrounded, brief
+    // disconnect, etc). We poll the REST endpoint every 3 seconds
+    // while:
+    //   • the slot's wall-clock window has passed, AND
+    //   • either status is still OPEN, OR status is RESOLVED but
+    //     claimable hasn't flipped to true yet
+    // ...so we eventually pick up the DB write and then the on-chain
+    // confirmation without depending on the WS. Stops itself the moment
+    // both transitions are reflected in the live store.
+    const needs_catchup_poll =
+        live_market.kind === 'FAST_MOVING'
+        && new Date(live_market.endAt).getTime() < Date.now()
+        && (live_market.status !== 'RESOLVED' || !live_market.claimable);
+    useEffect(() => {
+        if (!needs_catchup_poll) return;
+        const id = setInterval(() => {
+            void fetch_market_by_id(market.id).then((m) => {
+                if (m) useMarketsStore.getState().upsert_one(m);
+            });
+        }, 3_000);
+        return () => clearInterval(id);
+    }, [needs_catchup_poll, market.id]);
 
     useEffect(() => {
         const el = sticky_title_ref.current;
@@ -189,7 +216,11 @@ function Body({ market }: { market: MarketDTO }) {
                             />
                         </div>
                         <div className="order-4 lg:order-0">
-                            <EventOrderBook marketId={market.id} />
+                            <EventOrderBook
+                                marketId={market.id}
+                                endAt={live_market.endAt}
+                                status={live_market.status}
+                            />
                         </div>
                     </div>
                     <div className="order-6 lg:order-0">

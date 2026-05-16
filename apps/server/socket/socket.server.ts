@@ -455,6 +455,7 @@ export default class SocketServer {
                 marketId: event.marketId,
                 winningOutcome: event.winningOutcome,
                 resolvedAt: event.resolvedAt,
+                claimable: event.claimable,
             },
         });
         let sent = 0;

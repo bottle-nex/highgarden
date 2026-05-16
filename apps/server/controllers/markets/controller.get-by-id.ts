@@ -27,6 +27,17 @@ export default class GetMarketByIdController {
 
             const m = listing.market;
             const p = listing.market.polymarket;
+            // Claimable is true once the hedger has confirmed resolve_market
+            // on Solana. Surfaced separately from status=RESOLVED so the
+            // trade panel can show the outcome the moment gamma publishes
+            // while keeping the Claim button gated on chain confirmation.
+            const resolver_row = await prisma.resolverState.findUnique({
+                where: { marketId: m.id },
+                select: { stage: true },
+            });
+            const claimable =
+                resolver_row?.stage === "SOLANA_RESOLVED"
+                || resolver_row?.stage === "REDEEMED";
             const dto: MarketDTO = {
                 id: m.id,
                 name: m.name,
@@ -48,6 +59,7 @@ export default class GetMarketByIdController {
                 fastSeriesKey: m.fastSeriesKey,
                 winningOutcome: m.winningOutcome as Outcome | null,
                 resolvedAt: m.resolvedAt?.toISOString() ?? null,
+                claimable,
                 tags: p.tags,
             };
 

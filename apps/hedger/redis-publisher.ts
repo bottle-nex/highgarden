@@ -13,6 +13,11 @@ type LifecycleEvent = {
     marketId: string;
     winningOutcome: "YES" | "NO";
     resolvedAt: string;
+    /** False on the first broadcast (gamma published a winner, on-chain
+     *  resolve_market still in flight). True on the follow-up after the
+     *  Solana tx confirms. Trade panel uses this to gate the Claim
+     *  button while still surfacing the outcome immediately. */
+    claimable: boolean;
 };
 
 /**
@@ -39,12 +44,14 @@ export default class HedgerRedisPublisher {
         market_id: string,
         winning_outcome: "YES" | "NO",
         resolved_at: Date,
+        claimable: boolean,
     ): Promise<void> {
         const event: LifecycleEvent = {
             kind: "resolved",
             marketId: market_id,
             winningOutcome: winning_outcome,
             resolvedAt: resolved_at.toISOString(),
+            claimable,
         };
         try {
             await this.pub.publish(REDIS_CHANNELS.market_lifecycle, JSON.stringify(event));

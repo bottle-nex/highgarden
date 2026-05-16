@@ -91,17 +91,30 @@ export interface MarketDTO {
   winningOutcome: Outcome | null;
   /** ISO timestamp the market entered RESOLVED status. Null while open. */
   resolvedAt: string | null;
+  /** True once the on-chain `resolve_market` instruction has confirmed on
+   *  Solana — i.e. the moment users can actually call the claim
+   *  instruction. This is a *separate* state from `status === RESOLVED`:
+   *  the DB flips to RESOLVED the second gamma publishes a winner, but
+   *  the on-chain tx lands a few hundred ms later (longer if the hedger
+   *  Resolver has to retry). The trade panel shows the winner the
+   *  moment `status === RESOLVED`, but the Claim button only enables
+   *  when `claimable === true`. */
+  claimable: boolean;
   /** Polymarket tag labels, e.g. ["Crypto", "Bitcoin"]. Empty array if untagged. */
   tags: string[];
 }
 
 /** Pushed by the server WS layer when a market transitions to RESOLVED.
  *  Lets every open client (anyone who has the event page open) flip
- *  immediately to the "Claim payout" UI without polling. */
+ *  immediately to the "Claim payout" UI without polling. Fires twice
+ *  per market: once when gamma publishes the winner (claimable=false,
+ *  outcome visible) and once when the on-chain resolve_market lands
+ *  (claimable=true, Claim button enabled). */
 export interface MarketResolvedPayload {
   marketId: string;
   winningOutcome: Outcome;
   resolvedAt: string;
+  claimable: boolean;
 }
 
 /** Toggle/list response for bookmarks. */

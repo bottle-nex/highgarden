@@ -55,6 +55,16 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
     const requireAuth = useRequireAuth();
 
     const is_resolved = market.status === 'RESOLVED';
+    // Intermediate state: slot's wall-clock window has passed but the
+    // server hasn't recorded a resolution yet. For fast-moving markets
+    // we collapse on-chain resolve into the same poll tick (see
+    // hedger/market-status/poller), so this window is typically a few
+    // seconds — but we still render a distinct panel so the user
+    // doesn't see a stale Buy/Sell UI for a slot that's already ended.
+    const is_awaiting_resolution =
+        !is_resolved
+        && market.kind === 'FAST_MOVING'
+        && new Date(market.endAt).getTime() < Date.now();
     const winner_label =
         market.winningOutcome === 'YES'
             ? 'YES'
@@ -327,28 +337,58 @@ export default function EventTradePanel({ market }: Props): JSX.Element {
                             </div>
                         )}
                         <p className="text-[11px] text-white/45 mt-2">
-                            If you held winning shares, you can claim your USDC payout now.
+                            {market.claimable
+                                ? 'If you held winning shares, you can claim your USDC payout now.'
+                                : 'On-chain settlement in flight — Claim will enable in a moment.'}
                         </p>
                     </div>
                     <button
                         type="button"
                         onClick={handle_claim}
-                        disabled={claiming}
+                        disabled={claiming || !market.claimable}
                         className={cn(
                             'w-full py-3 rounded-lg text-[14px] font-bold transition-all transform duration-200',
                             'bg-emerald-400 text-emerald-950 active:translate-y-px',
                             'shadow-[inset_0_-2.5px_0_rgba(0,0,0,0.18)]',
-                            claiming
+                            claiming || !market.claimable
                                 ? 'opacity-40 cursor-not-allowed'
                                 : 'cursor-pointer active:scale-[0.99]',
                         )}
                     >
-                        {claiming ? 'Claiming…' : 'Claim payout'}
+                        {claiming
+                            ? 'Claiming…'
+                            : market.claimable
+                              ? 'Claim payout'
+                              : 'Settling on-chain…'}
                     </button>
                 </div>
             )}
 
-            {!is_resolved && (
+            {is_awaiting_resolution && (
+                <div className="px-5 py-6 space-y-4">
+                    <div>
+                        <div className="text-[10px] tracking-[0.2em] uppercase text-amber-300/80">
+                            Awaiting resolution
+                        </div>
+                        <div className="text-[13px] text-white/85 mt-1 flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5">
+                                <span className="relative flex size-1.5">
+                                    <span className="absolute inset-0 size-1.5 rounded-full bg-amber-400/70 animate-ping" />
+                                    <span className="relative size-1.5 rounded-full bg-amber-400" />
+                                </span>
+                            </span>
+                            Round ended — waiting for the on-chain settle.
+                        </div>
+                        <p className="text-[11px] text-white/45 mt-2">
+                            Buying and selling are closed for this slot. The outcome
+                            will appear here in a few seconds, and you can claim
+                            then if you held the winning side.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {!is_resolved && !is_awaiting_resolution && (
                 <>
                     <div className="flex items-center justify-between px-3 sm:px-5 pt-3 sm:pt-4">
                         <div className="flex gap-1">

@@ -34,6 +34,7 @@ function build_dummy_market(): MarketDTO {
         fastSeriesKey: null,
         winningOutcome: null,
         resolvedAt: null,
+        claimable: false,
         tags: ['Politics', 'Geopolitics', 'World'],
     };
 }
