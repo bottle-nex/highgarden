@@ -143,8 +143,8 @@ export abstract class SocketBase {
             }
         }
 
-        // console.log("message received from clob client: ", log_data_1);
-        // console.log("message received from clob client: ", log_data_2);
+        console.log("message received from clob client: ", log_data_1);
+        console.log("message received from clob client: ", log_data_2);
 
         const items = Array.isArray(parsed) ? parsed : [parsed];
         for (const item of items) {
