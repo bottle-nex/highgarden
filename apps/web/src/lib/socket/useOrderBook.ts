@@ -78,7 +78,7 @@ export function useOrderBook(
             hydrating.current.delete(key);
             set_is_refetching(false);
         }
-    }, [marketId, outcome]);
+    }, [marketId, outcome, frozen]);
 
     useEffect(() => {
         void hydrate_book();

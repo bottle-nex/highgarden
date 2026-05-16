@@ -97,8 +97,13 @@ export default function EventOrderBook({ marketId, endAt, status }: Props): JSX.
     // stopped accepting orders, the mirror is winding down, any incoming
     // ticks would be the last stragglers). We freeze the view here AND
     // skip the safety-net REST poll inside useOrderBook below.
-    const slot_closed =
-        status === 'RESOLVED' || (endAt !== undefined && new Date(endAt).getTime() < Date.now());
+    // Wall-clock check is deliberately impure — we want the value
+    // re-evaluated on every render so the panel transitions the
+    // moment endAt passes. Re-renders are driven by external state
+    // (orderbook store subscription) anyway, so the value stays in
+    // sync with reality without needing a separate ticker.
+    /* eslint-disable-next-line react-hooks/purity */
+    const slot_closed = status === 'RESOLVED' || (endAt !== undefined && new Date(endAt).getTime() < Date.now());
     const book = useOrderBook(marketId, selectedOutcome, slot_closed);
     const { refetch, isRefetching } = book;
     const scroll_ref = useRef<HTMLDivElement | null>(null);

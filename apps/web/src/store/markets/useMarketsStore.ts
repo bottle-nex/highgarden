@@ -98,13 +98,13 @@ interface MarketsState {
      *  after the on-chain `resolve_market` confirms (so the Claim
      *  button enables). */
     applyResolution: (
-        // eslint-disable-next-line no-unused-vars
+         
         marketId: string,
-        // eslint-disable-next-line no-unused-vars
+         
         winningOutcome: Outcome,
-        // eslint-disable-next-line no-unused-vars
+         
         resolvedAt: Date,
-        // eslint-disable-next-line no-unused-vars
+         
         claimable: boolean,
     ) => void;
 }

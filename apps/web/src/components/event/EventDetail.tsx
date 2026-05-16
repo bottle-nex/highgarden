@@ -133,6 +133,7 @@ function Body({ market }: { market: MarketDTO }) {
     // both transitions are reflected in the live store.
     const needs_catchup_poll =
         live_market.kind === 'FAST_MOVING'
+        // eslint-disable-next-line react-hooks/purity
         && new Date(live_market.endAt).getTime() < Date.now()
         && (live_market.status !== 'RESOLVED' || !live_market.claimable);
     useEffect(() => {
