@@ -34,6 +34,10 @@ const EMPTY: DepthLevel[] = [];
 export function useOrderBook(
     marketId: string | null | undefined,
     outcome: Outcome,
+    /** When true (slot endAt has passed or the market is RESOLVED) we
+     *  skip both the initial REST seed and the safety-net poller. The
+     *  book is dead — no orders, no point burning network on it. */
+    frozen: boolean = false,
 ): UseOrderBookResult {
     const depth = useOrderBookDepthStore(
         marketId ? selectDepth(marketId, outcome) : () => undefined,
@@ -44,6 +48,7 @@ export function useOrderBook(
 
     const hydrate_book = useCallback(async (): Promise<void> => {
         if (!marketId) return;
+        if (frozen) return;
         const key = `${marketId}:${outcome}`;
         // Dedupe truly-concurrent calls (e.g. user spamming the refresh
         // button). NOTE: do NOT use a per-call cancellation flag to gate the
@@ -73,7 +78,7 @@ export function useOrderBook(
             hydrating.current.delete(key);
             set_is_refetching(false);
         }
-    }, [marketId, outcome]);
+    }, [marketId, outcome, frozen]);
 
     useEffect(() => {
         void hydrate_book();
@@ -91,12 +96,12 @@ export function useOrderBook(
     // 15s is long enough to stay out of the WS's way but short enough that
     // a missed tick doesn't leave a 5-min crypto market visibly stale.
     useEffect(() => {
-        if (!marketId) return;
+        if (!marketId || frozen) return;
         const handle = setInterval(() => {
             void hydrate_book();
         }, 15_000);
         return () => clearInterval(handle);
-    }, [marketId, hydrate_book]);
+    }, [marketId, hydrate_book, frozen]);
 
     const refetch = useCallback((): void => {
         void hydrate_book();

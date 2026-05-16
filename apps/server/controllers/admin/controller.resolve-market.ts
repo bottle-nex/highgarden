@@ -64,10 +64,14 @@ export default class ResolveMarketController {
             // Failure here only affects live UX (a refresh recovers), so
             // we log + continue rather than failing the admin response.
             try {
+                // Manual admin resolve does both the DB write and the
+                // on-chain resolve_market in one shot, so by the time we
+                // publish the chain is already settled — claimable=true.
                 await services.market_lifecycle.publish_resolved({
                     marketId: market_id,
                     winningOutcome: result.winningOutcome as Outcome,
                     resolvedAt: resolved_at.toISOString(),
+                    claimable: true,
                 });
             } catch (err) {
                 console.error("[admin/resolve-market] lifecycle publish failed", err);

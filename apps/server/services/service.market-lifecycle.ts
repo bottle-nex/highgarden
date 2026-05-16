@@ -25,6 +25,26 @@ export default class MarketLifecyclePublisher {
         const wire = { kind: "resolved" as const, ...payload };
         await this.pub.publish(REDIS_CHANNELS.market_lifecycle, JSON.stringify(wire));
     }
+
+    /** Sugar for the "outcome known, on-chain still pending" broadcast.
+     *  Use right after the DB write so the trade panel can show the
+     *  winner without waiting for resolve_market to land. */
+    public async publish_outcome_pending(
+        marketId: string,
+        winningOutcome: MarketResolvedPayload["winningOutcome"],
+        resolvedAt: string,
+    ): Promise<void> {
+        await this.publish_resolved({ marketId, winningOutcome, resolvedAt, claimable: false });
+    }
+
+    /** Sugar for the "on-chain confirmed, claim is live" follow-up. */
+    public async publish_claimable(
+        marketId: string,
+        winningOutcome: MarketResolvedPayload["winningOutcome"],
+        resolvedAt: string,
+    ): Promise<void> {
+        await this.publish_resolved({ marketId, winningOutcome, resolvedAt, claimable: true });
+    }
 }
 
 /** Wire-format union of every event we publish on the lifecycle channel.

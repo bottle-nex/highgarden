@@ -222,7 +222,7 @@ export class SocketEventHandlers {
     static handle_market_resolved(
         msg: Extract<ServerMessage, { type: SERVER_MESSAGE_TYPE.MARKET_RESOLVED }>,
     ): void {
-        const { marketId, winningOutcome, resolvedAt } = msg.payload;
+        const { marketId, winningOutcome, resolvedAt, claimable } = msg.payload;
         const store = useMarketsStore.getState();
         const existing = store.byId[marketId];
         if (!existing) return; // user has never opened this market — nothing to update
@@ -230,6 +230,7 @@ export class SocketEventHandlers {
             marketId,
             winningOutcome === 'YES' ? Outcome.YES : Outcome.NO,
             new Date(resolvedAt),
+            claimable,
         );
         // Only toast the first time we observe the transition — a repeat
         // broadcast (e.g. server restart re-emitting a recent event) on an

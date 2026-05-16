@@ -69,14 +69,19 @@ const schema = z.object({
     HEDGER_RESOLVER_POLL_INTERVAL_MS: z.coerce.number().default(60_000),
     HEDGER_RESOLVER_DISPUTE_WINDOW_HOURS: z.coerce.number().default(48),
     /**
-     * Independent loop that polls Polymarket gamma for every approved
-     * market with a Solana PDA and reflects the resolution state into
-     * `Market.status` / `Market.pausedReason`. Separate from the on-chain
-     * resolver above because the DB write is cheap and should run on a
-     * tighter cadence than the on-chain resolve_market path (also runs
-     * even when the oracle keypair isn't configured).
+     * Poller that reflects Polymarket gamma's resolution state into
+     * `Market.status` + `Market.winningOutcome`. For FAST_MOVING markets
+     * it also collapses the on-chain `resolve_market` submission into
+     * the same tick (see MarketStatusPoller.apply_target) so the user's
+     * Claim button works the moment it appears.
+     *
+     * 5s default is aggressive but warranted: a 5-min crypto Up/Down
+     * slot needs sub-second-grade resolution-to-claim latency for
+     * the UX to feel real-time, and gamma has plenty of headroom for
+     * one fetch per market every 5s. Bump up for long-form-only
+     * deployments.
      */
-    HEDGER_MARKET_STATUS_POLL_INTERVAL_MS: z.coerce.number().default(60_000),
+    HEDGER_MARKET_STATUS_POLL_INTERVAL_MS: z.coerce.number().default(5_000),
 
     // reconciler loop tuning
     HEDGER_RECONCILE_INTERVAL_MS: z.coerce.number().default(60_000),
