@@ -78,19 +78,40 @@ export const useOrderBookStore = create<OrderBookState>()(
     ),
 );
 
-// ─── rAF Coalescer (module-level singleton) ───────────────────────────────────
-// Accumulates incoming PRICE_UPDATE payloads and flushes once per animation
-// frame. This caps renders to ~60/s regardless of WS message rate.
+// ─── Coalescer (module-level singleton) ───────────────────────────────────────
+// Accumulates incoming PRICE_UPDATE payloads. Belt-and-suspenders:
+// schedule both a requestAnimationFrame AND a setTimeout fallback so
+// the queue still drains when the tab is backgrounded (RAF can be
+// paused; setTimeout is throttled but still fires).
+
+const FLUSH_FALLBACK_MS = 250;
 
 const pending = new Map<BookKey, TopOfBook>();
-let rafId: number | null = null;
+let raf_id: number | null = null;
+let timeout_id: ReturnType<typeof setTimeout> | null = null;
 
-function flush() {
-    rafId = null;
+function flush(): void {
+    if (raf_id !== null) {
+        cancelAnimationFrame(raf_id);
+        raf_id = null;
+    }
+    if (timeout_id !== null) {
+        clearTimeout(timeout_id);
+        timeout_id = null;
+    }
     if (pending.size === 0) return;
     const batch = new Map(pending);
     pending.clear();
-    useOrderBookStore.getState()._flush(batch);
+    try {
+        useOrderBookStore.getState()._flush(batch);
+    } catch {
+        // Swallow so a single bad payload doesn't poison the queue.
+    }
+}
+
+function schedule(): void {
+    if (raf_id === null) raf_id = requestAnimationFrame(flush);
+    if (timeout_id === null) timeout_id = setTimeout(flush, FLUSH_FALLBACK_MS);
 }
 
 /** Call this from the stream layer for every PRICE_UPDATE message received. */
@@ -109,9 +130,7 @@ export function enqueueBookUpdate(payload: PriceUpdatePayload) {
     if (!existing || incoming.updatedAt > existing.updatedAt) {
         pending.set(key, incoming);
     }
-    if (rafId === null) {
-        rafId = requestAnimationFrame(flush);
-    }
+    schedule();
 }
 
 // ─── Selectors ───────────────────────────────────────────────────────────────

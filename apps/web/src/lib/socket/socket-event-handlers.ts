@@ -17,7 +17,7 @@ import {
     useOrderBookDepthStore,
     type DepthChange,
 } from '@/store/book/useOrderBookDepthStore';
-import { useLastTradeStore } from '@/store/book/useLastTradeStore';
+import { enqueueLastTradeUpdate } from '@/store/book/useLastTradeStore';
 import { toast } from 'sonner';
 
 interface BookLevel {
@@ -118,7 +118,7 @@ export class SocketEventHandlers {
             asks,
             new Date(event.timestamp).getTime(),
         );
-        useLastTradeStore.getState().apply(payload);
+        enqueueLastTradeUpdate(payload);
         useStreamStore.getState().markFresh(mapping.marketId);
     }
 
@@ -165,7 +165,7 @@ export class SocketEventHandlers {
             depth_changes,
             new Date(event.timestamp).getTime(),
         );
-        useLastTradeStore.getState().apply(payload);
+        enqueueLastTradeUpdate(payload);
     }
 
     static handle_market(msg: Extract<ServerMessage, { type: SERVER_MESSAGE_TYPE.MARKET }>): void {

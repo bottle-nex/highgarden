@@ -1,6 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState, type JSX } from 'react';
+import {
+    memo,
+    useCallback,
+    useDeferredValue,
+    useEffect,
+    useMemo,
+    useState,
+    type JSX,
+} from 'react';
 import {
     Area,
     AreaChart,
@@ -103,46 +111,14 @@ function PriceTooltip({ active, payload, range }: PriceTooltipShape): JSX.Elemen
     if (!active || !payload || payload.length === 0) return null;
     const p = payload[0]!.payload;
     return (
-        <div
-            style={{
-                background: 'rgba(6,6,8,0.94)',
-                border: '1px solid rgba(245,158,11,0.22)',
-                borderRadius: 6,
-                padding: '8px 12px',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.6)',
-                backdropFilter: 'blur(16px)',
-                pointerEvents: 'none',
-            }}
-        >
-            <div
-                style={{
-                    fontSize: 9,
-                    letterSpacing: '0.18em',
-                    textTransform: 'uppercase',
-                    color: 'rgba(245,158,11,0.7)',
-                    marginBottom: 4,
-                }}
-            >
+        <div className="rounded-md bg-dark-alpha ring-1 ring-white/5 backdrop-blur-xl px-3 py-2 pointer-events-none">
+            <div className="text-[9px] tracking-[0.18em] uppercase text-white/40 mb-1">
                 {format_x_label(p.t, range)}
             </div>
-            <div
-                style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: 'rgba(255,255,255,0.92)',
-                    fontVariantNumeric: 'tabular-nums',
-                }}
-            >
+            <div className="text-[13px] font-semibold text-white/95 tabular-nums">
                 {format_usd(p.c)}
             </div>
-            <div
-                style={{
-                    fontSize: 10,
-                    color: 'rgba(255,255,255,0.45)',
-                    marginTop: 3,
-                    fontVariantNumeric: 'tabular-nums',
-                }}
-            >
+            <div className="text-[10px] text-white/40 mt-0.5 tabular-nums">
                 O {format_usd(p.o)} · H {format_usd(p.h)} · L {format_usd(p.l)}
             </div>
         </div>
@@ -153,42 +129,63 @@ function PriceTooltip({ active, payload, range }: PriceTooltipShape): JSX.Elemen
  *  BarChart cursor is a translucent rectangle the full width of the
  *  slot, which reads as a "thick line" over a dense candle row. We
  *  draw a one-pixel dashed line at the slot's center instead, matching
- *  the indicator Polymarket uses on their fast-moving charts. */
-function DottedCursor(props: unknown): JSX.Element {
-    const p = props as { x?: number; y?: number; width?: number; height?: number };
-    const x = p.x ?? 0;
-    const y = p.y ?? 0;
-    const width = p.width ?? 0;
-    const height = p.height ?? 0;
-    const cx = x + width / 2;
+ *  the indicator Polymarket uses on their fast-moving charts.
+ *
+ *  Memo'd so recharts' internal re-renders on every mouse move don't
+ *  trigger a fresh React reconciliation of the cursor's SVG when the
+ *  cursor position hasn't actually changed.
+ */
+interface DottedCursorProps {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+}
+const DottedCursor = memo(function DottedCursor(props: DottedCursorProps): JSX.Element {
+    const x = props.x ?? 0;
+    const y = props.y ?? 0;
+    const width = props.width ?? 0;
+    const height = props.height ?? 0;
+    // Round then offset by 0.5 so a 1px stroke lands inside a single
+    // device-pixel column instead of straddling two. Standard SVG
+    // hairline trick. Combined with crispEdges this stops the line
+    // from anti-aliasing into a ~2px smear.
+    const cx = Math.round(x + width / 2) + 0.5;
     return (
         <line
             x1={cx}
             x2={cx}
             y1={y}
             y2={y + height}
-            stroke="rgba(245,158,11,0.6)"
+            stroke="rgba(255,255,255,0.28)"
             strokeWidth={1}
-            strokeDasharray="3 4"
+            strokeDasharray="1 5"
+            shapeRendering="crispEdges"
             pointerEvents="none"
         />
     );
-}
+});
 
 /** Custom shape that draws a candlestick body + wick inside a recharts
  *  Bar. Recharts gives us the band's (x, width) and a height calculated
  *  from `[low, high]`; we reach into the row to position the OHLC body
  *  inside that band manually. Sized so very thin price moves still show
- *  a visible body (minimum 1px). */
-function Candle(props: unknown): JSX.Element {
-    const p = props as {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        payload: { o: number; c: number; h: number; l: number };
-    };
-    const { x, width, payload, y, height } = p;
+ *  a visible body (minimum 1px).
+ *
+ *  Memo'd so when recharts re-renders the BarChart on hover, candles
+ *  whose (x, y, width, height, payload) haven't changed bail out of
+ *  reconciliation. With 60-365 bars this is the single biggest win
+ *  for hover smoothness.
+ */
+interface CandleProps {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    payload: { o: number; c: number; h: number; l: number };
+}
+const Candle = memo(function Candle(props: CandleProps): JSX.Element {
+    const { x, width, payload, y, height } = props;
     const { o, c, h, l } = payload;
     const range = h - l || 1;
     const top_y = y;
@@ -216,9 +213,26 @@ function Candle(props: unknown): JSX.Element {
             <rect x={body_x} y={body_top_y} width={body_w} height={body_h} fill={color} />
         </g>
     );
+});
+
+// Hoisted to module scope so React reconciliation sees stable references
+// instead of fresh object/function refs every parent render. The dataKey
+// is what feeds recharts the [low, high] band each candle spans.
+const CHART_MARGIN = { top: 24, right: 16, bottom: 0, left: 0 } as const;
+const TICK_STYLE = { fill: '#a3a3a3', fontSize: 10 } as const;
+const KLINE_DATA_KEY = (d: Kline): [number, number] => [d.l, d.h];
+const PRICE_AREA_ACTIVE_DOT = { r: 3, fill: '#f59e0b' } as const;
+const PRICE_AREA_CURSOR = { stroke: 'rgba(245,158,11,0.25)' } as const;
+
+// Function-form `shape` lets recharts pass per-bar props (x, y, width,
+// height, payload) which we forward to the memo'd component. React
+// reconciles the returned element per bar; identical props short-circuit
+// the render.
+function render_candle_shape(props: unknown): JSX.Element {
+    return <Candle {...(props as CandleProps)} />;
 }
 
-export default function EventBtcPriceChart({
+function EventBtcPriceChart({
     seriesKey,
     range,
     mode,
@@ -230,6 +244,21 @@ export default function EventBtcPriceChart({
     const symbol = binance_symbol_for_series(seriesKey);
     const [klines, set_klines] = useState<Kline[]>([]);
     const [status, set_status] = useState<'loading' | 'ready' | 'error'>('loading');
+    // Vertical (recharts cursor) tracks the active slot. Horizontal line
+    // needs the raw mouse y, which we capture from BarChart's onMouseMove
+    // and render via a div overlay sibling to ResponsiveContainer.
+    const [cursor_y, set_cursor_y] = useState<number | null>(null);
+
+    const handle_chart_mouse_move = useCallback(
+        (state: { activeCoordinate?: { y?: number } }) => {
+            const y = state?.activeCoordinate?.y;
+            if (typeof y === 'number') set_cursor_y(y);
+        },
+        [],
+    );
+    const handle_chart_mouse_leave = useCallback((): void => {
+        set_cursor_y(null);
+    }, []);
 
     useEffect(() => {
         if (!symbol) return;
@@ -238,7 +267,7 @@ export default function EventBtcPriceChart({
         let teardown: (() => void) | null = null;
         // eslint-disable-next-line react-hooks/set-state-in-effect
         set_status('loading');
-         
+
         set_klines([]);
 
         void fetch_binance_klines(symbol, interval, limit).then((rows) => {
@@ -251,30 +280,67 @@ export default function EventBtcPriceChart({
             set_status('ready');
         });
 
-        // Live updates: every kline tick either updates the trailing
-        // candle (in-progress) or appends a new one (just-closed).
+        // Throttle live kline commits to ~5Hz. Binance pushes the same
+        // candle's OHLC many times per second during volatility; recharts
+        // re-rendering 60-365 bars per push is what causes the lag the
+        // user sees. We buffer by `t` (so the rare close-frame + new-
+        // candle-open within one window are both preserved) and flush
+        // either on the leading edge of an idle window or via a single
+        // trailing setTimeout.
+        const DISPLAY_THROTTLE_MS = 200;
+        const pending = new Map<number, Kline>();
+        let last_commit_at = 0;
+        let trailing_timer: ReturnType<typeof setTimeout> | null = null;
+
+        const apply_batch = (): void => {
+            if (pending.size === 0) return;
+            const batch = Array.from(pending.values()).sort((a, b) => a.t - b.t);
+            pending.clear();
+            last_commit_at = performance.now();
+            set_klines((prev) => {
+                let next = prev;
+                for (const k of batch) {
+                    if (next.length === 0) {
+                        next = [k];
+                        continue;
+                    }
+                    const last = next[next.length - 1]!;
+                    if (k.t === last.t) {
+                        next = next.slice(0, -1);
+                        next.push(k);
+                    } else if (k.t > last.t) {
+                        next = next.length >= limit ? next.slice(1) : next.slice();
+                        next.push(k);
+                    }
+                    // older-than-tail tick: ignore (would corrupt ordering)
+                }
+                return next;
+            });
+        };
+
         teardown = subscribe_binance_klines(symbol, interval, (k) => {
             if (cancelled) return;
-            set_klines((prev) => {
-                if (prev.length === 0) return [k];
-                const last = prev[prev.length - 1]!;
-                if (k.t === last.t) {
-                    const next = prev.slice(0, -1);
-                    next.push(k);
-                    return next;
-                }
-                if (k.t > last.t) {
-                    const next = prev.length >= limit ? prev.slice(1) : prev.slice();
-                    next.push(k);
-                    return next;
-                }
-                // older-than-tail tick — ignore (would corrupt ordering)
-                return prev;
-            });
+            pending.set(k.t, k);
+            const now = performance.now();
+            const since = now - last_commit_at;
+            if (since >= DISPLAY_THROTTLE_MS) {
+                apply_batch();
+                return;
+            }
+            if (trailing_timer !== null) return;
+            trailing_timer = setTimeout(() => {
+                trailing_timer = null;
+                apply_batch();
+            }, DISPLAY_THROTTLE_MS - since);
         });
 
         return () => {
             cancelled = true;
+            if (trailing_timer !== null) {
+                clearTimeout(trailing_timer);
+                trailing_timer = null;
+            }
+            pending.clear();
             teardown?.();
         };
     }, [symbol, range]);
@@ -313,6 +379,13 @@ export default function EventBtcPriceChart({
         return { yMin: lo - span * 0.05, yMax: hi + span * 0.05 };
     }, [klines]);
 
+    // Defer the chart data so React can prioritise input (hover, scroll)
+    // over re-rendering the bar/area set. When a throttled kline commit
+    // lands while the user is dragging across the chart, React renders
+    // the cursor at the new pointer position first and applies the new
+    // data on the next idle tick, keeping mouse-move responsive.
+    const data = useDeferredValue(klines);
+
     if (!symbol) {
         return (
             <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.25em] uppercase text-white/30">
@@ -337,12 +410,16 @@ export default function EventBtcPriceChart({
         );
     }
 
-    const data = klines;
-
     if (mode === 'candles') {
         return (
-            <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} margin={{ top: 24, right: 16, bottom: 0, left: 0 }}>
+            <div className="relative w-full h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                        data={data}
+                        margin={CHART_MARGIN}
+                        onMouseMove={handle_chart_mouse_move}
+                        onMouseLeave={handle_chart_mouse_leave}
+                    >
                     <CartesianGrid
                         stroke="rgba(255,255,255,0.03)"
                         strokeDasharray="4 3"
@@ -357,14 +434,14 @@ export default function EventBtcPriceChart({
                         ticks={xTicks}
                         tickFormatter={(v) => format_x_label(v as number, range)}
                         hide={!showXAxis}
-                        tick={{ fill: '#a3a3a3', fontSize: 10 }}
+                        tick={TICK_STYLE}
                         tickLine={false}
                         axisLine={false}
                     />
                     <YAxis
                         domain={[yMin, yMax]}
                         hide={!showYAxis}
-                        tick={{ fill: '#a3a3a3', fontSize: 10 }}
+                        tick={TICK_STYLE}
                         tickFormatter={(v) =>
                             `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
                         }
@@ -384,30 +461,41 @@ export default function EventBtcPriceChart({
                             />
                         )}
                         // BarChart's default cursor is a thick filled
-                        // rectangle the width of the slot — visually
+                        // rectangle the width of the slot, visually
                         // distracting on a dense candle row. Replace
                         // with a 1px dashed vertical line at the slot's
                         // center, matching the indicator Polymarket
                         // shows on their fast-moving charts.
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        cursor={DottedCursor as any}
+                        cursor={<DottedCursor />}
                         isAnimationActive={false}
                     />
                     <Bar
-                        dataKey={(d: Kline) => [d.l, d.h] as [number, number]}
+                        dataKey={KLINE_DATA_KEY}
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        shape={Candle as any}
+                        shape={render_candle_shape as any}
                         isAnimationActive={false}
                     />
-                </BarChart>
-            </ResponsiveContainer>
+                    </BarChart>
+                </ResponsiveContainer>
+                {cursor_y !== null && (
+                    <div
+                        className="absolute left-0 right-0 pointer-events-none"
+                        style={{
+                            top: cursor_y - 0.5,
+                            height: 1,
+                            backgroundImage:
+                                'repeating-linear-gradient(to right, rgba(255,255,255,0.28) 0 1px, transparent 1px 6px)',
+                        }}
+                    />
+                )}
+            </div>
         );
     }
 
     // mode === 'price'
     return (
         <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 24, right: 16, bottom: 0, left: 0 }}>
+            <AreaChart data={data} margin={CHART_MARGIN}>
                 <defs>
                     <linearGradient id="evtBtcPriceArea" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="rgba(245,158,11,0.35)" />
@@ -452,7 +540,7 @@ export default function EventBtcPriceChart({
                             range={range}
                         />
                     )}
-                    cursor={{ stroke: 'rgba(245,158,11,0.25)' }}
+                    cursor={PRICE_AREA_CURSOR}
                     isAnimationActive={false}
                 />
                 <Area
@@ -462,9 +550,14 @@ export default function EventBtcPriceChart({
                     strokeWidth={2}
                     fill="url(#evtBtcPriceArea)"
                     isAnimationActive={false}
-                    activeDot={{ r: 3, fill: '#f59e0b' }}
+                    activeDot={PRICE_AREA_ACTIVE_DOT}
                 />
             </AreaChart>
         </ResponsiveContainer>
     );
 }
+
+// Memo: all props are primitives, so shallow equality bails out cleanly
+// when the parent re-renders without the chart's inputs actually changing
+// (the NowClock 1Hz tick, settings popover toggles, outcome switch, etc.).
+export default memo(EventBtcPriceChart);

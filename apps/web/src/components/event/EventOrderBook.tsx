@@ -1,6 +1,6 @@
 'use client';
 
-import { JSX, useCallback, useEffect, useRef, useState } from 'react';
+import { JSX, memo, useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Outcome } from '@solmarket/types';
 import { useOrderBook } from '@/lib/socket/useOrderBook';
@@ -8,11 +8,15 @@ import ToolTipComponent from '@/components/utility/ToolTipComponent';
 import { cn } from '@/lib/utils';
 import { TbReload } from 'react-icons/tb';
 
+// Tween, not spring. Springs overshoot, and with depth snapshots
+// arriving on every store flush the spring never finishes settling
+// before a new target arrives. That restart-on-restart is what reads
+// as "wobble". A linear-ish tween of ~220ms glides cleanly from one
+// throttled snapshot to the next (commit cadence ~150ms in useOrderBook).
 const BAR_TRANSITION = {
-    type: 'spring',
-    stiffness: 220,
-    damping: 32,
-    mass: 0.6,
+    type: 'tween',
+    duration: 0.22,
+    ease: [0.25, 0.1, 0.25, 1],
 } as const;
 
 const BAR_STYLE = {
@@ -89,6 +93,68 @@ function format_total(usd: number): string {
         maximumFractionDigits: 2,
     })}`;
 }
+
+interface BookLevelRowProps {
+    price: number;
+    size: number;
+    cum_usd: number;
+    cum_w: number;
+    size_w: number;
+    side: 'ask' | 'bid';
+}
+
+// Memoised so that when a snapshot commits but a given price level's
+// (size, cum_w, size_w) triple is unchanged, its subtree is skipped.
+// In a typical fast market most levels are stable between snapshots,
+// so this drops reconciliation cost to the levels that actually moved.
+const BookLevelRow = memo(function BookLevelRow({
+    price,
+    size,
+    cum_usd,
+    cum_w,
+    size_w,
+    side,
+}: BookLevelRowProps): JSX.Element {
+    const is_ask = side === 'ask';
+    return (
+        <div className="relative grid grid-cols-3 gap-x-3 sm:gap-x-8 pr-2 sm:pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors">
+            <motion.div
+                className={cn(
+                    'absolute inset-y-0 right-0 rounded-none pointer-events-none',
+                    is_ask ? 'bg-rose-500/15' : 'bg-emerald-500/15',
+                )}
+                style={BAR_STYLE}
+                initial={false}
+                animate={{ scaleX: cum_w / 100 }}
+                transition={BAR_TRANSITION}
+            />
+            <motion.div
+                className={cn(
+                    'absolute inset-y-0 right-0 rounded-none pointer-events-none',
+                    is_ask ? 'bg-rose-500/35' : 'bg-emerald-500/35',
+                )}
+                style={BAR_STYLE}
+                initial={false}
+                animate={{ scaleX: size_w / 100 }}
+                transition={BAR_TRANSITION}
+            />
+            <span
+                className={cn(
+                    'relative text-right font-medium',
+                    is_ask ? 'text-rose-500' : 'text-emerald-500',
+                )}
+            >
+                {format_cents(price)}
+            </span>
+            <span className="relative text-right text-white font-light">
+                {format_size(size)}
+            </span>
+            <span className="relative text-right text-white/60 font-light">
+                {format_total(cum_usd)}
+            </span>
+        </div>
+    );
+});
 
 export default function EventOrderBook({ marketId, endAt, status }: Props): JSX.Element {
     const [selectedOutcome, setSelectedOutcome] = useState<Outcome>(Outcome.YES);
@@ -325,34 +391,15 @@ export default function EventOrderBook({ marketId, endAt, status }: Props): JSX.
                                                     const size_w =
                                                         (lvl.size / max_level_size) * 100;
                                                     return (
-                                                        <div
+                                                        <BookLevelRow
                                                             key={`ask-${lvl.price}`}
-                                                            className="relative grid grid-cols-3 gap-x-3 sm:gap-x-8 pr-2 sm:pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
-                                                        >
-                                                            <motion.div
-                                                                className="absolute inset-y-0 right-0 bg-rose-500/15 rounded-none pointer-events-none"
-                                                                style={BAR_STYLE}
-                                                                initial={false}
-                                                                animate={{ scaleX: cum_w / 100 }}
-                                                                transition={BAR_TRANSITION}
-                                                            />
-                                                            <motion.div
-                                                                className="absolute inset-y-0 right-0 bg-rose-500/35 rounded-none pointer-events-none"
-                                                                style={BAR_STYLE}
-                                                                initial={false}
-                                                                animate={{ scaleX: size_w / 100 }}
-                                                                transition={BAR_TRANSITION}
-                                                            />
-                                                            <span className="relative text-right font-medium text-rose-500">
-                                                                {format_cents(lvl.price)}
-                                                            </span>
-                                                            <span className="relative text-right text-white font-light">
-                                                                {format_size(lvl.size)}
-                                                            </span>
-                                                            <span className="relative text-right text-white/60 font-light">
-                                                                {format_total(cum_usd)}
-                                                            </span>
-                                                        </div>
+                                                            price={lvl.price}
+                                                            size={lvl.size}
+                                                            cum_usd={cum_usd}
+                                                            cum_w={cum_w}
+                                                            size_w={size_w}
+                                                            side="ask"
+                                                        />
                                                     );
                                                 })
                                                 .reverse()
@@ -393,34 +440,15 @@ export default function EventOrderBook({ marketId, endAt, status }: Props): JSX.
                                                 const cum_w = (cum / max_total) * 100;
                                                 const size_w = (lvl.size / max_level_size) * 100;
                                                 return (
-                                                    <div
+                                                    <BookLevelRow
                                                         key={`bid-${lvl.price}`}
-                                                        className="relative grid grid-cols-3 gap-x-3 sm:gap-x-8 pr-2 sm:pr-3 py-1.5 text-[13px] tabular-nums hover:bg-white/1.5 rounded-sm transition-colors"
-                                                    >
-                                                        <motion.div
-                                                            className="absolute inset-y-0 right-0 bg-emerald-500/15 rounded-none pointer-events-none"
-                                                            style={BAR_STYLE}
-                                                            initial={false}
-                                                            animate={{ scaleX: cum_w / 100 }}
-                                                            transition={BAR_TRANSITION}
-                                                        />
-                                                        <motion.div
-                                                            className="absolute inset-y-0 right-0 bg-emerald-500/35 rounded-none pointer-events-none"
-                                                            style={BAR_STYLE}
-                                                            initial={false}
-                                                            animate={{ scaleX: size_w / 100 }}
-                                                            transition={BAR_TRANSITION}
-                                                        />
-                                                        <span className="relative text-right font-medium text-emerald-500">
-                                                            {format_cents(lvl.price)}
-                                                        </span>
-                                                        <span className="relative text-right text-white font-light">
-                                                            {format_size(lvl.size)}
-                                                        </span>
-                                                        <span className="relative text-right text-white/60 font-light">
-                                                            {format_total(cum_usd)}
-                                                        </span>
-                                                    </div>
+                                                        price={lvl.price}
+                                                        size={lvl.size}
+                                                        cum_usd={cum_usd}
+                                                        cum_w={cum_w}
+                                                        size_w={size_w}
+                                                        side="bid"
+                                                    />
                                                 );
                                             })
                                         )}

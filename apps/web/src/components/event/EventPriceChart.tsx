@@ -1,5 +1,14 @@
 'use client';
-import { JSX, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    JSX,
+    memo,
+    useCallback,
+    useDeferredValue,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
     ResponsiveContainer,
@@ -46,9 +55,27 @@ interface Props {
      *  asset price line and OHLC candlestick views. Hidden for STANDARD
      *  markets (no underlying spot asset). */
     fastSeriesKey?: string | null;
+    /** Market close timestamp (ISO string). Drives the live countdown
+     *  in the header. If omitted, the countdown falls back to wall-clock. */
+    closeAt?: string | null;
 }
 
 type ChartMode = 'probability' | 'price' | 'candles';
+
+// Hoisted to module scope so React reconciliation sees stable references
+// every parent render instead of fresh objects each time.
+const CHART_MARGIN = { top: 24, right: 16, bottom: 0, left: 0 } as const;
+const TICK_STYLE = {
+    fill: '#a3a3a3',
+    fontSize: 10,
+    fontFamily: 'var(--m-, monospace)',
+} as const;
+
+// Throttle window for live YES probability commits inside ProbabilityChart.
+// Probability moves slowly; 2 Hz feels live without flickering, and gives
+// recharts headroom to render between commits. Mirrors the proven
+// useOrderBook display-rate throttle.
+const PROB_THROTTLE_MS = 500;
 
 function format_x_label(t: number, range: PriceHistoryRange): string {
     const d = new Date(t * 1000);
@@ -56,6 +83,71 @@ function format_x_label(t: number, range: PriceHistoryRange): string {
         return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
     }
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+// Yellow-500 -> red-600 lerp for the countdown's final 15 seconds.
+const COUNTDOWN_YELLOW = { r: 234, g: 179, b: 8 };
+const COUNTDOWN_RED = { r: 220, g: 38, b: 38 };
+const COUNTDOWN_RED_THRESHOLD_S = 15;
+
+function format_remaining(remaining_ms: number): string {
+    if (remaining_ms <= 0) return 'Closed';
+    const total_s = Math.floor(remaining_ms / 1000);
+    const days = Math.floor(total_s / 86400);
+    const hours = Math.floor((total_s % 86400) / 3600);
+    const minutes = Math.floor((total_s % 3600) / 60);
+    const seconds = total_s % 60;
+    const pad = (n: number): string => n.toString().padStart(2, '0');
+    if (days > 0) return `${days}d ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    if (hours > 0) return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    return `${pad(minutes)}:${pad(seconds)}`;
+}
+
+function countdown_color(remaining_ms: number): string {
+    if (remaining_ms <= 0) return `rgb(${COUNTDOWN_RED.r}, ${COUNTDOWN_RED.g}, ${COUNTDOWN_RED.b})`;
+    const remaining_s = remaining_ms / 1000;
+    if (remaining_s >= COUNTDOWN_RED_THRESHOLD_S) {
+        return `rgb(${COUNTDOWN_YELLOW.r}, ${COUNTDOWN_YELLOW.g}, ${COUNTDOWN_YELLOW.b})`;
+    }
+    // Smooth fade across the final 15 seconds: t = 0 at 15s left, 1 at 0s left.
+    const t = (COUNTDOWN_RED_THRESHOLD_S - remaining_s) / COUNTDOWN_RED_THRESHOLD_S;
+    const r = Math.round(COUNTDOWN_YELLOW.r + (COUNTDOWN_RED.r - COUNTDOWN_YELLOW.r) * t);
+    const g = Math.round(COUNTDOWN_YELLOW.g + (COUNTDOWN_RED.g - COUNTDOWN_YELLOW.g) * t);
+    const b = Math.round(COUNTDOWN_YELLOW.b + (COUNTDOWN_RED.b - COUNTDOWN_YELLOW.b) * t);
+    return `rgb(${r}, ${g}, ${b})`;
+}
+
+// Live countdown to market close. Isolated component so the 1Hz tick
+// re-renders only this <span> and never reaches the chart subtree.
+// Falls back to wall-clock if `closeAt` is not provided.
+function NowClock({ closeAt }: { closeAt?: string | null }): JSX.Element {
+    const [now, set_now] = useState<number>(() => Date.now());
+    useEffect(() => {
+        const id = setInterval(() => set_now(Date.now()), 1000);
+        return () => clearInterval(id);
+    }, []);
+
+    if (!closeAt) {
+        // Fallback: original wall-clock behavior.
+        return (
+            <span className="tabular-nums text-yellow-500 text-2xl">
+                {new Date(now).toLocaleTimeString(undefined, { hour12: false })}
+            </span>
+        );
+    }
+
+    const remaining_ms = new Date(closeAt).getTime() - now;
+    const text = format_remaining(remaining_ms);
+    const color = countdown_color(remaining_ms);
+
+    return (
+        <span
+            className="tabular-nums text-2xl transition-colors duration-1000 ease-linear"
+            style={{ color }}
+        >
+            {text}
+        </span>
+    );
 }
 
 function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | null {
@@ -100,77 +192,53 @@ function ChartTooltip({ active, payload }: TooltipContentProps): JSX.Element | n
     );
 }
 
-export default function EventPriceChart({
-    marketId,
-    volumeLabel,
-    closeLabel,
-    delta24hPct,
-    onLoaded,
-    fastSeriesKey,
-}: Props): JSX.Element {
-    // Fast-moving markets (BTC / ETH / SOL Up-or-Down 5-min etc.) only
-    // live for a few minutes, so a 1-month or 1-week range view is
-    // meaningless — pin them to "1h" so the chart shows the most recent
-    // hour of candles, matching Polymarket's slot view. The range
-    // selector is hidden entirely for these (see render below).
-    const is_fast = !!fastSeriesKey;
-    const [range, set_range] = useState<PriceHistoryRange>(is_fast ? '1h' : '1m');
-    // Chart-source toggle. Only "probability" is available for STANDARD
-    // markets — the asset-price modes need a Binance spot symbol mapped
-    // from the series key (see binance_symbol_for_series).
-    const has_underlying =
-        !!fastSeriesKey && !!binance_symbol_for_series(fastSeriesKey);
-    const [chart_mode, set_chart_mode] = useState<ChartMode>(
-        // Fast-moving rounds are about the underlying asset price, not
-        // the implied probability — show the candle view by default so
-        // the user sees what actually determines the resolution.
-        is_fast ? 'candles' : 'probability',
-    );
+interface ProbabilityChartProps {
+    marketId: string;
+    range: PriceHistoryRange;
+    selectedOutcome: Outcome;
+    showXAxis: boolean;
+    showYAxis: boolean;
+    showHorizontalGrid: boolean;
+    showVerticalGrid: boolean;
+    onLoaded?: (latestPct: number, delta24hPct: number | null) => void;
+}
 
-    // If the user navigates between markets of different kinds while the
-    // component is mounted (rare, but possible), make sure range and
-    // chart_mode are reset to sane defaults for the new market's kind
-    // instead of carrying stale settings over.
-    useEffect(() => {
-        if (is_fast) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            set_range('1h');
-        }
-    }, [is_fast]);
-    const [activeCoord, set_active_coord] = useState<{ x: number; y: number } | null>(null);
-    const [exit_opacity, set_exit_opacity] = useState(1);
-    const exit_raf_ref = useRef<number | null>(null);
-    const [chart_svg_width, set_chart_svg_width] = useState(0);
-    const wrapper_ref = useRef<HTMLDivElement>(null);
+// Isolated, memoised probability chart. Owns its own:
+//   - live YES subscription + throttled accumulator (PROB_THROTTLE_MS)
+//   - REST snapshot fetch
+//   - hover/active-coord state + exit animation
+//   - wrapper-width measurement for the gradient stops
+// Re-renders from the parent EventPriceChart (settings popover, mode
+// toggle, range pill animation, etc.) bail at the memo boundary because
+// all props are primitives or stable IDs.
+const ProbabilityChart = memo(function ProbabilityChart({
+    marketId,
+    range,
+    selectedOutcome,
+    showXAxis,
+    showYAxis,
+    showHorizontalGrid,
+    showVerticalGrid,
+    onLoaded,
+}: ProbabilityChartProps): JSX.Element {
     const [snapshot, set_snapshot] = useState<{
         key: string;
         status: 'ready' | 'error';
         history: PriceHistoryPoint[];
     } | null>(null);
-    const [selectedOutcome, setSelectedOutcome] = useState<Outcome>(Outcome.YES);
-    const [settings_open, set_settings_open] = useState(false);
-    const [showXAxis, setShowXAxis] = useState(false);
-    const [showYAxis, setShowYAxis] = useState(true);
-    const [showHorizontalGrid, setShowHorizontalGrid] = useState(true);
-    const [showVerticalGrid, setShowVerticalGrid] = useState(false);
-    const settings_ref = useRef<HTMLDivElement>(null);
-    const [now_label, set_now_label] = useState<string>(() =>
-        new Date().toLocaleTimeString(undefined, { hour12: false }),
-    );
+    const [live_ticks, set_live_ticks] = useState<{ t: number; p: number }[]>([]);
+    const [activeCoord, set_active_coord] = useState<{ x: number; y: number } | null>(null);
+    const [exit_opacity, set_exit_opacity] = useState(1);
+    const exit_raf_ref = useRef<number | null>(null);
+    const [chart_svg_width, set_chart_svg_width] = useState(0);
+    const wrapper_ref = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const tick = () =>
-            set_now_label(new Date().toLocaleTimeString(undefined, { hour12: false }));
-        tick();
-        const id = setInterval(tick, 1000);
-        return () => clearInterval(id);
-    }, []);
-
+    // Wrapper-width measurement for the moving gradient stop.
     useEffect(() => {
         const el = wrapper_ref.current;
         if (!el) return;
         const update = (): void => {
-            // px-2 → 8px padding each side; clientWidth includes padding
+            // px-2 -> 8px padding each side; clientWidth includes padding.
             set_chart_svg_width(Math.max(0, el.clientWidth - 16));
         };
         update();
@@ -179,6 +247,7 @@ export default function EventPriceChart({
         return () => ro.disconnect();
     }, []);
 
+    // Clean up the exit-animation RAF on unmount.
     useEffect(() => {
         return () => {
             if (exit_raf_ref.current !== null) cancelAnimationFrame(exit_raf_ref.current);
@@ -253,6 +322,7 @@ export default function EventPriceChart({
     const is_current = snapshot !== null && snapshot.key === current_key;
     const status: 'loading' | 'ready' | 'error' = is_current ? snapshot.status : 'loading';
 
+    // Snapshot fetch (REST history).
     useEffect(() => {
         let cancelled = false;
         fetch_market_price_history(marketId, range)
@@ -277,44 +347,98 @@ export default function EventPriceChart({
         };
     }, [marketId, range]);
 
-    // Live YES probability from the CLOB WSS — every `book` /
-    // `price_change` event Polymarket pushes lands in this store as
-    // (bestBid + bestAsk) / 2. We append it to the chart so the line
-    // ticks in real-time instead of sitting on the last REST snapshot.
+    // Live YES probability from the CLOB WSS. Every `book` / `price_change`
+    // event Polymarket pushes lands in this store as (bestBid + bestAsk)/2.
+    // We append throttled commits to the chart so the line ticks in real
+    // time without flicker.
     const live_yes = useLastTradeStore(selectLastTrade(marketId, Outcome.YES));
-    const [live_ticks, set_live_ticks] = useState<{ t: number; p: number }[]>([]);
 
-    // Reset the live trail whenever marketId or range changes — the
-    // static REST history starts a new bucket and the old live ticks
-    // wouldn't fit the new x-axis anyway.
+    // Throttle bookkeeping. Mirrors the useOrderBook display-rate throttle.
+    const last_commit_at = useRef(0);
+    const trailing_timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Always-current ref so the trailing setTimeout reads the latest
+    // live_yes even if it was originally scheduled with a stale closure.
+    const latest_live_yes_ref = useRef(live_yes);
+
+    // Reset the live trail whenever marketId or range changes: the static
+    // REST history starts a new bucket and old live ticks would not fit
+    // the new x-axis. Also reset throttle bookkeeping so the next live
+    // tick paints instantly under the new key.
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         set_live_ticks([]);
+        last_commit_at.current = 0;
+        if (trailing_timer.current !== null) {
+            clearTimeout(trailing_timer.current);
+            trailing_timer.current = null;
+        }
     }, [marketId, range]);
 
     useEffect(() => {
+        latest_live_yes_ref.current = live_yes;
         if (!live_yes) return;
-        const t_sec = Math.floor(live_yes.updatedAt / 1000);
         const p = live_yes.price;
         if (!Number.isFinite(p) || p < 0 || p > 1) return;
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        set_live_ticks((prev) => {
-            // Dedupe by second to keep the trail compact even when
-            // multiple book frames arrive within the same wall-clock
-            // second; replace the last point in that case so we always
-            // show the latest probability.
-            if (prev.length > 0 && prev[prev.length - 1]!.t === t_sec) {
-                const next = prev.slice(0, -1);
-                next.push({ t: t_sec, p });
+
+        const commit = (): void => {
+            const latest = latest_live_yes_ref.current;
+            if (!latest) return;
+            const lp = latest.price;
+            if (!Number.isFinite(lp) || lp < 0 || lp > 1) return;
+            last_commit_at.current = performance.now();
+            const t_sec = Math.floor(latest.updatedAt / 1000);
+            set_live_ticks((prev) => {
+                // Dedupe by second to keep the trail compact even when
+                // multiple book frames arrive within the same wall-clock
+                // second; replace the last point in that case so we always
+                // show the latest probability.
+                if (prev.length > 0 && prev[prev.length - 1]!.t === t_sec) {
+                    const next = prev.slice(0, -1);
+                    next.push({ t: t_sec, p: lp });
+                    return next;
+                }
+                // Cap the live trail so a long session doesn't grow it
+                // unbounded. Older ticks past the cap roll off the head.
+                const next =
+                    prev.length >= 1000 ? prev.slice(prev.length - 999) : prev.slice();
+                next.push({ t: t_sec, p: lp });
                 return next;
+            });
+        };
+
+        const now = performance.now();
+        const since = now - last_commit_at.current;
+        if (since >= PROB_THROTTLE_MS) {
+            if (trailing_timer.current !== null) {
+                clearTimeout(trailing_timer.current);
+                trailing_timer.current = null;
             }
-            // Cap the live trail so a long session doesn't grow it
-            // unbounded — older ticks past the cap roll off the head.
-            const next = prev.length >= 1000 ? prev.slice(prev.length - 999) : prev.slice();
-            next.push({ t: t_sec, p });
-            return next;
-        });
+            commit();
+            return;
+        }
+
+        // Always clear any stale timer and reschedule. Eliminates the
+        // previous early-return-on-pending-timer deadlock where a
+        // throttled background-tab setTimeout could stall updates while
+        // live_yes kept changing.
+        if (trailing_timer.current !== null) {
+            clearTimeout(trailing_timer.current);
+        }
+        trailing_timer.current = setTimeout(() => {
+            trailing_timer.current = null;
+            commit();
+        }, PROB_THROTTLE_MS - since);
     }, [live_yes]);
+
+    // Unmount cleanup, separate so it isn't conditional on the effect path.
+    useEffect(() => {
+        return () => {
+            if (trailing_timer.current !== null) {
+                clearTimeout(trailing_timer.current);
+                trailing_timer.current = null;
+            }
+        };
+    }, []);
 
     const points = useMemo<ChartPoint[]>(() => {
         if (!is_current || !snapshot) return [];
@@ -324,9 +448,9 @@ export default function EventPriceChart({
             label: format_x_label(p.t, range),
         }));
         // Append live ticks that occurred after the tail of the static
-        // history. Polymarket's price_history endpoint returns
-        // bucketed points, so the most recent bucket may already
-        // exceed the first live tick — guard against duplicates.
+        // history. Polymarket's price_history endpoint returns bucketed
+        // points, so the most recent bucket may already exceed the first
+        // live tick: guard against duplicates.
         const last_static_t = base.length > 0 ? base[base.length - 1]!.t : 0;
         for (const tick of live_ticks) {
             if (tick.t <= last_static_t) continue;
@@ -339,8 +463,15 @@ export default function EventPriceChart({
         return base;
     }, [is_current, snapshot, range, selectedOutcome, live_ticks]);
 
+    // Defer the chart data so React can prioritise input (hover, scroll)
+    // over re-rendering the line. When a throttled commit lands while the
+    // user is dragging across the chart, React renders the cursor at the
+    // new pointer position first and applies the new data on the next
+    // idle tick.
+    const deferred_points = useDeferredValue(points);
+
     const xTicks = useMemo(() => {
-        if (points.length === 0) return [];
+        if (deferred_points.length === 0) return [];
         const stepSeconds: Record<PriceHistoryRange, number> = {
             '1h': 15 * 60,
             '6h': 1 * 60 * 60,
@@ -352,22 +483,26 @@ export default function EventPriceChart({
         const step = stepSeconds[range];
         const result: number[] = [];
         let last = -Infinity;
-        for (const p of points) {
+        for (const p of deferred_points) {
             if (p.t - last >= step) {
                 result.push(p.t);
                 last = p.t;
             }
         }
         return result;
-    }, [points, range]);
+    }, [deferred_points, range]);
 
     const { yMin, yMax } = useMemo(() => {
-        if (points.length === 0) return { yMin: 0, yMax: 100 };
-        const min_v = Math.min(...points.map((p) => p.pct));
-        const max_v = Math.max(...points.map((p) => p.pct));
+        if (deferred_points.length === 0) return { yMin: 0, yMax: 100 };
+        let min_v = Infinity;
+        let max_v = -Infinity;
+        for (const p of deferred_points) {
+            if (p.pct < min_v) min_v = p.pct;
+            if (p.pct > max_v) max_v = p.pct;
+        }
         const r = Math.max(1, max_v - min_v);
         return { yMin: Math.max(0, min_v - r * 0.1), yMax: Math.min(100, max_v + r * 0.1) };
-    }, [points]);
+    }, [deferred_points]);
 
     useEffect(() => {
         if (status !== 'ready' || points.length === 0) return;
@@ -378,6 +513,294 @@ export default function EventPriceChart({
         }
         onLoaded?.(latest, delta);
     }, [status, points, range, onLoaded]);
+
+    const isNo = selectedOutcome === Outcome.NO;
+    const lineColor = isNo ? 'rgba(244,63,94,' : 'rgba(39,163,253,';
+    const areaColor = lineColor;
+
+    const tickFormatter = useCallback(
+        (v: number | string): string => format_x_label(Number(v), range),
+        [range],
+    );
+    const yTickFormatter = useCallback(
+        (v: number | string): string => `${Math.round(Number(v))}%`,
+        [],
+    );
+    const tooltip_content = useCallback(
+        (props: TooltipContentProps) => <ChartTooltip {...props} />,
+        [],
+    );
+
+    return (
+        <div
+            ref={wrapper_ref}
+            className="relative w-full flex-1 min-h-0 px-2 select-none outline-none"
+            onMouseEnter={cancel_exit_animation}
+            onMouseLeave={() => {
+                if (activeCoord) start_exit_animation(activeCoord);
+                else set_active_coord(null);
+            }}
+        >
+            {status === 'loading' && deferred_points.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.25em] uppercase text-white/30">
+                    Loading…
+                </div>
+            )}
+            {status === 'error' && (
+                <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.25em] uppercase text-rose-300/60">
+                    Couldn&apos;t load price history
+                </div>
+            )}
+            {status === 'ready' && deferred_points.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.25em] uppercase text-white/30">
+                    No price data for this range
+                </div>
+            )}
+            {deferred_points.length > 0 && (
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                        data={deferred_points}
+                        margin={CHART_MARGIN}
+                        onMouseMove={(state) => {
+                            if (!state.activeCoordinate) return;
+                            // activeTooltipIndex is `number | string | null
+                            // | undefined`. For numeric x-scales recharts
+                            // hands it back as a string, so coerce.
+                            const raw_idx = state.activeTooltipIndex;
+                            const idx =
+                                typeof raw_idx === 'number'
+                                    ? raw_idx
+                                    : typeof raw_idx === 'string'
+                                        ? parseInt(raw_idx, 10)
+                                        : NaN;
+                            const point =
+                                Number.isInteger(idx) && idx >= 0
+                                    ? deferred_points[idx]
+                                    : undefined;
+                            if (!point) return;
+                            // recharts gives activeCoordinate.y as the
+                            // cursor's y, not the line's y at the active x.
+                            // Snap y to the curve by mapping the active
+                            // point's pct through the same y-scale recharts
+                            // uses (top margin = 24, no bottom margin /
+                            // x-axis space since it's hidden).
+                            const wrapper_h = wrapper_ref.current?.clientHeight ?? 0;
+                            const top_margin = 24;
+                            const plot_h = Math.max(1, wrapper_h - top_margin);
+                            const y_range = Math.max(1e-6, yMax - yMin);
+                            const y_on_line =
+                                top_margin + ((yMax - point.pct) / y_range) * plot_h;
+                            cancel_exit_animation();
+                            set_active_coord({
+                                x: state.activeCoordinate.x,
+                                y: y_on_line,
+                            });
+                        }}
+                    >
+                        <defs>
+                            <linearGradient
+                                id="evtPriceLine"
+                                x1="0"
+                                y1="0"
+                                x2={chart_svg_width || 1}
+                                y2="0"
+                                gradientUnits="userSpaceOnUse"
+                            >
+                                {activeCoord && chart_svg_width > 0 ? (
+                                    <>
+                                        <stop offset="0" stopColor={`${lineColor}0.9)`} />
+                                        <stop
+                                            offset={Math.max(
+                                                0,
+                                                activeCoord.x / chart_svg_width - 0.004,
+                                            )}
+                                            stopColor={`${lineColor}0.9)`}
+                                        />
+                                        <stop
+                                            offset={Math.min(
+                                                1,
+                                                activeCoord.x / chart_svg_width + 0.004,
+                                            )}
+                                            stopColor={`${lineColor}0.1)`}
+                                        />
+                                        <stop offset="1" stopColor={`${lineColor}0.1)`} />
+                                    </>
+                                ) : (
+                                    <>
+                                        <stop offset="0" stopColor={`${lineColor}0.5)`} />
+                                        <stop offset="0.5" stopColor={`${lineColor}0.9)`} />
+                                        <stop offset="1" stopColor={`${lineColor}0.7)`} />
+                                    </>
+                                )}
+                            </linearGradient>
+                            <linearGradient
+                                id="evtPriceArea"
+                                x1="0"
+                                y1="0"
+                                x2={chart_svg_width || 1}
+                                y2="0"
+                                gradientUnits="userSpaceOnUse"
+                            >
+                                {activeCoord && chart_svg_width > 0 ? (
+                                    <>
+                                        <stop offset="0" stopColor={`${areaColor}0.18)`} />
+                                        <stop
+                                            offset={Math.max(
+                                                0,
+                                                activeCoord.x / chart_svg_width - 0.004,
+                                            )}
+                                            stopColor={`${areaColor}0.18)`}
+                                        />
+                                        <stop
+                                            offset={Math.min(
+                                                1,
+                                                activeCoord.x / chart_svg_width + 0.004,
+                                            )}
+                                            stopColor={`${areaColor}0.02)`}
+                                        />
+                                        <stop offset="1" stopColor={`${areaColor}0.02)`} />
+                                    </>
+                                ) : (
+                                    <>
+                                        <stop offset="0" stopColor={`${areaColor}0.18)`} />
+                                        <stop offset="1" stopColor={`${areaColor}0.18)`} />
+                                    </>
+                                )}
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                            stroke="rgba(255,255,255,0.03)"
+                            strokeDasharray="4 3"
+                            horizontal={showHorizontalGrid}
+                            vertical={showVerticalGrid}
+                        />
+                        <XAxis
+                            dataKey="t"
+                            type="number"
+                            scale="time"
+                            domain={['dataMin', 'dataMax']}
+                            ticks={xTicks}
+                            tickFormatter={tickFormatter}
+                            hide={!showXAxis}
+                            tick={TICK_STYLE}
+                            tickLine={false}
+                            axisLine={false}
+                        />
+                        <YAxis
+                            domain={[yMin, yMax]}
+                            hide={!showYAxis}
+                            tick={TICK_STYLE}
+                            tickFormatter={yTickFormatter}
+                            tickLine={false}
+                            axisLine={false}
+                            width={showYAxis ? 40 : 0}
+                            tickCount={5}
+                        />
+                        <Tooltip
+                            content={tooltip_content}
+                            cursor={false}
+                            isAnimationActive={false}
+                            wrapperStyle={{
+                                transition: 'opacity 120ms',
+                                opacity: exit_opacity,
+                                pointerEvents: 'none',
+                            }}
+                            position={
+                                activeCoord
+                                    ? { x: activeCoord.x + 14, y: activeCoord.y - 22 }
+                                    : undefined
+                            }
+                        />
+                        <Area
+                            type="monotone"
+                            dataKey="pct"
+                            stroke="url(#evtPriceLine)"
+                            strokeWidth={2.5}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="url(#evtPriceArea)"
+                            activeDot={false}
+                            animationDuration={600}
+                            animationEasing="ease-out"
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
+            )}
+            {activeCoord && chart_svg_width > 0 && (
+                <div
+                    className="absolute inset-y-0 pointer-events-none"
+                    style={{ left: 8, right: 8, opacity: exit_opacity }}
+                >
+                    <div
+                        className="absolute top-0 bottom-0 w-px"
+                        style={{
+                            left: activeCoord.x,
+                            background: isNo ? 'rgba(244,63,94,0.3)' : 'rgba(39,163,253,0.3)',
+                        }}
+                    />
+                    <div
+                        className="absolute rounded-full"
+                        style={{
+                            left: activeCoord.x,
+                            top: activeCoord.y,
+                            width: 9,
+                            height: 9,
+                            transform: 'translate(-50%, -50%)',
+                            background: isNo ? '#f43f5e' : '#27A3FD',
+                            boxShadow: '0 0 0 2px #0E0D0D',
+                        }}
+                    />
+                </div>
+            )}
+        </div>
+    );
+});
+
+export default function EventPriceChart({
+    marketId,
+    volumeLabel,
+    closeLabel,
+    delta24hPct,
+    onLoaded,
+    fastSeriesKey,
+    closeAt,
+}: Props): JSX.Element {
+    // Fast-moving markets (BTC / ETH / SOL Up-or-Down 5-min etc.) only
+    // live for a few minutes, so a 1-month or 1-week range view is
+    // meaningless. Pin them to "1h" so the chart shows the most recent
+    // hour of candles, matching Polymarket's slot view. The range
+    // selector is hidden entirely for these (see render below).
+    const is_fast = !!fastSeriesKey;
+    const [range, set_range] = useState<PriceHistoryRange>(is_fast ? '1h' : '1m');
+    // Chart-source toggle. Only "probability" is available for STANDARD
+    // markets; the asset-price modes need a Binance spot symbol mapped
+    // from the series key (see binance_symbol_for_series).
+    const has_underlying = !!fastSeriesKey && !!binance_symbol_for_series(fastSeriesKey);
+    const [chart_mode, set_chart_mode] = useState<ChartMode>(
+        // Fast-moving rounds are about the underlying asset price, not
+        // the implied probability. Show the candle view by default so
+        // the user sees what actually determines the resolution.
+        is_fast ? 'candles' : 'probability',
+    );
+
+    // If the user navigates between markets of different kinds while the
+    // component is mounted (rare, but possible), make sure range is reset
+    // to a sane default for the new market's kind instead of carrying a
+    // stale setting over.
+    useEffect(() => {
+        if (is_fast) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            set_range('1h');
+        }
+    }, [is_fast]);
+
+    const [selectedOutcome, setSelectedOutcome] = useState<Outcome>(Outcome.YES);
+    const [settings_open, set_settings_open] = useState(false);
+    const [showXAxis, setShowXAxis] = useState(false);
+    const [showYAxis, setShowYAxis] = useState(true);
+    const [showHorizontalGrid, setShowHorizontalGrid] = useState(true);
+    const [showVerticalGrid, setShowVerticalGrid] = useState(false);
+    const settings_ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!settings_open) return;
@@ -394,9 +817,19 @@ export default function EventPriceChart({
         setSelectedOutcome(o);
     }
 
-    const isNo = selectedOutcome === Outcome.NO;
-    const lineColor = isNo ? 'rgba(244,63,94,' : 'rgba(39,163,253,';
-    const areaColor = lineColor;
+    // Stable onLoaded reference so ProbabilityChart's memo bails even
+    // when the parent re-creates `onLoaded` between renders. The ref
+    // latches the latest callback.
+    const onLoadedRef = useRef(onLoaded);
+    useEffect(() => {
+        onLoadedRef.current = onLoaded;
+    }, [onLoaded]);
+    const stable_onLoaded = useCallback(
+        (latest: number, delta: number | null): void => {
+            onLoadedRef.current?.(latest, delta);
+        },
+        [],
+    );
 
     return (
         <section className="rounded-lg bg-dark-base flex flex-col h-120 min-w-0">
@@ -407,248 +840,36 @@ export default function EventPriceChart({
                     <span className="text-white/30">|</span>
                     <span>{closeLabel}</span>
                     <span className="text-white/30">|</span>
-                    <span className="tabular-nums text-white/55">{now_label}</span>
+                    <NowClock closeAt={closeAt} />
                 </div>
             </div>
 
-            <div
-                ref={wrapper_ref}
-                className="relative w-full flex-1 min-h-0 px-2 select-none outline-none"
-                onMouseEnter={cancel_exit_animation}
-                onMouseLeave={() => {
-                    if (activeCoord) start_exit_animation(activeCoord);
-                    else set_active_coord(null);
-                }}
-            >
-                {chart_mode !== 'probability' && fastSeriesKey && (
-                    <EventBtcPriceChart
-                        seriesKey={fastSeriesKey}
-                        range={range}
-                        mode={chart_mode === 'candles' ? 'candles' : 'price'}
-                        showXAxis={showXAxis}
-                        showYAxis={showYAxis}
-                        showHorizontalGrid={showHorizontalGrid}
-                        showVerticalGrid={showVerticalGrid}
-                    />
-                )}
-                {chart_mode === 'probability' && status === 'loading' && points.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.25em] uppercase text-white/30">
-                        Loading…
-                    </div>
-                )}
-                {chart_mode === 'probability' && status === 'error' && (
-                    <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.25em] uppercase text-rose-300/60">
-                        Couldn&apos;t load price history
-                    </div>
-                )}
-                {chart_mode === 'probability' && status === 'ready' && points.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center text-[10px] tracking-[0.25em] uppercase text-white/30">
-                        No price data for this range
-                    </div>
-                )}
-                {chart_mode === 'probability' && points.length > 0 && (
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart
-                            data={points}
-                            margin={{ top: 24, right: 16, bottom: 0, left: 0 }}
-                            onMouseMove={(state) => {
-                                if (!state.activeCoordinate) return;
-                                // activeTooltipIndex is `number | string | null
-                                // | undefined` — for numeric x-scales recharts
-                                // hands it back as a string, so coerce.
-                                const raw_idx = state.activeTooltipIndex;
-                                const idx =
-                                    typeof raw_idx === 'number'
-                                        ? raw_idx
-                                        : typeof raw_idx === 'string'
-                                          ? parseInt(raw_idx, 10)
-                                          : NaN;
-                                const point =
-                                    Number.isInteger(idx) && idx >= 0 ? points[idx] : undefined;
-                                if (!point) return;
-                                // recharts gives activeCoordinate.y as the
-                                // cursor's y, not the line's y at the active x.
-                                // Snap y to the curve by mapping the active
-                                // point's pct through the same y-scale recharts
-                                // uses (top margin = 24, no bottom margin /
-                                // x-axis space since it's hidden).
-                                const wrapper_h = wrapper_ref.current?.clientHeight ?? 0;
-                                const top_margin = 24;
-                                const plot_h = Math.max(1, wrapper_h - top_margin);
-                                const y_range = Math.max(1e-6, yMax - yMin);
-                                const y_on_line =
-                                    top_margin + ((yMax - point.pct) / y_range) * plot_h;
-                                cancel_exit_animation();
-                                set_active_coord({
-                                    x: state.activeCoordinate.x,
-                                    y: y_on_line,
-                                });
-                            }}
-                        >
-                            <defs>
-                                <linearGradient
-                                    id="evtPriceLine"
-                                    x1="0"
-                                    y1="0"
-                                    x2={chart_svg_width || 1}
-                                    y2="0"
-                                    gradientUnits="userSpaceOnUse"
-                                >
-                                    {activeCoord && chart_svg_width > 0 ? (
-                                        <>
-                                            <stop offset="0" stopColor={`${lineColor}0.9)`} />
-                                            <stop
-                                                offset={Math.max(
-                                                    0,
-                                                    activeCoord.x / chart_svg_width - 0.004,
-                                                )}
-                                                stopColor={`${lineColor}0.9)`}
-                                            />
-                                            <stop
-                                                offset={Math.min(
-                                                    1,
-                                                    activeCoord.x / chart_svg_width + 0.004,
-                                                )}
-                                                stopColor={`${lineColor}0.1)`}
-                                            />
-                                            <stop offset="1" stopColor={`${lineColor}0.1)`} />
-                                        </>
-                                    ) : (
-                                        <>
-                                            <stop offset="0" stopColor={`${lineColor}0.5)`} />
-                                            <stop offset="0.5" stopColor={`${lineColor}0.9)`} />
-                                            <stop offset="1" stopColor={`${lineColor}0.7)`} />
-                                        </>
-                                    )}
-                                </linearGradient>
-                                <linearGradient
-                                    id="evtPriceArea"
-                                    x1="0"
-                                    y1="0"
-                                    x2={chart_svg_width || 1}
-                                    y2="0"
-                                    gradientUnits="userSpaceOnUse"
-                                >
-                                    {activeCoord && chart_svg_width > 0 ? (
-                                        <>
-                                            <stop offset="0" stopColor={`${areaColor}0.18)`} />
-                                            <stop
-                                                offset={Math.max(
-                                                    0,
-                                                    activeCoord.x / chart_svg_width - 0.004,
-                                                )}
-                                                stopColor={`${areaColor}0.18)`}
-                                            />
-                                            <stop
-                                                offset={Math.min(
-                                                    1,
-                                                    activeCoord.x / chart_svg_width + 0.004,
-                                                )}
-                                                stopColor={`${areaColor}0.02)`}
-                                            />
-                                            <stop offset="1" stopColor={`${areaColor}0.02)`} />
-                                        </>
-                                    ) : (
-                                        <>
-                                            <stop offset="0" stopColor={`${areaColor}0.18)`} />
-                                            <stop offset="1" stopColor={`${areaColor}0.18)`} />
-                                        </>
-                                    )}
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid
-                                stroke="rgba(255,255,255,0.03)"
-                                strokeDasharray="4 3"
-                                horizontal={showHorizontalGrid}
-                                vertical={showVerticalGrid}
-                            />
-                            <XAxis
-                                dataKey="t"
-                                type="number"
-                                scale="time"
-                                domain={['dataMin', 'dataMax']}
-                                ticks={xTicks}
-                                tickFormatter={(v) => format_x_label(v as number, range)}
-                                hide={!showXAxis}
-                                tick={{
-                                    fill: '#a3a3a3',
-                                    fontSize: 10,
-                                    fontFamily: 'var(--m-, monospace)',
-                                }}
-                                tickLine={false}
-                                axisLine={false}
-                            />
-                            <YAxis
-                                domain={[yMin, yMax]}
-                                hide={!showYAxis}
-                                tick={{
-                                    fill: '#a3a3a3',
-                                    fontSize: 10,
-                                    fontFamily: 'var(--m-, monospace)',
-                                }}
-                                tickFormatter={(v) => `${Math.round(v)}%`}
-                                tickLine={false}
-                                axisLine={false}
-                                width={showYAxis ? 40 : 0}
-                                tickCount={5}
-                            />
-                            <Tooltip
-                                content={(props) => <ChartTooltip {...props} />}
-                                cursor={false}
-                                isAnimationActive={false}
-                                wrapperStyle={{
-                                    transition: 'opacity 120ms',
-                                    opacity: exit_opacity,
-                                    pointerEvents: 'none',
-                                }}
-                                position={
-                                    activeCoord
-                                        ? { x: activeCoord.x + 14, y: activeCoord.y - 22 }
-                                        : undefined
-                                }
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="pct"
-                                stroke="url(#evtPriceLine)"
-                                strokeWidth={2.5}
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                fill="url(#evtPriceArea)"
-                                activeDot={false}
-                                animationDuration={600}
-                                animationEasing="ease-out"
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                )}
-                {chart_mode === 'probability' && activeCoord && chart_svg_width > 0 && (
-                    <div
-                        className="absolute inset-y-0 pointer-events-none"
-                        style={{ left: 8, right: 8, opacity: exit_opacity }}
-                    >
-                        <div
-                            className="absolute top-0 bottom-0 w-px"
-                            style={{
-                                left: activeCoord.x,
-                                background: isNo ? 'rgba(244,63,94,0.3)' : 'rgba(39,163,253,0.3)',
-                            }}
+            {chart_mode === 'probability' ? (
+                <ProbabilityChart
+                    marketId={marketId}
+                    range={range}
+                    selectedOutcome={selectedOutcome}
+                    showXAxis={showXAxis}
+                    showYAxis={showYAxis}
+                    showHorizontalGrid={showHorizontalGrid}
+                    showVerticalGrid={showVerticalGrid}
+                    onLoaded={stable_onLoaded}
+                />
+            ) : (
+                <div className="relative w-full flex-1 min-h-0 px-2 select-none outline-none">
+                    {fastSeriesKey && (
+                        <EventBtcPriceChart
+                            seriesKey={fastSeriesKey}
+                            range={range}
+                            mode={chart_mode === 'candles' ? 'candles' : 'price'}
+                            showXAxis={showXAxis}
+                            showYAxis={showYAxis}
+                            showHorizontalGrid={showHorizontalGrid}
+                            showVerticalGrid={showVerticalGrid}
                         />
-                        <div
-                            className="absolute rounded-full"
-                            style={{
-                                left: activeCoord.x,
-                                top: activeCoord.y,
-                                width: 9,
-                                height: 9,
-                                transform: 'translate(-50%, -50%)',
-                                background: isNo ? '#f43f5e' : '#27A3FD',
-                                boxShadow: '0 0 0 2px #0E0D0D',
-                            }}
-                        />
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            )}
 
             <div className="flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3 border-t border-white/8">
                 <div className="relative flex gap-1 bg-white/2.5 border border-white/8 rounded-md p-0.75">
@@ -660,9 +881,10 @@ export default function EventPriceChart({
                                 key={o}
                                 type="button"
                                 onClick={() => onOutcomeChange(o)}
-                                className={`relative px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium cursor-pointer transition-colors ${
-                                    is_selected ? 'text-white' : 'text-white/45 hover:text-white/75'
-                                }`}
+                                className={`relative px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium cursor-pointer transition-colors ${is_selected
+                                        ? 'text-white'
+                                        : 'text-white/45 hover:text-white/75'
+                                    }`}
                             >
                                 {is_selected && (
                                     <motion.span
@@ -744,7 +966,7 @@ export default function EventPriceChart({
                     </div>
                 )}
                 <div className="flex items-center gap-1">
-                    {/* Range selector hidden for fast-moving markets — a
+                    {/* Range selector hidden for fast-moving markets: a
                         5-min crypto Up/Down slot doesn't have a meaningful
                         1-week or 1-month view, and Polymarket's own UI
                         pins these to the most recent hour of candles. */}
@@ -755,11 +977,10 @@ export default function EventPriceChart({
                                     key={r.key}
                                     type="button"
                                     onClick={() => set_range(r.key)}
-                                    className={`relative px-2 py-1 rounded text-[9px] tracking-[0.2em] uppercase transition-colors cursor-pointer whitespace-nowrap ${
-                                        range === r.key
+                                    className={`relative px-2 py-1 rounded text-[9px] tracking-[0.2em] uppercase transition-colors cursor-pointer whitespace-nowrap ${range === r.key
                                             ? 'text-white'
                                             : 'text-white/45 hover:text-white/75'
-                                    }`}
+                                        }`}
                                 >
                                     {range === r.key && (
                                         <motion.span

@@ -214,6 +214,7 @@ function Body({ market }: { market: MarketDTO }) {
                                 delta24hPct={delta24h}
                                 onLoaded={handle_chart_loaded}
                                 fastSeriesKey={live_market.fastSeriesKey}
+                                closeAt={live_market.endAt}
                             />
                         </div>
                         <div className="order-4 lg:order-0">

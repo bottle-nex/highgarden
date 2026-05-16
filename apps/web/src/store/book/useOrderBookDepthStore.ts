@@ -175,23 +175,42 @@ function apply_changes(prev: OrderBookDepth, changes: DepthChange[], ts: number)
     };
 }
 
-// ─── rAF coalescer ────────────────────────────────────────────────────────────
+// ─── Coalescer ────────────────────────────────────────────────────────────────
+// Belt-and-suspenders: schedule both a requestAnimationFrame AND a
+// setTimeout fallback. RAF is paused or throttled to ~1Hz in
+// background tabs (and in rare cases never fires after long
+// backgrounding). The setTimeout guarantees forward progress even when
+// the tab is hidden, so `pending` never accumulates indefinitely.
+
+const FLUSH_FALLBACK_MS = 250;
 
 const pending = new Map<BookKey, PendingEntry>();
 let raf_id: number | null = null;
+let timeout_id: ReturnType<typeof setTimeout> | null = null;
 
-function flush() {
-    raf_id = null;
+function flush(): void {
+    if (raf_id !== null) {
+        cancelAnimationFrame(raf_id);
+        raf_id = null;
+    }
+    if (timeout_id !== null) {
+        clearTimeout(timeout_id);
+        timeout_id = null;
+    }
     if (pending.size === 0) return;
     const batch = new Map(pending);
     pending.clear();
-    useOrderBookDepthStore.getState()._flush(batch);
+    try {
+        useOrderBookDepthStore.getState()._flush(batch);
+    } catch {
+        // Swallow so a single bad payload doesn't poison subsequent
+        // batches. The next enqueue will reschedule a fresh flush.
+    }
 }
 
-function schedule() {
-    if (raf_id === null) {
-        raf_id = requestAnimationFrame(flush);
-    }
+function schedule(): void {
+    if (raf_id === null) raf_id = requestAnimationFrame(flush);
+    if (timeout_id === null) timeout_id = setTimeout(flush, FLUSH_FALLBACK_MS);
 }
 
 export function enqueueDepthSnapshot(
