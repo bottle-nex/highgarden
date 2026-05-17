@@ -65,6 +65,7 @@ export type TradingErrorReason =
     | 'MARKET_CLOSED_ON_POLYMARKET'
     | 'MARKET_NOT_ACCEPTING_ORDERS'
     | 'INSUFFICIENT_FUNDER_BALANCE'
+    | 'INSUFFICIENT_USDC'
     | 'STALE_BOOK'
     | 'TRADE_UNAVAILABLE'
     | 'TRADE_RECONCILE_PENDING'
@@ -247,6 +248,13 @@ class TradingApi {
                 raw,
                 'Trading is paused while we top up our hedge wallet. Please try again later.',
             );
+        }
+        if (code === 'INSUFFICIENT_USDC') {
+            // Server's `message` is already user-grade — includes the exact
+            // deficit ("wallet has $0.00 USDC, BUY needs up to $1.89 …") and
+            // the top-up hint. Pass it through verbatim instead of overriding
+            // with a curated string that would drop the dollar amounts.
+            return new TradingError('INSUFFICIENT_USDC', raw, raw);
         }
         if (code === 'PLACE_ORDER_FAILED') {
             return new TradingError(
