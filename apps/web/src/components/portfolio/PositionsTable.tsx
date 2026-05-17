@@ -35,7 +35,7 @@ export default function PositionsTable(): JSX.Element {
 
     return (
         <div className="mt-4">
-            <div className="grid grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] gap-x-4 px-3 pb-3 text-[11px] font-medium text-white/45 uppercase tracking-wider border-b border-neutral-900">
+            <div className="hidden md:grid grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] gap-x-4 px-3 pb-3 text-[11px] font-medium text-white/45 uppercase tracking-wider border-b border-neutral-900">
                 {COLUMN_HEADERS.map((header) => (
                     <div
                         key={header.label}

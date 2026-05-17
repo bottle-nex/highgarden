@@ -11,7 +11,7 @@ export default function PortFolioPage(): JSX.Element {
         <DashboardLayout>
             <PortfolioBootstrap />
             <main data-lenis-prevent className="max-w-240 mx-auto text-white flex flex-col gap-y-4">
-                <section className="w-full grid grid-cols-2 gap-x-4">
+                <section className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
                     <PortfolioCard />
                     <ProfitLossCard />
                 </section>

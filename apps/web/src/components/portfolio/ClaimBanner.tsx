@@ -43,16 +43,16 @@ export default function ClaimBanner(): JSX.Element | null {
     const preview = claimable.slice(0, 2);
 
     return (
-        <section className="border border-neutral-900 bg-dark-alpha p-5 flex items-center justify-between">
+        <section className="border border-neutral-900 bg-dark-alpha p-4 sm:p-5 flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between rounded-lg">
             <div className="flex items-center gap-x-4">
-                <div className="flex items-start">
+                <div className="flex items-start shrink-0">
                     {preview.map((p, i) => (
                         <MarketIcon
                             key={`${p.marketId}-${p.outcome}`}
                             className={
                                 i === 0
-                                    ? 'bg-neutral-700 relative z-10 -rotate-6'
-                                    : 'bg-neutral-700 relative z-0 -ml-5 -mt-1 rotate-6 ring-2 ring-dark-alpha'
+                                    ? 'size-10 bg-neutral-700 relative z-10 -rotate-6'
+                                    : 'size-10 bg-neutral-700 relative z-0 -ml-5 -mt-1 rotate-6 ring-2 ring-dark-alpha'
                             }
                         >
                             <Image
@@ -64,12 +64,18 @@ export default function ClaimBanner(): JSX.Element | null {
                         </MarketIcon>
                     ))}
                 </div>
-                <div className="ml-6 flex items-baseline gap-x-2">
-                    <span className="text-white/70">You won</span>
-                    <span className="text-white text-2xl font-semibold">${total.toFixed(2)}</span>
+                <div className="ml-2 sm:ml-6 flex items-baseline gap-x-2 min-w-0">
+                    <span className="text-white/70 text-sm sm:text-base">You won</span>
+                    <span className="text-white text-xl sm:text-2xl font-semibold tabular-nums truncate">
+                        ${total.toFixed(2)}
+                    </span>
                 </div>
             </div>
-            <Button className="h-10 px-6 text-sm" onClick={handle_claim_all} disabled={claiming}>
+            <Button
+                className="h-10 px-6 text-sm w-full sm:w-auto"
+                onClick={handle_claim_all}
+                disabled={claiming}
+            >
                 <LuTicket /> {claiming ? 'Claiming…' : 'Claim'}
             </Button>
         </section>

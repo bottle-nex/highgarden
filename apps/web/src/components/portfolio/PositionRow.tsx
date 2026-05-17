@@ -24,11 +24,20 @@ export function MarketIcon({
     return (
         <div
             className={cn(
-                'flex items-center justify-center shrink-0 border-[1.5px] border-white rounded-sm overflow-hidden',
+                'flex items-center justify-center shrink-0 border-[1.5px] border-white rounded-md overflow-hidden',
                 className,
             )}
         >
             {children}
+        </div>
+    );
+}
+
+function MobileStat({ label, children }: { label: string; children: ReactNode }): JSX.Element {
+    return (
+        <div className="md:hidden flex flex-col gap-y-0.5">
+            <span className="text-[10px] uppercase tracking-wider text-white/40">{label}</span>
+            <div className="text-sm text-white/85 tabular-nums">{children}</div>
         </div>
     );
 }
@@ -67,7 +76,7 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
 
     const has_current_price = position.currentPriceCents !== null;
     return (
-        <div className="grid grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] gap-x-4 items-center px-3 py-4 border-b border-neutral-900/80 hover:bg-white/2 transition-colors">
+        <div className="flex flex-col gap-y-3 md:grid md:grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] md:gap-x-4 md:items-center px-3 py-4 border-b border-neutral-900/80 hover:bg-white/2 transition-colors">
             <div className="flex items-center gap-x-3 min-w-0">
                 <MarketIcon className="size-10 bg-neutral-700">
                     <Image
@@ -82,10 +91,10 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
                     <p className="text-sm text-white/95 truncate font-medium">
                         {localize_market_title(position.marketName)}
                     </p>
-                    <div className="flex items-center gap-x-2 mt-1.5">
+                    <div className="flex items-center gap-x-2 mt-1.5 flex-wrap">
                         <span
                             className={cn(
-                                'text-xs px-2 py-0.5 rounded-md font-semibold tabular-nums',
+                                'inline-flex items-center text-[11px] px-2.5 py-0.5 rounded-full font-semibold tabular-nums tracking-wide',
                                 isYes
                                     ? 'bg-emerald-600/90 text-white'
                                     : 'bg-rose-500/90 text-white',
@@ -99,53 +108,91 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
                     </div>
                 </div>
             </div>
-            <div className="text-sm text-white/75 text-right tabular-nums">
-                <span className="text-white/85">{position.avgCostCents}¢</span>
-                <span className="text-white/35 mx-1">→</span>
-                <span className="text-white/85">
-                    {has_current_price ? `${position.currentPriceCents}¢` : '—'}
-                </span>
-            </div>
-            <div className="text-sm text-white/85 text-right tabular-nums">
-                ${position.tradedUsd.toFixed(2)}
-            </div>
-            <div className="text-sm text-white/85 text-right tabular-nums">
-                ${position.toWinUsd.toFixed(2)}
-            </div>
-            <div className="text-right">
-                <div
-                    className={cn(
-                        'inline-flex items-center gap-x-1 text-[10px] font-semibold uppercase tracking-wider',
-                        status_color,
-                    )}
-                >
-                    {position.status === 'WON' && <FaCheckCircle className="size-3" />}
-                    {status_label}
+            <div className="grid grid-cols-2 gap-y-3 gap-x-4 md:contents">
+                <MobileStat label="Avg → Now">
+                    <span className="text-white/85">{position.avgCostCents}¢</span>
+                    <span className="text-white/35 mx-1">→</span>
+                    <span className="text-white/85">
+                        {has_current_price ? `${position.currentPriceCents}¢` : '-'}
+                    </span>
+                </MobileStat>
+                <div className="hidden md:block text-sm text-white/75 text-right tabular-nums">
+                    <span className="text-white/85">{position.avgCostCents}¢</span>
+                    <span className="text-white/35 mx-1">→</span>
+                    <span className="text-white/85">
+                        {has_current_price ? `${position.currentPriceCents}¢` : '-'}
+                    </span>
                 </div>
-                <div
-                    className={cn('text-sm font-semibold tabular-nums leading-tight', status_color)}
-                >
-                    ${position.valueUsd.toFixed(2)}
+                <MobileStat label="Traded">${position.tradedUsd.toFixed(2)}</MobileStat>
+                <div className="hidden md:block text-sm text-white/85 text-right tabular-nums">
+                    ${position.tradedUsd.toFixed(2)}
                 </div>
-            </div>
-            <div className="flex items-center justify-end gap-x-2 pl-2">
-                {position.claimableUsd > 0 && (
-                    <Button
-                        variant="outline"
-                        className="h-9 px-4 text-sm"
-                        onClick={handle_redeem}
-                        disabled={claiming}
+                <MobileStat label="To win">${position.toWinUsd.toFixed(2)}</MobileStat>
+                <div className="hidden md:block text-sm text-white/85 text-right tabular-nums">
+                    ${position.toWinUsd.toFixed(2)}
+                </div>
+                <div className="md:hidden flex flex-col gap-y-0.5">
+                    <span className="text-[10px] uppercase tracking-wider text-white/40">
+                        Value
+                    </span>
+                    <div className="flex items-center gap-x-2">
+                        <span
+                            className={cn(
+                                'text-sm font-semibold tabular-nums leading-tight',
+                                status_color,
+                            )}
+                        >
+                            ${position.valueUsd.toFixed(2)}
+                        </span>
+                        <span
+                            className={cn(
+                                'inline-flex items-center gap-x-1 text-[10px] font-semibold uppercase tracking-wider',
+                                status_color,
+                            )}
+                        >
+                            {position.status === 'WON' && <FaCheckCircle className="size-3" />}
+                            {status_label}
+                        </span>
+                    </div>
+                </div>
+                <div className="hidden md:block text-right">
+                    <div
+                        className={cn(
+                            'inline-flex items-center gap-x-1 text-[10px] font-semibold uppercase tracking-wider',
+                            status_color,
+                        )}
                     >
-                        {claiming ? 'Claiming…' : 'Redeem'}
+                        {position.status === 'WON' && <FaCheckCircle className="size-3" />}
+                        {status_label}
+                    </div>
+                    <div
+                        className={cn(
+                            'text-sm font-semibold tabular-nums leading-tight',
+                            status_color,
+                        )}
+                    >
+                        ${position.valueUsd.toFixed(2)}
+                    </div>
+                </div>
+                <div className="col-span-2 flex items-center justify-end gap-x-2 md:col-span-1 md:pl-2">
+                    {position.claimableUsd > 0 && (
+                        <Button
+                            variant="outline"
+                            className="h-9 px-4 text-sm flex-1 md:flex-none"
+                            onClick={handle_redeem}
+                            disabled={claiming}
+                        >
+                            {claiming ? 'Claiming…' : 'Redeem'}
+                        </Button>
+                    )}
+                    <Button
+                        size="icon"
+                        className="size-9 bg-neutral-800/60 hover:bg-neutral-800 text-white/70 hover:text-white rounded-lg shrink-0"
+                        onClick={() => {}}
+                    >
+                        <LuShare2 />
                     </Button>
-                )}
-                <Button
-                    size="icon"
-                    className="size-9 bg-neutral-800/60 hover:bg-neutral-800 text-white/70 hover:text-white rounded-lg"
-                    onClick={() => {}}
-                >
-                    <LuShare2 />
-                </Button>
+                </div>
             </div>
         </div>
     );

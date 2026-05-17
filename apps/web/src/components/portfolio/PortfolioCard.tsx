@@ -25,21 +25,21 @@ export default function PortfolioCard(): JSX.Element {
     const total_usd = cash_usd + positions_usd;
 
     return (
-        <div className="border border-neutral-900 col-span-1 p-5 bg-dark-base rounded-lg">
-            <div className="w-full flex items-start justify-between">
-                <div className="flex items-center gap-x-2 text-white/70">
+        <div className="border border-neutral-900 col-span-1 p-4 sm:p-5 bg-dark-base rounded-lg">
+            <div className="w-full flex items-start justify-between gap-x-3">
+                <div className="flex items-center gap-x-2 text-white/70 text-sm">
                     <p>Portfolio</p>
                     <ImUserTie className="text-white" />
                 </div>
-                <div className="text-white/70 text-right">
+                <div className="text-white/70 text-right min-w-0">
                     <p className="text-xs">Available to trade</p>
-                    <p className="text-2xl font-semibold text-white">
+                    <p className="text-xl sm:text-2xl font-semibold text-white tabular-nums truncate">
                         {hidden ? '••••' : usd_fmt.format(cash_usd)}
                     </p>
                 </div>
             </div>
-            <div className="flex items-center gap-x-2 mt-1">
-                <span className="text-4xl font-semibold">
+            <div className="flex items-center gap-x-2 mt-2">
+                <span className="text-3xl sm:text-4xl font-semibold tracking-tight tabular-nums">
                     {hidden ? '••••' : usd_fmt.format(total_usd)}
                 </span>
                 <button

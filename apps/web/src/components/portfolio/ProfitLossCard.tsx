@@ -9,13 +9,13 @@ export default function ProfitLossCard(): JSX.Element {
     const [activeRange, setActiveRange] = useState<ProfitTimeRange>('1D');
 
     return (
-        <div className="border border-neutral-900 col-span-1 p-5 bg-dark-base rounded-lg flex flex-col">
-            <div className="w-full flex items-start justify-between">
-                <div className="flex items-center gap-x-2 text-white/70">
+        <div className="border border-neutral-900 col-span-1 p-4 sm:p-5 bg-dark-base rounded-lg flex flex-col">
+            <div className="w-full flex flex-col gap-y-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-center gap-x-2 text-white/70 text-sm">
                     <span className="size-2 rounded-full bg-white/40" />
                     <p>Profit/Loss</p>
                 </div>
-                <div className="flex items-center gap-x-1 border border-neutral-900 bg-dark-base p-0.5">
+                <div className="flex items-center gap-x-1 border border-neutral-900 bg-dark-base p-0.5 self-start sm:self-auto rounded-md">
                     {PROFIT_TIME_RANGES.map((range) => {
                         const isActive = range === activeRange;
                         return (
@@ -24,7 +24,7 @@ export default function ProfitLossCard(): JSX.Element {
                                 variant="ghost"
                                 onClick={() => setActiveRange(range)}
                                 className={cn(
-                                    'h-auto rounded-lg px-3 py-1 text-xs border',
+                                    'h-auto rounded-md px-2.5 py-1 text-xs border',
                                     isActive
                                         ? 'bg-alpha/15 text-alpha border-alpha/30 hover:bg-alpha/15 hover:text-alpha'
                                         : 'border-transparent text-white/60 hover:bg-transparent hover:text-white',
@@ -36,12 +36,14 @@ export default function ProfitLossCard(): JSX.Element {
                     })}
                 </div>
             </div>
-            <div className="flex items-center justify-between mt-1">
-                <div className="flex items-center gap-x-2">
-                    <span className="text-4xl font-semibold">$0.00</span>
-                    <LuArrowUpFromLine className="text-white/40 size-4" />
+            <div className="flex items-center justify-between mt-2 gap-x-3">
+                <div className="flex items-center gap-x-2 min-w-0">
+                    <span className="text-3xl sm:text-4xl font-semibold tracking-tight tabular-nums">
+                        $0.00
+                    </span>
+                    <LuArrowUpFromLine className="text-white/40 size-4 shrink-0" />
                 </div>
-                <div className="flex items-center gap-x-1 text-white/50 text-sm">
+                <div className="hidden sm:flex items-center gap-x-1 text-white/50 text-sm">
                     <span className="inline-block size-0 border-t-[6px] border-b-[6px] border-r-[10px] border-t-transparent border-b-transparent border-r-white/40" />
                     solmarket
                 </div>

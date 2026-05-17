@@ -26,7 +26,7 @@ export default function PortfolioTabs(): JSX.Element {
 
     return (
         <section>
-            <div className="flex items-center gap-x-6 border-b border-neutral-900">
+            <div className="flex items-center gap-x-4 sm:gap-x-6 border-b border-neutral-900 overflow-x-auto">
                 {PORTFOLIO_TABS.map((tab) => {
                     const isActive = tab === activeTab;
                     return (
@@ -35,7 +35,7 @@ export default function PortfolioTabs(): JSX.Element {
                             variant="ghost"
                             onClick={() => setActiveTab(tab)}
                             className={cn(
-                                'h-auto rounded-none px-0 pb-3 text-sm bg-transparent border-none',
+                                'h-auto rounded-none px-0 pb-3 text-sm bg-transparent border-none shrink-0 whitespace-nowrap',
                                 isActive
                                     ? 'text-white border-b-2 border-alpha hover:bg-transparent hover:text-white'
                                     : 'text-white/50 hover:bg-transparent hover:text-white/80',
@@ -47,20 +47,20 @@ export default function PortfolioTabs(): JSX.Element {
                 })}
             </div>
 
-            <div className="flex items-center gap-x-3 mt-4">
-                <div className="relative flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-4">
+                <div className="relative w-full sm:flex-1">
                     <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
                     <Input
                         placeholder="Search"
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
-                        className="h-10 pl-9 bg-dark-base border-neutral-900 rounded-lg"
+                        className="h-10 pl-9 bg-dark-base border-neutral-900 rounded-lg w-full"
                     />
                 </div>
                 <Button
                     variant="outline"
                     onClick={() => {}}
-                    className="h-10 px-4 border-neutral-900 bg-dark-base text-sm text-white/70 hover:bg-dark-base hover:text-white rounded-lg"
+                    className="h-10 px-4 border-neutral-900 bg-dark-base text-sm text-white/70 hover:bg-dark-base hover:text-white rounded-lg w-full sm:w-auto justify-center"
                 >
                     <LuArrowUpDown className="size-3.5" />
                     Current value
