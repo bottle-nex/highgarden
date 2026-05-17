@@ -6,6 +6,7 @@ import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { selectAllPositions, usePositionsStore } from '@/store/portfolio/usePositionsStore';
 import { CroppedButton } from '../ui/cropped-button';
+import { UpcomingBadge } from './UpcomingBadge';
 
 const usd_fmt = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -63,9 +64,11 @@ export default function PortfolioCard(): JSX.Element {
                 </CroppedButton>
                 <CroppedButton
                     onClick={() => {}}
-                    className="col-span-1 w-full h-10 text-sm font-medium tracking-tight bg-white hover:bg-neutral-100 text-dark-alpha border border-white/6 transition-all duration-200"
+                    title="Withdraw is coming soon"
+                    className="col-span-1 w-full h-10 text-sm font-medium tracking-tight bg-white hover:bg-neutral-100 text-dark-alpha border border-white/6 transition-all duration-200 relative"
                 >
                     <LuArrowUpFromLine /> Withdraw
+                    <UpcomingBadge className="ml-1" />
                 </CroppedButton>
             </div>
         </div>

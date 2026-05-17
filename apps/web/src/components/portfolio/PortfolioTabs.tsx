@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PositionsTable from './PositionsTable';
 import HistoryTable from './HistoryTable';
-import EmptyTabState from './EmptyTabState';
+import { UpcomingBadge } from './UpcomingBadge';
 import { PORTFOLIO_TABS, type PortfolioTab } from './types';
 
 export default function PortfolioTabs(): JSX.Element {
@@ -18,7 +18,17 @@ export default function PortfolioTabs(): JSX.Element {
             case 'Positions':
                 return <PositionsTable />;
             case 'Open orders':
-                return <EmptyTabState label="Open orders" />;
+                return (
+                    <div className="mt-8 py-14 px-6 text-center border border-neutral-900 bg-dark-alpha rounded-lg flex flex-col items-center gap-y-3">
+                        <UpcomingBadge label="Coming Soon" />
+                        <p className="text-white/80 text-sm font-medium">
+                            Open orders are on the way
+                        </p>
+                        <p className="text-white/40 text-xs max-w-sm">
+                            Track and manage your pending limit orders here once they ship.
+                        </p>
+                    </div>
+                );
             case 'History':
                 return <HistoryTable search={searchQuery} />;
         }
@@ -60,10 +70,12 @@ export default function PortfolioTabs(): JSX.Element {
                 <Button
                     variant="outline"
                     onClick={() => {}}
-                    className="h-10 px-4 border-neutral-900 bg-dark-base text-sm text-white/70 hover:bg-dark-base hover:text-white rounded-lg w-full sm:w-auto justify-center"
+                    title="Sorting coming soon"
+                    className="h-10 px-4 border-neutral-900 bg-dark-base text-sm text-white/70 hover:bg-dark-base hover:text-white rounded-lg w-full sm:w-auto justify-center gap-x-2"
                 >
                     <LuArrowUpDown className="size-3.5" />
                     Current value
+                    <UpcomingBadge />
                 </Button>
             </div>
 

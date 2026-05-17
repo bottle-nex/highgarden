@@ -1,6 +1,6 @@
 'use client';
 import { JSX, ReactNode, useState } from 'react';
-import { FaCheckCircle } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { LuShare2 } from 'react-icons/lu';
 import { toast } from 'sonner';
 import type { PositionDTO } from '@solmarket/types';
@@ -66,13 +66,14 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
         }
     };
 
+    const is_won = position.status === 'WON';
+    const is_lost = position.status === 'LOST';
     const status_label = position.status === 'OPEN' ? 'OPEN' : position.status;
-    const status_color =
-        position.status === 'WON'
-            ? 'text-green-500'
-            : position.status === 'LOST'
-              ? 'text-red-500'
-              : 'text-white/60';
+    const status_color = is_won
+        ? 'text-emerald-400'
+        : is_lost
+          ? 'text-rose-400'
+          : 'text-white/60';
 
     const has_current_price = position.currentPriceCents !== null;
     return (
@@ -140,17 +141,21 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
                             className={cn(
                                 'text-sm font-semibold tabular-nums leading-tight',
                                 status_color,
+                                is_lost && 'line-through decoration-rose-400/70 opacity-70',
                             )}
                         >
                             ${position.valueUsd.toFixed(2)}
                         </span>
                         <span
                             className={cn(
-                                'inline-flex items-center gap-x-1 text-[10px] font-semibold uppercase tracking-wider',
-                                status_color,
+                                'inline-flex items-center gap-x-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+                                is_won && 'bg-emerald-500/15 text-emerald-400',
+                                is_lost && 'bg-rose-500/20 text-rose-300 ring-1 ring-rose-500/40',
+                                !is_won && !is_lost && status_color,
                             )}
                         >
-                            {position.status === 'WON' && <FaCheckCircle className="size-3" />}
+                            {is_won && <FaCheckCircle className="size-3" />}
+                            {is_lost && <FaTimesCircle className="size-3" />}
                             {status_label}
                         </span>
                     </div>
@@ -158,17 +163,21 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
                 <div className="hidden md:block text-right">
                     <div
                         className={cn(
-                            'inline-flex items-center gap-x-1 text-[10px] font-semibold uppercase tracking-wider',
-                            status_color,
+                            'inline-flex items-center gap-x-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+                            is_won && 'bg-emerald-500/15 text-emerald-400',
+                            is_lost && 'bg-rose-500/20 text-rose-300 ring-1 ring-rose-500/40',
+                            !is_won && !is_lost && status_color,
                         )}
                     >
-                        {position.status === 'WON' && <FaCheckCircle className="size-3" />}
+                        {is_won && <FaCheckCircle className="size-3" />}
+                        {is_lost && <FaTimesCircle className="size-3" />}
                         {status_label}
                     </div>
                     <div
                         className={cn(
-                            'text-sm font-semibold tabular-nums leading-tight',
+                            'text-sm font-semibold tabular-nums leading-tight mt-1',
                             status_color,
+                            is_lost && 'line-through decoration-rose-400/70 opacity-70',
                         )}
                     >
                         ${position.valueUsd.toFixed(2)}
@@ -187,7 +196,9 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
                     )}
                     <Button
                         size="icon"
-                        className="size-9 bg-neutral-800/60 hover:bg-neutral-800 text-white/70 hover:text-white rounded-lg shrink-0"
+                        title="Coming soon"
+                        aria-label="Share (coming soon)"
+                        className="size-9 bg-neutral-800/60 hover:bg-neutral-800 text-white/40 hover:text-white/60 rounded-lg shrink-0"
                         onClick={() => {}}
                     >
                         <LuShare2 />

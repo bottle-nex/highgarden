@@ -4,6 +4,7 @@ import { LuArrowUpFromLine } from 'react-icons/lu';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { PROFIT_TIME_RANGES, type ProfitTimeRange } from './types';
+import { UpcomingBadge } from './UpcomingBadge';
 
 export default function ProfitLossCard(): JSX.Element {
     const [activeRange, setActiveRange] = useState<ProfitTimeRange>('1D');
@@ -14,6 +15,7 @@ export default function ProfitLossCard(): JSX.Element {
                 <div className="flex items-center gap-x-2 text-white/70 text-sm">
                     <span className="size-2 rounded-full bg-white/40" />
                     <p>Profit/Loss</p>
+                    <UpcomingBadge />
                 </div>
                 <div className="flex items-center gap-x-1 border border-neutral-900 bg-dark-base p-0.5 self-start sm:self-auto rounded-md">
                     {PROFIT_TIME_RANGES.map((range) => {
