@@ -6,6 +6,7 @@ import SearchBar from '../dashboard/SearchBar';
 import { CroppedButton } from '../ui/cropped-button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';
+import { useWithdrawDialogStore } from '@/store/ui/useWithdrawDialogStore';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import Image from 'next/image';
 import { signOut } from 'next-auth/react';
@@ -13,6 +14,7 @@ import { AnimatePresence } from 'motion/react';
 import OpacityBackground from '../ui/opacity-background';
 import UtilityCard from '../ui/utility-card';
 import DepositDialog from '../ui/deposit-dialog';
+import WithdrawDialog from '../portfolio/WithdrawDialog';
 import { APP_NAME } from '@/utils/constants';
 import Link from 'next/link';
 import Applogo from '../ui/Applogo';
@@ -24,6 +26,8 @@ export default function EventNavbar(): JSX.Element {
     const [logoutOpen, setLogoutOpen] = useState<boolean>(false);
     const openDepositDropdown = useDepositDialogStore((s) => s.open);
     const setDepositDropdown = useDepositDialogStore((s) => s.setOpen);
+    const openWithdrawDialog = useWithdrawDialogStore((s) => s.open);
+    const setWithdrawDialog = useWithdrawDialogStore((s) => s.setOpen);
     const requireAuth = useRequireAuth();
 
     const is_signed_in = !!session?.user;
@@ -108,6 +112,7 @@ export default function EventNavbar(): JSX.Element {
             </div>
 
             {openDepositDropdown && <DepositDialog onClose={() => setDepositDropdown(false)} />}
+            {openWithdrawDialog && <WithdrawDialog onClose={() => setWithdrawDialog(false)} />}
             <AnimatePresence>
                 {logoutOpen && <LogoutDialog onClose={() => setLogoutOpen(false)} />}
             </AnimatePresence>

@@ -34,15 +34,12 @@ function TrendingSection(): JSX.Element {
                 <div className="min-w-0 flex flex-col min-h-80 lg:min-h-0">
                     <LiveFeaturedMarket />
                 </div>
-
                 <aside className="flex flex-col gap-6 sm:gap-8 lg:h-full lg:justify-between lg:min-h-0 lg:gap-0 lg:py-1">
                     <BreakingNewsList limit={3} />
                     <HotTopicsList topics={topics} />
                 </aside>
             </div>
-
             <LiveStakingSection />
-
             <LiveMarketGrid excludeFeatured />
 
         </div>

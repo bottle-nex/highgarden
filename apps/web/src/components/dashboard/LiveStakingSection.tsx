@@ -6,7 +6,7 @@ import type { MarketDTO } from '@solmarket/types';
 import StakingSection from './StakingSection';
 import SectionHeading from './SectionHeading';
 import { fetchPublicMarkets } from '@/lib/api/markets';
-import type { YesNoMarket } from '@/utils/constants';
+import type { Market as CardMarket } from '@/utils/constants';
 import { localize_market_title } from '@/utils/localize-et';
 
 function format_volume(usd: number | null): string {
@@ -25,16 +25,15 @@ function format_ends_in(iso: string): string {
     return `${hours}H`;
 }
 
-function dto_to_yes_no_market(m: MarketDTO): YesNoMarket {
+function dto_to_card(m: MarketDTO): CardMarket {
     return {
         id: m.id,
         title: localize_market_title(m.name),
-        category: 'MARKET',
+        category: m.tags[0]?.toUpperCase() ?? 'MARKET',
         // Static 50/50 until live book hydration is wired into the dashboard.
         yesPrice: 50,
         noPrice: 50,
         volume: format_volume(m.volume24hUsd),
-        traders: 0,
         change24h: 0,
         endsIn: format_ends_in(m.endAt),
         description: m.description,
@@ -105,10 +104,10 @@ export default function LiveStakingSection() {
     // slot here would drown the section in near-identical cards.
     const standard_only = state.markets.filter((m) => m.kind !== 'FAST_MOVING');
     if (standard_only.length === 0) return null;
-    const yes_no = standard_only.map(dto_to_yes_no_market);
+    const cards = standard_only.map(dto_to_card);
 
     return (
-        <StakingSection yesNoMarkets={yes_no} multiCandidateMarkets={[]} multiOptionMarkets={[]} />
+        <StakingSection yesNoMarkets={cards} multiCandidateMarkets={[]} multiOptionMarkets={[]} />
     );
 }
 function Section({ children }: { children: React.ReactNode }) {

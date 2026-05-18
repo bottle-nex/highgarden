@@ -197,7 +197,7 @@ const Candle = memo(function Candle(props: CandleProps): JSX.Element {
     const body_h = Math.max(1, body_bottom_y - body_top_y);
     const center_x = x + width / 2;
     const is_up = c >= o;
-    const color = is_up ? '#10b981' : '#ef4444';
+    const color = is_up ? '#10b981' : '#e11d48';
     const body_w = Math.max(2, width * 0.7);
     const body_x = center_x - body_w / 2;
     return (

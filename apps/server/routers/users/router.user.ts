@@ -5,23 +5,26 @@ import ResponseWriter from "../../services/service.response";
 import { ensure_user_has_keypair } from "../../services/service.keypair";
 import { get_user_usdc_balance } from "../../services/service.wallet";
 import PortfolioService from "../../services/service.portfolio";
+import SolanaWithdrawService, { WithdrawError } from "../../services/service.solana-withdraw";
 import { services } from "../../index";
 import { ENV } from "../../config/config.env";
 
 const user_router: Router = Router();
 const portfolio = new PortfolioService();
+const withdraw_service = new SolanaWithdrawService();
 
 /**
  * Picks a display label for the configured RPC so the frontend wallet
  * dialog shows the actual cluster instead of a hardcoded string. Pure
  * substring match — fine because Solana cluster RPCs all carry the
- * cluster name in the URL (`devnet.helius`, `api.mainnet-beta`, etc).
+ * cluster name in the URL. The contract is deployed on devnet and the
+ * sweeper only handles devnet SOL, so mainnet is intentionally NOT a
+ * supported label — a mainnet RPC falls through to "custom".
  */
 function derive_network_label(rpc_url: string): string {
     const u = rpc_url.toLowerCase();
     if (u.includes("devnet")) return "devnet";
     if (u.includes("testnet")) return "testnet";
-    if (u.includes("mainnet")) return "mainnet-beta";
     if (u.includes("localhost") || u.includes("127.0.0.1")) return "localnet";
     return "custom";
 }
@@ -138,6 +141,38 @@ user_router.get("/me/deposits", requireAuth, async (req, res) => {
     } catch (err) {
         console.error("[users/me/deposits]", err);
         return ResponseWriter.system_error(res);
+    }
+});
+
+/**
+ * Withdraw USDC from the user's custodial wallet to any Solana address.
+ * Admin keypair pays the SOL tx fee and, if needed, the rent to create
+ * the recipient's USDC ATA — the user only sees USDC debit from their
+ * custodial balance.
+ */
+user_router.post("/me/withdraw", requireAuth, async (req, res) => {
+    const body = req.body as { destination?: unknown; uiAmount?: unknown };
+    const destination = typeof body.destination === "string" ? body.destination.trim() : "";
+    const ui_amount = typeof body.uiAmount === "number" ? body.uiAmount : NaN;
+
+    if (!destination) return ResponseWriter.invalid_data(res, "destination address required");
+    if (!Number.isFinite(ui_amount))
+        return ResponseWriter.invalid_data(res, "uiAmount must be a number");
+
+    try {
+        const result = await withdraw_service.withdraw_usdc({
+            userId: req.user!.id,
+            destination,
+            uiAmount: ui_amount,
+        });
+        return ResponseWriter.success(res, result, "Withdrawn");
+    } catch (err) {
+        if (err instanceof WithdrawError) {
+            return ResponseWriter.error(res, err.code, err.message, undefined, 409);
+        }
+        console.error("[users/me/withdraw]", err);
+        const msg = err instanceof Error ? err.message : "withdraw failed";
+        return ResponseWriter.error(res, "WITHDRAW_FAILED", msg, undefined, 500);
     }
 });
 

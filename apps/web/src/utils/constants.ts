@@ -30,6 +30,12 @@ export interface Market {
     volume: string;
     change24h: number;
     endsIn: string;
+    /** Optional metadata surfaced when the source DTO carries it (live
+     *  data path). Mock entries omit these and the card renders without
+     *  the image / description / trader-count block. */
+    description?: string;
+    imageUrl?: string | null;
+    traders?: number;
     /** Present when the card represents a rolling FAST_MOVING series
      *  rather than a single market. The card shows the next-resolving
      *  slot as its representative and surfaces "N upcoming" so users
@@ -264,20 +270,6 @@ export const tickerTrades: TickerTrade[] = [
 
 /* ── Staking Market Types ─────────────────────────────── */
 
-export interface YesNoMarket {
-    id: string;
-    title: string;
-    category: string;
-    yesPrice: number;
-    noPrice: number;
-    volume: string;
-    traders: number;
-    change24h: number;
-    endsIn: string;
-    description: string;
-    imageUrl?: string | null;
-}
-
 export interface Candidate {
     name: string;
     probability: number;
@@ -310,48 +302,6 @@ export interface MultiOptionMarket {
     traders: number;
     endsIn: string;
 }
-
-export const yesNoMarkets: YesNoMarket[] = [
-    {
-        id: 'yn-001',
-        title: 'Will the Fed cut rates at the June 2026 FOMC meeting?',
-        category: 'POLITICS',
-        yesPrice: 28,
-        noPrice: 72,
-        volume: '$3.4M',
-        traders: 1820,
-        change24h: -2.1,
-        endsIn: '9D',
-        description:
-            'Resolves YES if the Federal Reserve announces a rate cut of at least 25bps at the June 2026 FOMC meeting.',
-    },
-    {
-        id: 'yn-002',
-        title: 'SpaceX Starship completes full orbital flight in Q2 2026?',
-        category: 'TECH',
-        yesPrice: 48,
-        noPrice: 52,
-        volume: '$1.6M',
-        traders: 990,
-        change24h: 2.9,
-        endsIn: '56D',
-        description:
-            'Resolves YES if SpaceX Starship successfully completes a full orbital trajectory and controlled re-entry before July 1, 2026.',
-    },
-    {
-        id: 'yn-003',
-        title: 'Ukraine ceasefire agreement signed before September 2026?',
-        category: 'GEOPOLITICS',
-        yesPrice: 34,
-        noPrice: 66,
-        volume: '$5.8M',
-        traders: 3301,
-        change24h: 3.7,
-        endsIn: '140D',
-        description:
-            'Resolves YES if an official ceasefire agreement is signed by representatives of both Ukraine and Russia before September 1, 2026.',
-    },
-];
 
 export const multiCandidateMarkets: MultiCandidateMarket[] = [
     {

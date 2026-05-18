@@ -39,6 +39,8 @@ function dto_to_card(m: MarketDTO): CardMarket {
         volume: format_volume(m.volume24hUsd),
         change24h: 0,
         endsIn: format_ends_in(m.endAt),
+        description: m.description,
+        imageUrl: m.imageUrl,
     };
 }
 

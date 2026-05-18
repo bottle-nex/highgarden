@@ -3,10 +3,10 @@ import { JSX, useState } from 'react';
 import { ImUserTie } from 'react-icons/im';
 import { LuArrowDownToLine, LuArrowUpFromLine, LuEye, LuEyeOff } from 'react-icons/lu';
 import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';
+import { useWithdrawDialogStore } from '@/store/ui/useWithdrawDialogStore';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { selectAllPositions, usePositionsStore } from '@/store/portfolio/usePositionsStore';
 import { CroppedButton } from '../ui/cropped-button';
-import { UpcomingBadge } from './UpcomingBadge';
 
 const usd_fmt = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -18,6 +18,7 @@ const usd_fmt = new Intl.NumberFormat('en-US', {
 export default function PortfolioCard(): JSX.Element {
     const [hidden, setHidden] = useState<boolean>(false);
     const open_deposit_dialog = useDepositDialogStore((s) => s.setOpen);
+    const open_withdraw_dialog = useWithdrawDialogStore((s) => s.setOpen);
     const wallet = useWalletBalance({ enabled: true });
     const positions = usePositionsStore(selectAllPositions);
 
@@ -63,12 +64,10 @@ export default function PortfolioCard(): JSX.Element {
                     <LuArrowDownToLine /> Deposit
                 </CroppedButton>
                 <CroppedButton
-                    onClick={() => {}}
-                    title="Withdraw is coming soon"
-                    className="col-span-1 w-full h-10 text-sm font-medium tracking-tight bg-white hover:bg-neutral-100 text-dark-alpha border border-white/6 transition-all duration-200 relative"
+                    onClick={() => open_withdraw_dialog(true)}
+                    className="col-span-1 w-full h-10 text-sm font-medium tracking-tight bg-white hover:bg-neutral-100 text-dark-alpha border border-white/6 transition-all duration-200"
                 >
                     <LuArrowUpFromLine /> Withdraw
-                    <UpcomingBadge className="ml-1" />
                 </CroppedButton>
             </div>
         </div>
