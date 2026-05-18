@@ -5,13 +5,18 @@ import { SERVER_MESSAGE_TYPE } from '@solmarket/types';
 
 import { useWebSocket } from './useWebSocket';
 import { SocketEventHandlers } from './socket-event-handlers';
+import SingletonSocket from './singleton-socket';
 
 export function useSubscribeEventHandlers() {
-    const { on, off } = useWebSocket();
+    // Keep the socket alive for the lifetime of this consumer. The returned
+    // `on/off` here close over a possibly-null React-derived `client`, so we
+    // do NOT use them for handler registration — that's what `SingletonSocket`
+    // is for. This call is purely for refcount + connection lifecycle.
+    useWebSocket();
 
     useEffect(() => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const handlersMap: Record<SERVER_MESSAGE_TYPE, (msg: any) => void> = {
+        const handlers_map: Record<SERVER_MESSAGE_TYPE, (msg: any) => void> = {
             [SERVER_MESSAGE_TYPE.MARKET]: SocketEventHandlers.handle_market,
             [SERVER_MESSAGE_TYPE.SUBSCRIBED]: SocketEventHandlers.handle_subscribed,
             [SERVER_MESSAGE_TYPE.UNSUBSCRIBED]: SocketEventHandlers.handle_unsubscribed,
@@ -20,21 +25,20 @@ export function useSubscribeEventHandlers() {
             [SERVER_MESSAGE_TYPE.MARKET_RESOLVED]: SocketEventHandlers.handle_market_resolved,
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const subscribe = on as (type: SERVER_MESSAGE_TYPE, handler: (msg: any) => void) => void;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const unsubscribe = off as (type: SERVER_MESSAGE_TYPE, handler: (msg: any) => void) => void;
+        // Register synchronously against the singleton. SingletonSocket
+        // attaches each handler to the current WebSocketClient (if any) AND
+        // remembers it for replay onto any future client (reconnect, session
+        // swap). This eliminates the prior race where the React-derived
+        // `client` was null on the first commit and the server's initial
+        // `book` frame arrived before re-registration on the second commit.
+        for (const [type, handler] of Object.entries(handlers_map)) {
+            SingletonSocket.on(type as SERVER_MESSAGE_TYPE, handler);
+        }
 
-        // subscribe
-        Object.entries(handlersMap).forEach(([type, handler]) =>
-            subscribe(type as SERVER_MESSAGE_TYPE, handler),
-        );
-
-        // unsubscribe
         return () => {
-            Object.entries(handlersMap).forEach(([type, handler]) =>
-                unsubscribe(type as SERVER_MESSAGE_TYPE, handler),
-            );
+            for (const [type, handler] of Object.entries(handlers_map)) {
+                SingletonSocket.off(type as SERVER_MESSAGE_TYPE, handler);
+            }
         };
-    }, [on, off]);
+    }, []);
 }

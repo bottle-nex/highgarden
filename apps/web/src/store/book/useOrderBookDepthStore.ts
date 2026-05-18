@@ -77,7 +77,15 @@ export const useOrderBookDepthStore = create<DepthState>()(
                                 .slice()
                                 .sort((a, b) => a.price - b.price)
                                 .slice(0, MAX_DEPTH_LEVELS),
-                            updatedAt: snap.updatedAt,
+                            // REST `updatedAt` reflects a server-side cached
+                            // capture that often runs ahead of mirror-relayed
+                            // Polymarket event timestamps. If we keep that as
+                            // the sequence gate, every subsequent live delta
+                            // with `ts < snap.updatedAt` gets silently dropped
+                            // by _flush, freezing the book until a WS `book`
+                            // frame lands to reset the gate. Anchor REST
+                            // hydrates at 0 so any real delta wins.
+                            updatedAt: 0,
                         };
                         return { byKey: { ...s.byKey, [key]: next } };
                     },

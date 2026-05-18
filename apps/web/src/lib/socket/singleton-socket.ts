@@ -1,3 +1,5 @@
+import { SERVER_MESSAGE_TYPE, type ServerMessageHandler } from '@solmarket/types';
+
 import WebSocketClient from './socket.client';
 import { useStreamStore } from '@/store/stream/useStreamStore';
 
@@ -11,6 +13,16 @@ export default class SingletonSocket {
     // and back-to-back consumer swaps from tearing the live socket down.
     private static destroy_timeout: ReturnType<typeof setTimeout> | null = null;
     private static readonly destroy_grace_ms = 250;
+    // Handlers attached at the singleton level (not per-client). Registering
+    // here survives client recreation (session swap / reconnect) AND avoids
+    // the React-render race where the consumer hook's `client` closure is
+    // still null on the first render after mount — that closure-null window
+    // was previously dropping the server's initial `book` snapshot, leaving
+    // the orderbook stuck on the REST seed until a navigation forced a fresh
+    // SUBSCRIBE.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    private static readonly handlers: Map<SERVER_MESSAGE_TYPE, Array<(msg: any) => void>> =
+        new Map();
 
     private static get_ws_url(token: string | null): string {
         const backend = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8080';
@@ -43,6 +55,7 @@ export default class SingletonSocket {
             useStreamStore.getState().reset();
             this.current_token = token;
             this.client = new WebSocketClient(this.get_ws_url(token));
+            this.replay_handlers_onto(this.client);
             if (carry_over.length > 0) {
                 this.client.seed_active_subscriptions(carry_over);
             }
@@ -51,8 +64,51 @@ export default class SingletonSocket {
         if (!this.client) {
             this.current_token = token;
             this.client = new WebSocketClient(this.get_ws_url(token));
+            this.replay_handlers_onto(this.client);
         }
         return this.client;
+    }
+
+    /**
+     * Register a message handler at the singleton level. The handler is
+     * stored in a static map AND attached to the current client (if any).
+     * On every subsequent client creation (reconnect / session swap),
+     * `replay_handlers_onto` re-attaches it, so handlers outlive any one
+     * WebSocketClient instance.
+     */
+    public static on<T extends SERVER_MESSAGE_TYPE>(
+        type: T,
+        handler: ServerMessageHandler<T>,
+    ): void {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const list = this.handlers.get(type) ?? ([] as Array<(msg: any) => void>);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        list.push(handler as (msg: any) => void);
+        this.handlers.set(type, list);
+        this.client?.on(type, handler);
+    }
+
+    public static off<T extends SERVER_MESSAGE_TYPE>(
+        type: T,
+        handler: ServerMessageHandler<T>,
+    ): void {
+        const list = this.handlers.get(type);
+        if (list) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const idx = list.indexOf(handler as (msg: any) => void);
+            if (idx !== -1) list.splice(idx, 1);
+            if (list.length === 0) this.handlers.delete(type);
+        }
+        this.client?.off(type, handler);
+    }
+
+    private static replay_handlers_onto(client: WebSocketClient): void {
+        for (const [type, list] of this.handlers) {
+            for (const handler of list) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                client.on(type, handler as any);
+            }
+        }
     }
 
     public static release(): void {
