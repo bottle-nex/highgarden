@@ -119,10 +119,24 @@ function fast_priority(series_key: string | null): number {
     return 10;
 }
 
+/** One slide per sidebar tag-category, in sidebar order. Trending and Mentions
+ *  are excluded — they're sort modes, not real Polymarket tags. */
+const CATEGORY_ORDER = [
+    'Politics',
+    'Sports',
+    'Crypto',
+    'Geopolitics',
+    'Culture',
+    'Tech',
+    'Economy',
+    'Weather',
+    'Elections',
+] as const;
+
 function build_slides(markets: MarketDTO[]): Slide[] {
     const collapsed = collapse_fast_series(markets);
     const fast: Slide[] = [];
-    const standard: Slide[] = [];
+    const standard: MarketDTO[] = [];
     for (const c of collapsed) {
         if (c.series) {
             fast.push({
@@ -131,11 +145,7 @@ function build_slides(markets: MarketDTO[]): Slide[] {
                 category: 'FAST MARKET',
             });
         } else {
-            standard.push({
-                market: c.dto,
-                display_title: localize_market_title(c.dto.name),
-                category: c.dto.tags[0]?.toUpperCase() ?? 'MARKET',
-            });
+            standard.push(c.dto);
         }
     }
     fast.sort((a, b) => {
@@ -144,10 +154,29 @@ function build_slides(markets: MarketDTO[]): Slide[] {
         if (pa !== pb) return pa - pb;
         return (a.market.fastSeriesKey ?? '').localeCompare(b.market.fastSeriesKey ?? '');
     });
-    standard.sort((a, b) => (b.market.volume24hUsd ?? 0) - (a.market.volume24hUsd ?? 0));
-    // 2-3 fast series up front, then every approved standard market by volume.
-    // Cap total so the dot indicator stays readable.
-    return [...fast.slice(0, 3), ...standard].slice(0, 12);
+
+    // For each sidebar category, pick the highest-volume standard market
+    // whose tags include that category. Dedupe across categories — a market
+    // tagged both "Politics" and "Elections" should only appear once
+    // (under whichever category we hit first in CATEGORY_ORDER).
+    const seen = new Set<string>();
+    const category_slides: Slide[] = [];
+    const tag_matches = (m: MarketDTO, tag: string) =>
+        m.tags.some((t) => t.toLowerCase() === tag.toLowerCase());
+    for (const category of CATEGORY_ORDER) {
+        const pick = standard
+            .filter((m) => !seen.has(m.id) && tag_matches(m, category))
+            .sort((a, b) => (b.volume24hUsd ?? 0) - (a.volume24hUsd ?? 0))[0];
+        if (!pick) continue;
+        seen.add(pick.id);
+        category_slides.push({
+            market: pick,
+            display_title: localize_market_title(pick.name),
+            category: category.toUpperCase(),
+        });
+    }
+
+    return [...fast.slice(0, 3), ...category_slides];
 }
 
 function dto_to_featured(slide: Slide, history: PriceHistoryPoint[]): FeaturedMarket {
@@ -334,7 +363,7 @@ function CarouselControls({
                     type="button"
                     onClick={on_prev}
                     aria-label={`Previous market — ${prev_title}`}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/12 bg-dark-base hover:bg-white/5 text-white/70 text-[10px] tracking-[0.18em] uppercase max-w-[140px] sm:max-w-[180px] cursor-pointer"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/12 bg-dark-base hover:bg-white/5 text-white/70 text-[10px] tracking-[0.18em] uppercase max-w-35 sm:max-w-45 cursor-pointer"
                 >
                     <HiOutlineChevronLeft className="size-3 shrink-0" />
                     <span className="truncate">{prev_title}</span>
@@ -343,7 +372,7 @@ function CarouselControls({
                     type="button"
                     onClick={on_next}
                     aria-label={`Next market — ${next_title}`}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/12 bg-dark-base hover:bg-white/5 text-white/70 text-[10px] tracking-[0.18em] uppercase max-w-[140px] sm:max-w-[180px] cursor-pointer"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm border border-white/12 bg-dark-base hover:bg-white/5 text-white/70 text-[10px] tracking-[0.18em] uppercase max-w-35 sm:max-w-45 cursor-pointer"
                 >
                     <span className="truncate">{next_title}</span>
                     <HiOutlineChevronRight className="size-3 shrink-0" />
