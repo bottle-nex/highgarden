@@ -17,6 +17,11 @@ await services.hydrate();
 autoLister.start();
 
 const app = express();
+// One proxy hop in front of the server (load balancer / reverse proxy).
+// Required so `req.ip` resolves to the real client IP rather than the
+// proxy's IP — otherwise IP-keyed rate limits collapse to one bucket.
+// Bump this number if there are multiple hops in front of the app.
+app.set("trust proxy", 1);
 app.use(
     cors({
         origin: ENV.SERVER_WEB_ORIGIN,

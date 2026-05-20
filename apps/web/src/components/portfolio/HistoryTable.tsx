@@ -1,6 +1,6 @@
 'use client';
 import { JSX, ReactNode, useMemo } from 'react';
-import { LuChevronsUpDown, LuExternalLink } from 'react-icons/lu';
+import { LuExternalLink } from 'react-icons/lu';
 import type { FillDTO } from '@solmarket/types';
 import { Outcome, Side } from '@solmarket/types';
 import { cn } from '@/lib/utils';
@@ -36,10 +36,13 @@ export default function HistoryTable({ search }: { search: string }): JSX.Elemen
 
     return (
         <div className="mt-5">
-            <div className="hidden md:grid grid-cols-[3fr_1fr_1fr_1fr_1fr_1fr_auto] gap-x-4 px-2 pb-3 text-[10px] font-medium text-white/40 uppercase tracking-[0.14em] border-b border-white/8">
-                {COLUMN_HEADERS.map((header) => (
-                    <div key={header} className="flex items-center gap-x-1">
-                        {header} <LuChevronsUpDown className="size-3 text-white/30" />
+            <div className="hidden md:grid grid-cols-[3fr_1fr_1fr_1fr_1fr_1fr_56px] gap-x-4 px-2 pb-3 text-[10px] font-medium text-white/40 uppercase tracking-[0.14em] border-b border-white/8">
+                {COLUMN_HEADERS.map((header, idx) => (
+                    <div
+                        key={header}
+                        className={idx === 0 ? 'flex items-center' : 'flex items-center justify-end'}
+                    >
+                        {header}
                     </div>
                 ))}
                 <div />
@@ -66,7 +69,7 @@ function HistoryRow({ fill }: { fill: FillDTO }): JSX.Element {
     const total_usd = (fill.priceCents * fill.size) / 100;
 
     return (
-        <div className="flex flex-col gap-y-3 md:grid md:grid-cols-[3fr_1fr_1fr_1fr_1fr_1fr_auto] md:gap-x-4 md:items-center px-2 py-4 md:py-3 border-t border-white/[0.06] hover:bg-white/[0.015] transition-colors">
+        <div className="flex flex-col gap-y-3 md:grid md:grid-cols-[3fr_1fr_1fr_1fr_1fr_1fr_56px] md:gap-x-4 md:items-center px-2 py-4 md:py-3 border-t border-white/[0.06] hover:bg-white/[0.015] transition-colors">
             <div className="flex items-start justify-between gap-x-3 md:block min-w-0">
                 <p className="text-sm text-white truncate font-medium md:font-normal flex-1">
                     {localize_market_title(fill.marketName)}
@@ -107,7 +110,7 @@ function HistoryRow({ fill }: { fill: FillDTO }): JSX.Element {
                         </span>
                     </div>
                 </div>
-                <div className="hidden md:flex items-center gap-x-2">
+                <div className="hidden md:flex items-center justify-end gap-x-2">
                     <span
                         className={cn(
                             'inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-semibold tracking-wider',
@@ -128,26 +131,26 @@ function HistoryRow({ fill }: { fill: FillDTO }): JSX.Element {
                     </span>
                 </div>
                 <HistoryStat label="Price">{fill.priceCents}¢</HistoryStat>
-                <div className="hidden md:block text-sm text-white/70 tabular-nums">
+                <div className="hidden md:block text-sm text-white/75 tabular-nums text-right">
                     {fill.priceCents}¢
                 </div>
                 <HistoryStat label="Shares">{fill.size.toLocaleString()}</HistoryStat>
-                <div className="hidden md:block text-sm text-white/70 tabular-nums">
+                <div className="hidden md:block text-sm text-white/75 tabular-nums text-right">
                     {fill.size.toLocaleString()}
                 </div>
                 <HistoryStat label="Total">${total_usd.toFixed(2)}</HistoryStat>
-                <div className="hidden md:block text-sm text-white tabular-nums">
+                <div className="hidden md:block text-sm text-white tabular-nums text-right">
                     ${total_usd.toFixed(2)}
                 </div>
                 <HistoryStat label="When">{format_when(fill.createdAt)}</HistoryStat>
-                <div className="hidden md:block text-sm text-white/50">
+                <div className="hidden md:block text-sm text-white/50 text-right">
                     {format_when(fill.createdAt)}
                 </div>
                 <a
                     href={`${SOLSCAN_BASE}${fill.txSig}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="hidden md:flex text-white/40 hover:text-white p-2 items-center justify-end"
+                    className="hidden md:flex text-white/40 hover:text-white p-2 items-center justify-end transition-colors"
                     aria-label="View transaction"
                 >
                     <LuExternalLink className="size-4" />

@@ -61,13 +61,13 @@ export default function PortfolioCard(): JSX.Element {
             <div className="w-full grid gap-x-2.5 mt-6 grid-cols-2">
                 <Button
                     onClick={() => open_deposit_dialog(true)}
-                    className="h-11 rounded-lg gap-x-2 text-sm font-medium bg-white/8 hover:bg-white/12 text-white border border-white/8 transition-colors"
+                    className="h-11 rounded-lg gap-x-2 text-sm font-semibold bg-white/8 hover:bg-white/12 text-white border border-white/8 transition-colors"
                 >
                     <LuArrowDownToLine className="size-4" /> Deposit
                 </Button>
                 <Button
                     onClick={() => open_withdraw_dialog(true)}
-                    className="h-11 rounded-lg gap-x-2 text-sm font-medium bg-white text-dark-alpha hover:bg-neutral-100 transition-colors"
+                    className="h-11 rounded-lg gap-x-2 text-sm font-semibold bg-white text-dark-alpha hover:bg-neutral-100 transition-colors"
                 >
                     <LuArrowUpFromLine className="size-4" /> Withdraw
                 </Button>

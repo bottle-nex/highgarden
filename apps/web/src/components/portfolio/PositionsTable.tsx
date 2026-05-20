@@ -1,6 +1,5 @@
 'use client';
 import { JSX } from 'react';
-import { LuChevronsUpDown } from 'react-icons/lu';
 import {
     selectAllPositions,
     selectPositionsLoading,
@@ -35,17 +34,17 @@ export default function PositionsTable(): JSX.Element {
 
     return (
         <div className="mt-5">
-            <div className="hidden md:grid grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] gap-x-4 px-3 pb-3 text-[10px] font-medium text-white/40 uppercase tracking-[0.14em] border-b border-white/8">
+            <div className="hidden md:grid grid-cols-[3fr_1fr_1fr_1fr_1fr_120px] gap-x-4 px-3 pb-3 text-[10px] font-medium text-white/40 uppercase tracking-[0.14em] border-b border-white/8">
                 {COLUMN_HEADERS.map((header) => (
                     <div
                         key={header.label}
                         className={
                             header.align === 'right'
-                                ? 'flex items-center justify-end gap-x-1'
-                                : 'flex items-center gap-x-1'
+                                ? 'flex items-center justify-end'
+                                : 'flex items-center'
                         }
                     >
-                        {header.label} <LuChevronsUpDown className="size-3 text-white/30" />
+                        {header.label}
                     </div>
                 ))}
                 <div />

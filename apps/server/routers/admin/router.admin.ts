@@ -12,8 +12,14 @@ import FundByEmailController from "../../controllers/admin/controller.fund-by-em
 import BalancesController from "../../controllers/admin/controller.balances";
 import FastSubscriptionsController from "../../controllers/admin/controller.fast-subscriptions";
 import { requireAuth } from "../../middleware/middleware.auth";
+import { rate_limiters as rl } from "../../middleware/middleware.rate-limit";
 
 const admin_router: Router = Router();
+
+// Every admin route gets admin_strict (10/min/IP). Some of these are
+// intentionally unauthenticated (approve, lister/run) and would otherwise
+// be wide open to abuse.
+admin_router.use(rl.admin_strict);
 
 admin_router.get("/pending", ListPendingController.process);
 admin_router.get("/listings", ListListingsController.process);

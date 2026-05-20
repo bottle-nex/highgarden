@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "@solmarket/database";
 import { requireAuth } from "../../middleware/middleware.auth";
+import { rate_limiters as rl } from "../../middleware/middleware.rate-limit";
 import ResponseWriter from "../../services/service.response";
 import { ensure_user_has_keypair } from "../../services/service.keypair";
 import { get_user_usdc_balance } from "../../services/service.wallet";
@@ -29,7 +30,7 @@ function derive_network_label(rpc_url: string): string {
     return "custom";
 }
 
-user_router.get("/me", requireAuth, async (req, res) => {
+user_router.get("/me", rl.read, requireAuth, async (req, res) => {
     try {
         const u = await prisma.user.findUnique({
             where: { id: req.user!.id },
@@ -59,7 +60,7 @@ user_router.get("/me", requireAuth, async (req, res) => {
     }
 });
 
-user_router.get("/me/wallet", requireAuth, async (req, res) => {
+user_router.get("/me/wallet", rl.read, requireAuth, async (req, res) => {
     try {
         const publicKey = await ensure_user_has_keypair(req.user!.id);
         const usdcBalance = await get_user_usdc_balance(publicKey);
@@ -79,7 +80,7 @@ user_router.get("/me/wallet", requireAuth, async (req, res) => {
     }
 });
 
-user_router.get("/me/positions", requireAuth, async (req, res) => {
+user_router.get("/me/positions", rl.read, requireAuth, async (req, res) => {
     try {
         const positions = await portfolio.list_positions(req.user!.id);
         return ResponseWriter.success(res, positions, "OK");
@@ -89,7 +90,7 @@ user_router.get("/me/positions", requireAuth, async (req, res) => {
     }
 });
 
-user_router.get("/me/fills", requireAuth, async (req, res) => {
+user_router.get("/me/fills", rl.read, requireAuth, async (req, res) => {
     try {
         const fills = await portfolio.list_fills(req.user!.id);
         return ResponseWriter.success(res, fills, "OK");
@@ -104,7 +105,7 @@ user_router.get("/me/fills", requireAuth, async (req, res) => {
  * frontend deposit dialog to show "Last 10 conversions" and surface
  * any FAILED rows that need ops attention.
  */
-user_router.get("/me/deposits", requireAuth, async (req, res) => {
+user_router.get("/me/deposits", rl.read, requireAuth, async (req, res) => {
     try {
         const rows = await prisma.solDeposit.findMany({
             where: { userId: req.user!.id },
@@ -150,7 +151,7 @@ user_router.get("/me/deposits", requireAuth, async (req, res) => {
  * the recipient's USDC ATA — the user only sees USDC debit from their
  * custodial balance.
  */
-user_router.post("/me/withdraw", requireAuth, async (req, res) => {
+user_router.post("/me/withdraw", rl.withdraw, requireAuth, async (req, res) => {
     const body = req.body as { destination?: unknown; uiAmount?: unknown };
     const destination = typeof body.destination === "string" ? body.destination.trim() : "";
     const ui_amount = typeof body.uiAmount === "number" ? body.uiAmount : NaN;
@@ -182,7 +183,7 @@ user_router.post("/me/withdraw", requireAuth, async (req, res) => {
  * Idempotent: if a deposit is already in flight for this user, the
  * poller's in-flight check makes this a no-op.
  */
-user_router.post("/me/check-deposits", requireAuth, async (req, res) => {
+user_router.post("/me/check-deposits", rl.mutate, requireAuth, async (req, res) => {
     try {
         const result = await services.sol_deposit_poller.check_now(req.user!.id);
         return ResponseWriter.success(

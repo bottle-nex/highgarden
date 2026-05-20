@@ -77,7 +77,7 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
 
     const has_current_price = position.currentPriceCents !== null;
     return (
-        <div className="flex flex-col gap-y-3 md:grid md:grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] md:gap-x-4 md:items-center px-3 py-4 border-b border-white/[0.06] hover:bg-white/[0.015] transition-colors">
+        <div className="flex flex-col gap-y-3 md:grid md:grid-cols-[3fr_1fr_1fr_1fr_1fr_120px] md:gap-x-4 md:items-center px-3 py-4 border-b border-white/[0.06] hover:bg-white/[0.015] transition-colors">
             <div className="flex items-center gap-x-3 min-w-0">
                 <MarketIcon className="size-10 bg-neutral-700">
                     <Image
@@ -160,36 +160,37 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
                         </span>
                     </div>
                 </div>
-                <div className="hidden md:block text-right">
-                    <div
+                <div className="hidden md:flex items-center justify-end gap-x-2">
+                    <span
                         className={cn(
-                            'inline-flex items-center gap-x-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-                            is_won && 'bg-emerald-500/15 text-emerald-400',
-                            is_lost && 'bg-rose-500/20 text-rose-300 ring-1 ring-rose-500/40',
-                            !is_won && !is_lost && status_color,
-                        )}
-                    >
-                        {is_won && <FaCheckCircle className="size-3" />}
-                        {is_lost && <FaTimesCircle className="size-3" />}
-                        {status_label}
-                    </div>
-                    <div
-                        className={cn(
-                            'text-sm font-semibold tabular-nums leading-tight mt-1',
+                            'text-sm font-semibold tabular-nums leading-tight',
                             status_color,
                             is_lost && 'line-through decoration-rose-400/70 opacity-70',
                         )}
                     >
                         ${position.valueUsd.toFixed(2)}
-                    </div>
+                    </span>
+                    {(is_won || is_lost) && (
+                        <span
+                            className={cn(
+                                'inline-flex items-center gap-x-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+                                is_won && 'bg-emerald-500/15 text-emerald-400',
+                                is_lost && 'bg-rose-500/20 text-rose-300 ring-1 ring-rose-500/40',
+                            )}
+                        >
+                            {is_won && <FaCheckCircle className="size-3" />}
+                            {is_lost && <FaTimesCircle className="size-3" />}
+                            {status_label}
+                        </span>
+                    )}
                 </div>
                 <div className="col-span-2 flex items-center justify-end gap-x-2 md:col-span-1 md:pl-2">
                     {position.claimableUsd > 0 && (
                         <Button
-                            variant="outline"
-                            className="h-9 px-4 text-sm flex-1 md:flex-none"
+                            variant="ghost"
                             onClick={handle_redeem}
                             disabled={claiming}
+                            className="h-8 px-3.5 text-xs font-semibold rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 hover:text-emerald-200 transition-colors flex-1 md:flex-none disabled:opacity-50"
                         >
                             {claiming ? 'Claiming…' : 'Redeem'}
                         </Button>
@@ -198,7 +199,7 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
                         size="icon"
                         title="Coming soon"
                         aria-label="Share (coming soon)"
-                        className="size-9 bg-white/[0.04] hover:bg-white/[0.08] text-white/40 hover:text-white/70 rounded-lg shrink-0 border border-white/[0.06] transition-colors"
+                        className="h-8 w-8 bg-white/[0.04] hover:bg-white/[0.08] text-white/40 hover:text-white/70 rounded-md shrink-0 border border-white/[0.06] transition-colors"
                         onClick={() => {}}
                     >
                         <LuShare2 className="size-3.5" />

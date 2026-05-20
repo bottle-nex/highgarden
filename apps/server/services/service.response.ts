@@ -115,6 +115,25 @@ export default class ResponseWriter {
         this.send_response(res, response, status_code);
     }
 
+    static too_many_requests(
+        res: Response,
+        message: string = "Rate limit exceeded. Please slow down.",
+        retry_after_seconds?: number,
+    ) {
+        if (typeof retry_after_seconds === "number" && Number.isFinite(retry_after_seconds)) {
+            res.setHeader("Retry-After", Math.ceil(retry_after_seconds).toString());
+        }
+        const response: CustomResponse = {
+            success: false,
+            message,
+            error: {
+                code: "RATE_LIMIT_EXCEEDED",
+            },
+            meta: { timestamp: new Date().toISOString() },
+        };
+        this.send_response(res, response, 429);
+    }
+
     static not_found(res: Response, messaage: string = "Resource not found") {
         const response: CustomResponse = {
             success: false,
