@@ -24,7 +24,7 @@ export function MarketIcon({
     return (
         <div
             className={cn(
-                'flex items-center justify-center shrink-0 border-[1.5px] border-white rounded-md overflow-hidden',
+                'flex items-center justify-center shrink-0 border border-white/10 rounded-md overflow-hidden',
                 className,
             )}
         >
@@ -77,7 +77,7 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
 
     const has_current_price = position.currentPriceCents !== null;
     return (
-        <div className="flex flex-col gap-y-3 md:grid md:grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] md:gap-x-4 md:items-center px-3 py-4 border-b border-neutral-900/80 hover:bg-white/2 transition-colors">
+        <div className="flex flex-col gap-y-3 md:grid md:grid-cols-[3fr_1fr_1fr_1fr_1fr_auto] md:gap-x-4 md:items-center px-3 py-4 border-b border-white/[0.06] hover:bg-white/[0.015] transition-colors">
             <div className="flex items-center gap-x-3 min-w-0">
                 <MarketIcon className="size-10 bg-neutral-700">
                     <Image
@@ -198,10 +198,10 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
                         size="icon"
                         title="Coming soon"
                         aria-label="Share (coming soon)"
-                        className="size-9 bg-neutral-800/60 hover:bg-neutral-800 text-white/40 hover:text-white/60 rounded-lg shrink-0"
+                        className="size-9 bg-white/[0.04] hover:bg-white/[0.08] text-white/40 hover:text-white/70 rounded-lg shrink-0 border border-white/[0.06] transition-colors"
                         onClick={() => {}}
                     >
-                        <LuShare2 />
+                        <LuShare2 className="size-3.5" />
                     </Button>
                 </div>
             </div>

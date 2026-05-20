@@ -6,7 +6,7 @@ import { useDepositDialogStore } from '@/store/ui/useDepositDialogStore';
 import { useWithdrawDialogStore } from '@/store/ui/useWithdrawDialogStore';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { selectAllPositions, usePositionsStore } from '@/store/portfolio/usePositionsStore';
-import { CroppedButton } from '../ui/cropped-button';
+import { Button } from '@/components/ui/button';
 
 const usd_fmt = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -27,48 +27,50 @@ export default function PortfolioCard(): JSX.Element {
     const total_usd = cash_usd + positions_usd;
 
     return (
-        <div className="border border-neutral-900 col-span-1 p-4 sm:p-5 bg-dark-base rounded-lg">
-            <div className="w-full flex items-start justify-between gap-x-3">
-                <div className="flex items-center gap-x-2 text-white/70 text-sm">
-                    <p>Portfolio</p>
-                    <ImUserTie className="text-white" />
+        <div className="border border-white/8 col-span-1 p-5 sm:p-6 bg-dark-base rounded-lg">
+            <div className="w-full flex items-start justify-between gap-x-4">
+                <div className="flex items-center gap-x-2 text-[11px] uppercase tracking-[0.18em] font-medium text-white/55">
+                    <ImUserTie className="size-3.5 text-white/75" />
+                    Portfolio
                 </div>
-                <div className="text-white/70 text-right min-w-0">
-                    <p className="text-xs">Available to trade</p>
-                    <p className="text-xl sm:text-2xl font-semibold text-white tabular-nums truncate">
+                <div className="text-right min-w-0">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-white/40 font-medium">
+                        Available to trade
+                    </p>
+                    <p className="mt-1 text-base sm:text-lg font-semibold text-white/90 tabular-nums truncate">
                         {hidden ? '••••' : usd_fmt.format(cash_usd)}
                     </p>
                 </div>
             </div>
-            <div className="flex items-center gap-x-2 mt-2">
-                <span className="text-3xl sm:text-4xl font-semibold tracking-tight tabular-nums">
+            <div className="flex items-baseline gap-x-2.5 mt-5">
+                <span className="text-3xl sm:text-[40px] leading-none font-semibold tracking-tight tabular-nums text-white">
                     {hidden ? '••••' : usd_fmt.format(total_usd)}
                 </span>
                 <button
                     type="button"
                     onClick={() => setHidden((prev) => !prev)}
-                    className="text-white/40 hover:text-white/70 cursor-pointer"
+                    className="text-white/35 hover:text-white/70 transition-colors cursor-pointer"
                     aria-label={hidden ? 'Show balance' : 'Hide balance'}
                 >
-                    {hidden ? <LuEye /> : <LuEyeOff />}
+                    {hidden ? <LuEye className="size-4" /> : <LuEyeOff className="size-4" />}
                 </button>
             </div>
-            <p className="mt-1 text-xs text-white/50">
+            <p className="mt-1.5 text-xs text-white/45 tabular-nums">
                 {hidden ? '••••' : `${usd_fmt.format(positions_usd)} in open positions`}
             </p>
-            <div className="w-full grid gap-x-3 mt-5 grid-cols-2">
-                <CroppedButton
+            <div className="w-full grid gap-x-2.5 mt-6 grid-cols-2">
+                <Button
                     onClick={() => open_deposit_dialog(true)}
-                    className="col-span-1 w-full h-10 text-sm font-medium tracking-tight bg-dark-faded text-light-alpha hover:text-white border border-white/6 transition-all duration-200"
+                    className="h-11 rounded-lg gap-x-2 text-sm font-medium bg-white/8 hover:bg-white/12 text-white border border-white/8 transition-colors"
                 >
-                    <LuArrowDownToLine /> Deposit
-                </CroppedButton>
-                <CroppedButton
+                    <LuArrowDownToLine className="size-4" /> Deposit
+                </Button>
+                <Button
                     onClick={() => open_withdraw_dialog(true)}
-                    className="col-span-1 w-full h-10 text-sm font-medium tracking-tight bg-white hover:bg-neutral-100 text-dark-alpha border border-white/6 transition-all duration-200"
+                    className="h-11 rounded-lg gap-x-2 text-sm font-medium bg-white text-dark-alpha hover:bg-neutral-100 transition-colors"
                 >
-                    <LuArrowUpFromLine /> Withdraw
-                </CroppedButton>
+                    <LuArrowUpFromLine className="size-4" /> Withdraw
+                </Button>
             </div>
         </div>
     );

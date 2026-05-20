@@ -43,7 +43,7 @@ export default function ClaimBanner(): JSX.Element | null {
     const preview = claimable.slice(0, 2);
 
     return (
-        <section className="border border-neutral-900 bg-dark-alpha p-4 sm:p-5 flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between rounded-lg">
+        <section className="border border-white/8 bg-dark-base p-4 sm:p-5 flex flex-col gap-y-3 sm:flex-row sm:items-center sm:justify-between rounded-lg">
             <div className="flex items-center gap-x-4">
                 <div className="flex items-start shrink-0">
                     {preview.map((p, i) => (

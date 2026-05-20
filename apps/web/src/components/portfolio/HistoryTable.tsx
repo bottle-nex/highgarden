@@ -24,7 +24,7 @@ export default function HistoryTable({ search }: { search: string }): JSX.Elemen
 
     if (loading && fills.length === 0) {
         return (
-            <div className="mt-8 py-16 text-center text-white/40 text-sm border border-neutral-900 bg-dark-alpha">
+            <div className="mt-6 py-16 text-center text-white/40 text-sm border border-white/8 bg-dark-base rounded-lg">
                 Loading history…
             </div>
         );
@@ -35,11 +35,11 @@ export default function HistoryTable({ search }: { search: string }): JSX.Elemen
     }
 
     return (
-        <div className="mt-4">
-            <div className="hidden md:grid grid-cols-[3fr_1fr_1fr_1fr_1fr_1fr_auto] gap-x-4 px-2 pb-3 text-[11px] font-medium text-white/45 uppercase tracking-wider border-b border-neutral-900">
+        <div className="mt-5">
+            <div className="hidden md:grid grid-cols-[3fr_1fr_1fr_1fr_1fr_1fr_auto] gap-x-4 px-2 pb-3 text-[10px] font-medium text-white/40 uppercase tracking-[0.14em] border-b border-white/8">
                 {COLUMN_HEADERS.map((header) => (
                     <div key={header} className="flex items-center gap-x-1">
-                        {header} <LuChevronsUpDown className="size-3" />
+                        {header} <LuChevronsUpDown className="size-3 text-white/30" />
                     </div>
                 ))}
                 <div />
@@ -66,7 +66,7 @@ function HistoryRow({ fill }: { fill: FillDTO }): JSX.Element {
     const total_usd = (fill.priceCents * fill.size) / 100;
 
     return (
-        <div className="flex flex-col gap-y-3 md:grid md:grid-cols-[3fr_1fr_1fr_1fr_1fr_1fr_auto] md:gap-x-4 md:items-center px-2 py-4 md:py-3 border-t border-neutral-900">
+        <div className="flex flex-col gap-y-3 md:grid md:grid-cols-[3fr_1fr_1fr_1fr_1fr_1fr_auto] md:gap-x-4 md:items-center px-2 py-4 md:py-3 border-t border-white/[0.06] hover:bg-white/[0.015] transition-colors">
             <div className="flex items-start justify-between gap-x-3 md:block min-w-0">
                 <p className="text-sm text-white truncate font-medium md:font-normal flex-1">
                     {localize_market_title(fill.marketName)}

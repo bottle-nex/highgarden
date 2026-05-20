@@ -19,12 +19,12 @@ export default function PortfolioTabs(): JSX.Element {
                 return <PositionsTable />;
             case 'Open orders':
                 return (
-                    <div className="mt-8 py-14 px-6 text-center border border-neutral-900 bg-dark-alpha rounded-lg flex flex-col items-center gap-y-3">
+                    <div className="mt-6 py-16 px-6 text-center border border-white/8 bg-dark-base rounded-lg flex flex-col items-center gap-y-3">
                         <UpcomingBadge label="Coming Soon" />
-                        <p className="text-white/80 text-sm font-medium">
+                        <p className="text-white/85 text-sm font-medium">
                             Open orders are on the way
                         </p>
-                        <p className="text-white/40 text-xs max-w-sm">
+                        <p className="text-white/45 text-xs max-w-sm leading-relaxed">
                             Track and manage your pending limit orders here once they ship.
                         </p>
                     </div>
@@ -35,8 +35,8 @@ export default function PortfolioTabs(): JSX.Element {
     };
 
     return (
-        <section>
-            <div className="flex items-center gap-x-4 sm:gap-x-6 border-b border-neutral-900 overflow-x-auto">
+        <section className="mt-2">
+            <div className="flex items-center gap-x-5 sm:gap-x-7 border-b border-white/8 overflow-x-auto">
                 {PORTFOLIO_TABS.map((tab) => {
                     const isActive = tab === activeTab;
                     return (
@@ -45,10 +45,10 @@ export default function PortfolioTabs(): JSX.Element {
                             variant="ghost"
                             onClick={() => setActiveTab(tab)}
                             className={cn(
-                                'h-auto rounded-none px-0 pb-3 text-sm bg-transparent border-none shrink-0 whitespace-nowrap',
+                                'h-auto rounded-none px-0 pb-3 text-sm font-medium bg-transparent border-none shrink-0 whitespace-nowrap transition-colors',
                                 isActive
                                     ? 'text-white border-b-2 border-alpha hover:bg-transparent hover:text-white'
-                                    : 'text-white/50 hover:bg-transparent hover:text-white/80',
+                                    : 'text-white/45 hover:bg-transparent hover:text-white/75',
                             )}
                         >
                             {tab}
@@ -57,21 +57,21 @@ export default function PortfolioTabs(): JSX.Element {
                 })}
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 mt-4">
                 <div className="relative w-full sm:flex-1">
-                    <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                    <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 size-4" />
                     <Input
-                        placeholder="Search"
+                        placeholder="Search markets"
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
-                        className="h-10 pl-9 bg-dark-base border-neutral-900 rounded-lg w-full"
+                        className="h-10 pl-9 bg-dark-base border-white/8 rounded-lg w-full text-sm placeholder:text-white/30 focus-visible:border-white/20"
                     />
                 </div>
                 <Button
                     variant="outline"
                     onClick={() => {}}
                     title="Sorting coming soon"
-                    className="h-10 px-4 border-neutral-900 bg-dark-base text-sm text-white/70 hover:bg-dark-base hover:text-white rounded-lg w-full sm:w-auto justify-center gap-x-2"
+                    className="h-10 px-3.5 border-white/8 bg-dark-base text-xs text-white/65 hover:bg-dark-base hover:text-white rounded-lg w-full sm:w-auto justify-center gap-x-2 font-medium"
                 >
                     <LuArrowUpDown className="size-3.5" />
                     Current value
