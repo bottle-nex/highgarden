@@ -20,7 +20,7 @@ import EventTabs from './EventTabs';
 import EventNews from './EventNews';
 import EventRelatedMarkets from './EventRelatedMarkets';
 import EventGoLiveBanner from './EventGoLiveBanner';
-import LiveAssetPrice from './LiveAssetPrice';
+import RoundPriceCompare from './RoundPriceCompare';
 import MarketComments from '../market/comments/MarketComments';
 
 function format_usd(usd: number | null): string {
@@ -205,7 +205,10 @@ function Body({ market }: { market: MarketDTO }) {
                     <div className="contents xl:grid xl:grid-cols-[1fr_320px] xl:gap-3">
                         <div className="order-2 lg:order-0 min-w-0">
                             {live_market.fastSeriesKey && (
-                                <LiveAssetPrice seriesKey={live_market.fastSeriesKey} />
+                                <RoundPriceCompare
+                                    marketId={live_market.id}
+                                    seriesKey={live_market.fastSeriesKey}
+                                />
                             )}
                             <EventPriceChart
                                 marketId={market.id}

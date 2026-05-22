@@ -42,26 +42,32 @@ export default function EventGoLiveBanner({ market }: { market: MarketDTO }): JS
         set_loading(true);
         try {
             const markets = await fetchPublicMarkets();
-            const live = find_live_slot(markets, market.fastSeriesKey!);
-            // `find_live_slot` falls back to the soonest future slot when
-            // nothing is in-window — useful elsewhere, but here we don't
-            // want to claim "you are on the live round" for a slot whose
-            // trading window hasn't opened yet. Verify the in-window
-            // check explicitly before treating the result as live.
-            if (!live || !is_slot_live(live)) {
+            const next = find_live_slot(markets, market.fastSeriesKey!);
+            if (!next) {
                 toast.error(
-                    'No live round right now for this series — check back in a moment.',
+                    'No upcoming round found for this series — check back in a moment.',
                 );
                 return;
             }
-            if (live.id === market.id) {
-                // The API now reports the current slot as live (a tick
-                // crossed the boundary between render and click). Nothing
-                // to navigate to — just confirm.
-                toast.success('You are on the live round.');
+            // `find_live_slot` returns the in-window slot if one exists,
+            // else the soonest future slot. Either way we navigate — but
+            // the toast wording depends on which case we hit, so the user
+            // isn't told "you're live" when the window hasn't opened.
+            const truly_live = is_slot_live(next);
+            if (next.id === market.id) {
+                if (truly_live) {
+                    toast.success('You are on the live round.');
+                } else {
+                    toast.message(
+                        'No live round right now — this is the next upcoming slot.',
+                    );
+                }
                 return;
             }
-            router.push(`/event/${live.id}`);
+            if (!truly_live) {
+                toast.message('Jumping to the next upcoming round.');
+            }
+            router.push(`/event/${next.id}`);
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'failed to load live round');
         } finally {

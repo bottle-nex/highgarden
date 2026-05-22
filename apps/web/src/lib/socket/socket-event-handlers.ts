@@ -4,7 +4,6 @@ import {
     ServerMessage,
     MarketEvent,
     PriceUpdatePayload,
-    MarketStatus,
 } from '@solmarket/types';
 
 import { useMarketsStore } from '@/store/markets/useMarketsStore';
@@ -215,9 +214,11 @@ export class SocketEventHandlers {
      * Live nudge that a market just transitioned to RESOLVED. Updates the
      * markets store so any component subscribed to that market's entry
      * (notably the event page's trade panel) flips immediately from the
-     * Buy/Sell UI to the Claim payout banner without polling. We also
-     * surface a small toast — the user might be looking at a different
-     * page when the resolution arrives.
+     * Buy/Sell UI to the Claim payout banner without polling.
+     *
+     * No toast surfaces — fast-moving 5-min ladders resolve constantly
+     * and the popups were noise rather than signal. The trade panel
+     * still updates in place when the user happens to be on the page.
      */
     static handle_market_resolved(
         msg: Extract<ServerMessage, { type: SERVER_MESSAGE_TYPE.MARKET_RESOLVED }>,
@@ -232,14 +233,6 @@ export class SocketEventHandlers {
             new Date(resolvedAt),
             claimable,
         );
-        // Only toast the first time we observe the transition — a repeat
-        // broadcast (e.g. server restart re-emitting a recent event) on an
-        // already-resolved row shouldn't spam the user.
-        if (existing.status !== MarketStatus.RESOLVED) {
-            toast.info('Market resolved', {
-                description: `${existing.name} resolved ${winningOutcome}`,
-            });
-        }
     }
 
     static dispatch(msg: ServerMessage): void {
