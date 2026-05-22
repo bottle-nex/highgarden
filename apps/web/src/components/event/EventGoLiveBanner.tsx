@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { HiArrowRight } from 'react-icons/hi2';
 import type { MarketDTO } from '@solmarket/types';
 import { fetchPublicMarkets } from '@/lib/api/markets';
-import { find_live_slot, is_slot_live } from '@/utils/fast-series';
+import { cadence_ms_for_series, is_slot_live } from '@/utils/fast-series';
 
 /**
  * Shown above the trade panel on FAST_MOVING event pages when the
@@ -43,56 +43,54 @@ export default function EventGoLiveBanner({ market }: { market: MarketDTO }): JS
         try {
             const markets = await fetchPublicMarkets();
             const series_key = market.fastSeriesKey!;
-            const pick = find_live_slot(markets, series_key);
-            const truly_live = pick !== null && is_slot_live(pick);
+            const cadence_ms = cadence_ms_for_series(series_key);
+            const now = Date.now();
 
-            // Best case — a slot is actually live right now and it's
-            // different from where the user is. Jump straight there.
-            if (pick && truly_live && pick.id !== market.id) {
-                router.push(`/event/${pick.id}`);
-                return;
-            }
-
-            // Already on the live slot. Confirm so the user doesn't
-            // assume the button is broken.
-            if (pick && truly_live && pick.id === market.id) {
-                toast.success('You are on the live round.');
-                return;
-            }
-
-            // No genuinely-live slot. Fall through to the next-best
-            // navigation: the soonest approved slot chronologically
-            // after the user's current one. This is the case the user
-            // was getting stuck in — `find_live_slot` had returned
-            // their own slot as the soonest fallback and the click
-            // dead-ended instead of moving them forward.
-            const current_end = new Date(market.endAt).getTime();
-            const series_sorted = markets
-                .filter((m) => m.fastSeriesKey === series_key)
+            // Candidates: every still-future slot in this series,
+            // sorted by endAt ascending so [0] is the closest-to-now.
+            const candidates = markets
+                .filter(
+                    (m) =>
+                        m.fastSeriesKey === series_key
+                        && new Date(m.endAt).getTime() > now,
+                )
                 .sort(
-                    (a, b) => new Date(a.endAt).getTime() - new Date(b.endAt).getTime(),
+                    (a, b) =>
+                        new Date(a.endAt).getTime() - new Date(b.endAt).getTime(),
                 );
-            const next_after = series_sorted.find(
-                (m) => new Date(m.endAt).getTime() > current_end,
-            );
-            if (next_after) {
-                toast.message('Jumping to the next upcoming round.');
-                router.push(`/event/${next_after.id}`);
+
+            // Prefer a truly in-window slot. If the approved set has a
+            // gap around `now` (auto-lister behind), the soonest
+            // upcoming is the closest-to-now option we have — pull the
+            // user forward to that instead of dead-ending. That matches
+            // the rule "Go Live should always move me to the slot that
+            // matches the current timeline, even if it's technically
+            // still a future slot."
+            const live
+                = cadence_ms > 0
+                    ? candidates.find((m) => {
+                          const end = new Date(m.endAt).getTime();
+                          return end - cadence_ms <= now && now < end;
+                      })
+                    : undefined;
+            const target = live ?? candidates[0];
+
+            if (!target) {
+                toast.error('No upcoming round found — check back in a moment.');
                 return;
             }
 
-            // No slot after the user's current. If `find_live_slot`
-            // returned a different (earlier-upcoming) slot, take that
-            // — still better than dead-ending.
-            if (pick && pick.id !== market.id) {
-                toast.message('Jumping to the next upcoming round.');
-                router.push(`/event/${pick.id}`);
+            if (target.id === market.id) {
+                // Already on the closest-to-now slot. Confirm only when
+                // it's actually live — otherwise stay silent; the user
+                // can see from the title that the slot hasn't opened
+                // and there's nothing else we can route them to.
+                if (live) toast.success('You are on the live round.');
                 return;
             }
 
-            // Truly nothing else in the approved set — auto-lister
-            // hasn't surfaced a successor yet.
-            toast.error('No upcoming round found — check back in a moment.');
+            // Silent navigation — no "jumping to next upcoming" toast.
+            router.push(`/event/${target.id}`);
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'failed to load live round');
         } finally {
