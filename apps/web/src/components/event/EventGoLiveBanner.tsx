@@ -42,32 +42,57 @@ export default function EventGoLiveBanner({ market }: { market: MarketDTO }): JS
         set_loading(true);
         try {
             const markets = await fetchPublicMarkets();
-            const next = find_live_slot(markets, market.fastSeriesKey!);
-            if (!next) {
-                toast.error(
-                    'No upcoming round found for this series — check back in a moment.',
+            const series_key = market.fastSeriesKey!;
+            const pick = find_live_slot(markets, series_key);
+            const truly_live = pick !== null && is_slot_live(pick);
+
+            // Best case — a slot is actually live right now and it's
+            // different from where the user is. Jump straight there.
+            if (pick && truly_live && pick.id !== market.id) {
+                router.push(`/event/${pick.id}`);
+                return;
+            }
+
+            // Already on the live slot. Confirm so the user doesn't
+            // assume the button is broken.
+            if (pick && truly_live && pick.id === market.id) {
+                toast.success('You are on the live round.');
+                return;
+            }
+
+            // No genuinely-live slot. Fall through to the next-best
+            // navigation: the soonest approved slot chronologically
+            // after the user's current one. This is the case the user
+            // was getting stuck in — `find_live_slot` had returned
+            // their own slot as the soonest fallback and the click
+            // dead-ended instead of moving them forward.
+            const current_end = new Date(market.endAt).getTime();
+            const series_sorted = markets
+                .filter((m) => m.fastSeriesKey === series_key)
+                .sort(
+                    (a, b) => new Date(a.endAt).getTime() - new Date(b.endAt).getTime(),
                 );
-                return;
-            }
-            // `find_live_slot` returns the in-window slot if one exists,
-            // else the soonest future slot. Either way we navigate — but
-            // the toast wording depends on which case we hit, so the user
-            // isn't told "you're live" when the window hasn't opened.
-            const truly_live = is_slot_live(next);
-            if (next.id === market.id) {
-                if (truly_live) {
-                    toast.success('You are on the live round.');
-                } else {
-                    toast.message(
-                        'No live round right now — this is the next upcoming slot.',
-                    );
-                }
-                return;
-            }
-            if (!truly_live) {
+            const next_after = series_sorted.find(
+                (m) => new Date(m.endAt).getTime() > current_end,
+            );
+            if (next_after) {
                 toast.message('Jumping to the next upcoming round.');
+                router.push(`/event/${next_after.id}`);
+                return;
             }
-            router.push(`/event/${next.id}`);
+
+            // No slot after the user's current. If `find_live_slot`
+            // returned a different (earlier-upcoming) slot, take that
+            // — still better than dead-ending.
+            if (pick && pick.id !== market.id) {
+                toast.message('Jumping to the next upcoming round.');
+                router.push(`/event/${pick.id}`);
+                return;
+            }
+
+            // Truly nothing else in the approved set — auto-lister
+            // hasn't surfaced a successor yet.
+            toast.error('No upcoming round found — check back in a moment.');
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'failed to load live round');
         } finally {
