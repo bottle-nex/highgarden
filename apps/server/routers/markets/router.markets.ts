@@ -7,6 +7,7 @@ import GetRecentTradesController from "../../controllers/markets/controller.get-
 import GetMarketNewsController from "../../controllers/markets/controller.get-news";
 import GetRecentNewsController from "../../controllers/markets/controller.get-recent-news";
 import GetPolymarketCommentsController from "../../controllers/markets/controller.get-polymarket-comments";
+import GetRoundAnchorController from "../../controllers/markets/controller.get-round-anchor";
 import ListCommentsController from "../../controllers/comments/controller.list-comments";
 import CreateCommentController from "../../controllers/comments/controller.create-comment";
 import QuoteController from "../../controllers/markets/controller.quote";
@@ -25,6 +26,7 @@ markets_router.get("/news/recent", rl.read, GetRecentNewsController.process);
 markets_router.get("/:id", rl.read, GetMarketByIdController.process);
 markets_router.get("/:id/orderbook", rl.read, GetOrderBookController.process);
 markets_router.get("/:id/price-history", rl.read, GetPriceHistoryController.process);
+markets_router.get("/:id/round-anchor", rl.read, GetRoundAnchorController.process);
 markets_router.get("/:id/trades", rl.read, GetRecentTradesController.process);
 markets_router.get("/:id/news", rl.read, GetMarketNewsController.process);
 markets_router.get("/:id/polymarket-comments", rl.read, GetPolymarketCommentsController.process);

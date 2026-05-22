@@ -50,7 +50,7 @@ export default class PortfolioService {
         // synchronously inside the claim service after the on-chain tx.
         const claimed = await PortfolioService.fetch_claimed_keys(user_id);
 
-        const positions: PositionDTO[] = [];
+        const ranked: { dto: PositionDTO; last_fill_at: number }[] = [];
         for (const [, market_fills] of grouped) {
             const first = market_fills[0]!;
             const yes_agg = PortfolioService.aggregate_outcome(market_fills, "YES");
@@ -67,13 +67,30 @@ export default class PortfolioService {
             const no_claimed = claimed.has(`${first.marketId}:NO`);
 
             if (yes_agg.shares > 0 && !yes_claimed) {
-                positions.push(PortfolioService.build_position(first, "YES", yes_agg, yes_price));
+                ranked.push({
+                    dto: PortfolioService.build_position(first, "YES", yes_agg, yes_price),
+                    last_fill_at: PortfolioService.last_fill_at(market_fills, "YES"),
+                });
             }
             if (no_agg.shares > 0 && !no_claimed) {
-                positions.push(PortfolioService.build_position(first, "NO", no_agg, no_price));
+                ranked.push({
+                    dto: PortfolioService.build_position(first, "NO", no_agg, no_price),
+                    last_fill_at: PortfolioService.last_fill_at(market_fills, "NO"),
+                });
             }
         }
-        return positions;
+        ranked.sort((a, b) => b.last_fill_at - a.last_fill_at);
+        return ranked.map((r) => r.dto);
+    }
+
+    private static last_fill_at(fills: FillRow[], outcome: "YES" | "NO"): number {
+        let latest = 0;
+        for (const f of fills) {
+            if (f.outcome !== outcome) continue;
+            const ts = f.createdAt.getTime();
+            if (ts > latest) latest = ts;
+        }
+        return latest;
     }
 
     /**

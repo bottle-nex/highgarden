@@ -53,6 +53,45 @@ export async function fetch_binance_price(symbol: string): Promise<number | null
     }
 }
 
+/** Fetches the open price of the 1-minute Binance kline whose open-time
+ *  contains `timestamp_ms`. Used as the round-start reference for a
+ *  fast-moving Up/Down slot — the resolution oracle compares the live
+ *  price against the asset price at `endAt - cadence`, so showing that
+ *  same anchor on-screen lets users see exactly what they're betting
+ *  against.
+ *
+ *  Returns null on network failure, or when Binance has no kline for the
+ *  requested minute yet (slot start still in the future, or untracked
+ *  symbol). Callers should fall back to a softer anchor in that case. */
+export async function fetch_binance_kline_open_at(
+    symbol: string,
+    timestamp_ms: number,
+): Promise<number | null> {
+    try {
+        // Snap to the minute boundary — Binance kline open-times are
+        // aligned to the interval, and our 5/15-min slots already start
+        // on minute boundaries so this is a no-op for the common case.
+        const start = Math.floor(timestamp_ms / 60_000) * 60_000;
+        const url =
+            `https://api.binance.com/api/v3/klines` +
+            `?symbol=${encodeURIComponent(symbol)}` +
+            `&interval=1m` +
+            `&startTime=${start}` +
+            `&endTime=${start + 60_000}` +
+            `&limit=1`;
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const data = (await res.json()) as unknown;
+        if (!Array.isArray(data) || data.length === 0) return null;
+        const row = data[0];
+        if (!Array.isArray(row) || row.length < 2) return null;
+        const open = Number(row[1]);
+        return Number.isFinite(open) ? open : null;
+    } catch {
+        return null;
+    }
+}
+
 /** OHLC candle, the shape both price-line and candlestick chart modes
  *  consume on the event page. `t` is the candle's open-time epoch ms,
  *  matching `recharts`'s expected x-domain when `scale="time"`. */

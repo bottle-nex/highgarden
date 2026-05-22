@@ -1,0 +1,33 @@
+/// Snapshot of the underlying-asset price at a slot start, used to
+/// populate the "Price To Beat" display on fast-moving Up/Down crypto
+/// market pages. Populated by the RTDS subscriber listening to
+/// Polymarket's `wss://ws-live-data.polymarket.com` — same source that
+/// powers Polymarket's own UI — so the value the user sees matches what
+/// Polymarket displays for the same slot.
+///
+/// One row per (symbol, minute boundary). A 5-minute slot ending at
+/// 22:25 UTC looks up the row where slotStart = 22:20 UTC; a 15-minute
+/// slot ending at 22:30 UTC looks up slotStart = 22:15 UTC. The same
+/// rows cover every cadence because every cadence we support
+/// (5m / 15m / 1h) aligns to a minute boundary.
+model RoundAnchorPrice {
+  id         String   @id @default(cuid())
+  /// Polymarket RTDS symbol, lower-case. Chainlink-source values look
+  /// like "btc/usd", "eth/usd", "sol/usd", "xrp/usd". The slash is
+  /// preserved verbatim from the upstream topic.
+  symbol     String
+  /// Minute boundary the price applies to, in UTC. Slot start in our
+  /// data model is always `endAt - cadence`; the recorder snaps the
+  /// observed tick to its containing minute before persisting.
+  slotStart  DateTime
+  /// Asset price in USD at slotStart, taken straight from the RTDS
+  /// payload's `value` field. Decimal so we never lose trailing
+  /// fraction digits Polymarket happens to display.
+  price      Decimal  @db.Decimal(20, 8)
+  /// Wall-clock time the tick was recorded — usually within a second of
+  /// slotStart. Lets us audit RTDS lag without scanning logs.
+  recordedAt DateTime @default(now())
+
+  @@unique([symbol, slotStart])
+  @@index([symbol, slotStart])
+}

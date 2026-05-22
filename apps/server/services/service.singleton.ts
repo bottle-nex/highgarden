@@ -14,6 +14,8 @@ import NonceSweeperService from "./service.nonce-sweeper";
 import TradeIdempotencyService from "./service.trade-idempotency";
 import CoinGeckoPriceFeed from "./service.price-feed";
 import SolDepositPoller from "./service.sol-deposit-poller";
+import RoundAnchorRecorder from "./service.round-anchor";
+import FastResolverService from "./service.fast-resolver";
 
 export default class Services {
     public redis!: Redis;
@@ -29,6 +31,8 @@ export default class Services {
     public trade_idempotency!: TradeIdempotencyService;
     public price_feed!: CoinGeckoPriceFeed;
     public sol_deposit_poller!: SolDepositPoller;
+    public round_anchor!: RoundAnchorRecorder;
+    public fast_resolver!: FastResolverService;
 
     public async boot(): Promise<void> {
         this.redis = new Redis(ENV.SERVER_REDIS_URL);
@@ -44,9 +48,22 @@ export default class Services {
         this.trade_idempotency = new TradeIdempotencyService(this.redis);
         this.price_feed = new CoinGeckoPriceFeed();
         this.sol_deposit_poller = new SolDepositPoller(this.price_feed);
+        this.round_anchor = new RoundAnchorRecorder();
+        this.fast_resolver = new FastResolverService(
+            this.solana_admin,
+            this.market_lifecycle,
+        );
         await this.token_index.start();
         this.nonce_sweeper.start();
         this.sol_deposit_poller.start();
+        // Fire-and-forget: load_symbols hits Postgres and is non-critical to
+        // boot. If it throws, the recorder logs and the request handler
+        // serving /round-anchor will simply return 404 (no row).
+        void this.round_anchor.start();
+        // Self-resolves FAST_MOVING markets the moment their window closes
+        // using the RoundAnchor snapshots — instant claim UX, at the cost
+        // of the close-call risk documented in service.fast-resolver.ts.
+        this.fast_resolver.start();
         errorHandler;
     }
 

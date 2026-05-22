@@ -26,10 +26,13 @@ import {
     asset_label_for_symbol,
     binance_symbol_for_series,
     fetch_binance_klines,
-    subscribe_binance_klines,
     type BinanceKlineInterval,
     type Kline,
 } from '@/lib/binance-price';
+import {
+    polymarket_rtds_target_for_series,
+    subscribe_polymarket_rtds_klines,
+} from '@/lib/polymarket-rtds';
 
 /**
  * Underlying-asset chart for FAST_MOVING markets — renders Binance
@@ -242,6 +245,7 @@ function EventBtcPriceChart({
     showVerticalGrid,
 }: Props): JSX.Element | null {
     const symbol = binance_symbol_for_series(seriesKey);
+    const rtds_target = polymarket_rtds_target_for_series(seriesKey);
     const [klines, set_klines] = useState<Kline[]>([]);
     const [status, set_status] = useState<'loading' | 'ready' | 'error'>('loading');
     // Vertical (recharts cursor) tracks the active slot. Horizontal line
@@ -318,21 +322,33 @@ function EventBtcPriceChart({
             });
         };
 
-        teardown = subscribe_binance_klines(symbol, interval, (k) => {
-            if (cancelled) return;
-            pending.set(k.t, k);
-            const now = performance.now();
-            const since = now - last_commit_at;
-            if (since >= DISPLAY_THROTTLE_MS) {
-                apply_batch();
-                return;
-            }
-            if (trailing_timer !== null) return;
-            trailing_timer = setTimeout(() => {
-                trailing_timer = null;
-                apply_batch();
-            }, DISPLAY_THROTTLE_MS - since);
-        });
+        // Live updates: subscribe to Polymarket RTDS for this asset and
+        // aggregate ticks into the current candle. Same source the
+        // Price-to-Beat + Current Price ticker use, so the chart's
+        // rightmost candle, the live ticker, and the resolution oracle
+        // all read from one feed. Historical seed above still comes from
+        // Binance — RTDS has no history.
+        //
+        // When the underlying isn't on RTDS at all (defensive — every
+        // asset we currently list IS tracked), the chart simply doesn't
+        // get live updates; the seed remains visible.
+        if (rtds_target) {
+            teardown = subscribe_polymarket_rtds_klines(rtds_target, interval, (k) => {
+                if (cancelled) return;
+                pending.set(k.t, k);
+                const now = performance.now();
+                const since = now - last_commit_at;
+                if (since >= DISPLAY_THROTTLE_MS) {
+                    apply_batch();
+                    return;
+                }
+                if (trailing_timer !== null) return;
+                trailing_timer = setTimeout(() => {
+                    trailing_timer = null;
+                    apply_batch();
+                }, DISPLAY_THROTTLE_MS - since);
+            });
+        }
 
         return () => {
             cancelled = true;
@@ -343,7 +359,7 @@ function EventBtcPriceChart({
             pending.clear();
             teardown?.();
         };
-    }, [symbol, range]);
+    }, [symbol, range, rtds_target?.topic, rtds_target?.symbol]);
 
     const xTicks = useMemo(() => {
         if (klines.length === 0) return [];

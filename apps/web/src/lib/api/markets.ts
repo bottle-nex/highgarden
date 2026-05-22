@@ -88,3 +88,27 @@ export async function fetch_recent_news(limit = 10): Promise<NewsArticleDTO[]> {
         return [];
     }
 }
+
+export interface RoundAnchorDTO {
+    /** Polymarket RTDS symbol — e.g. "btc/usd". */
+    symbol: string;
+    /** Minute boundary the price applies to, ISO 8601. */
+    slotStart: string;
+    /** Anchor price in USD as a plain number. */
+    price: number;
+    /** When the recorder observed the tick. */
+    recordedAt: string;
+}
+
+/** Fetches the "Price To Beat" anchor for a fast-moving Up/Down market.
+ *  Returns null when the market isn't fast-moving, the asset isn't on
+ *  Chainlink Data Streams, or the recorder hasn't captured the slot's
+ *  starting tick yet — callers should hide the panel in those cases. */
+export async function fetch_round_anchor(market_id: string): Promise<RoundAnchorDTO | null> {
+    try {
+        const { data } = await apiClient.get(`/markets/${market_id}/round-anchor`);
+        return data?.data ?? null;
+    } catch {
+        return null;
+    }
+}
