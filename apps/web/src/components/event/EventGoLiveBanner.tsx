@@ -43,13 +43,21 @@ export default function EventGoLiveBanner({ market }: { market: MarketDTO }): JS
         try {
             const markets = await fetchPublicMarkets();
             const live = find_live_slot(markets, market.fastSeriesKey!);
-            if (!live) {
-                toast.error('No live round available yet — try again in a few seconds.');
+            // `find_live_slot` falls back to the soonest future slot when
+            // nothing is in-window — useful elsewhere, but here we don't
+            // want to claim "you are on the live round" for a slot whose
+            // trading window hasn't opened yet. Verify the in-window
+            // check explicitly before treating the result as live.
+            if (!live || !is_slot_live(live)) {
+                toast.error(
+                    'No live round right now for this series — check back in a moment.',
+                );
                 return;
             }
             if (live.id === market.id) {
-                // Edge case: the API now reports this slot as live (a few
-                // seconds may have passed). Nothing to do — just toast.
+                // The API now reports the current slot as live (a tick
+                // crossed the boundary between render and click). Nothing
+                // to navigate to — just confirm.
                 toast.success('You are on the live round.');
                 return;
             }
