@@ -2,18 +2,32 @@ import type { Request, Response } from "express";
 import { prisma } from "@solmarket/database";
 import { ListingStatus } from "@solmarket/types";
 import ResponseWriter from "../../services/service.response";
-import { rtds_target_for_series } from "../../services/service.rtds-mapping";
+import {
+    ASSET_BINANCE_SYMBOL,
+    asset_prefix_for_series,
+    fetch_binance_kline_open_at,
+    rtds_target_for_series,
+} from "../../services/service.rtds-mapping";
 
 /**
  * Returns the round-start anchor price ("Price To Beat") for a fast-moving
- * Up/Down market. The slot start is `endAt - cadence`, and the recorder
- * service writes one RoundAnchorPrice row per (asset, minute) — so this
- * controller just maps the market's series key + endAt → RTDS symbol +
- * slot-start minute and reads the row.
+ * Up/Down market. Tries two sources in order:
  *
- * Returns 404 when the market is non-fast-moving, the asset isn't carried
- * on either supported RTDS source, or the recorder hadn't captured a tick
- * by slot start yet.
+ *   1. `RoundAnchorPrice` row — populated by the RTDS recorder from
+ *      Polymarket's Chainlink Data Streams feed at slot start. Same
+ *      source the resolution oracle reads, so the value matches
+ *      Polymarket's display exactly. Available only for slots whose
+ *      start-minute occurred after the recorder came online.
+ *
+ *   2. Binance 1-minute kline open — historical fallback for slots
+ *      whose start-minute the recorder missed (process restart, slot
+ *      that started before this service launched). Typically within
+ *      a few dollars of Chainlink for BTC, proportionally similar for
+ *      smaller assets. Writes the value back to RoundAnchorPrice so a
+ *      subsequent request returns the cached row.
+ *
+ * Returns 404 only when the market is non-fast-moving, the asset isn't
+ * tracked on RTDS at all, or both sources fail.
  */
 const CADENCE_MS_BY_SUFFIX: Record<string, number> = {
     m: 60 * 1000,
@@ -62,17 +76,58 @@ export default class GetRoundAnchorController {
                     },
                 },
             });
-            if (!row) {
-                return ResponseWriter.not_found(res, "anchor not captured yet");
+            if (row) {
+                return ResponseWriter.success(
+                    res,
+                    {
+                        symbol: row.symbol,
+                        slotStart: row.slotStart.toISOString(),
+                        price: Number(row.price),
+                        recordedAt: row.recordedAt.toISOString(),
+                    },
+                    "RoundAnchor",
+                );
             }
 
+            // Recorder missed this minute (process restart, slot started
+            // before service came online). Fall back to Binance's 1-min
+            // kline open and cache it back to the DB so subsequent
+            // requests return the same value without another network
+            // call. Only attempt for past minutes — Binance has no kline
+            // for a future timestamp.
+            const prefix = asset_prefix_for_series(series_key);
+            const binance_symbol = prefix ? ASSET_BINANCE_SYMBOL[prefix] : undefined;
+            if (!binance_symbol || minute_ms > Date.now()) {
+                return ResponseWriter.not_found(res, "anchor not captured yet");
+            }
+            const fallback_price = await fetch_binance_kline_open_at(
+                binance_symbol,
+                minute_ms,
+            );
+            if (fallback_price === null) {
+                return ResponseWriter.not_found(res, "anchor not captured yet");
+            }
+            const cached = await prisma.roundAnchorPrice.upsert({
+                where: {
+                    symbol_slotStart: {
+                        symbol: parsed.symbol,
+                        slotStart: new Date(minute_ms),
+                    },
+                },
+                create: {
+                    symbol: parsed.symbol,
+                    slotStart: new Date(minute_ms),
+                    price: fallback_price.toString(),
+                },
+                update: {}, // first writer wins — never clobber a real RTDS tick
+            });
             return ResponseWriter.success(
                 res,
                 {
-                    symbol: row.symbol,
-                    slotStart: row.slotStart.toISOString(),
-                    price: Number(row.price),
-                    recordedAt: row.recordedAt.toISOString(),
+                    symbol: cached.symbol,
+                    slotStart: cached.slotStart.toISOString(),
+                    price: Number(cached.price),
+                    recordedAt: cached.recordedAt.toISOString(),
                 },
                 "RoundAnchor",
             );
