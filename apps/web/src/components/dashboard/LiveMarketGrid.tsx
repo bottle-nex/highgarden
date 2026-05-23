@@ -92,13 +92,13 @@ function collapse_fast_series(
         const upcoming = bucket
             .filter((m) => new Date(m.endAt).getTime() > now)
             .sort((a, b) => new Date(a.endAt).getTime() - new Date(b.endAt).getTime());
-        // Prefer the slot that's CURRENTLY being traded — Polymarket
-        // discovers slots in batches so the "earliest future endAt" can
-        // be hours ahead even when a slot is live right now. We use the
-        // series cadence (5m / 15m / 1h, parsed from the key) to compute
-        // each slot's start and pick the one where start ≤ now < end.
-        // If none qualifies (no live slot — e.g. between batches) we
-        // fall back to the soonest future slot.
+        // Only surface this series if a slot is genuinely live right now
+        // (start ≤ now < end). The old fallback returned the earliest
+        // future slot — that produced misleading cards pointing at slots
+        // hours in the future that nobody had traded on, and broke the
+        // Price-to-Beat panel (no anchor exists for a slot that hasn't
+        // started). If no slot is in-window the auto-lister hasn't
+        // approved the live one yet; skip the series rather than lie.
         const cadence_ms = cadence_ms_for_series(series_key);
         const live = cadence_ms > 0
             ? upcoming.find((m) => {
@@ -107,7 +107,8 @@ function collapse_fast_series(
                   return start <= now && now < end;
               })
             : undefined;
-        const representative = live ?? upcoming[0] ?? bucket[0]!;
+        if (!live) continue;
+        const representative = live;
         out.push({
             dto: representative,
             series: {

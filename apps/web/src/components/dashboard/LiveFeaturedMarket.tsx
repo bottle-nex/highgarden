@@ -91,6 +91,9 @@ function collapse_fast_series(
         const upcoming = bucket
             .filter((m) => new Date(m.endAt).getTime() > now)
             .sort((a, b) => new Date(a.endAt).getTime() - new Date(b.endAt).getTime());
+        // See LiveMarketGrid for why we only surface a genuinely-live
+        // slot — falling back to "earliest upcoming" produced cards
+        // pointing at slots hours in the future and broke Price-to-Beat.
         const cadence_ms = cadence_ms_for_series(series_key);
         const live = cadence_ms > 0
             ? upcoming.find((m) => {
@@ -98,7 +101,8 @@ function collapse_fast_series(
                   return end - cadence_ms <= now && now < end;
               })
             : undefined;
-        const representative = live ?? upcoming[0] ?? bucket[0]!;
+        if (!live) continue;
+        const representative = live;
         out.push({
             dto: representative,
             series: {

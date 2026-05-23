@@ -80,6 +80,16 @@ export class AutoLister {
     }
 
     async runOnce(): Promise<AutoListerResult> {
+        // Snapshot the enabled FastMarketSubscription series once per tick.
+        // Used by two paths below: (1) upsertOne bypasses the liquidity
+        // floor for any series the admin has explicitly opted into — once
+        // they've subscribed, we trust the series and don't double-gate
+        // on Polymarket's maker-seeded liquidity. (2) retry_pending_subs
+        // scans for PENDING rows in those series and approves them, so
+        // the system is self-healing across restarts / new subscriptions
+        // without needing a manual backfill script.
+        const subscribed_series = await this.load_subscribed_series();
+
         const by_volume = await this.gamma.fetch_events({
             limit: this.batchLimit,
             order: "volume_24hr",
@@ -113,7 +123,7 @@ export class AutoLister {
 
         for (const m of candidates) {
             try {
-                const result = await this.upsertOne(m);
+                const result = await this.upsertOne(m, subscribed_series);
                 if (result === "discovered") discovered++;
                 else if (result === "existing") skippedExisting++;
                 else skippedFiltered++;
@@ -123,9 +133,16 @@ export class AutoLister {
             }
         }
 
+        // Catch-up pass: PENDING rows in subscribed series that the
+        // discovery loop missed (e.g. they were inserted before the
+        // subscription existed, or auto-approve failed on a prior tick).
+        // Bounded so a deep backlog doesn't blow the tick budget.
+        const retried = await this.retry_pending_subs(subscribed_series);
+
         console.log(
             `[auto-lister] candidates=${candidates.length} discovered=${discovered} ` +
-                `existing=${skippedExisting} filtered=${skippedFiltered} failed=${failed}`,
+                `existing=${skippedExisting} filtered=${skippedFiltered} failed=${failed} ` +
+                `retried=${retried}`,
         );
         return {
             discovered,
@@ -134,6 +151,55 @@ export class AutoLister {
             failed,
             candidates: candidates.length,
         };
+    }
+
+    private async load_subscribed_series(): Promise<Set<string>> {
+        const rows = await this.db.fastMarketSubscription.findMany({
+            where: { enabled: true },
+            select: { seriesKey: true },
+        });
+        return new Set(rows.map((r) => r.seriesKey));
+    }
+
+    /**
+     * Scans for FAST_MOVING markets that match an enabled subscription
+     * but are still in PENDING state (with a future endAt). Approves up
+     * to RETRY_PENDING_BUDGET per tick, soonest-to-end first. Caps the
+     * per-tick budget because each approval does an on-chain
+     * create_market — at ~3s/tx, 10 per tick fits comfortably inside
+     * the 60s interval and the rest catches up on subsequent ticks.
+     */
+    private async retry_pending_subs(subscribed_series: Set<string>): Promise<number> {
+        if (subscribed_series.size === 0) return 0;
+        const RETRY_PENDING_BUDGET = 10;
+        const pending = await this.db.market.findMany({
+            where: {
+                kind: "FAST_MOVING",
+                fastSeriesKey: { in: [...subscribed_series] },
+                listing: { status: "PENDING" },
+                endAt: { gt: new Date() },
+            },
+            select: { id: true, fastSeriesKey: true },
+            orderBy: { endAt: "asc" },
+            take: RETRY_PENDING_BUDGET,
+        });
+        if (pending.length === 0) return 0;
+        let approved = 0;
+        for (const m of pending) {
+            try {
+                await this.approver.approve(m.id, "auto-lister-retry");
+                approved++;
+                console.info(
+                    `[auto-lister] retry-approved ${m.id} (series=${m.fastSeriesKey})`,
+                );
+            } catch (err) {
+                console.error(
+                    `[auto-lister] retry-approve failed for ${m.id} (series=${m.fastSeriesKey})`,
+                    (err as Error)?.message ?? err,
+                );
+            }
+        }
+        return approved;
     }
 
     start(): void {
@@ -194,7 +260,10 @@ export class AutoLister {
         }
     }
 
-    private async upsertOne(market: GammaMarket): Promise<UpsertOutcome> {
+    private async upsertOne(
+        market: GammaMarket,
+        subscribed_series: Set<string>,
+    ): Promise<UpsertOutcome> {
         // Skip negative-risk markets — they're multi-outcome composites that
         // don't fit our binary YES/NO model for MVP.
         if (market.neg_risk) return "filtered";
@@ -209,10 +278,22 @@ export class AutoLister {
         // ladders are the markets the test loop actually wants, and
         // their question text is the most reliable identifier.
         // Standard markets still need ≥ 24h runway AND meaningful 24h
-        // volume or liquidity; fast markets only need a liquidity floor.
+        // volume or liquidity; fast markets only need a liquidity floor
+        // UNLESS the series is subscribed — see below.
         const is_fast_moving = FAST_MOVING_QUESTION_PATTERN.test(market.question);
         if (is_fast_moving) {
-            if (market.liquidity < FAST_MIN_LIQUIDITY_USD) return "filtered";
+            // Bypass the liquidity gate when the admin has explicitly
+            // subscribed to this series. Fresh 5-min ladders routinely
+            // sit at $0 liquidity for the first few seconds before
+            // Polymarket's makers seed them — the previous behaviour
+            // dropped them on the floor, our auto-lister never saw them
+            // until they were already half-over, and the dashboard
+            // surfaced future slots instead of the genuinely-live one.
+            const series_key = derive_fast_series_key(market.slug);
+            const subscribed = !!series_key && subscribed_series.has(series_key);
+            if (!subscribed && market.liquidity < FAST_MIN_LIQUIDITY_USD) {
+                return "filtered";
+            }
         } else {
             if (lifespan_ms < MIN_LIFESPAN_MS) return "filtered";
             if (
