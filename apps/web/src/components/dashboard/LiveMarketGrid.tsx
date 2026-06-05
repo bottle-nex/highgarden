@@ -145,7 +145,13 @@ export default function LiveMarketGrid({ category, excludeFeatured = false }: Pr
 
     useEffect(() => {
         let cancelled = false;
-        const load = (initial: boolean) => {
+        let timer: ReturnType<typeof setTimeout> | null = null;
+        // Self-rescheduling chain: setInterval queues calls even when the
+        // previous one is still in flight, which on a slow API turns the
+        // dashboard into a pile of overlapping /markets requests. Wait
+        // for the prior fetch to settle before scheduling the next so
+        // there's at most one in flight per tab.
+        const run = (initial: boolean) => {
             fetchPublicMarkets(tag_filter ?? undefined)
                 .then((markets) => {
                     if (cancelled) return;
@@ -162,20 +168,20 @@ export default function LiveMarketGrid({ category, excludeFeatured = false }: Pr
                             message: err instanceof Error ? err.message : 'failed to load markets',
                         });
                     }
+                })
+                .finally(() => {
+                    if (cancelled) return;
+                    // The auto-lister mints new fast-moving slots every
+                    // minute and old ones resolve every 5. 8s of quiet
+                    // time between polls keeps the dashboard close to
+                    // real-time without queuing duplicate requests.
+                    timer = setTimeout(() => run(false), 8_000);
                 });
         };
-        load(true);
-        // The auto-lister mints new fast-moving slots every minute and
-        // old ones resolve every 5. We want the series card to point at
-        // the LIVE slot within a few seconds of one resolving — 20s was
-        // wide enough that "go back, click card again" could still land
-        // on the slot that just ended. 8s keeps the dashboard close to
-        // real-time without flooding the public-list endpoint (one call
-        // every 8 seconds per open tab is cheap).
-        const handle = setInterval(() => load(false), 8_000);
+        run(true);
         return () => {
             cancelled = true;
-            clearInterval(handle);
+            if (timer) clearTimeout(timer);
         };
     }, [tag_key]); // eslint-disable-line react-hooks/exhaustive-deps
 

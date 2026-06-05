@@ -63,17 +63,53 @@ export interface AutoListerResult {
     candidates: number;
 }
 
-export async function fetchAdminListings(
-    status?: ListingStatus,
-    kind?: AdminMarketKind,
-): Promise<AdminListingApi[]> {
+export interface AdminListingsPage {
+    items: AdminListingApi[];
+    nextCursor: string | null;
+}
+
+export async function fetchAdminListings(args: {
+    status?: ListingStatus;
+    kind?: AdminMarketKind;
+    cursor?: string | null;
+    limit?: number;
+}): Promise<AdminListingsPage> {
     const params: Record<string, string> = {};
-    if (status) params.status = status;
-    if (kind) params.kind = kind;
+    if (args.status) params.status = args.status;
+    if (args.kind) params.kind = args.kind;
+    if (args.cursor) params.cursor = args.cursor;
+    if (args.limit) params.limit = String(args.limit);
     const { data } = await apiClient.get('/admin/listings', {
         params: Object.keys(params).length > 0 ? params : undefined,
     });
-    return data?.data ?? [];
+    const payload = data?.data;
+    if (payload && Array.isArray(payload.items)) {
+        return {
+            items: payload.items as AdminListingApi[],
+            nextCursor: typeof payload.nextCursor === 'string' ? payload.nextCursor : null,
+        };
+    }
+    // Defensive: pre-pagination server (or legacy mock) returned a bare
+    // array. Wrap it so the caller's contract holds either way.
+    return { items: Array.isArray(payload) ? (payload as AdminListingApi[]) : [], nextCursor: null };
+}
+
+export interface AdminListingCounts {
+    PENDING: number;
+    APPROVED: number;
+    REJECTED: number;
+    FAST_MOVING: number;
+}
+
+export async function fetchAdminListingCounts(): Promise<AdminListingCounts> {
+    const { data } = await apiClient.get('/admin/listings/counts');
+    const payload = data?.data ?? {};
+    return {
+        PENDING: payload.PENDING ?? 0,
+        APPROVED: payload.APPROVED ?? 0,
+        REJECTED: payload.REJECTED ?? 0,
+        FAST_MOVING: payload.FAST_MOVING ?? 0,
+    };
 }
 
 export async function approveListing(marketId: string, approvedBy?: string): Promise<void> {

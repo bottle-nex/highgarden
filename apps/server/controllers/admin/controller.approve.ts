@@ -4,6 +4,7 @@ import { prisma } from "@solmarket/database";
 import { ListingStatus } from "@solmarket/types";
 import ResponseWriter from "../../services/service.response";
 import { services } from "../../index";
+import ListingCountsController from "./controller.listing-counts";
 
 const body_schema = z.object({
     approvedBy: z.string().nullish(),
@@ -49,6 +50,7 @@ export default class ApproveListingController {
                 },
                 include: { market: { include: { polymarket: true } } },
             });
+            ListingCountsController.invalidate();
 
             // Side effects: tell the mirror to start watching the YES/NO assets,
             // seed the in-memory book cache, and publish the token→market

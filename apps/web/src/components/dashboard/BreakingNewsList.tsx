@@ -26,17 +26,26 @@ export default function BreakingNewsList({ limit = 3 }: { limit?: number }): JSX
 
     useEffect(() => {
         let cancelled = false;
-        const load = () => {
-            fetch_recent_news(limit).then((next) => {
-                if (cancelled) return;
-                set_items(next);
-            });
+        let timer: ReturnType<typeof setTimeout> | null = null;
+        // Self-rescheduling chain — same reason as LiveMarketGrid. The
+        // 5-minute cadence is rarely a problem in practice, but if the
+        // news endpoint slows for a stretch we still don't want overlapping
+        // requests stacking up across tabs.
+        const run = () => {
+            fetch_recent_news(limit)
+                .then((next) => {
+                    if (cancelled) return;
+                    set_items(next);
+                })
+                .finally(() => {
+                    if (cancelled) return;
+                    timer = setTimeout(run, POLL_INTERVAL_MS);
+                });
         };
-        load();
-        const handle = setInterval(load, POLL_INTERVAL_MS);
+        run();
         return () => {
             cancelled = true;
-            clearInterval(handle);
+            if (timer) clearTimeout(timer);
         };
     }, [limit]);
 

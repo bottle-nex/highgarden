@@ -4,6 +4,7 @@ import { prisma } from "@solmarket/database";
 import { ListingStatus } from "@solmarket/types";
 import ResponseWriter from "../../services/service.response";
 import { services } from "../../index";
+import ListingCountsController from "./controller.listing-counts";
 
 const body_schema = z.object({
     reason: z.string().nullish(),
@@ -52,6 +53,7 @@ export default class RejectListingController {
                     rejectionReason: reason,
                 },
             });
+            ListingCountsController.invalidate();
 
             // If we were tracking this market, unwind the mirror subscription,
             // book cache entry, and token index. Best-effort.

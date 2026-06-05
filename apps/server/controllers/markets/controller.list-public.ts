@@ -3,6 +3,16 @@ import { prisma } from "@solmarket/database";
 import { ListingStatus, type MarketDTO, type MarketStatus, type Outcome } from "@solmarket/types";
 import ResponseWriter from "../../services/service.response";
 
+// Snapshot cache for the public-list endpoint. Every connected dashboard
+// tab polls this every 8s and several components inside one tab fan out
+// to the same call on mount — without a cache, each request hits Postgres
+// independently and the result set (every approved future market plus
+// resolver-stage lookups) is identical for everyone for the next few
+// seconds. A 3-second TTL keeps the dashboard close to real-time while
+// collapsing N concurrent callers onto one DB hit per tag-filter.
+const CACHE_TTL_MS = 3_000;
+const snapshot_cache = new Map<string, { expires_at: number; payload: MarketDTO[] }>();
+
 /**
  * Parse `?tag=Politics` or `?tag=Politics,Crypto` (also accepts repeated
  * `?tag=Politics&tag=Crypto`). Empty / non-string entries are dropped, and
@@ -37,6 +47,12 @@ function parse_tag_filter(raw: unknown): string[] | null {
 export default class ListPublicMarketsController {
     static async process(req: Request, res: Response) {
         const tag_filter = parse_tag_filter(req.query.tag);
+        const cache_key = tag_filter ? tag_filter.map((t) => t.toLowerCase()).sort().join(",") : "";
+        const now_ms = Date.now();
+        const cached = snapshot_cache.get(cache_key);
+        if (cached && cached.expires_at > now_ms) {
+            return ResponseWriter.success(res, cached.payload, "Markets");
+        }
 
         try {
             // Hide markets whose Polymarket window has already closed. The
@@ -111,6 +127,10 @@ export default class ListPublicMarketsController {
                 });
             }
 
+            snapshot_cache.set(cache_key, {
+                expires_at: now_ms + CACHE_TTL_MS,
+                payload: markets,
+            });
             return ResponseWriter.success(res, markets, "Markets");
         } catch (err) {
             console.error("[markets/list-public]", err);

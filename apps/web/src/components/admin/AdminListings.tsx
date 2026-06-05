@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import type { AdminListingCounts } from '@/lib/api/admin';
 import ListingRow from './ListingRow';
 import FastSubscriptionsPanel from './FastSubscriptionsPanel';
 
@@ -34,51 +35,67 @@ export interface AdminListingRow {
     rejectionReason: string | null;
 }
 
-type Tab = 'PENDING' | 'APPROVED' | 'REJECTED' | 'FAST_MOVING';
+export type AdminTab = 'PENDING' | 'APPROVED' | 'REJECTED' | 'FAST_MOVING';
 
-const TABS: Tab[] = ['PENDING', 'APPROVED', 'REJECTED', 'FAST_MOVING'];
+const TABS: AdminTab[] = ['PENDING', 'APPROVED', 'REJECTED', 'FAST_MOVING'];
 
-const TAB_LABEL: Record<Tab, string> = {
+const TAB_LABEL: Record<AdminTab, string> = {
     PENDING: 'Pending',
     APPROVED: 'Approved',
     REJECTED: 'Rejected',
     FAST_MOVING: 'Fast-moving',
 };
 
+interface Props {
+    active: AdminTab;
+    onActiveChange: (tab: AdminTab) => void;
+    counts: AdminListingCounts;
+    rows: AdminListingRow[];
+    loading: boolean;
+    exhausted: boolean;
+    error: string | null;
+    /** True only on the very first fetch for the active tab — used to
+     *  show a "Loading listings…" placeholder rather than the bottom
+     *  sentinel spinner. After that the rows render and the sentinel
+     *  takes over. */
+    initialLoading: boolean;
+    onLoadMore: () => void;
+    onChange: () => void;
+}
+
 export default function AdminListings({
-    listings,
+    active,
+    onActiveChange,
+    counts,
+    rows,
+    loading,
+    exhausted,
+    error,
+    initialLoading,
+    onLoadMore,
     onChange,
-}: {
-    listings: AdminListingRow[];
-    onChange?: () => void;
-}) {
-    const [active, setActive] = useState<Tab>('PENDING');
+}: Props) {
+    const sentinelRef = useRef<HTMLDivElement | null>(null);
+    // Latest onLoadMore in a ref so the IntersectionObserver effect doesn't
+    // tear down whenever the parent re-renders with a new callback identity.
+    const loadMoreRef = useRef(onLoadMore);
+    loadMoreRef.current = onLoadMore;
 
-    const counts = useMemo(() => {
-        const c: Record<Tab, number> = {
-            PENDING: 0,
-            APPROVED: 0,
-            REJECTED: 0,
-            FAST_MOVING: 0,
-        };
-        for (const l of listings) {
-            c[l.status] += 1;
-            // Fast-moving tab shows pending fast-moving markets only —
-            // the ones the admin still needs to act on. After approval
-            // they appear in the standard APPROVED tab (kind doesn't change).
-            if (l.kind === 'FAST_MOVING' && l.status === 'PENDING') c.FAST_MOVING += 1;
-        }
-        return c;
-    }, [listings]);
-
-    const visible = useMemo(() => {
-        if (active === 'FAST_MOVING') {
-            return listings.filter((l) => l.kind === 'FAST_MOVING' && l.status === 'PENDING');
-        }
-        // Standard tabs hide fast-moving rows so the noisy 5-min ladders
-        // don't drown out the long-form listings the admin actually curates.
-        return listings.filter((l) => l.status === active && l.kind !== 'FAST_MOVING');
-    }, [listings, active]);
+    useEffect(() => {
+        const node = sentinelRef.current;
+        if (!node) return;
+        if (exhausted) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                for (const entry of entries) {
+                    if (entry.isIntersecting) loadMoreRef.current();
+                }
+            },
+            { rootMargin: '320px 0px' },
+        );
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [exhausted, active, rows.length]);
 
     return (
         <div className="space-y-5">
@@ -87,7 +104,7 @@ export default function AdminListings({
                     <button
                         key={tab}
                         type="button"
-                        onClick={() => setActive(tab)}
+                        onClick={() => onActiveChange(tab)}
                         className={cn(
                             'px-4 py-2.5 text-[10px] tracking-[0.25em] uppercase border-b-2 -mb-px transition-colors',
                             active === tab
@@ -124,18 +141,37 @@ export default function AdminListings({
                 </section>
             )}
 
-            {visible.length === 0 ? (
+            {initialLoading ? (
+                <div className="text-xs text-white/40">Loading listings…</div>
+            ) : rows.length === 0 ? (
                 <div className="border border-dashed border-white/10 rounded p-12 text-center text-xs text-white/40">
-                    {active === 'FAST_MOVING'
-                        ? 'No fast-moving markets waiting for approval.'
-                        : `No ${TAB_LABEL[active].toLowerCase()} listings.`}
+                    {error
+                        ? error
+                        : active === 'FAST_MOVING'
+                          ? 'No fast-moving markets waiting for approval.'
+                          : `No ${TAB_LABEL[active].toLowerCase()} listings.`}
                 </div>
             ) : (
-                <ul className="space-y-2">
-                    {visible.map((l) => (
-                        <ListingRow key={l.marketId} listing={l} onChange={onChange} />
-                    ))}
-                </ul>
+                <>
+                    <ul className="space-y-2">
+                        {rows.map((l) => (
+                            <ListingRow key={l.marketId} listing={l} onChange={onChange} />
+                        ))}
+                    </ul>
+                    <div ref={sentinelRef} className="pt-2">
+                        {loading && !exhausted ? (
+                            <div className="text-center text-[11px] text-white/35 py-4">
+                                Loading more…
+                            </div>
+                        ) : exhausted ? (
+                            <div className="text-center text-[11px] text-white/25 py-4">
+                                End of list
+                            </div>
+                        ) : (
+                            <div className="h-4" />
+                        )}
+                    </div>
+                </>
             )}
         </div>
     );

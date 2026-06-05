@@ -1,6 +1,7 @@
 import { Router } from "express";
 import ListPendingController from "../../controllers/admin/controller.list-pending";
 import ListListingsController from "../../controllers/admin/controller.list-listings";
+import ListingCountsController from "../../controllers/admin/controller.listing-counts";
 import ApproveListingController from "../../controllers/admin/controller.approve";
 import ApproveAndListOnSolanaController from "../../controllers/admin/controller.approve-and-list";
 import RejectListingController from "../../controllers/admin/controller.reject";
@@ -23,6 +24,7 @@ admin_router.use(rl.admin_strict);
 
 admin_router.get("/pending", ListPendingController.process);
 admin_router.get("/listings", ListListingsController.process);
+admin_router.get("/listings/counts", ListingCountsController.process);
 admin_router.get("/diagnostic", DiagnosticController.process);
 admin_router.post("/approve/:marketId", ApproveListingController.process);
 admin_router.post("/approve-and-list/:marketId", ApproveAndListOnSolanaController.process);

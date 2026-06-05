@@ -5,6 +5,7 @@ import ApproveAndListService, {
     ApproveAndListError,
     type ApproveAndListErrorCode,
 } from "../../services/service.approve-and-list";
+import ListingCountsController from "./controller.listing-counts";
 
 const body_schema = z.object({
     approvedBy: z.string().nullish(),
@@ -35,6 +36,7 @@ export default class ApproveAndListOnSolanaController {
                 marketId,
                 approvedBy,
             );
+            ListingCountsController.invalidate();
             return ResponseWriter.success(
                 res,
                 result,
