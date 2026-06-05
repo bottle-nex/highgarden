@@ -48,10 +48,12 @@ export default function ListingRow({
             const result = await subscribeFastSeries({ fromMarketId: listing.marketId });
             const ap = result.backfill.approved.length;
             const fl = result.backfill.failed.length;
-            toast.success(
-                `Subscribed to ${result.subscription.label}`,
-                { description: ap > 0 || fl > 0 ? `Backfilled ${ap} approved, ${fl} failed` : 'All future markets will be auto-listed' },
-            );
+            toast.success(`Subscribed to ${result.subscription.label}`, {
+                description:
+                    ap > 0 || fl > 0
+                        ? `Backfilled ${ap} approved, ${fl} failed`
+                        : 'All future markets will be auto-listed',
+            });
             onChange?.();
         } catch (err) {
             toast.error(err instanceof Error ? err.message : 'subscribe failed');
@@ -257,8 +259,9 @@ export default function ListingRow({
             {showResolveConfirm && (
                 <div className="mt-3 flex items-center gap-2 p-3 bg-white/3 border border-white/10 rounded">
                     <p className="text-xs text-white/70 flex-1">
-                        Resolve <span className="font-semibold text-white">{showResolveConfirm}</span>{' '}
-                        as winner? This signs <code className="text-white/85">resolve_market</code>{' '}
+                        Resolve{' '}
+                        <span className="font-semibold text-white">{showResolveConfirm}</span> as
+                        winner? This signs <code className="text-white/85">resolve_market</code>{' '}
                         on-chain and is <span className="text-rose-300">irreversible</span> — users
                         on the losing side can no longer claim.
                     </p>

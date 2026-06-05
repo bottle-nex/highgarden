@@ -189,9 +189,7 @@ export class AutoLister {
             try {
                 await this.approver.approve(m.id, "auto-lister-retry");
                 approved++;
-                console.info(
-                    `[auto-lister] retry-approved ${m.id} (series=${m.fastSeriesKey})`,
-                );
+                console.info(`[auto-lister] retry-approved ${m.id} (series=${m.fastSeriesKey})`);
             } catch (err) {
                 console.error(
                     `[auto-lister] retry-approve failed for ${m.id} (series=${m.fastSeriesKey})`,
@@ -296,10 +294,7 @@ export class AutoLister {
             }
         } else {
             if (lifespan_ms < MIN_LIFESPAN_MS) return "filtered";
-            if (
-                market.volume_24hr < MIN_ACTIVITY_USD
-                && market.liquidity < MIN_ACTIVITY_USD
-            ) {
+            if (market.volume_24hr < MIN_ACTIVITY_USD && market.liquidity < MIN_ACTIVITY_USD) {
                 return "filtered";
             }
         }
@@ -350,9 +345,7 @@ export class AutoLister {
         // For FAST_MOVING markets, derive the series key now so the
         // auto-approval lookup below has it available and any future
         // queries by series can use the indexed column.
-        const fast_series_key = is_fast_moving
-            ? derive_fast_series_key(market.slug)
-            : null;
+        const fast_series_key = is_fast_moving ? derive_fast_series_key(market.slug) : null;
 
         const created_market_id = await this.db.$transaction(async (tx) => {
             const created = await tx.market.create({

@@ -45,7 +45,6 @@ export default function PolymarketCommentsSection({ market_id }: Props): JSX.Ele
     }, [market_id, holders_only]);
 
     useEffect(() => {
-         
         void load_initial();
     }, [load_initial]);
 

@@ -160,18 +160,14 @@ export class PolymarketClient {
       );
     }
     if (!res.ok) {
-      throw new RetryableError(
-        `polymarket book ${res.status} for token ${token_id}`,
-      );
+      throw new RetryableError(`polymarket book ${res.status} for token ${token_id}`);
     }
     const body = (await res.json()) as {
       bids?: { price: string; size: string }[];
       asks?: { price: string; size: string }[];
     };
     if (!Array.isArray(body?.bids) || !Array.isArray(body?.asks)) {
-      throw new RetryableError(
-        `polymarket book malformed for token ${token_id}`,
-      );
+      throw new RetryableError(`polymarket book malformed for token ${token_id}`);
     }
     return this.shape_top({ bids: body.bids, asks: body.asks });
   }

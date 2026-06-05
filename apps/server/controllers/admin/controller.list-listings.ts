@@ -70,12 +70,8 @@ export default class ListListingsController {
             });
             const has_more = rows.length > limit;
             const items = has_more ? rows.slice(0, limit) : rows;
-            const next_cursor = has_more ? items[items.length - 1]?.marketId ?? null : null;
-            return ResponseWriter.success(
-                res,
-                { items, nextCursor: next_cursor },
-                "Listings",
-            );
+            const next_cursor = has_more ? (items[items.length - 1]?.marketId ?? null) : null;
+            return ResponseWriter.success(res, { items, nextCursor: next_cursor }, "Listings");
         } catch (err) {
             console.error("[admin/list-listings]", err);
             return ResponseWriter.system_error(res);

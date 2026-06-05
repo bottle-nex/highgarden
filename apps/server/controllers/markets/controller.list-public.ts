@@ -47,7 +47,12 @@ function parse_tag_filter(raw: unknown): string[] | null {
 export default class ListPublicMarketsController {
     static async process(req: Request, res: Response) {
         const tag_filter = parse_tag_filter(req.query.tag);
-        const cache_key = tag_filter ? tag_filter.map((t) => t.toLowerCase()).sort().join(",") : "";
+        const cache_key = tag_filter
+            ? tag_filter
+                  .map((t) => t.toLowerCase())
+                  .sort()
+                  .join(",")
+            : "";
         const now_ms = Date.now();
         const cached = snapshot_cache.get(cache_key);
         if (cached && cached.expires_at > now_ms) {
@@ -66,9 +71,7 @@ export default class ListPublicMarketsController {
                     status: ListingStatus.APPROVED,
                     market: {
                         endAt: { gt: now },
-                        ...(tag_filter
-                            ? { polymarket: { tags: { hasSome: tag_filter } } }
-                            : {}),
+                        ...(tag_filter ? { polymarket: { tags: { hasSome: tag_filter } } } : {}),
                     },
                 },
                 orderBy: { approvedAt: "desc" },
@@ -80,9 +83,7 @@ export default class ListPublicMarketsController {
             // stage with a single batched query and build a lookup map.
             // Used below to derive `claimable` on the DTO — true once the
             // hedger has confirmed `resolve_market` on Solana.
-            const market_ids = listings
-                .map((l) => l.market?.id)
-                .filter((id): id is string => !!id);
+            const market_ids = listings.map((l) => l.market?.id).filter((id): id is string => !!id);
             const resolver_rows =
                 market_ids.length > 0
                     ? await prisma.resolverState.findMany({

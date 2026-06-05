@@ -57,7 +57,8 @@ function et_offset_hours(year: number, month: number, day: number): number {
 function parse_et_time(date_str: string, time_str: string, year: number): Date | null {
     const dm = date_str.match(/^([A-Za-z]+)\s+(\d{1,2})$/);
     if (!dm) return null;
-    const monthKey = (dm[1]!.slice(0, 1).toUpperCase() + dm[1]!.slice(1, 3).toLowerCase()) as keyof typeof MONTHS;
+    const monthKey = (dm[1]!.slice(0, 1).toUpperCase() +
+        dm[1]!.slice(1, 3).toLowerCase()) as keyof typeof MONTHS;
     const month = MONTHS[monthKey];
     if (!month) return null;
     const day = parseInt(dm[2]!, 10);

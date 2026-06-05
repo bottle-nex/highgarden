@@ -41,7 +41,6 @@ function TrendingSection(): JSX.Element {
             </div>
             <LiveStakingSection />
             <LiveMarketGrid excludeFeatured />
-
         </div>
     );
 }

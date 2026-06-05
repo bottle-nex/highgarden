@@ -62,7 +62,6 @@ function series_title(series_key: string, fallback: string): string {
     return `${display_asset} Up or Down · ${cadence}`;
 }
 
-
 /** Collapses every FAST_MOVING market sharing a `fastSeriesKey` into a
  *  single representative card. The representative is the next-to-resolve
  *  slot, so clicking the card lands you on a market you can still trade.
@@ -100,13 +99,14 @@ function collapse_fast_series(
         // started). If no slot is in-window the auto-lister hasn't
         // approved the live one yet; skip the series rather than lie.
         const cadence_ms = cadence_ms_for_series(series_key);
-        const live = cadence_ms > 0
-            ? upcoming.find((m) => {
-                  const end = new Date(m.endAt).getTime();
-                  const start = end - cadence_ms;
-                  return start <= now && now < end;
-              })
-            : undefined;
+        const live =
+            cadence_ms > 0
+                ? upcoming.find((m) => {
+                      const end = new Date(m.endAt).getTime();
+                      const start = end - cadence_ms;
+                      return start <= now && now < end;
+                  })
+                : undefined;
         if (!live) continue;
         const representative = live;
         out.push({

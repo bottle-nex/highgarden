@@ -95,12 +95,13 @@ function collapse_fast_series(
         // slot — falling back to "earliest upcoming" produced cards
         // pointing at slots hours in the future and broke Price-to-Beat.
         const cadence_ms = cadence_ms_for_series(series_key);
-        const live = cadence_ms > 0
-            ? upcoming.find((m) => {
-                  const end = new Date(m.endAt).getTime();
-                  return end - cadence_ms <= now && now < end;
-              })
-            : undefined;
+        const live =
+            cadence_ms > 0
+                ? upcoming.find((m) => {
+                      const end = new Date(m.endAt).getTime();
+                      return end - cadence_ms <= now && now < end;
+                  })
+                : undefined;
         if (!live) continue;
         const representative = live;
         out.push({
@@ -355,9 +356,7 @@ function CarouselControls({
                         aria-label={`Market ${i + 1} of ${total}`}
                         onClick={() => on_select(i)}
                         className={`h-1 rounded-full transition-all cursor-pointer ${
-                            i === index
-                                ? 'w-6 bg-white/80'
-                                : 'w-2 bg-white/20 hover:bg-white/40'
+                            i === index ? 'w-6 bg-white/80' : 'w-2 bg-white/20 hover:bg-white/40'
                         }`}
                     />
                 ))}
@@ -387,11 +386,7 @@ function CarouselControls({
 }
 
 function Section({ children }: { children: React.ReactNode }) {
-    return (
-        <section className="h-full min-h-0 flex flex-col p-1">
-            {children}
-        </section>
-    );
+    return <section className="h-full min-h-0 flex flex-col p-1">{children}</section>;
 }
 
 function Frame({

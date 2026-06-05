@@ -172,8 +172,8 @@ function DialogHeader({ balance_text, onClose }: DialogHeaderProps) {
                         )}
                     />
                     <TooltipContent>
-                        USD Coin, a stablecoin pegged 1:1 to the US dollar. Used as the
-                        settlement currency for all trades on this platform.
+                        USD Coin, a stablecoin pegged 1:1 to the US dollar. Used as the settlement
+                        currency for all trades on this platform.
                     </TooltipContent>
                 </Tooltip>{' '}
                 for trading
@@ -312,15 +312,14 @@ function SendSolFromWalletPanel({ recipient, on_deposit_success }: SendSolFromWa
     // the "insufficient lamports" error after the user has already
     // approved in their wallet.
     const SOL_FEE_BUFFER = 0.0001;
-    const insufficient =
-        balance_known && parsed !== null && parsed + SOL_FEE_BUFFER > max;
+    const insufficient = balance_known && parsed !== null && parsed + SOL_FEE_BUFFER > max;
     const in_flight =
-        phase === 'awaiting-signature'
-        || phase === 'building'
-        || phase === 'simulating'
-        || phase === 'sending'
-        || phase === 'confirming'
-        || phase === 'notifying-server';
+        phase === 'awaiting-signature' ||
+        phase === 'building' ||
+        phase === 'simulating' ||
+        phase === 'sending' ||
+        phase === 'confirming' ||
+        phase === 'notifying-server';
     const can_submit = has_wallet && parsed !== null && parsed > 0 && !insufficient && !in_flight;
 
     useEffect(() => {
@@ -658,8 +657,8 @@ function NetworkWarning({ network_label }: NetworkWarningProps) {
         <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2.5">
             <PiInfo className="size-4 mt-0.5 shrink-0 text-amber-300/80" />
             <p className="text-[10.5px] leading-relaxed text-light-alpha/65">
-                <span className="text-amber-200/90 font-medium">Devnet SOL only.</span> This
-                address accepts native SOL on{' '}
+                <span className="text-amber-200/90 font-medium">Devnet SOL only.</span> This address
+                accepts native SOL on{' '}
                 <Tooltip>
                     <TooltipTrigger
                         render={(props) => (

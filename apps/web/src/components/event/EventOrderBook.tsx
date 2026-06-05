@@ -146,9 +146,7 @@ const BookLevelRow = memo(function BookLevelRow({
             >
                 {format_cents(price)}
             </span>
-            <span className="relative text-right text-white font-light">
-                {format_size(size)}
-            </span>
+            <span className="relative text-right text-white font-light">{format_size(size)}</span>
             <span className="relative text-right text-white/60 font-light">
                 {format_total(cum_usd)}
             </span>
@@ -168,8 +166,10 @@ export default function EventOrderBook({ marketId, endAt, status }: Props): JSX.
     // moment endAt passes. Re-renders are driven by external state
     // (orderbook store subscription) anyway, so the value stays in
     // sync with reality without needing a separate ticker.
-    /* eslint-disable-next-line react-hooks/purity */
-    const slot_closed = status === 'RESOLVED' || (endAt !== undefined && new Date(endAt).getTime() < Date.now());
+    // eslint-disable-next-line react-hooks/purity
+    const now_ms = Date.now();
+    const slot_closed =
+        status === 'RESOLVED' || (endAt !== undefined && new Date(endAt).getTime() < now_ms);
     const book = useOrderBook(marketId, selectedOutcome, slot_closed);
     const { refetch, isRefetching } = book;
     const scroll_ref = useRef<HTMLDivElement | null>(null);
@@ -369,93 +369,97 @@ export default function EventOrderBook({ marketId, endAt, status }: Props): JSX.
                                 </div>
                             )}
 
-                        {!slot_closed && book.isHydrated && (asks.length > 0 || bids.length > 0) && (
-                            <div
-                                ref={scroll_ref}
-                                className="h-72 sm:h-96 lg:h-105 overflow-y-auto overscroll-contain custom-scrollbar [overflow-anchor:auto]"
-                            >
-                                {view_mode !== 'bids' && (
-                                    <div className="pt-3.5 space-y-0.5">
-                                        {asks.length === 0 ? (
-                                            <div className="py-4 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
-                                                No asks
-                                            </div>
-                                        ) : (
-                                            asks
-                                                .map((lvl, i) => {
-                                                    const cum = book.cumulativeAsks[i] ?? lvl.size;
+                        {!slot_closed &&
+                            book.isHydrated &&
+                            (asks.length > 0 || bids.length > 0) && (
+                                <div
+                                    ref={scroll_ref}
+                                    className="h-72 sm:h-96 lg:h-105 overflow-y-auto overscroll-contain custom-scrollbar [overflow-anchor:auto]"
+                                >
+                                    {view_mode !== 'bids' && (
+                                        <div className="pt-3.5 space-y-0.5">
+                                            {asks.length === 0 ? (
+                                                <div className="py-4 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
+                                                    No asks
+                                                </div>
+                                            ) : (
+                                                asks
+                                                    .map((lvl, i) => {
+                                                        const cum =
+                                                            book.cumulativeAsks[i] ?? lvl.size;
+                                                        const cum_usd =
+                                                            book.cumulativeAsksUsd[i] ??
+                                                            lvl.price * lvl.size;
+                                                        const cum_w = (cum / max_total) * 100;
+                                                        const size_w =
+                                                            (lvl.size / max_level_size) * 100;
+                                                        return (
+                                                            <BookLevelRow
+                                                                key={`ask-${lvl.price}`}
+                                                                price={lvl.price}
+                                                                size={lvl.size}
+                                                                cum_usd={cum_usd}
+                                                                cum_w={cum_w}
+                                                                size_w={size_w}
+                                                                side="ask"
+                                                            />
+                                                        );
+                                                    })
+                                                    .reverse()
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {view_mode === 'center' && (
+                                        <div
+                                            ref={spread_ref}
+                                            className="my-5 flex items-center justify-between px-3 py-2.5 border-y border-white/6"
+                                        >
+                                            <span className="text-[9.5px] tracking-[0.22em] uppercase text-white/45 font-medium">
+                                                Spread
+                                            </span>
+                                            <span className="text-[13px] tabular-nums text-white/85 font-medium">
+                                                {book.spread !== null
+                                                    ? `${(book.spread * 100).toFixed(2)}¢`
+                                                    : '0.00¢'}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {view_mode !== 'asks' && (
+                                        <div className="space-y-0.5">
+                                            {bids.length === 0 ? (
+                                                <div className="grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums">
+                                                    <span className="col-span-3 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
+                                                        No bids
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                bids.map((lvl, i) => {
+                                                    const cum = book.cumulativeBids[i] ?? lvl.size;
                                                     const cum_usd =
-                                                        book.cumulativeAsksUsd[i] ??
+                                                        book.cumulativeBidsUsd[i] ??
                                                         lvl.price * lvl.size;
                                                     const cum_w = (cum / max_total) * 100;
                                                     const size_w =
                                                         (lvl.size / max_level_size) * 100;
                                                     return (
                                                         <BookLevelRow
-                                                            key={`ask-${lvl.price}`}
+                                                            key={`bid-${lvl.price}`}
                                                             price={lvl.price}
                                                             size={lvl.size}
                                                             cum_usd={cum_usd}
                                                             cum_w={cum_w}
                                                             size_w={size_w}
-                                                            side="ask"
+                                                            side="bid"
                                                         />
                                                     );
                                                 })
-                                                .reverse()
-                                        )}
-                                    </div>
-                                )}
-
-                                {view_mode === 'center' && (
-                                    <div
-                                        ref={spread_ref}
-                                        className="my-5 flex items-center justify-between px-3 py-2.5 border-y border-white/6"
-                                    >
-                                        <span className="text-[9.5px] tracking-[0.22em] uppercase text-white/45 font-medium">
-                                            Spread
-                                        </span>
-                                        <span className="text-[13px] tabular-nums text-white/85 font-medium">
-                                            {book.spread !== null
-                                                ? `${(book.spread * 100).toFixed(2)}¢`
-                                                : '0.00¢'}
-                                        </span>
-                                    </div>
-                                )}
-
-                                {view_mode !== 'asks' && (
-                                    <div className="space-y-0.5">
-                                        {bids.length === 0 ? (
-                                            <div className="grid grid-cols-3 gap-x-3 pr-3 py-1.5 text-[13px] tabular-nums">
-                                                <span className="col-span-3 text-center text-[10px] tracking-[0.28em] uppercase text-white/25">
-                                                    No bids
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            bids.map((lvl, i) => {
-                                                const cum = book.cumulativeBids[i] ?? lvl.size;
-                                                const cum_usd =
-                                                    book.cumulativeBidsUsd[i] ??
-                                                    lvl.price * lvl.size;
-                                                const cum_w = (cum / max_total) * 100;
-                                                const size_w = (lvl.size / max_level_size) * 100;
-                                                return (
-                                                    <BookLevelRow
-                                                        key={`bid-${lvl.price}`}
-                                                        price={lvl.price}
-                                                        size={lvl.size}
-                                                        cum_usd={cum_usd}
-                                                        cum_w={cum_w}
-                                                        size_w={size_w}
-                                                        side="bid"
-                                                    />
-                                                );
-                                            })
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                     </div>
                 </div>
             </div>

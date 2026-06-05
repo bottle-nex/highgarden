@@ -139,9 +139,7 @@ export default class SolanaAdminService {
 
     private get_oracle_keypair(): Keypair {
         if (!ENV.SERVER_SOLANA_ORACLE_KEYPAIR) {
-            throw new Error(
-                "SERVER_SOLANA_ORACLE_KEYPAIR is not set; cannot sign resolve_market",
-            );
+            throw new Error("SERVER_SOLANA_ORACLE_KEYPAIR is not set; cannot sign resolve_market");
         }
         if (!this.oracle_keypair) {
             this.oracle_keypair = this.load_admin_keypair(ENV.SERVER_SOLANA_ORACLE_KEYPAIR);
@@ -162,7 +160,11 @@ export default class SolanaAdminService {
         // write didn't. Adopt the existing PDA instead of trying to
         // create it again (system_program::create_account rejects with
         // "already in use" / custom error 0x0 in that case).
-        const recovered = await this.try_recover_existing_market(client.connection, client.programId, marketPda);
+        const recovered = await this.try_recover_existing_market(
+            client.connection,
+            client.programId,
+            marketPda,
+        );
         if (recovered) {
             return {
                 signature: "recovered",

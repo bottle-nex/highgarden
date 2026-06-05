@@ -30,7 +30,6 @@ export default function FastSubscriptionsPanel({ onChange }: { onChange?: () => 
     }, []);
 
     useEffect(() => {
-         
         void refresh();
     }, [refresh]);
 
@@ -55,7 +54,8 @@ export default function FastSubscriptionsPanel({ onChange }: { onChange?: () => 
     if (rows.length === 0) {
         return (
             <div className="border border-dashed border-white/10 rounded p-6 text-center text-xs text-white/40">
-                No active subscriptions. Click <span className="text-amber-300">Subscribe</span> on a fast-moving market row to start auto-approving every new market in that series.
+                No active subscriptions. Click <span className="text-amber-300">Subscribe</span> on
+                a fast-moving market row to start auto-approving every new market in that series.
             </div>
         );
     }

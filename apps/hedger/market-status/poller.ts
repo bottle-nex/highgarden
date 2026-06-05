@@ -205,9 +205,9 @@ export default class MarketStatusPoller {
     ): TargetState | null {
         const winning_outcome: "YES" | "NO" = resolution.winningOutcomeIndex === 0 ? "YES" : "NO";
         if (
-            current.status === "RESOLVED"
-            && current.winningOutcome === winning_outcome
-            && current.pausedReason === null
+            current.status === "RESOLVED" &&
+            current.winningOutcome === winning_outcome &&
+            current.pausedReason === null
         ) {
             return null;
         }
@@ -275,9 +275,9 @@ export default class MarketStatusPoller {
             ">>> MARKET-STATUS: DB state updated from gamma",
         );
         const is_resolved_target =
-            target.status === "RESOLVED"
-            && target.winningOutcome !== null
-            && target.resolvedAt !== null;
+            target.status === "RESOLVED" &&
+            target.winningOutcome !== null &&
+            target.resolvedAt !== null;
 
         // Phase 1: surface the outcome to clients the moment we have it,
         // before the on-chain submit. The Claim button stays disabled on
@@ -311,10 +311,10 @@ export default class MarketStatusPoller {
         // miss the live claim-enable nudge (which the periodic
         // Resolver loop will publish on retry).
         if (
-            is_resolved_target
-            && market.kind === "FAST_MOVING"
-            && market.solanaMarketPda
-            && SolanaResolveOracle.is_configured()
+            is_resolved_target &&
+            market.kind === "FAST_MOVING" &&
+            market.solanaMarketPda &&
+            SolanaResolveOracle.is_configured()
         ) {
             const interval_label = format_fast_interval(market.name);
             console.log(

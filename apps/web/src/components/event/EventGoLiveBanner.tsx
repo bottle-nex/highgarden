@@ -49,15 +49,8 @@ export default function EventGoLiveBanner({ market }: { market: MarketDTO }): JS
             // Candidates: every still-future slot in this series,
             // sorted by endAt ascending so [0] is the closest-to-now.
             const candidates = markets
-                .filter(
-                    (m) =>
-                        m.fastSeriesKey === series_key
-                        && new Date(m.endAt).getTime() > now,
-                )
-                .sort(
-                    (a, b) =>
-                        new Date(a.endAt).getTime() - new Date(b.endAt).getTime(),
-                );
+                .filter((m) => m.fastSeriesKey === series_key && new Date(m.endAt).getTime() > now)
+                .sort((a, b) => new Date(a.endAt).getTime() - new Date(b.endAt).getTime());
 
             // Prefer a truly in-window slot. If the approved set has a
             // gap around `now` (auto-lister behind), the soonest
@@ -66,8 +59,8 @@ export default function EventGoLiveBanner({ market }: { market: MarketDTO }): JS
             // the rule "Go Live should always move me to the slot that
             // matches the current timeline, even if it's technically
             // still a future slot."
-            const live
-                = cadence_ms > 0
+            const live =
+                cadence_ms > 0
                     ? candidates.find((m) => {
                           const end = new Date(m.endAt).getTime();
                           return end - cadence_ms <= now && now < end;

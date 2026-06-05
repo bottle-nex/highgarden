@@ -81,9 +81,7 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
     const trimmed_dest = destination.trim();
     const destination_invalid = trimmed_dest.length > 0 && !is_valid_solana_address(trimmed_dest);
     const is_self_send =
-        trimmed_dest.length > 0 &&
-        custodial_pk.length > 0 &&
-        trimmed_dest === custodial_pk;
+        trimmed_dest.length > 0 && custodial_pk.length > 0 && trimmed_dest === custodial_pk;
 
     const parsed_amount = parse_amount(amount_input);
     const insufficient = parsed_amount !== null && parsed_amount > balance;
@@ -206,9 +204,7 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
                                 <StatusLine
                                     insufficient={insufficient}
                                     error={error}
-                                    success_signature={
-                                        phase === 'success' ? last_signature : null
-                                    }
+                                    success_signature={phase === 'success' ? last_signature : null}
                                 />
 
                                 <Button

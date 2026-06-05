@@ -151,7 +151,7 @@ export async function fetch_binance_klines(
 export function subscribe_binance_klines(
     symbol: string,
     interval: BinanceKlineInterval,
-     
+
     on_kline: (kline: Kline) => void,
 ): () => void {
     const stream = `${symbol.toLowerCase()}@kline_${interval}`;
@@ -229,7 +229,7 @@ export function subscribe_binance_klines(
  *  idle sockets after 24h and may evict during traffic spikes. */
 export function subscribe_binance_trades(
     symbol: string,
-     
+
     on_tick: (price: number) => void,
 ): () => void {
     const stream = symbol.toLowerCase();

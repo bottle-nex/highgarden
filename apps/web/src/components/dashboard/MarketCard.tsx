@@ -82,8 +82,8 @@ export default function MarketCard({
 
                 {market.series && market.series.upcomingCount > 0 && (
                     <div className="mt-3 inline-flex items-center gap-1.5 text-[10px] tracking-[0.2em] uppercase text-amber-300/80 self-start">
-                        <span className="size-1.5 rounded-full bg-amber-300/70" />
-                        +{market.series.upcomingCount} upcoming slots
+                        <span className="size-1.5 rounded-full bg-amber-300/70" />+
+                        {market.series.upcomingCount} upcoming slots
                     </div>
                 )}
 

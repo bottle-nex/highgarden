@@ -162,6 +162,7 @@ export default function AdminPanel() {
     // Initial paint: load counts + the default tab's first page in parallel
     // so the dashboard doesn't wait on counts to render the visible list.
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void refreshCounts();
         void loadTab('PENDING', true);
     }, [loadTab, refreshCounts]);
@@ -172,6 +173,7 @@ export default function AdminPanel() {
     useEffect(() => {
         if (visited.current.has(active)) return;
         visited.current.add(active);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void loadTab(active, true);
     }, [active, loadTab]);
 

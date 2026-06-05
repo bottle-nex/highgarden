@@ -51,7 +51,6 @@ function BalanceModalInner({ onClose }: { onClose: () => void }) {
     };
 
     useEffect(() => {
-         
         void load();
     }, []);
 

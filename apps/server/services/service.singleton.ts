@@ -49,10 +49,7 @@ export default class Services {
         this.price_feed = new CoinGeckoPriceFeed();
         this.sol_deposit_poller = new SolDepositPoller(this.price_feed);
         this.round_anchor = new RoundAnchorRecorder();
-        this.fast_resolver = new FastResolverService(
-            this.solana_admin,
-            this.market_lifecycle,
-        );
+        this.fast_resolver = new FastResolverService(this.solana_admin, this.market_lifecycle);
         await this.token_index.start();
         this.nonce_sweeper.start();
         this.sol_deposit_poller.start();

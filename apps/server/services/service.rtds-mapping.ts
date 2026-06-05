@@ -76,13 +76,13 @@ export async function fetch_binance_kline_open_at(
 ): Promise<number | null> {
     try {
         const start = Math.floor(timestamp_ms / 60_000) * 60_000;
-        const url
-            = "https://api.binance.com/api/v3/klines"
-                + `?symbol=${encodeURIComponent(binance_symbol)}`
-                + "&interval=1m"
-                + `&startTime=${start}`
-                + `&endTime=${start + 60_000}`
-                + "&limit=1";
+        const url =
+            "https://api.binance.com/api/v3/klines" +
+            `?symbol=${encodeURIComponent(binance_symbol)}` +
+            "&interval=1m" +
+            `&startTime=${start}` +
+            `&endTime=${start + 60_000}` +
+            "&limit=1";
         const res = await fetch(url);
         if (!res.ok) return null;
         const data = (await res.json()) as unknown;

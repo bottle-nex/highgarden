@@ -40,7 +40,9 @@ export default function HistoryTable({ search }: { search: string }): JSX.Elemen
                 {COLUMN_HEADERS.map((header, idx) => (
                     <div
                         key={header}
-                        className={idx === 0 ? 'flex items-center' : 'flex items-center justify-end'}
+                        className={
+                            idx === 0 ? 'flex items-center' : 'flex items-center justify-end'
+                        }
                     >
                         {header}
                     </div>
@@ -114,9 +116,7 @@ function HistoryRow({ fill }: { fill: FillDTO }): JSX.Element {
                     <span
                         className={cn(
                             'inline-flex items-center text-[10px] px-2 py-0.5 rounded-full font-semibold tracking-wider',
-                            isBuy
-                                ? 'bg-emerald-600/90 text-white'
-                                : 'bg-rose-500/90 text-white',
+                            isBuy ? 'bg-emerald-600/90 text-white' : 'bg-rose-500/90 text-white',
                         )}
                     >
                         {isBuy ? 'BUY' : 'SELL'}

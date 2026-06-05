@@ -19,11 +19,7 @@ import {
  * spot (Hyperliquid, etc.), or when the chart's series key doesn't
  * parse.
  */
-export default function LiveAssetPrice({
-    seriesKey,
-}: {
-    seriesKey: string;
-}): JSX.Element | null {
+export default function LiveAssetPrice({ seriesKey }: { seriesKey: string }): JSX.Element | null {
     const symbol = binance_symbol_for_series(seriesKey);
     const [price, set_price] = useState<number | null>(null);
     const [anchor, set_anchor] = useState<number | null>(null);

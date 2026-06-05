@@ -8,8 +8,7 @@
  * because of the cache; a single fetch covers the whole tick.
  */
 
-const COINGECKO_URL =
-    "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd";
+const COINGECKO_URL = "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd";
 
 /** How long a fetched rate stays valid in-memory. 60s = ~2× the poller
  *  tick interval, so we usually serve cached values inside a single tick. */

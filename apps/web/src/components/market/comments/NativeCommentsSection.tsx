@@ -59,7 +59,6 @@ export default function NativeCommentsSection({
     }, [market_id]);
 
     useEffect(() => {
-         
         void load_initial();
     }, [load_initial]);
 

@@ -51,12 +51,7 @@ export default class TradeController {
         // platform takes 100% of user exposure. Production `run_with_idempotency`
         // (kept below) is the path to switch to when re-enabling Polymarket
         // hedging.
-        return TradeController.execute_trade_no_hedge(
-            req.user.id,
-            market_id,
-            parsed.data,
-            res,
-        );
+        return TradeController.execute_trade_no_hedge(req.user.id, market_id, parsed.data, res);
     }
 
     /**

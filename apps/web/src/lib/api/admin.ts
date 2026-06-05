@@ -91,7 +91,10 @@ export async function fetchAdminListings(args: {
     }
     // Defensive: pre-pagination server (or legacy mock) returned a bare
     // array. Wrap it so the caller's contract holds either way.
-    return { items: Array.isArray(payload) ? (payload as AdminListingApi[]) : [], nextCursor: null };
+    return {
+        items: Array.isArray(payload) ? (payload as AdminListingApi[]) : [],
+        nextCursor: null,
+    };
 }
 
 export interface AdminListingCounts {

@@ -73,8 +73,8 @@ export default class ListBookmarksController {
                     winningOutcome: m.winningOutcome as Outcome | null,
                     resolvedAt: m.resolvedAt?.toISOString() ?? null,
                     claimable:
-                        stage_by_market.get(m.id) === "SOLANA_RESOLVED"
-                        || stage_by_market.get(m.id) === "REDEEMED",
+                        stage_by_market.get(m.id) === "SOLANA_RESOLVED" ||
+                        stage_by_market.get(m.id) === "REDEEMED",
                     tags: p.tags,
                 });
             }

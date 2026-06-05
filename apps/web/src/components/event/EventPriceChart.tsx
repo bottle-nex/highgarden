@@ -399,8 +399,7 @@ const ProbabilityChart = memo(function ProbabilityChart({
                 }
                 // Cap the live trail so a long session doesn't grow it
                 // unbounded. Older ticks past the cap roll off the head.
-                const next =
-                    prev.length >= 1000 ? prev.slice(prev.length - 999) : prev.slice();
+                const next = prev.length >= 1000 ? prev.slice(prev.length - 999) : prev.slice();
                 next.push({ t: t_sec, p: lp });
                 return next;
             });
@@ -571,8 +570,8 @@ const ProbabilityChart = memo(function ProbabilityChart({
                                 typeof raw_idx === 'number'
                                     ? raw_idx
                                     : typeof raw_idx === 'string'
-                                        ? parseInt(raw_idx, 10)
-                                        : NaN;
+                                      ? parseInt(raw_idx, 10)
+                                      : NaN;
                             const point =
                                 Number.isInteger(idx) && idx >= 0
                                     ? deferred_points[idx]
@@ -588,8 +587,7 @@ const ProbabilityChart = memo(function ProbabilityChart({
                             const top_margin = 24;
                             const plot_h = Math.max(1, wrapper_h - top_margin);
                             const y_range = Math.max(1e-6, yMax - yMin);
-                            const y_on_line =
-                                top_margin + ((yMax - point.pct) / y_range) * plot_h;
+                            const y_on_line = top_margin + ((yMax - point.pct) / y_range) * plot_h;
                             cancel_exit_animation();
                             set_active_coord({
                                 x: state.activeCoordinate.x,
@@ -824,12 +822,9 @@ export default function EventPriceChart({
     useEffect(() => {
         onLoadedRef.current = onLoaded;
     }, [onLoaded]);
-    const stable_onLoaded = useCallback(
-        (latest: number, delta: number | null): void => {
-            onLoadedRef.current?.(latest, delta);
-        },
-        [],
-    );
+    const stable_onLoaded = useCallback((latest: number, delta: number | null): void => {
+        onLoadedRef.current?.(latest, delta);
+    }, []);
 
     return (
         <section className="rounded-lg bg-dark-base flex flex-col h-120 min-w-0">
@@ -881,10 +876,9 @@ export default function EventPriceChart({
                                 key={o}
                                 type="button"
                                 onClick={() => onOutcomeChange(o)}
-                                className={`relative px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium cursor-pointer transition-colors ${is_selected
-                                        ? 'text-white'
-                                        : 'text-white/45 hover:text-white/75'
-                                    }`}
+                                className={`relative px-3 py-1 rounded text-[9px] tracking-[0.28em] uppercase font-medium cursor-pointer transition-colors ${
+                                    is_selected ? 'text-white' : 'text-white/45 hover:text-white/75'
+                                }`}
                             >
                                 {is_selected && (
                                     <motion.span
@@ -909,25 +903,23 @@ export default function EventPriceChart({
                 </div>
                 {has_underlying && (
                     <div className="relative flex gap-0.5 bg-white/2.5 border border-white/8 rounded-md p-0.75">
-                        {(
-                            [
-                                {
-                                    key: 'probability' as const,
-                                    Icon: TbChartLine,
-                                    label: 'Probability',
-                                },
-                                {
-                                    key: 'price' as const,
-                                    Icon: FaBitcoin,
-                                    label: 'Underlying price',
-                                },
-                                {
-                                    key: 'candles' as const,
-                                    Icon: TbChartCandle,
-                                    label: 'Candlesticks',
-                                },
-                            ]
-                        ).map(({ key, Icon, label }) => {
+                        {[
+                            {
+                                key: 'probability' as const,
+                                Icon: TbChartLine,
+                                label: 'Probability',
+                            },
+                            {
+                                key: 'price' as const,
+                                Icon: FaBitcoin,
+                                label: 'Underlying price',
+                            },
+                            {
+                                key: 'candles' as const,
+                                Icon: TbChartCandle,
+                                label: 'Candlesticks',
+                            },
+                        ].map(({ key, Icon, label }) => {
                             const is_selected = chart_mode === key;
                             return (
                                 <button
@@ -977,10 +969,11 @@ export default function EventPriceChart({
                                     key={r.key}
                                     type="button"
                                     onClick={() => set_range(r.key)}
-                                    className={`relative px-2 py-1 rounded text-[9px] tracking-[0.2em] uppercase transition-colors cursor-pointer whitespace-nowrap ${range === r.key
+                                    className={`relative px-2 py-1 rounded text-[9px] tracking-[0.2em] uppercase transition-colors cursor-pointer whitespace-nowrap ${
+                                        range === r.key
                                             ? 'text-white'
                                             : 'text-white/45 hover:text-white/75'
-                                        }`}
+                                    }`}
                                 >
                                     {range === r.key && (
                                         <motion.span

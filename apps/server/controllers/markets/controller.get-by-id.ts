@@ -36,8 +36,7 @@ export default class GetMarketByIdController {
                 select: { stage: true },
             });
             const claimable =
-                resolver_row?.stage === "SOLANA_RESOLVED"
-                || resolver_row?.stage === "REDEEMED";
+                resolver_row?.stage === "SOLANA_RESOLVED" || resolver_row?.stage === "REDEEMED";
             const dto: MarketDTO = {
                 id: m.id,
                 name: m.name,

@@ -76,17 +76,9 @@ class WithdrawApi {
                     'Amount exceeds your available USDC balance.',
                 );
             case 'AMOUNT_TOO_SMALL':
-                return new WithdrawError(
-                    'AMOUNT_TOO_SMALL',
-                    raw,
-                    'Minimum withdrawal is 1 USDC.',
-                );
+                return new WithdrawError('AMOUNT_TOO_SMALL', raw, 'Minimum withdrawal is 1 USDC.');
             case 'AMOUNT_INVALID':
-                return new WithdrawError(
-                    'AMOUNT_INVALID',
-                    raw,
-                    'Enter a positive amount.',
-                );
+                return new WithdrawError('AMOUNT_INVALID', raw, 'Enter a positive amount.');
             case 'SELF_TRANSFER':
                 return new WithdrawError(
                     'SELF_TRANSFER',
@@ -100,11 +92,7 @@ class WithdrawApi {
                     'You have no USDC balance to withdraw.',
                 );
             case 'NOT_AUTHORIZED':
-                return new WithdrawError(
-                    'NOT_AUTHORIZED',
-                    raw,
-                    'Please sign in to withdraw.',
-                );
+                return new WithdrawError('NOT_AUTHORIZED', raw, 'Please sign in to withdraw.');
             case 'RPC_FAILED':
                 return new WithdrawError(
                     'RPC_FAILED',
@@ -124,11 +112,7 @@ class WithdrawApi {
                     'Network issue. Check your connection and try again.',
                 );
             default:
-                return new WithdrawError(
-                    'UNKNOWN',
-                    raw,
-                    'Something went wrong. Please try again.',
-                );
+                return new WithdrawError('UNKNOWN', raw, 'Something went wrong. Please try again.');
         }
     }
 

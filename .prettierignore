@@ -6,4 +6,6 @@ build
 coverage
 bun.lock
 packages/database/prisma/generated
+packages/database/generated
 apps/web/public/videos
+apps/contract/.anchor

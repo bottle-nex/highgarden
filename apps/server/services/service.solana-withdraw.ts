@@ -133,12 +133,7 @@ export default class SolanaWithdrawService {
             );
         }
         tx.add(
-            createTransferInstruction(
-                source_ata,
-                dest_ata,
-                user_keypair.publicKey,
-                transfer_raw,
-            ),
+            createTransferInstruction(source_ata, dest_ata, user_keypair.publicKey, transfer_raw),
         );
 
         const blockhash = await connection.getLatestBlockhash("confirmed");

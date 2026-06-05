@@ -217,14 +217,21 @@ export default class SolDepositPoller {
             const custodial_keypair = await this.load_custodial_keypair(c.userId);
             const admin = this.get_admin_keypair();
 
-            const { signature: sweep_sig, blockhash: sweep_blockhash, lastValidBlockHeight: sweep_lvbh } =
-                await this.sweep_sol(custodial_keypair, admin, lamports_to_sweep);
+            const {
+                signature: sweep_sig,
+                blockhash: sweep_blockhash,
+                lastValidBlockHeight: sweep_lvbh,
+            } = await this.sweep_sol(custodial_keypair, admin, lamports_to_sweep);
             await prisma.solDeposit.update({
                 where: { id: row.id },
                 data: { status: "SWEEPING", sweepTxSig: sweep_sig },
             });
             await this.get_connection().confirmTransaction(
-                { signature: sweep_sig, blockhash: sweep_blockhash, lastValidBlockHeight: sweep_lvbh },
+                {
+                    signature: sweep_sig,
+                    blockhash: sweep_blockhash,
+                    lastValidBlockHeight: sweep_lvbh,
+                },
                 "confirmed",
             );
             await prisma.solDeposit.update({
@@ -315,14 +322,7 @@ export default class SolDepositPoller {
         const tx = new Transaction();
         const ata_info = await conn.getAccountInfo(ata, "confirmed");
         if (!ata_info) {
-            tx.add(
-                createAssociatedTokenAccountInstruction(
-                    admin.publicKey,
-                    ata,
-                    recipient,
-                    mint,
-                ),
-            );
+            tx.add(createAssociatedTokenAccountInstruction(admin.publicKey, ata, recipient, mint));
         }
         tx.add(createMintToInstruction(mint, ata, admin.publicKey, usdc_raw));
 

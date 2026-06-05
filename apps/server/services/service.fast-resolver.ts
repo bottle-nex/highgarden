@@ -127,9 +127,7 @@ export default class FastResolverService {
         const symbol = FastResolverService.symbol_for_series(market.fastSeriesKey);
         if (!symbol) return;
 
-        const slot_start_ms = Math.floor(
-            (market.endAt.getTime() - cadence_ms) / 60_000,
-        ) * 60_000;
+        const slot_start_ms = Math.floor((market.endAt.getTime() - cadence_ms) / 60_000) * 60_000;
         const slot_end_ms = Math.floor(market.endAt.getTime() / 60_000) * 60_000;
 
         const start = await FastResolverService.resolve_price_at(
@@ -160,11 +158,7 @@ export default class FastResolverService {
                 winningOutcome: winning,
             });
         } catch (err) {
-            console.error(
-                "[fast-resolver] on-chain resolve_market failed",
-                market.id,
-                err,
-            );
+            console.error("[fast-resolver] on-chain resolve_market failed", market.id, err);
             return;
         }
 

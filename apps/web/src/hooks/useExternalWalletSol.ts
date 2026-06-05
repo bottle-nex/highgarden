@@ -45,7 +45,6 @@ export function useExternalWalletSol(): State {
     }, [connection, publicKey]);
 
     useEffect(() => {
-         
         void refetch();
     }, [refetch]);
 

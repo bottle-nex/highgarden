@@ -13,8 +13,7 @@ export const SOLANA_RPC_URL =
     process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? 'https://api.devnet.solana.com';
 
 export const USDC_MINT_ADDRESS =
-    process.env.NEXT_PUBLIC_USDC_MINT
-    ?? 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+    process.env.NEXT_PUBLIC_USDC_MINT ?? 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 
 export const USDC_DECIMALS = 6;
 
@@ -46,7 +45,6 @@ export const SOLANA_NETWORK_LABEL: 'mainnet-beta' | 'devnet' | 'testnet' | 'loca
  * mysterious Phantom "simulation reverted" warning.
  */
 if (typeof window !== 'undefined' && SOLANA_NETWORK_LABEL === 'mainnet-beta') {
-     
     console.warn(
         '[network] Frontend is on MAINNET — if you intended devnet, set NEXT_PUBLIC_SOLANA_RPC_URL in apps/web/.env and restart `next dev`.',
     );

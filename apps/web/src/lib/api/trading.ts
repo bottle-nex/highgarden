@@ -270,14 +270,22 @@ class TradingApi {
                 'Market is not resolved yet. Try again after the result is final.',
             );
         }
-        if (code === 'ALREADY_CLAIMED' || lower.includes('already claimed') || lower.includes('already redeemed')) {
+        if (
+            code === 'ALREADY_CLAIMED' ||
+            lower.includes('already claimed') ||
+            lower.includes('already redeemed')
+        ) {
             return new TradingError(
                 'ALREADY_CLAIMED',
                 raw,
                 'You’ve already redeemed this market — refresh to clear the stale row.',
             );
         }
-        if (code === 'NO_WINNING_SHARES' || lower.includes('nowinningshares') || lower.includes('no winning shares')) {
+        if (
+            code === 'NO_WINNING_SHARES' ||
+            lower.includes('nowinningshares') ||
+            lower.includes('no winning shares')
+        ) {
             return new TradingError(
                 'NO_WINNING_SHARES',
                 raw,

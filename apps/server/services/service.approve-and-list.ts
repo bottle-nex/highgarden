@@ -53,7 +53,10 @@ export interface ApproveAndListResult {
  * controller maps each code to an HTTP status.
  */
 export default class ApproveAndListService {
-    public async approve(market_id: string, approved_by: string | null): Promise<ApproveAndListResult> {
+    public async approve(
+        market_id: string,
+        approved_by: string | null,
+    ): Promise<ApproveAndListResult> {
         const prepared = await this.prepare(market_id);
         const pda = await this.ensure_on_chain(prepared);
         await this.persist_approval(market_id, pda, approved_by);
@@ -75,10 +78,7 @@ export default class ApproveAndListService {
             throw new ApproveAndListError("LISTING_NOT_FOUND", "listing not found");
         }
         if (listing.status !== ListingStatus.PENDING) {
-            throw new ApproveAndListError(
-                "LISTING_NOT_PENDING",
-                `listing is ${listing.status}`,
-            );
+            throw new ApproveAndListError("LISTING_NOT_PENDING", `listing is ${listing.status}`);
         }
         if (!listing.market || !listing.market.polymarket) {
             throw new ApproveAndListError(

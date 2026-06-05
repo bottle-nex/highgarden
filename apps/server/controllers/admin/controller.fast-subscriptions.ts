@@ -73,10 +73,7 @@ export default class FastSubscriptionsController {
             return ResponseWriter.invalid_data(res, "Invalid body");
         }
         if (!parsed.data.seriesKey && !parsed.data.fromMarketId) {
-            return ResponseWriter.invalid_data(
-                res,
-                "Either seriesKey or fromMarketId is required",
-            );
+            return ResponseWriter.invalid_data(res, "Either seriesKey or fromMarketId is required");
         }
 
         try {
@@ -143,9 +140,10 @@ export default class FastSubscriptionsController {
         }
     }
 
-    private static async resolve_series_key(
-        input: { seriesKey?: string; fromMarketId?: string },
-    ): Promise<string | null> {
+    private static async resolve_series_key(input: {
+        seriesKey?: string;
+        fromMarketId?: string;
+    }): Promise<string | null> {
         if (input.seriesKey) return input.seriesKey;
         if (!input.fromMarketId) return null;
         const m = await prisma.market.findUnique({

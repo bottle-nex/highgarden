@@ -37,7 +37,6 @@ export function useWalletBalance(opts: { enabled: boolean }): State {
     useEffect(() => {
         if (!opts.enabled) return;
         if (!session) {
-             
             set_data(null);
             set_error(null);
             return;

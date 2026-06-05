@@ -59,7 +59,6 @@ export function useExternalWalletUsdc(): State {
     }, [connection, publicKey]);
 
     useEffect(() => {
-         
         void refetch();
     }, [refetch]);
 

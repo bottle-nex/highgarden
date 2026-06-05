@@ -98,13 +98,12 @@ interface MarketsState {
      *  after the on-chain `resolve_market` confirms (so the Claim
      *  button enables). */
     applyResolution: (
-         
         marketId: string,
-         
+
         winningOutcome: Outcome,
-         
+
         resolvedAt: Date,
-         
+
         claimable: boolean,
     ) => void;
 }

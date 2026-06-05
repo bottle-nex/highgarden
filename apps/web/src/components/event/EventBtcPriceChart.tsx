@@ -1,14 +1,6 @@
 'use client';
 
-import {
-    memo,
-    useCallback,
-    useDeferredValue,
-    useEffect,
-    useMemo,
-    useState,
-    type JSX,
-} from 'react';
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useState, type JSX } from 'react';
 import {
     Area,
     AreaChart,
@@ -253,13 +245,10 @@ function EventBtcPriceChart({
     // and render via a div overlay sibling to ResponsiveContainer.
     const [cursor_y, set_cursor_y] = useState<number | null>(null);
 
-    const handle_chart_mouse_move = useCallback(
-        (state: { activeCoordinate?: { y?: number } }) => {
-            const y = state?.activeCoordinate?.y;
-            if (typeof y === 'number') set_cursor_y(y);
-        },
-        [],
-    );
+    const handle_chart_mouse_move = useCallback((state: { activeCoordinate?: { y?: number } }) => {
+        const y = state?.activeCoordinate?.y;
+        if (typeof y === 'number') set_cursor_y(y);
+    }, []);
     const handle_chart_mouse_leave = useCallback((): void => {
         set_cursor_y(null);
     }, []);
@@ -269,7 +258,6 @@ function EventBtcPriceChart({
         const { interval, limit } = range_to_klines(range);
         let cancelled = false;
         let teardown: (() => void) | null = null;
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         set_status('loading');
 
         set_klines([]);
@@ -359,6 +347,7 @@ function EventBtcPriceChart({
             pending.clear();
             teardown?.();
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [symbol, range, rtds_target?.topic, rtds_target?.symbol]);
 
     const xTicks = useMemo(() => {
@@ -436,61 +425,59 @@ function EventBtcPriceChart({
                         onMouseMove={handle_chart_mouse_move}
                         onMouseLeave={handle_chart_mouse_leave}
                     >
-                    <CartesianGrid
-                        stroke="rgba(255,255,255,0.03)"
-                        strokeDasharray="4 3"
-                        horizontal={showHorizontalGrid}
-                        vertical={showVerticalGrid}
-                    />
-                    <XAxis
-                        dataKey="t"
-                        type="number"
-                        scale="time"
-                        domain={['dataMin', 'dataMax']}
-                        ticks={xTicks}
-                        tickFormatter={(v) => format_x_label(v as number, range)}
-                        hide={!showXAxis}
-                        tick={TICK_STYLE}
-                        tickLine={false}
-                        axisLine={false}
-                    />
-                    <YAxis
-                        domain={[yMin, yMax]}
-                        hide={!showYAxis}
-                        tick={TICK_STYLE}
-                        tickFormatter={(v) =>
-                            `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-                        }
-                        tickLine={false}
-                        axisLine={false}
-                        width={showYAxis ? 56 : 0}
-                        tickCount={5}
-                    />
-                    <Tooltip
-                        content={(p: TooltipContentProps) => (
-                            <PriceTooltip
-                                active={p.active}
-                                payload={
-                                    p.payload as unknown as PriceTooltipShape['payload']
-                                }
-                                range={range}
-                            />
-                        )}
-                        // BarChart's default cursor is a thick filled
-                        // rectangle the width of the slot, visually
-                        // distracting on a dense candle row. Replace
-                        // with a 1px dashed vertical line at the slot's
-                        // center, matching the indicator Polymarket
-                        // shows on their fast-moving charts.
-                        cursor={<DottedCursor />}
-                        isAnimationActive={false}
-                    />
-                    <Bar
-                        dataKey={KLINE_DATA_KEY}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        shape={render_candle_shape as any}
-                        isAnimationActive={false}
-                    />
+                        <CartesianGrid
+                            stroke="rgba(255,255,255,0.03)"
+                            strokeDasharray="4 3"
+                            horizontal={showHorizontalGrid}
+                            vertical={showVerticalGrid}
+                        />
+                        <XAxis
+                            dataKey="t"
+                            type="number"
+                            scale="time"
+                            domain={['dataMin', 'dataMax']}
+                            ticks={xTicks}
+                            tickFormatter={(v) => format_x_label(v as number, range)}
+                            hide={!showXAxis}
+                            tick={TICK_STYLE}
+                            tickLine={false}
+                            axisLine={false}
+                        />
+                        <YAxis
+                            domain={[yMin, yMax]}
+                            hide={!showYAxis}
+                            tick={TICK_STYLE}
+                            tickFormatter={(v) =>
+                                `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+                            }
+                            tickLine={false}
+                            axisLine={false}
+                            width={showYAxis ? 56 : 0}
+                            tickCount={5}
+                        />
+                        <Tooltip
+                            content={(p: TooltipContentProps) => (
+                                <PriceTooltip
+                                    active={p.active}
+                                    payload={p.payload as unknown as PriceTooltipShape['payload']}
+                                    range={range}
+                                />
+                            )}
+                            // BarChart's default cursor is a thick filled
+                            // rectangle the width of the slot, visually
+                            // distracting on a dense candle row. Replace
+                            // with a 1px dashed vertical line at the slot's
+                            // center, matching the indicator Polymarket
+                            // shows on their fast-moving charts.
+                            cursor={<DottedCursor />}
+                            isAnimationActive={false}
+                        />
+                        <Bar
+                            dataKey={KLINE_DATA_KEY}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            shape={render_candle_shape as any}
+                            isAnimationActive={false}
+                        />
                     </BarChart>
                 </ResponsiveContainer>
                 {cursor_y !== null && (

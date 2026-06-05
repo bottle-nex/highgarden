@@ -35,10 +35,7 @@ export function is_slot_live(market: Pick<MarketDTO, 'endAt' | 'fastSeriesKey'>)
  *  Returns the slot where `start ≤ now < end`; if no slot qualifies,
  *  returns the earliest unended slot in the same series; if even that
  *  doesn't exist, returns null. */
-export function find_live_slot(
-    markets: MarketDTO[],
-    series_key: string,
-): MarketDTO | null {
+export function find_live_slot(markets: MarketDTO[], series_key: string): MarketDTO | null {
     const now = Date.now();
     const cadence_ms = cadence_ms_for_series(series_key);
     const candidates = markets.filter(

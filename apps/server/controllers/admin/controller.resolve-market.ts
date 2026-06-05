@@ -99,10 +99,7 @@ export default class ResolveMarketController {
 
     private static async prepare(
         market_id: string,
-    ): Promise<
-        | { data: { solanaMarketPda: string } }
-        | { error: (_res: Response) => void }
-    > {
+    ): Promise<{ data: { solanaMarketPda: string } } | { error: (_res: Response) => void }> {
         const market = await prisma.market.findUnique({
             where: { id: market_id },
             select: {

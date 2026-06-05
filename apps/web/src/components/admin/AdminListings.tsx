@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import type { AdminListingCounts } from '@/lib/api/admin';
 import ListingRow from './ListingRow';
@@ -79,7 +79,9 @@ export default function AdminListings({
     // Latest onLoadMore in a ref so the IntersectionObserver effect doesn't
     // tear down whenever the parent re-renders with a new callback identity.
     const loadMoreRef = useRef(onLoadMore);
-    loadMoreRef.current = onLoadMore;
+    useLayoutEffect(() => {
+        loadMoreRef.current = onLoadMore;
+    });
 
     useEffect(() => {
         const node = sentinelRef.current;

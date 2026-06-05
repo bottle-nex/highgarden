@@ -81,7 +81,7 @@ export function useDepositSolFromWallet(): State {
                 const lamports = Math.round(sol_amount * LAMPORTS_PER_SOL);
                 // Helpful diagnostic if the env-driven RPC ever falls back
                 // to mainnet by accident — one glance at DevTools tells you.
-                 
+
                 console.log('[sol-deposit] rpc endpoint:', connection.rpcEndpoint);
                 const latest = await connection.getLatestBlockhash('confirmed');
                 const tx = new Transaction({
@@ -103,9 +103,7 @@ export function useDepositSolFromWallet(): State {
                 const sim = await connection.simulateTransaction(tx);
                 if (sim.value.err) {
                     const logs = sim.value.logs?.slice(-3).join(' | ') ?? '';
-                    throw new Error(
-                        `Simulation failed: ${JSON.stringify(sim.value.err)} ${logs}`,
-                    );
+                    throw new Error(`Simulation failed: ${JSON.stringify(sim.value.err)} ${logs}`);
                 }
 
                 set_phase('awaiting-signature');

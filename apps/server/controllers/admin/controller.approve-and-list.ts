@@ -37,11 +37,7 @@ export default class ApproveAndListOnSolanaController {
                 approvedBy,
             );
             ListingCountsController.invalidate();
-            return ResponseWriter.success(
-                res,
-                result,
-                "Listing approved and listed on Solana",
-            );
+            return ResponseWriter.success(res, result, "Listing approved and listed on Solana");
         } catch (err) {
             if (err instanceof ApproveAndListError) {
                 return ResponseWriter.error(

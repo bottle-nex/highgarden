@@ -69,11 +69,7 @@ export default function PositionRow({ position }: { position: PositionDTO }): JS
     const is_won = position.status === 'WON';
     const is_lost = position.status === 'LOST';
     const status_label = position.status === 'OPEN' ? 'OPEN' : position.status;
-    const status_color = is_won
-        ? 'text-emerald-400'
-        : is_lost
-          ? 'text-rose-400'
-          : 'text-white/60';
+    const status_color = is_won ? 'text-emerald-400' : is_lost ? 'text-rose-400' : 'text-white/60';
 
     const has_current_price = position.currentPriceCents !== null;
     return (

@@ -45,11 +45,11 @@ export default class GetRoundAnchorController {
                 include: { market: true },
             });
             if (
-                !listing
-                || listing.status !== ListingStatus.APPROVED
-                || !listing.market
-                || listing.market.kind !== "FAST_MOVING"
-                || !listing.market.fastSeriesKey
+                !listing ||
+                listing.status !== ListingStatus.APPROVED ||
+                !listing.market ||
+                listing.market.kind !== "FAST_MOVING" ||
+                !listing.market.fastSeriesKey
             ) {
                 return ResponseWriter.not_found(res, "round anchor not available");
             }
@@ -100,10 +100,7 @@ export default class GetRoundAnchorController {
             if (!binance_symbol || minute_ms > Date.now()) {
                 return ResponseWriter.not_found(res, "anchor not captured yet");
             }
-            const fallback_price = await fetch_binance_kline_open_at(
-                binance_symbol,
-                minute_ms,
-            );
+            const fallback_price = await fetch_binance_kline_open_at(binance_symbol, minute_ms);
             if (fallback_price === null) {
                 return ResponseWriter.not_found(res, "anchor not captured yet");
             }
@@ -141,9 +138,7 @@ export default class GetRoundAnchorController {
      *  recorder writes under, plus the slot duration in ms. Returns null
      *  when the asset isn't tracked on RTDS or the cadence suffix is
      *  malformed. */
-    private static parse_series(
-        series_key: string,
-    ): { symbol: string; cadence_ms: number } | null {
+    private static parse_series(series_key: string): { symbol: string; cadence_ms: number } | null {
         const m = series_key.match(/^([a-z0-9]+)-updown-(\d+)([mh])$/i);
         if (!m) return null;
         const target = rtds_target_for_series(series_key);

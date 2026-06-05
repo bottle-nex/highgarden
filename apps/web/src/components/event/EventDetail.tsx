@@ -132,10 +132,10 @@ function Body({ market }: { market: MarketDTO }) {
     // confirmation without depending on the WS. Stops itself the moment
     // both transitions are reflected in the live store.
     const needs_catchup_poll =
-        live_market.kind === 'FAST_MOVING'
+        live_market.kind === 'FAST_MOVING' &&
         // eslint-disable-next-line react-hooks/purity
-        && new Date(live_market.endAt).getTime() < Date.now()
-        && (live_market.status !== 'RESOLVED' || !live_market.claimable);
+        new Date(live_market.endAt).getTime() < Date.now() &&
+        (live_market.status !== 'RESOLVED' || !live_market.claimable);
     useEffect(() => {
         if (!needs_catchup_poll) return;
         const id = setInterval(() => {

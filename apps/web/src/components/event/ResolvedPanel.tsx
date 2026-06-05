@@ -35,9 +35,7 @@ export default function ResolvedPanel({ market }: Props): JSX.Element {
     return (
         <div className="px-5 py-6 space-y-4">
             <div>
-                <div className="text-[10px] tracking-[0.2em] uppercase text-white/45">
-                    Resolved
-                </div>
+                <div className="text-[10px] tracking-[0.2em] uppercase text-white/45">Resolved</div>
                 {winner_label ? (
                     <div className="text-[13px] text-white/85 mt-1">
                         <span
@@ -74,11 +72,7 @@ export default function ResolvedPanel({ market }: Props): JSX.Element {
                         : 'cursor-pointer active:scale-[0.99]',
                 )}
             >
-                {claiming
-                    ? 'Claiming…'
-                    : market.claimable
-                      ? 'Claim payout'
-                      : 'Settling on-chain…'}
+                {claiming ? 'Claiming…' : market.claimable ? 'Claim payout' : 'Settling on-chain…'}
             </button>
         </div>
     );
