@@ -88,6 +88,22 @@ const env_schema = z.object({
         .enum(["true", "false"])
         .default("true")
         .transform((s) => s === "true"),
+
+    // Google News RSS fetcher (see NewsService).
+    /**
+     * Feature flag. When false the news fetcher short-circuits to empty
+     * results — no outbound fetches, no per-market fan-out. Useful as a
+     * kill switch when the upstream (Google News) is unreachable.
+     */
+    SERVER_NEWS_ENABLED: z
+        .enum(["true", "false"])
+        .default("true")
+        .transform((s) => s === "true"),
+    /**
+     * Per-fetch timeout for a single Google News RSS request. On timeout the
+     * request aborts and that market falls back to its last good copy.
+     */
+    SERVER_NEWS_FETCH_TIMEOUT_MS: z.coerce.number().default(8_000),
 });
 export let ENV: z.infer<typeof env_schema>;
 

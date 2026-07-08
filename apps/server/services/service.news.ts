@@ -1,11 +1,21 @@
 import { prisma } from "@solmarket/database";
 import { ListingStatus, type NewsArticleDTO } from "@solmarket/types";
+import { ENV } from "../config/config.env";
 
 const GOOGLE_NEWS_RSS = "https://news.google.com/rss/search";
 const FAVICON_BASE = "https://www.google.com/s2/favicons";
-const FETCH_TIMEOUT_MS = 8_000;
 const MAX_ARTICLES = 12;
 const CACHE_TTL_MS = 5 * 60_000;
+// On failure a market is briefly re-cached so reads don't refetch instantly;
+// the circuit breaker (below) owns the longer upstream backoff.
+const FAILURE_CACHE_MS = 60_000;
+// Circuit-breaker ceiling. Consecutive failed probes back off exponentially
+// from FAILURE_CACHE_MS up to this bound.
+const MAX_BREAKER_MS = 10 * 60_000;
+// Rate-limit the aggregate "upstream failing" warn so a dead endpoint logs at
+// most once per window instead of once per market per poll (this per-market
+// spam previously filled the disk with 100+ GB of logs).
+const FAILURE_LOG_INTERVAL_MS = 5 * 60_000;
 
 interface CacheEntry {
     expires_at: number;
@@ -25,10 +35,22 @@ interface CacheEntry {
  */
 export default class NewsService {
     private readonly cache = new Map<string, CacheEntry>();
+    // Circuit-breaker state for the upstream (Google News). While the breaker
+    // is open we serve cached results without fetching, so a dead upstream
+    // isn't hammered once per market every poll.
+    private consecutive_failures = 0;
+    private breaker_open_until = 0;
+    private last_failure_log_at = 0;
 
     public async news_for_market(market: { id: string; name: string }): Promise<NewsArticleDTO[]> {
+        if (!ENV.SERVER_NEWS_ENABLED) return [];
+
         const now = Date.now();
         const cached = this.cache.get(market.id);
+
+        // Breaker open: serve whatever we have, don't fetch.
+        if (now < this.breaker_open_until) return cached?.articles ?? [];
+
         if (cached) {
             if (cached.in_flight) return cached.in_flight;
             if (cached.expires_at > now) return cached.articles;
@@ -50,6 +72,14 @@ export default class NewsService {
      * same TTL cache so we don't refetch on every dashboard view.
      */
     public async recent_across_approved(limit: number): Promise<NewsArticleDTO[]> {
+        if (!ENV.SERVER_NEWS_ENABLED) return [];
+
+        // Breaker open: skip the DB query and per-market fan-out entirely, and
+        // serve whatever is still cached from the last good batch.
+        if (Date.now() < this.breaker_open_until) {
+            return this.merge_and_limit([...this.cache.values()].map((e) => e.articles), limit);
+        }
+
         const approved = await prisma.listing.findMany({
             where: { status: ListingStatus.APPROVED },
             include: { market: { select: { id: true, name: true } } },
@@ -59,14 +89,16 @@ export default class NewsService {
             approved
                 .map((l) => l.market)
                 .filter((m): m is { id: string; name: string } => m !== null && m !== undefined)
-                .map((m) =>
-                    this.news_for_market(m).catch((err) => {
-                        console.error(`[news] fetch failed for ${m.id}:`, err);
-                        return [] as NewsArticleDTO[];
-                    }),
-                ),
+                // news_for_market swallows fetch errors internally (see
+                // note_failure), so this .catch only guards unexpected throws.
+                .map((m) => this.news_for_market(m).catch(() => [] as NewsArticleDTO[])),
         );
 
+        return this.merge_and_limit(lists, limit);
+    }
+
+    /** Flatten per-market article lists, sort by recency, de-dupe by link, cap. */
+    private merge_and_limit(lists: NewsArticleDTO[][], limit: number): NewsArticleDTO[] {
         const merged = lists.flat();
         merged.sort((a, b) => {
             const ta = a.pubDate ? Date.parse(a.pubDate) : 0;
@@ -101,18 +133,56 @@ export default class NewsService {
                 expires_at: Date.now() + CACHE_TTL_MS,
                 articles,
             });
+            this.note_success();
             return articles;
         } catch (err) {
-            console.error(`[news] fetch failed for ${market.id}:`, err);
+            this.note_failure(err);
             // Keep serving the previous good copy if we have one; otherwise
             // cache an empty result briefly so we don't retry on every read.
             const prev = this.cache.get(market.id);
             const fallback = prev?.articles ?? [];
             this.cache.set(market.id, {
-                expires_at: Date.now() + 60_000,
+                expires_at: Date.now() + FAILURE_CACHE_MS,
                 articles: fallback,
             });
             return fallback;
+        }
+    }
+
+    /** A successful fetch closes the breaker and clears the failure streak. */
+    private note_success(): void {
+        if (this.consecutive_failures > 0 || this.breaker_open_until > 0) {
+            this.consecutive_failures = 0;
+            this.breaker_open_until = 0;
+        }
+    }
+
+    /**
+     * Record a fetch failure and (re)open the circuit breaker. Escalates at
+     * most once per open window so a whole batch of concurrent failures counts
+     * as one probe, and logs a single concise line per FAILURE_LOG_INTERVAL_MS
+     * — never the raw error object, which for AbortError is a giant
+     * DOMException that used to be dumped once per market per poll.
+     */
+    private note_failure(err: unknown): void {
+        const now = Date.now();
+        // Already backing off — don't double-count the rest of the batch.
+        if (now < this.breaker_open_until) return;
+
+        this.consecutive_failures++;
+        const backoff = Math.min(
+            MAX_BREAKER_MS,
+            FAILURE_CACHE_MS * 2 ** Math.min(this.consecutive_failures - 1, 8),
+        );
+        this.breaker_open_until = now + backoff;
+
+        if (now - this.last_failure_log_at > FAILURE_LOG_INTERVAL_MS) {
+            this.last_failure_log_at = now;
+            const reason =
+                err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+            console.warn(
+                `[news] upstream fetch failing (${reason}); backing off ${Math.round(backoff / 1000)}s`,
+            );
         }
     }
 
@@ -123,7 +193,7 @@ export default class NewsService {
     private async fetch_rss(query: string): Promise<RawItem[]> {
         const url = `${GOOGLE_NEWS_RSS}?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+        const timer = setTimeout(() => controller.abort(), ENV.SERVER_NEWS_FETCH_TIMEOUT_MS);
         try {
             const res = await fetch(url, {
                 signal: controller.signal,
