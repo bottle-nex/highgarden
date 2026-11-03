@@ -45,11 +45,15 @@ export default class OtpService {
             return { ok: false, reason: "invalid" };
         }
 
-        const pipeline = redis.pipeline();
-        pipeline.del(this.code_key(email));
-        pipeline.del(this.attempts_key(email));
-        await pipeline.exec();
-        return { ok: true };
+        // Consume only the hash that was checked. Concurrent requests cannot
+        // both succeed, and a replacement challenge is never deleted.
+        const consumed = await redis.eval(
+            'if redis.call("GET", KEYS[1]) == ARGV[1] then redis.call("DEL", KEYS[1]); return 1 else return 0 end',
+            1,
+            this.code_key(email),
+            hash,
+        );
+        return consumed === 1 ? { ok: true } : { ok: false, reason: "expired" };
     }
 
     static async is_cooldown(email: string): Promise<boolean> {
