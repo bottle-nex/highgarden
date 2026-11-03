@@ -49,7 +49,8 @@ interface WithdrawDialogProps {
 
 export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.Element {
     const wallet = useWalletBalance({ enabled: true });
-    const { phase, error, last_signature, withdraw, reset } = useWithdrawToWallet();
+    const { phase, error, last_signature, request_confirmation, withdraw, reset } =
+        useWithdrawToWallet();
 
     const measure_ref = useRef<HTMLDivElement>(null);
     const [content_height, set_content_height] = useState<number | 'auto'>('auto');
@@ -68,6 +69,8 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
 
     const [destination, set_destination] = useState('');
     const [amount_input, set_amount_input] = useState('');
+    const [confirmation_code, set_confirmation_code] = useState('');
+    const [approval_for, set_approval_for] = useState<string | null>(null);
     // Captured at submit time so the success toast can echo the exact amount
     // the user just sent, even after the input is cleared on "Withdraw again".
     const [last_amount_sent, set_last_amount_sent] = useState<number | null>(null);
@@ -86,13 +89,16 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
     const parsed_amount = parse_amount(amount_input);
     const insufficient = parsed_amount !== null && parsed_amount > balance;
 
-    const in_flight = phase === 'submitting';
+    const details_key = JSON.stringify([trimmed_dest, parsed_amount]);
+    const needs_code = approval_for === details_key;
+    const in_flight = phase === 'submitting' || phase === 'requesting';
     const can_submit =
         is_valid_solana_address(trimmed_dest) &&
         !is_self_send &&
         parsed_amount !== null &&
         parsed_amount > 0 &&
         !insufficient &&
+        (!needs_code || /^\d{6}$/.test(confirmation_code)) &&
         !in_flight;
 
     const wallet_refetch = wallet.refetch;
@@ -119,14 +125,14 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
 
     const submit_label = (() => {
         switch (phase) {
+            case 'requesting':
+                return 'Sending code…';
             case 'submitting':
                 return 'Sending…';
             case 'success':
                 return 'Withdraw again';
             default:
-                return parsed_amount && !insufficient
-                    ? `Withdraw ${usd_fmt.format(parsed_amount)}`
-                    : 'Withdraw';
+                return needs_code ? 'Confirm withdrawal' : 'Email confirmation code';
         }
     })();
 
@@ -139,17 +145,35 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
         }
     };
 
-    const handle_submit = () => {
+    const handle_submit = async () => {
         if (phase === 'success') {
             reset();
             set_destination('');
             set_amount_input('');
+            set_approval_for(null);
+            set_confirmation_code('');
             return;
         }
         if (parsed_amount !== null && is_valid_solana_address(trimmed_dest)) {
             set_last_amount_sent(parsed_amount);
             set_last_destination_sent(trimmed_dest);
-            void withdraw({ destination: trimmed_dest, ui_amount: parsed_amount });
+            if (!needs_code) {
+                if (
+                    await request_confirmation({
+                        destination: trimmed_dest,
+                        ui_amount: parsed_amount,
+                    })
+                ) {
+                    set_approval_for(details_key);
+                    set_confirmation_code('');
+                }
+                return;
+            }
+            await withdraw({
+                destination: trimmed_dest,
+                ui_amount: parsed_amount,
+                code: confirmation_code,
+            });
         }
     };
 
@@ -201,6 +225,42 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
                                     }}
                                 />
 
+                                {needs_code && phase !== 'success' && (
+                                    <div className="space-y-2">
+                                        <label
+                                            htmlFor="withdrawal-code"
+                                            className="text-sm text-white/70"
+                                        >
+                                            Enter the 6-digit code emailed to you to approve this
+                                            amount and recipient.
+                                        </label>
+                                        <Input
+                                            id="withdrawal-code"
+                                            inputMode="numeric"
+                                            autoComplete="one-time-code"
+                                            maxLength={6}
+                                            value={confirmation_code}
+                                            disabled={in_flight}
+                                            onChange={(event) =>
+                                                set_confirmation_code(
+                                                    event.target.value.replace(/\D/g, ''),
+                                                )
+                                            }
+                                        />
+                                        <button
+                                            type="button"
+                                            disabled={in_flight}
+                                            className="text-sm text-white/70 underline"
+                                            onClick={() => {
+                                                set_approval_for(null);
+                                                set_confirmation_code('');
+                                                reset();
+                                            }}
+                                        >
+                                            Request a new code
+                                        </button>
+                                    </div>
+                                )}
                                 <StatusLine
                                     insufficient={insufficient}
                                     error={error}

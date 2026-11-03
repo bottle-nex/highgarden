@@ -2,22 +2,24 @@
 import { useCallback, useState } from 'react';
 import withdraw_api, { WithdrawError } from '@/lib/api/withdraw';
 
-export type WithdrawPhase = 'idle' | 'submitting' | 'success' | 'error';
+export type WithdrawPhase =
+    | 'idle'
+    | 'requesting'
+    | 'confirming'
+    | 'submitting'
+    | 'success'
+    | 'error';
 
 interface State {
     phase: WithdrawPhase;
     error: string | null;
     last_signature: string | null;
-    withdraw: (input: { destination: string; ui_amount: number }) => Promise<void>;
+    request_confirmation: (input: { destination: string; ui_amount: number }) => Promise<boolean>;
+    withdraw: (input: { destination: string; ui_amount: number; code: string }) => Promise<void>;
     reset: () => void;
 }
 
-/**
- * Backend-signed withdrawal. The user doesn't sign anything client-side —
- * the server loads the user's custodial keypair, signs the SPL transfer,
- * and pays the SOL tx fee out of the admin keypair. So the entire flow
- * here is a single POST with a phase machine for the UI.
- */
+/** Email approval precedes the server-signed custodial transfer. */
 export function useWithdrawToWallet(): State {
     const [phase, set_phase] = useState<WithdrawPhase>('idle');
     const [error, set_error] = useState<string | null>(null);
@@ -28,12 +30,37 @@ export function useWithdrawToWallet(): State {
         set_error(null);
     }, []);
 
+    const request_confirmation = useCallback(
+        async (input: { destination: string; ui_amount: number }) => {
+            set_error(null);
+            set_phase('requesting');
+            try {
+                await withdraw_api.request_confirmation(input);
+                set_phase('confirming');
+                return true;
+            } catch (error) {
+                set_error(error instanceof Error ? error.message : 'Could not send confirmation');
+                set_phase('error');
+                return false;
+            }
+        },
+        [],
+    );
+
     const withdraw = useCallback(
-        async ({ destination, ui_amount }: { destination: string; ui_amount: number }) => {
+        async ({
+            destination,
+            ui_amount,
+            code,
+        }: {
+            destination: string;
+            ui_amount: number;
+            code: string;
+        }) => {
             try {
                 set_error(null);
                 set_phase('submitting');
-                const result = await withdraw_api.withdraw_usdc({ destination, ui_amount });
+                const result = await withdraw_api.withdraw_usdc({ destination, ui_amount, code });
                 set_last_signature(result.txSignature);
                 set_phase('success');
             } catch (e) {
@@ -50,5 +77,5 @@ export function useWithdrawToWallet(): State {
         [],
     );
 
-    return { phase, error, last_signature, withdraw, reset };
+    return { phase, error, last_signature, request_confirmation, withdraw, reset };
 }

@@ -1,3 +1,9 @@
+import { PublicKey } from "@solana/web3.js";
+import {
+    requestWithdrawalApproval,
+    consumeWithdrawalApproval,
+} from "../../services/service.withdrawal-approval";
+import { notifyWithdrawal } from "../../services/service.withdrawal-notifications";
 import { Router } from "express";
 import { prisma } from "@solmarket/database";
 import { requireAuth } from "../../middleware/middleware.auth";
@@ -151,8 +157,42 @@ user_router.get("/me/deposits", rl.read, requireAuth, async (req, res) => {
  * the recipient's USDC ATA — the user only sees USDC debit from their
  * custodial balance.
  */
-user_router.post("/me/withdraw", rl.withdraw, requireAuth, async (req, res) => {
-    const body = req.body as { destination?: unknown; uiAmount?: unknown };
+user_router.post("/me/withdraw/request", requireAuth, rl.withdraw, async (req, res) => {
+    const { destination, uiAmount } = req.body ?? {};
+    if (typeof destination !== "string" || !Number.isFinite(uiAmount) || uiAmount < 1) {
+        return ResponseWriter.invalid_data(res, "Valid destination and amount required");
+    }
+    try {
+        const address = new PublicKey(destination.trim()).toBase58();
+        const user = await prisma.user.findUnique({
+            where: { id: req.user!.id },
+            select: { email: true },
+        });
+        if (!user) return ResponseWriter.not_authorized(res);
+        const sent = await requestWithdrawalApproval(
+            { userId: req.user!.id, destination: address, uiAmount },
+            user.email,
+        );
+        if (!sent)
+            return ResponseWriter.custom(
+                res,
+                false,
+                "OTP_COOLDOWN",
+                "Wait before requesting another code",
+                429,
+            );
+        return ResponseWriter.success(res, { ok: true }, "Withdrawal confirmation sent");
+    } catch (err) {
+        console.error("[withdrawal-approval]", err);
+        return ResponseWriter.invalid_data(
+            res,
+            "Unable to send withdrawal confirmation; check the address and try again",
+        );
+    }
+});
+
+user_router.post("/me/withdraw", requireAuth, rl.withdraw, async (req, res) => {
+    const body = (req.body ?? {}) as { destination?: unknown; uiAmount?: unknown; code?: unknown };
     const destination = typeof body.destination === "string" ? body.destination.trim() : "";
     const ui_amount = typeof body.uiAmount === "number" ? body.uiAmount : NaN;
 
@@ -161,11 +201,33 @@ user_router.post("/me/withdraw", rl.withdraw, requireAuth, async (req, res) => {
         return ResponseWriter.invalid_data(res, "uiAmount must be a number");
 
     try {
+        const approved =
+            typeof body.code === "string" &&
+            (await consumeWithdrawalApproval(
+                { userId: req.user!.id, destination, uiAmount: ui_amount },
+                body.code,
+            ));
+        if (!approved)
+            return ResponseWriter.invalid_data(res, "Valid withdrawal confirmation code required");
+        const user = await prisma.user.findUnique({
+            where: { id: req.user!.id },
+            select: { email: true },
+        });
+        if (!user) return ResponseWriter.not_authorized(res);
         const result = await withdraw_service.withdraw_usdc({
             userId: req.user!.id,
             destination,
             uiAmount: ui_amount,
         });
+        // A delivery failure must not turn a completed transfer into a retriable withdrawal.
+        try {
+            await notifyWithdrawal(services.redis, user.email, result);
+        } catch (error) {
+            console.error("[withdrawal-email] could not persist receipt", {
+                signature: result.txSignature,
+                error,
+            });
+        }
         return ResponseWriter.success(res, result, "Withdrawn");
     } catch (err) {
         if (err instanceof WithdrawError) {

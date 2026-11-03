@@ -7,7 +7,7 @@ export interface SessionClaims {
 }
 
 export function signSessionJwt(claims: SessionClaims): string {
-    return jwt.sign(claims, ENV.SERVER_AUTH_SECRET, {
+    return jwt.sign({ ...claims, authVersion: 2 }, ENV.SERVER_AUTH_SECRET, {
         algorithm: "HS256",
         expiresIn: ENV.SERVER_AUTH_TOKEN_TTL as SignOptions["expiresIn"],
     });
@@ -22,6 +22,8 @@ export function verifySessionJwt(token: string): SessionClaims {
         throw new Error("invalid token payload");
     }
 
+    // Revoke sessions issued before identity verification was enforced.
+    if (payload.authVersion !== 2) throw new Error("Session must be renewed");
     const { sub, email } = payload as Record<string, unknown>;
     if (typeof sub !== "string" || typeof email !== "string") {
         throw new Error("missing sub or email claim");
