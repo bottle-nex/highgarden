@@ -8,6 +8,12 @@ import { get_user_usdc_balance } from "../../services/service.wallet";
 import PortfolioService from "../../services/service.portfolio";
 import SolanaWithdrawService, { WithdrawError } from "../../services/service.solana-withdraw";
 import { services } from "../../index";
+import { sendWithdrawalEmail } from "../../services/service.email";
+import {
+    validWithdrawal,
+    requestWithdrawalConfirmation,
+    consumeWithdrawalConfirmation,
+} from "../../services/service.withdrawal-confirmation";
 import { ENV } from "../../config/config.env";
 
 const user_router: Router = Router();
@@ -151,8 +157,39 @@ user_router.get("/me/deposits", rl.read, requireAuth, async (req, res) => {
  * the recipient's USDC ATA — the user only sees USDC debit from their
  * custodial balance.
  */
+user_router.post("/me/withdraw/confirmation", rl.withdraw, requireAuth, async (req, res) => {
+    const { destination, uiAmount } = req.body ?? {};
+    if (
+        typeof destination !== "string" ||
+        typeof uiAmount !== "number" ||
+        !validWithdrawal(destination.trim(), uiAmount)
+    ) {
+        return ResponseWriter.invalid_data(res, "Valid destination and USDC amount required");
+    }
+    try {
+        const sent = await requestWithdrawalConfirmation({
+            userId: req.user!.id,
+            email: req.user!.email,
+            destination: destination.trim(),
+            uiAmount,
+        });
+        if (!sent)
+            return ResponseWriter.error(
+                res,
+                "COOLDOWN",
+                "Wait before requesting another code",
+                undefined,
+                429,
+            );
+        return ResponseWriter.success(res, { ok: true }, "Confirmation code sent");
+    } catch (error) {
+        console.error("[withdraw/confirmation]", error);
+        return ResponseWriter.system_error(res);
+    }
+});
+
 user_router.post("/me/withdraw", rl.withdraw, requireAuth, async (req, res) => {
-    const body = req.body as { destination?: unknown; uiAmount?: unknown };
+    const body = (req.body ?? {}) as { destination?: unknown; uiAmount?: unknown; code?: unknown };
     const destination = typeof body.destination === "string" ? body.destination.trim() : "";
     const ui_amount = typeof body.uiAmount === "number" ? body.uiAmount : NaN;
 
@@ -160,12 +197,43 @@ user_router.post("/me/withdraw", rl.withdraw, requireAuth, async (req, res) => {
     if (!Number.isFinite(ui_amount))
         return ResponseWriter.invalid_data(res, "uiAmount must be a number");
 
+    if (typeof body.code !== "string" || !/^\d{6}$/.test(body.code))
+        return ResponseWriter.invalid_data(res, "Email confirmation code required");
+
     try {
+        const input = {
+            userId: req.user!.id,
+            email: req.user!.email,
+            destination,
+            uiAmount: ui_amount,
+        };
+        if (
+            !validWithdrawal(destination, ui_amount) ||
+            !(await consumeWithdrawalConfirmation(input, body.code))
+        )
+            return ResponseWriter.invalid_data(res, "Invalid or expired withdrawal confirmation");
+        // Fail closed if the authorization notice cannot be delivered. The user
+        // is notified before money moves even if receipt delivery later fails.
+        await sendWithdrawalEmail(
+            input.email,
+            "Withdrawal authorized",
+            `You authorized ${ui_amount} USDC to ${destination}. We are submitting this transfer now.`,
+        );
         const result = await withdraw_service.withdraw_usdc({
             userId: req.user!.id,
             destination,
             uiAmount: ui_amount,
         });
+        try {
+            await sendWithdrawalEmail(
+                req.user!.email,
+                "Withdrawal completed",
+                `Sent ${ui_amount} USDC to ${destination}. Transaction: ${result.txSignature}`,
+            );
+        } catch (error) {
+            // The transfer succeeded: never report failure and encourage a retry.
+            console.error("[withdraw/receipt]", error);
+        }
         return ResponseWriter.success(res, result, "Withdrawn");
     } catch (err) {
         if (err instanceof WithdrawError) {

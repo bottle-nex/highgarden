@@ -34,14 +34,27 @@ export class WithdrawError extends Error {
 }
 
 class WithdrawApi {
+    public async request_confirmation(destination: string, ui_amount: number): Promise<void> {
+        try {
+            await apiClient.post('/users/me/withdraw/confirmation', {
+                destination,
+                uiAmount: ui_amount,
+            });
+        } catch (err: unknown) {
+            throw this.translate_error(err);
+        }
+    }
+
     public async withdraw_usdc(input: {
         destination: string;
         ui_amount: number;
+        code: string;
     }): Promise<WithdrawResult> {
         try {
             const { data } = await apiClient.post('/users/me/withdraw', {
                 destination: input.destination,
                 uiAmount: input.ui_amount,
+                code: input.code,
             });
             return data?.data as WithdrawResult;
         } catch (err: unknown) {

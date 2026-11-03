@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Input } from '@/components/ui/input';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
 import { useWithdrawToWallet } from '@/hooks/useWithdrawToWallet';
+import withdraw_api from '@/lib/api/withdraw';
 import { cn } from '@/lib/utils';
 
 const SOLSCAN_BASE = 'https://solscan.io/tx/';
@@ -66,6 +67,9 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
         return () => observer.disconnect();
     }, []);
 
+    const [code, set_code] = useState('');
+    const [confirmation_for, set_confirmation_for] = useState('');
+    const [requesting_code, set_requesting_code] = useState(false);
     const [destination, set_destination] = useState('');
     const [amount_input, set_amount_input] = useState('');
     // Captured at submit time so the success toast can echo the exact amount
@@ -93,7 +97,8 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
         parsed_amount !== null &&
         parsed_amount > 0 &&
         !insufficient &&
-        !in_flight;
+        !in_flight &&
+        !requesting_code;
 
     const wallet_refetch = wallet.refetch;
 
@@ -124,6 +129,9 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
             case 'success':
                 return 'Withdraw again';
             default:
+                if (requesting_code) return 'Sending code…';
+                if (confirmation_for !== JSON.stringify([trimmed_dest, parsed_amount]))
+                    return 'Send confirmation code';
                 return parsed_amount && !insufficient
                     ? `Withdraw ${usd_fmt.format(parsed_amount)}`
                     : 'Withdraw';
@@ -139,9 +147,11 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
         }
     };
 
-    const handle_submit = () => {
+    const handle_submit = async () => {
         if (phase === 'success') {
             reset();
+            set_confirmation_for('');
+            set_code('');
             set_destination('');
             set_amount_input('');
             return;
@@ -149,7 +159,25 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
         if (parsed_amount !== null && is_valid_solana_address(trimmed_dest)) {
             set_last_amount_sent(parsed_amount);
             set_last_destination_sent(trimmed_dest);
-            void withdraw({ destination: trimmed_dest, ui_amount: parsed_amount });
+            if (confirmation_for !== JSON.stringify([trimmed_dest, parsed_amount])) {
+                set_requesting_code(true);
+                try {
+                    await withdraw_api.request_confirmation(trimmed_dest, parsed_amount);
+                    set_confirmation_for(JSON.stringify([trimmed_dest, parsed_amount]));
+                    set_code('');
+                    toast.success('Check your email to confirm this withdrawal');
+                } catch (error) {
+                    toast.error(error instanceof Error ? error.message : 'Could not send code');
+                } finally {
+                    set_requesting_code(false);
+                }
+                return;
+            }
+            if (!/^\d{6}$/.test(code)) {
+                toast.error('Enter the 6-digit email code');
+                return;
+            }
+            await withdraw({ destination: trimmed_dest, ui_amount: parsed_amount, code });
         }
     };
 
@@ -170,6 +198,31 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
                     >
                         <div ref={measure_ref}>
                             <div className="space-y-3">
+                                {confirmation_for ===
+                                    JSON.stringify([trimmed_dest, parsed_amount]) && (
+                                    <label className="block text-sm">
+                                        Email confirmation code for {parsed_amount} USDC to{' '}
+                                        {trimmed_dest}
+                                        <Input
+                                            value={code}
+                                            onChange={(event) => set_code(event.target.value)}
+                                            inputMode="numeric"
+                                            autoComplete="one-time-code"
+                                            maxLength={6}
+                                            disabled={in_flight}
+                                        />
+                                        <button
+                                            type="button"
+                                            disabled={in_flight}
+                                            onClick={() => {
+                                                set_confirmation_for('');
+                                                set_code('');
+                                            }}
+                                        >
+                                            Request a new code
+                                        </button>
+                                    </label>
+                                )}
                                 <DestinationInput
                                     value={destination}
                                     on_change={(v) => {

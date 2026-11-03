@@ -23,3 +23,13 @@ export async function sendOtpEmail(to: string, code: string) {
         throw new Error(`resend send failed: ${error.message}`);
     }
 }
+
+export async function sendWithdrawalEmail(to: string, subject: string, text: string) {
+    const { error } = await client().emails.send({
+        from: "Nocturn <noreply@nocturn.app>",
+        to,
+        subject,
+        text,
+    });
+    if (error) throw new Error(`resend send failed: ${error.message}`);
+}
