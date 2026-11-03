@@ -4,6 +4,8 @@ const env_schema = z.object({
     SERVER_REDIS_URL: z.string(),
     SERVER_PORT: z.coerce.number(),
     SERVER_AUTH_SECRET: z.string().min(32),
+    SERVER_AUTH_BRIDGE_SECRET: z.string().min(32).optional(),
+    ADMIN_EMAILS: z.string().default(""),
     SERVER_RESEND_API_KEY: z.string(),
     SERVER_OTP_TTL_SECONDS: z.coerce.number().default(600),
     SERVER_OTP_COOLDOWN_SECONDS: z.coerce.number().default(60),

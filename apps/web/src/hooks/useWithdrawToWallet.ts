@@ -8,7 +8,7 @@ interface State {
     phase: WithdrawPhase;
     error: string | null;
     last_signature: string | null;
-    withdraw: (input: { destination: string; ui_amount: number }) => Promise<void>;
+    withdraw: (input: { destination: string; ui_amount: number; code: string }) => Promise<void>;
     reset: () => void;
 }
 
@@ -29,11 +29,19 @@ export function useWithdrawToWallet(): State {
     }, []);
 
     const withdraw = useCallback(
-        async ({ destination, ui_amount }: { destination: string; ui_amount: number }) => {
+        async ({
+            destination,
+            ui_amount,
+            code,
+        }: {
+            destination: string;
+            ui_amount: number;
+            code: string;
+        }) => {
             try {
                 set_error(null);
                 set_phase('submitting');
-                const result = await withdraw_api.withdraw_usdc({ destination, ui_amount });
+                const result = await withdraw_api.withdraw_usdc({ destination, ui_amount, code });
                 set_last_signature(result.txSignature);
                 set_phase('success');
             } catch (e) {

@@ -1,4 +1,4 @@
-import type { NextAuthOptions, Account, ISODateString } from 'next-auth';
+import type { NextAuthOptions, ISODateString } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
@@ -28,21 +28,37 @@ export const authOption: NextAuthOptions = {
         signIn: '/signin',
     },
     callbacks: {
-        async signIn({ user, account }: { user: UserType; account: Account | null }) {
+        async signIn({ user, account, profile }) {
             try {
                 if (account?.provider === 'google') {
-                    const response = await axios.post(SIGNIN_URL, {
-                        user,
-                        account,
-                    });
+                    if (
+                        !profile ||
+                        !('email_verified' in profile) ||
+                        profile.email_verified !== true ||
+                        !process.env.SERVER_AUTH_BRIDGE_SECRET
+                    )
+                        return false;
+                    const response = await axios.post(
+                        SIGNIN_URL,
+                        {
+                            user,
+                            account,
+                        },
+                        {
+                            headers: {
+                                'x-auth-bridge-secret': process.env.SERVER_AUTH_BRIDGE_SECRET,
+                            },
+                        },
+                    );
 
                     const result = response.data;
 
                     if (result?.success) {
                         user.id = result.data.user.id.toString();
-                        user.token = result.data.token;
-                        user.provider = 'google';
-                        user.walletPublicKey = result.data.user.walletPublicKey ?? null;
+                        (user as UserType).token = result.data.token;
+                        (user as UserType).provider = 'google';
+                        (user as UserType).walletPublicKey =
+                            result.data.user.walletPublicKey ?? null;
                         return true;
                     }
                     return false;
@@ -53,8 +69,8 @@ export const authOption: NextAuthOptions = {
                 }
 
                 return false;
-            } catch (err) {
-                console.error('[next-auth signIn]', err);
+            } catch {
+                console.error('[next-auth signIn] Authentication request failed');
                 return false;
             }
         },

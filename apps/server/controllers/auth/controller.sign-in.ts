@@ -1,4 +1,6 @@
 import type { Request, Response } from "express";
+import { timingSafeEqual } from "node:crypto";
+import { ENV } from "../../config/config.env";
 import { z } from "zod";
 import { prisma } from "@solmarket/database";
 import ResponseWriter from "../../services/service.response";
@@ -18,6 +20,17 @@ const body_schema = z.object({
 
 export default class SignInController {
     static async process(req: Request, res: Response) {
+        // Only the server-side NextAuth Google callback may attest an identity.
+        const secret = ENV.SERVER_AUTH_BRIDGE_SECRET;
+        const supplied = req.headers["x-auth-bridge-secret"];
+        if (
+            !secret ||
+            typeof supplied !== "string" ||
+            Buffer.byteLength(supplied) !== Buffer.byteLength(secret) ||
+            !timingSafeEqual(Buffer.from(supplied), Buffer.from(secret))
+        ) {
+            return ResponseWriter.not_authorized(res, "Verified sign-in required");
+        }
         const parsed = body_schema.safeParse(req.body);
         if (!parsed.success) {
             return ResponseWriter.invalid_data(res, "Invalid sign-in payload");
