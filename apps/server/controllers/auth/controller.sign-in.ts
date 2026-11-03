@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { ENV } from "../../config/config.env";
 import { z } from "zod";
 import { prisma } from "@solmarket/database";
 import ResponseWriter from "../../services/service.response";
@@ -13,6 +14,7 @@ const body_schema = z.object({
     }),
     account: z.object({
         provider: z.enum(["google"]),
+        id_token: z.string().min(1),
     }),
 });
 
@@ -22,8 +24,35 @@ export default class SignInController {
         if (!parsed.success) {
             return ResponseWriter.invalid_data(res, "Invalid sign-in payload");
         }
-        const { email, name, image } = parsed.data.user;
-        const normalizedEmail = email.toLowerCase();
+        // Google validates the signature; audience/issuer/expiry and verified email
+        // are checked here before any account lookup or write.
+        let identity;
+        try {
+            if (!ENV.SERVER_GOOGLE_CLIENT_ID) throw new Error("Google login disabled");
+            const url = new URL("https://oauth2.googleapis.com/tokeninfo");
+            url.searchParams.set("id_token", parsed.data.account.id_token);
+            const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+            if (!response.ok) throw new Error("Invalid Google token");
+            identity = z
+                .object({
+                    aud: z.literal(ENV.SERVER_GOOGLE_CLIENT_ID),
+                    iss: z.enum(["accounts.google.com", "https://accounts.google.com"]),
+                    exp: z.coerce.number().refine((n) => n > Date.now() / 1000),
+                    email: z.email(),
+                    email_verified: z.literal("true"),
+                    sub: z.string().min(1),
+                    name: z.string().optional(),
+                    picture: z.string().optional(),
+                })
+                .parse(await response.json());
+            if (identity.email.toLowerCase() !== parsed.data.user.email.toLowerCase()) {
+                throw new Error("Email mismatch");
+            }
+        } catch {
+            return ResponseWriter.not_authorized(res, "Google identity verification failed");
+        }
+        const { name, picture: image } = identity;
+        const normalizedEmail = identity.email.toLowerCase();
 
         try {
             const user = await prisma.user.upsert({

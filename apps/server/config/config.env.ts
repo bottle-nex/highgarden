@@ -3,6 +3,10 @@ import { z } from "zod";
 const env_schema = z.object({
     SERVER_REDIS_URL: z.string(),
     SERVER_PORT: z.coerce.number(),
+    // Must match the Google OAuth client used by the web app. Empty disables Google login.
+    SERVER_GOOGLE_CLIENT_ID: z.string().default(""),
+    // Comma-separated, server-controlled owner allowlist; empty denies everyone.
+    ADMIN_EMAILS: z.string().default(""),
     SERVER_AUTH_SECRET: z.string().min(32),
     SERVER_RESEND_API_KEY: z.string(),
     SERVER_OTP_TTL_SECONDS: z.coerce.number().default(600),

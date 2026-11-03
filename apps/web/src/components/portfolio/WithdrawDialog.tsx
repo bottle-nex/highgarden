@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import { useWalletBalance } from '@/hooks/useWalletBalance';
+import withdraw_api from '@/lib/api/withdraw';
 import { useWithdrawToWallet } from '@/hooks/useWithdrawToWallet';
 import { cn } from '@/lib/utils';
 
@@ -68,6 +69,9 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
 
     const [destination, set_destination] = useState('');
     const [amount_input, set_amount_input] = useState('');
+    const [confirmation_code, set_confirmation_code] = useState('');
+    const [confirmation_details, set_confirmation_details] = useState('');
+    const [requesting_code, set_requesting_code] = useState(false);
     // Captured at submit time so the success toast can echo the exact amount
     // the user just sent, even after the input is cleared on "Withdraw again".
     const [last_amount_sent, set_last_amount_sent] = useState<number | null>(null);
@@ -86,7 +90,7 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
     const parsed_amount = parse_amount(amount_input);
     const insufficient = parsed_amount !== null && parsed_amount > balance;
 
-    const in_flight = phase === 'submitting';
+    const in_flight = phase === 'submitting' || requesting_code;
     const can_submit =
         is_valid_solana_address(trimmed_dest) &&
         !is_self_send &&
@@ -147,9 +151,22 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
             return;
         }
         if (parsed_amount !== null && is_valid_solana_address(trimmed_dest)) {
+            if (
+                confirmation_details !== JSON.stringify([trimmed_dest, parsed_amount]) ||
+                !/^\d{6}$/.test(confirmation_code)
+            ) {
+                toast.error('Request and enter the email code for this amount and destination.');
+                return;
+            }
             set_last_amount_sent(parsed_amount);
             set_last_destination_sent(trimmed_dest);
-            void withdraw({ destination: trimmed_dest, ui_amount: parsed_amount });
+            void withdraw({
+                destination: trimmed_dest,
+                ui_amount: parsed_amount,
+                code: confirmation_code,
+            });
+            set_confirmation_code('');
+            set_confirmation_details('');
         }
     };
 
@@ -206,6 +223,51 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
                                     error={error}
                                     success_signature={phase === 'success' ? last_signature : null}
                                 />
+
+                                <Button
+                                    type="button"
+                                    disabled={!can_submit}
+                                    onClick={async () => {
+                                        if (parsed_amount === null) return;
+                                        set_requesting_code(true);
+                                        set_confirmation_code('');
+                                        try {
+                                            await withdraw_api.request_confirmation({
+                                                destination: trimmed_dest,
+                                                ui_amount: parsed_amount,
+                                            });
+                                            set_confirmation_details(
+                                                JSON.stringify([trimmed_dest, parsed_amount]),
+                                            );
+                                            toast.success(
+                                                'Check your email for the withdrawal details and confirmation code.',
+                                            );
+                                        } catch (err) {
+                                            toast.error(
+                                                err instanceof Error
+                                                    ? err.message
+                                                    : 'Could not send code',
+                                            );
+                                        } finally {
+                                            set_requesting_code(false);
+                                        }
+                                    }}
+                                >
+                                    Email confirmation code
+                                </Button>
+                                <label className="block text-sm">
+                                    Withdrawal confirmation code
+                                    <Input
+                                        value={confirmation_code}
+                                        inputMode="numeric"
+                                        maxLength={6}
+                                        onChange={(event) =>
+                                            set_confirmation_code(event.target.value)
+                                        }
+                                        placeholder="6-digit email code"
+                                        autoComplete="one-time-code"
+                                    />
+                                </label>
 
                                 <Button
                                     type="button"

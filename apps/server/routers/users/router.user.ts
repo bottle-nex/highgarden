@@ -1,3 +1,7 @@
+import { createHash } from "node:crypto";
+import { PublicKey } from "@solana/web3.js";
+import OtpService from "../../services/service.otp";
+import { sendWithdrawalEmail } from "../../services/service.email";
 import { Router } from "express";
 import { prisma } from "@solmarket/database";
 import { requireAuth } from "../../middleware/middleware.auth";
@@ -151,8 +155,58 @@ user_router.get("/me/deposits", rl.read, requireAuth, async (req, res) => {
  * the recipient's USDC ATA — the user only sees USDC debit from their
  * custodial balance.
  */
+// A distinct namespace prevents login codes from authorizing withdrawals.
+function withdrawal_proof(code: string, destination: string, amount: number): string {
+    return createHash("sha256")
+        .update(JSON.stringify([code, destination, amount]))
+        .digest("hex");
+}
+
+user_router.post("/me/withdraw/request", rl.withdraw, requireAuth, async (req, res) => {
+    const { destination, uiAmount } = req.body ?? {};
+    if (
+        typeof destination !== "string" ||
+        typeof uiAmount !== "number" ||
+        !Number.isFinite(uiAmount) ||
+        uiAmount < 1 ||
+        uiAmount > Number.MAX_SAFE_INTEGER / 1e6 ||
+        uiAmount !== Number(uiAmount.toFixed(6))
+    ) {
+        return ResponseWriter.invalid_data(res, "Valid destination and USDC amount required");
+    }
+    try {
+        new PublicKey(destination);
+        const scope = `withdraw:${req.user!.id}`;
+        if (await OtpService.is_cooldown(scope)) {
+            return ResponseWriter.error(
+                res,
+                "OTP_COOLDOWN",
+                "Please wait before requesting another code",
+                undefined,
+                429,
+            );
+        }
+        const code = OtpService.generate_otp();
+        await OtpService.store_otp(scope, withdrawal_proof(code, destination, uiAmount));
+        await sendWithdrawalEmail(
+            req.user!.email,
+            `Confirm withdrawal of ${uiAmount} USDC to ${destination}. Code: ${code}. Expires in ${ENV.SERVER_OTP_TTL_SECONDS / 60} minutes. If this was not you, do not share this code.`,
+        );
+        return ResponseWriter.success(res, { ok: true }, "Confirmation code sent");
+    } catch (err) {
+        console.error("[withdraw/request]", err);
+        return ResponseWriter.error(
+            res,
+            "CONFIRMATION_FAILED",
+            "Could not send confirmation",
+            undefined,
+            400,
+        );
+    }
+});
+
 user_router.post("/me/withdraw", rl.withdraw, requireAuth, async (req, res) => {
-    const body = req.body as { destination?: unknown; uiAmount?: unknown };
+    const body = req.body as { destination?: unknown; uiAmount?: unknown; code?: unknown };
     const destination = typeof body.destination === "string" ? body.destination.trim() : "";
     const ui_amount = typeof body.uiAmount === "number" ? body.uiAmount : NaN;
 
@@ -160,13 +214,37 @@ user_router.post("/me/withdraw", rl.withdraw, requireAuth, async (req, res) => {
     if (!Number.isFinite(ui_amount))
         return ResponseWriter.invalid_data(res, "uiAmount must be a number");
 
+    if (typeof body.code !== "string" || !/^\d{6}$/.test(body.code)) {
+        return ResponseWriter.invalid_data(res, "Withdrawal confirmation code required");
+    }
     try {
+        const verification = await OtpService.verify_otp(
+            `withdraw:${req.user!.id}`,
+            withdrawal_proof(body.code, destination, ui_amount),
+        );
+        if (!verification.ok) {
+            return ResponseWriter.invalid_data(res, "Invalid or expired withdrawal confirmation");
+        }
         const result = await withdraw_service.withdraw_usdc({
             userId: req.user!.id,
             destination,
             uiAmount: ui_amount,
         });
-        return ResponseWriter.success(res, result, "Withdrawn");
+        // A receipt failure must not tell the user the transfer failed: retrying
+        // a completed transfer could debit them twice. Log failures for operators.
+        let notified = false;
+        for (let attempt = 0; attempt < 3 && !notified; attempt++) {
+            try {
+                await sendWithdrawalEmail(
+                    req.user!.email,
+                    `Sent ${ui_amount} USDC to ${destination}. Transaction: ${result.txSignature}. If you did not authorize this, contact support immediately.`,
+                );
+                notified = true;
+            } catch (err) {
+                console.error("[withdraw/receipt]", result.txSignature, err);
+            }
+        }
+        return ResponseWriter.success(res, { ...result, notificationSent: notified }, "Withdrawn");
     } catch (err) {
         if (err instanceof WithdrawError) {
             return ResponseWriter.error(res, err.code, err.message, undefined, 409);

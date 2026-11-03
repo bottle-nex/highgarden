@@ -9,6 +9,7 @@ export interface SessionClaims {
 export function signSessionJwt(claims: SessionClaims): string {
     return jwt.sign(claims, ENV.SERVER_AUTH_SECRET, {
         algorithm: "HS256",
+        issuer: "solmarket:verified-identity:v2",
         expiresIn: ENV.SERVER_AUTH_TOKEN_TTL as SignOptions["expiresIn"],
     });
 }
@@ -16,6 +17,7 @@ export function signSessionJwt(claims: SessionClaims): string {
 export function verifySessionJwt(token: string): SessionClaims {
     const payload = jwt.verify(token, ENV.SERVER_AUTH_SECRET, {
         algorithms: ["HS256"],
+        issuer: "solmarket:verified-identity:v2",
     });
 
     if (typeof payload !== "object" || payload === null) {
