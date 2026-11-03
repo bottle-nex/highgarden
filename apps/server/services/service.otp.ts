@@ -45,11 +45,13 @@ export default class OtpService {
             return { ok: false, reason: "invalid" };
         }
 
-        const pipeline = redis.pipeline();
-        pipeline.del(this.code_key(email));
-        pipeline.del(this.attempts_key(email));
-        await pipeline.exec();
-        return { ok: true };
+        const consumed = await redis.eval(
+            "if redis.call('GET', KEYS[1]) == ARGV[1] then return redis.call('DEL', KEYS[1]) else return 0 end",
+            1,
+            this.code_key(email),
+            hash,
+        );
+        return consumed === 1 ? { ok: true } : { ok: false, reason: "expired" };
     }
 
     static async is_cooldown(email: string): Promise<boolean> {

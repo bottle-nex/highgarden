@@ -15,6 +15,7 @@ import TradeIdempotencyService from "./service.trade-idempotency";
 import CoinGeckoPriceFeed from "./service.price-feed";
 import SolDepositPoller from "./service.sol-deposit-poller";
 import RoundAnchorRecorder from "./service.round-anchor";
+import { startWithdrawalNotifications } from "./service.withdrawal-notifications";
 import FastResolverService from "./service.fast-resolver";
 
 export default class Services {
@@ -61,6 +62,7 @@ export default class Services {
         // using the RoundAnchor snapshots — instant claim UX, at the cost
         // of the close-call risk documented in service.fast-resolver.ts.
         this.fast_resolver.start();
+        startWithdrawalNotifications(this.redis);
         errorHandler;
     }
 

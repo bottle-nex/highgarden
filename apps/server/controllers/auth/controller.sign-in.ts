@@ -4,27 +4,27 @@ import { prisma } from "@solmarket/database";
 import ResponseWriter from "../../services/service.response";
 import { signSessionJwt } from "../../services/service.jwt";
 import { ensure_user_has_keypair } from "../../services/service.keypair";
+import { verifyGoogleIdentity } from "../../services/service.google-identity";
 
 const body_schema = z.object({
-    user: z.object({
-        email: z.email(),
-        name: z.string().nullish(),
-        image: z.string().nullish(),
-    }),
-    account: z.object({
-        provider: z.enum(["google"]),
-    }),
+    account: z.object({ provider: z.literal("google"), id_token: z.string().min(1) }),
 });
 
 export default class SignInController {
     static async process(req: Request, res: Response) {
         const parsed = body_schema.safeParse(req.body);
         if (!parsed.success) {
-            return ResponseWriter.invalid_data(res, "Invalid sign-in payload");
+            return ResponseWriter.not_authorized(res, "Verified Google identity required");
         }
-        const { email, name, image } = parsed.data.user;
-        const normalizedEmail = email.toLowerCase();
 
+        let identity;
+        try {
+            identity = await verifyGoogleIdentity(parsed.data.account.id_token);
+        } catch {
+            return ResponseWriter.not_authorized(res, "Invalid Google identity");
+        }
+        const { email, name, image } = identity;
+        const normalizedEmail = email.toLowerCase();
         try {
             const user = await prisma.user.upsert({
                 where: { email: normalizedEmail },
