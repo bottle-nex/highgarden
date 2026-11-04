@@ -1,10 +1,14 @@
 import { apiClient } from '../client.axios';
 
-export interface WithdrawResult {
-    txSignature: string;
+export interface WithdrawalIntent {
+    id: string;
     destination: string;
     uiAmount: number;
-    createdRecipientAta: boolean;
+    status: string;
+    txSignature: string | null;
+    expiresAt: string;
+    resendAt: string;
+    failure: string | null;
 }
 
 export type WithdrawErrorReason =
@@ -34,17 +38,31 @@ export class WithdrawError extends Error {
 }
 
 class WithdrawApi {
-    public async withdraw_usdc(input: {
-        destination: string;
-        ui_amount: number;
-    }): Promise<WithdrawResult> {
+    public async request(destination: string, uiAmount: number): Promise<WithdrawalIntent> {
+        return this.call('/users/me/withdraw/request', { destination, uiAmount });
+    }
+
+    public async confirm(intentId: string, code: string): Promise<WithdrawalIntent> {
+        return this.call('/users/me/withdraw', { intentId, code });
+    }
+
+    public async status(intentId: string): Promise<WithdrawalIntent> {
         try {
-            const { data } = await apiClient.post('/users/me/withdraw', {
-                destination: input.destination,
-                uiAmount: input.ui_amount,
-            });
-            return data?.data as WithdrawResult;
-        } catch (err: unknown) {
+            const { data } = await apiClient.get(
+                `/users/me/withdraw/${encodeURIComponent(intentId)}`,
+            );
+            return data.data;
+        } catch (err) {
+            throw this.translate_error(err);
+        }
+    }
+
+    private async call(path: string, body: object): Promise<WithdrawalIntent> {
+        try {
+            const { data } = await apiClient.post(path, body);
+            if (!data?.success) throw new Error(data?.message ?? 'Withdrawal request failed');
+            return data.data;
+        } catch (err) {
             throw this.translate_error(err);
         }
     }

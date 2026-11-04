@@ -107,7 +107,11 @@ export default class Reconciler {
         const resolution = await this.poly.fetch_resolution(market.polyMarketId);
         if (!resolution) return;
 
-        if (!resolution.closed || resolution.winningOutcomeIndex === null) {
+        if (
+            !resolution.finalityEvidence ||
+            !resolution.closed ||
+            resolution.winningOutcomeIndex === null
+        ) {
             await this.handle_dispute_reversal(market_id, market.polyMarketId);
             return;
         }

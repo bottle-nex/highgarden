@@ -23,3 +23,21 @@ export async function sendOtpEmail(to: string, code: string) {
         throw new Error(`resend send failed: ${error.message}`);
     }
 }
+
+export async function sendNotificationEmail(input: {
+    recipient: string;
+    subject: string;
+    text: string;
+    id: string;
+}) {
+    const { error } = await client().emails.send(
+        {
+            from: "Nocturn <noreply@nocturn.app>",
+            to: input.recipient,
+            subject: input.subject,
+            text: input.text,
+        },
+        { idempotencyKey: input.id },
+    );
+    if (error) throw new Error(error.message);
+}

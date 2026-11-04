@@ -6,13 +6,18 @@ import ResponseWriter from "../../services/service.response";
 import { ensure_user_has_keypair } from "../../services/service.keypair";
 import { get_user_usdc_balance } from "../../services/service.wallet";
 import PortfolioService from "../../services/service.portfolio";
-import SolanaWithdrawService, { WithdrawError } from "../../services/service.solana-withdraw";
+import {
+    requestWithdrawal,
+    confirmWithdrawal,
+    withdrawalStatus,
+} from "../../services/service.withdrawal-approval";
+import { recoverWithdrawal } from "../../services/service.withdrawal-recovery";
+import { z } from "zod";
 import { services } from "../../index";
 import { ENV } from "../../config/config.env";
 
 const user_router: Router = Router();
 const portfolio = new PortfolioService();
-const withdraw_service = new SolanaWithdrawService();
 
 /**
  * Picks a display label for the configured RPC so the frontend wallet
@@ -151,29 +156,68 @@ user_router.get("/me/deposits", rl.read, requireAuth, async (req, res) => {
  * the recipient's USDC ATA — the user only sees USDC debit from their
  * custodial balance.
  */
-user_router.post("/me/withdraw", rl.withdraw, requireAuth, async (req, res) => {
-    const body = req.body as { destination?: unknown; uiAmount?: unknown };
-    const destination = typeof body.destination === "string" ? body.destination.trim() : "";
-    const ui_amount = typeof body.uiAmount === "number" ? body.uiAmount : NaN;
-
-    if (!destination) return ResponseWriter.invalid_data(res, "destination address required");
-    if (!Number.isFinite(ui_amount))
-        return ResponseWriter.invalid_data(res, "uiAmount must be a number");
-
+user_router.post("/me/withdraw/request", requireAuth, rl.withdraw_code, async (req, res) => {
+    const body = z
+        .object({ destination: z.string().trim(), uiAmount: z.number() })
+        .strict()
+        .safeParse(req.body);
+    if (!body.success)
+        return ResponseWriter.invalid_data(res, "Destination and exact USDC amount required");
     try {
-        const result = await withdraw_service.withdraw_usdc({
-            userId: req.user!.id,
-            destination,
-            uiAmount: ui_amount,
-        });
-        return ResponseWriter.success(res, result, "Withdrawn");
+        return ResponseWriter.success(
+            res,
+            await requestWithdrawal(req.user!.id, body.data.destination, body.data.uiAmount),
+            "Approval code queued",
+        );
     } catch (err) {
-        if (err instanceof WithdrawError) {
-            return ResponseWriter.error(res, err.code, err.message, undefined, 409);
-        }
-        console.error("[users/me/withdraw]", err);
-        const msg = err instanceof Error ? err.message : "withdraw failed";
-        return ResponseWriter.error(res, "WITHDRAW_FAILED", msg, undefined, 500);
+        return ResponseWriter.error(
+            res,
+            "APPROVAL_FAILED",
+            err instanceof Error ? err.message : "Cannot request approval",
+            undefined,
+            409,
+        );
+    }
+});
+
+user_router.post("/me/withdraw", requireAuth, rl.withdraw_verify, rl.withdraw, async (req, res) => {
+    const body = z
+        .object({ intentId: z.string(), code: z.string().max(6) })
+        .strict()
+        .safeParse(req.body);
+    if (!body.success)
+        return ResponseWriter.invalid_data(
+            res,
+            "Withdrawal intent and separate approval code required",
+        );
+    try {
+        const intent = await confirmWithdrawal(req.user!.id, body.data.intentId, body.data.code);
+        await recoverWithdrawal(intent.id);
+        return ResponseWriter.success(
+            res,
+            await withdrawalStatus(req.user!.id, intent.id),
+            "Withdrawal status",
+        );
+    } catch (err) {
+        return ResponseWriter.error(
+            res,
+            "APPROVAL_FAILED",
+            err instanceof Error ? err.message : "Cannot confirm approval",
+            undefined,
+            409,
+        );
+    }
+});
+
+user_router.get("/me/withdraw/:intentId", requireAuth, rl.read, async (req, res) => {
+    try {
+        return ResponseWriter.success(
+            res,
+            await withdrawalStatus(req.user!.id, String(req.params.intentId)),
+            "Withdrawal status",
+        );
+    } catch {
+        return ResponseWriter.not_found(res, "Withdrawal not found");
     }
 });
 

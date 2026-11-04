@@ -49,12 +49,17 @@ export class WithdrawError extends Error {
     }
 }
 
-const USDC_DECIMALS = 6;
-const USDC_MULTIPLIER = 10n ** BigInt(USDC_DECIMALS);
 const MIN_WITHDRAW_USDC = 1;
 
 export default class SolanaWithdrawService {
-    public async withdraw_usdc(input: WithdrawInput): Promise<WithdrawResult> {
+    public async withdraw_usdc(intentId: string): Promise<void> {
+        const intent = await prisma.withdrawalIntent.findUniqueOrThrow({ where: { id: intentId } });
+        if (intent.status !== "APPROVED") return;
+        const input: WithdrawInput = {
+            userId: intent.userId,
+            destination: intent.destination,
+            uiAmount: Number(intent.amountUnits) / 1000000,
+        };
         if (!Number.isFinite(input.uiAmount) || input.uiAmount <= 0) {
             throw new WithdrawError("AMOUNT_INVALID", "withdraw amount must be a positive number");
         }
@@ -109,7 +114,7 @@ export default class SolanaWithdrawService {
             throw new WithdrawError("RPC_FAILED", "couldn't read your USDC balance from chain");
         }
 
-        const transfer_raw = BigInt(Math.round(input.uiAmount * Number(USDC_MULTIPLIER)));
+        const transfer_raw = intent.amountUnits;
         if (transfer_raw > source_balance) {
             throw new WithdrawError("INSUFFICIENT_BALANCE", "amount exceeds your USDC balance");
         }
@@ -141,39 +146,17 @@ export default class SolanaWithdrawService {
         tx.feePayer = fee_payer.publicKey;
         tx.sign(fee_payer, user_keypair);
 
-        let signature: string;
-        try {
-            signature = await connection.sendRawTransaction(tx.serialize(), {
-                skipPreflight: false,
-                preflightCommitment: "confirmed",
-            });
-            const confirm = await connection.confirmTransaction(
-                {
-                    signature,
-                    blockhash: blockhash.blockhash,
-                    lastValidBlockHeight: blockhash.lastValidBlockHeight,
-                },
-                "confirmed",
-            );
-            if (confirm.value.err) {
-                console.error("[withdraw] confirmation error", confirm.value.err);
-                throw new WithdrawError("RPC_FAILED", "withdrawal couldn't be confirmed on chain");
-            }
-        } catch (e) {
-            if (e instanceof WithdrawError) throw e;
-            console.error("[withdraw] rpc error", e);
-            throw new WithdrawError(
-                "RPC_FAILED",
-                e instanceof Error ? e.message : "withdrawal failed",
-            );
-        }
-
-        return {
-            txSignature: signature,
-            destination: input.destination,
-            uiAmount: input.uiAmount,
-            createdRecipientAta: needs_create,
-        };
+        // Never submit before this atomic persistence. Losing builders discard
+        // their transaction; all retries broadcast the one stored signature.
+        await prisma.withdrawalIntent.updateMany({
+            where: { id: intent.id, status: "APPROVED" },
+            data: {
+                status: "SIGNED",
+                signedTransaction: tx.serialize().toString("base64"),
+                txSignature: bs58.encode(tx.signature!),
+                lastValidBlockHeight: blockhash.lastValidBlockHeight,
+            },
+        });
     }
 
     private load_fee_payer_keypair(): Keypair {
