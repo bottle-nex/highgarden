@@ -45,11 +45,22 @@ export default class OtpService {
             return { ok: false, reason: "invalid" };
         }
 
-        const pipeline = redis.pipeline();
-        pipeline.del(this.code_key(email));
-        pipeline.del(this.attempts_key(email));
-        await pipeline.exec();
-        return { ok: true };
+        // Compare-and-delete the exact hash, so concurrent verifications or a
+        // newly issued code cannot consume the same approval twice.
+        const consumed = await redis.eval(
+            `
+            if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+            if tonumber(redis.call('GET', KEYS[2]) or '0') > tonumber(ARGV[2]) then return 0 end
+            redis.call('DEL', KEYS[1], KEYS[2])
+            return 1
+        `,
+            2,
+            this.code_key(email),
+            this.attempts_key(email),
+            hash,
+            ENV.SERVER_OTP_MAX_ATTEMPTS,
+        );
+        return consumed === 1 ? { ok: true } : { ok: false, reason: "expired" };
     }
 
     static async is_cooldown(email: string): Promise<boolean> {

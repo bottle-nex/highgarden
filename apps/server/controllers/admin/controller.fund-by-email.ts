@@ -10,25 +10,10 @@ const body_schema = z.object({
     usdcAmount: z.coerce.number().nonnegative().optional(),
 });
 
-function is_admin_email(email: string | null | undefined): boolean {
-    if (!email) return false;
-    const raw = process.env.ADMIN_EMAILS ?? "";
-    if (!raw.trim()) return false;
-    const allow = raw
-        .split(",")
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean);
-    return allow.includes(email.toLowerCase());
-}
-
 export default class FundByEmailController {
     private static fund_service = new TestFundService();
 
     static async process(req: Request, res: Response) {
-        if (!FundByEmailController.is_caller_admin(req)) {
-            return ResponseWriter.not_authorized(res, "admin only");
-        }
-
         const parsed = body_schema.safeParse(req.body ?? {});
         if (!parsed.success) {
             return ResponseWriter.invalid_data(res, "Invalid fund payload");
@@ -51,11 +36,6 @@ export default class FundByEmailController {
         }
 
         await FundByEmailController.fund_and_respond(res, target.user, parsed.data);
-    }
-
-    private static is_caller_admin(req: Request): boolean {
-        if (!req.user) return false;
-        return is_admin_email(req.user.email);
     }
 
     private static async lookup_user(

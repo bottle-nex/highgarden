@@ -47,9 +47,10 @@ export interface PlaceMarketOrderResult {
 /**
  * Resolution snapshot pulled from Polymarket's gamma API.
  * `winningOutcomeIndex` is `0` for YES, `1` for NO, or `null` if the market
- * hasn't resolved or the prices are ambiguous (not unanimously 1/0).
+ * has no verified final binary CTF payout.
  */
 export interface GammaResolution {
+  finalityEvidence: string | null;
   closed: boolean;
   archived: boolean;
   winningOutcomeIndex: 0 | 1 | null;

@@ -1,0 +1,20 @@
+model WithdrawalIntent {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  destination String
+  amountUnits BigInt
+  approvalHash String
+  expiresAt DateTime
+  attempts Int @default(0)
+  status String @default("AWAITING_APPROVAL")
+  signedTransaction String?
+  txSignature String? @unique
+  lastValidBlockHeight Int?
+  leaseUntil DateTime?
+  failure String?
+  createdAt DateTime @default(now())
+  confirmedAt DateTime?
+  @@index([userId, createdAt])
+  @@index([status, leaseUntil])
+}

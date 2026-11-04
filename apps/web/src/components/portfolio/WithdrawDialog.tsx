@@ -49,7 +49,8 @@ interface WithdrawDialogProps {
 
 export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.Element {
     const wallet = useWalletBalance({ enabled: true });
-    const { phase, error, last_signature, withdraw, reset } = useWithdrawToWallet();
+    const { phase, error, last_signature, intent, withdraw, confirm, reset } =
+        useWithdrawToWallet();
 
     const measure_ref = useRef<HTMLDivElement>(null);
     const [content_height, set_content_height] = useState<number | 'auto'>('auto');
@@ -66,6 +67,12 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
         return () => observer.disconnect();
     }, []);
 
+    const [code, set_code] = useState('');
+    const [now, set_now] = useState(() => Date.now());
+    useEffect(() => {
+        const timer = setInterval(() => set_now(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, []);
     const [destination, set_destination] = useState('');
     const [amount_input, set_amount_input] = useState('');
     // Captured at submit time so the success toast can echo the exact amount
@@ -86,7 +93,7 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
     const parsed_amount = parse_amount(amount_input);
     const insufficient = parsed_amount !== null && parsed_amount > balance;
 
-    const in_flight = phase === 'submitting';
+    const in_flight = phase === 'submitting' || phase === 'pending';
     const can_submit =
         is_valid_solana_address(trimmed_dest) &&
         !is_self_send &&
@@ -119,13 +126,17 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
 
     const submit_label = (() => {
         switch (phase) {
+            case 'pending':
+                return 'Waiting for chain confirmation…';
+            case 'approval':
+                return 'Confirm withdrawal';
             case 'submitting':
                 return 'Sending…';
             case 'success':
                 return 'Withdraw again';
             default:
                 return parsed_amount && !insufficient
-                    ? `Withdraw ${usd_fmt.format(parsed_amount)}`
+                    ? `Review ${usd_fmt.format(parsed_amount)}`
                     : 'Withdraw';
         }
     })();
@@ -140,13 +151,24 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
     };
 
     const handle_submit = () => {
+        if (phase === 'approval') {
+            void confirm(code);
+            return;
+        }
+        if (intent && phase === 'error') {
+            set_code('');
+            void withdraw({ destination: intent.destination, ui_amount: intent.uiAmount });
+            return;
+        }
         if (phase === 'success') {
             reset();
+            set_code('');
             set_destination('');
             set_amount_input('');
             return;
         }
         if (parsed_amount !== null && is_valid_solana_address(trimmed_dest)) {
+            set_code('');
             set_last_amount_sent(parsed_amount);
             set_last_destination_sent(trimmed_dest);
             void withdraw({ destination: trimmed_dest, ui_amount: parsed_amount });
@@ -170,36 +192,119 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
                     >
                         <div ref={measure_ref}>
                             <div className="space-y-3">
-                                <DestinationInput
-                                    value={destination}
-                                    on_change={(v) => {
-                                        if (phase === 'success' || phase === 'error') reset();
-                                        set_destination(v);
-                                    }}
-                                    on_paste={handle_paste}
-                                    invalid={destination_invalid}
-                                    self_send={is_self_send}
-                                />
+                                {!intent && (
+                                    <>
+                                        <DestinationInput
+                                            value={destination}
+                                            on_change={(v) => {
+                                                if (phase === 'success' || phase === 'error')
+                                                    reset();
+                                                set_destination(v);
+                                            }}
+                                            on_paste={handle_paste}
+                                            invalid={destination_invalid}
+                                            self_send={is_self_send}
+                                        />
 
-                                <AmountInput
-                                    value={amount_input}
-                                    on_change={(v) => {
-                                        if (phase === 'success' || phase === 'error') reset();
-                                        set_amount_input(v);
-                                    }}
-                                    on_max={() =>
-                                        set_amount_input(balance > 0 ? String(balance) : '')
-                                    }
-                                    max_disabled={balance <= 0}
-                                />
+                                        <AmountInput
+                                            value={amount_input}
+                                            on_change={(v) => {
+                                                if (phase === 'success' || phase === 'error')
+                                                    reset();
+                                                set_amount_input(v);
+                                            }}
+                                            on_max={() =>
+                                                set_amount_input(balance > 0 ? String(balance) : '')
+                                            }
+                                            max_disabled={balance <= 0}
+                                        />
 
-                                <PresetChips
-                                    disabled={balance <= 0}
-                                    on_pick={(amt) => {
-                                        if (phase === 'success' || phase === 'error') reset();
-                                        set_amount_input(String(amt));
-                                    }}
-                                />
+                                        <PresetChips
+                                            disabled={balance <= 0}
+                                            on_pick={(amt) => {
+                                                if (phase === 'success' || phase === 'error')
+                                                    reset();
+                                                set_amount_input(String(amt));
+                                            }}
+                                        />
+                                    </>
+                                )}
+                                {intent && phase !== 'success' && (
+                                    <div className="space-y-3 text-sm">
+                                        <p>
+                                            Review withdrawal:{' '}
+                                            <strong>{intent.uiAmount} USDC</strong>
+                                        </p>
+                                        <p className="break-all">To: {intent.destination}</p>
+                                        {phase === 'approval' && (
+                                            <>
+                                                <p>
+                                                    Enter the separate six-digit code emailed to
+                                                    you. Expires at{' '}
+                                                    {new Date(
+                                                        intent.expiresAt,
+                                                    ).toLocaleTimeString()}
+                                                    .
+                                                </p>
+                                                {now >= Date.parse(intent.expiresAt) && (
+                                                    <p>Code expired. Request a new code.</p>
+                                                )}
+                                                <Input
+                                                    aria-label="Withdrawal approval code"
+                                                    inputMode="numeric"
+                                                    autoComplete="one-time-code"
+                                                    maxLength={6}
+                                                    value={code}
+                                                    onChange={(e) =>
+                                                        set_code(e.target.value.replace(/\D/g, ''))
+                                                    }
+                                                />
+                                            </>
+                                        )}
+                                        {phase === 'approval' && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                onClick={() => {
+                                                    reset();
+                                                    set_code('');
+                                                }}
+                                            >
+                                                Edit amount or destination
+                                            </Button>
+                                        )}
+                                        {(phase === 'approval' || phase === 'error') && (
+                                            <Button
+                                                type="button"
+                                                disabled={now < Date.parse(intent.resendAt)}
+                                                onClick={() => {
+                                                    set_code('');
+                                                    void withdraw({
+                                                        destination: intent.destination,
+                                                        ui_amount: intent.uiAmount,
+                                                    });
+                                                }}
+                                            >
+                                                Request new code
+                                                {now < Date.parse(intent.resendAt)
+                                                    ? ` in ${Math.ceil((Date.parse(intent.resendAt) - now) / 1000)}s`
+                                                    : ''}
+                                            </Button>
+                                        )}
+                                        {phase === 'pending' && (
+                                            <p>
+                                                Checking this transfer. You can safely retry
+                                                checking its status; a second transfer will not be
+                                                created.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                                {phase === 'success' && (
+                                    <p className="text-sm">
+                                        A withdrawal receipt is queued for email.
+                                    </p>
+                                )}
 
                                 <StatusLine
                                     insufficient={insufficient}
@@ -209,7 +314,16 @@ export default function WithdrawDialog({ onClose }: WithdrawDialogProps): JSX.El
 
                                 <Button
                                     type="button"
-                                    disabled={!can_submit && phase !== 'success'}
+                                    disabled={
+                                        in_flight ||
+                                        (phase === 'approval'
+                                            ? code.length !== 6 ||
+                                              !intent ||
+                                              now >= Date.parse(intent.expiresAt)
+                                            : !can_submit &&
+                                              phase !== 'success' &&
+                                              !(intent && phase === 'error'))
+                                    }
                                     onClick={handle_submit}
                                     className="w-full h-12 rounded-full text-[15px] font-semibold tracking-wide text-white hover:text-white border border-white/6 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.05)] disabled:cursor-not-allowed transition-all duration-200 bg-[#0394fc] hover:bg-[#21a3ff]"
                                 >

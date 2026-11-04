@@ -9,6 +9,8 @@ model User {
   custodialPublicKey       String? @unique
   custodialSecretEncrypted String?
 
+  withdrawals WithdrawalIntent[]
+
   fills     Fill[]
   claims    Claim[]
   deposits  SolDeposit[]

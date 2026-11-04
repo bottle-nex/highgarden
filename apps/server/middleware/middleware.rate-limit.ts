@@ -15,6 +15,8 @@ type BucketName =
     | "auth_burst"
     | "trade"
     | "withdraw"
+    | "withdraw_code"
+    | "withdraw_verify"
     | "read"
     | "mutate"
     | "admin_strict"
@@ -30,6 +32,8 @@ const BUCKETS: Record<BucketName, BucketConfig> = {
     auth_strict: { windowMs: 60_000, max: 5, key_by: "ip_plus_email" },
     auth_burst: { windowMs: 3_600_000, max: 20, key_by: "ip" },
     trade: { windowMs: 60_000, max: 30, key_by: "user_or_ip" },
+    withdraw_code: { windowMs: 60_000, max: 5, key_by: "user_or_ip" },
+    withdraw_verify: { windowMs: 60_000, max: 10, key_by: "user_or_ip" },
     withdraw: { windowMs: 3_600_000, max: 5, key_by: "user_or_ip" },
     read: { windowMs: 60_000, max: 300, key_by: "ip" },
     mutate: { windowMs: 60_000, max: 60, key_by: "user_or_ip" },
@@ -77,6 +81,8 @@ export const rate_limiters = {
     auth_strict: make_limiter("auth_strict"),
     auth_burst: make_limiter("auth_burst"),
     trade: make_limiter("trade"),
+    withdraw_code: make_limiter("withdraw_code"),
+    withdraw_verify: make_limiter("withdraw_verify"),
     withdraw: make_limiter("withdraw"),
     read: make_limiter("read"),
     mutate: make_limiter("mutate"),

@@ -21,7 +21,7 @@ export default class ApproveListingController {
         if (!parsed.success) {
             return ResponseWriter.invalid_data(res, "Invalid approve payload");
         }
-        const approvedBy = parsed.data.approvedBy ?? null;
+        const approvedBy = req.user!.email;
 
         try {
             const listing = await prisma.listing.findUnique({

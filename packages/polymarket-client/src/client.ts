@@ -5,7 +5,7 @@ import {
   Side as PolySide,
   type ApiKeyCreds,
 } from "@polymarket/clob-client-v2";
-import { Wallet, providers, Contract } from "ethers";
+import { Wallet, providers, Contract, BigNumber } from "ethers";
 import { type LoggerLike, type PolymarketClientConfig, noop_logger } from "./config";
 import { RetryableError, UnrecoverableError } from "./errors";
 import type {
@@ -32,6 +32,11 @@ const PARENT_COLLECTION_ID = "0x000000000000000000000000000000000000000000000000
 const BINARY_INDEX_SETS = [1, 2] as const;
 
 const CTF_ABI = [
+  "function payoutDenominator(bytes32 conditionId) view returns (uint256)",
+  "function payoutNumerators(bytes32 conditionId, uint256 index) view returns (uint256)",
+  "function getOutcomeSlotCount(bytes32 conditionId) view returns (uint256)",
+  "function getCollectionId(bytes32 parentCollectionId, bytes32 conditionId, uint256 indexSet) view returns (bytes32)",
+  "function getPositionId(address collateralToken, bytes32 collectionId) pure returns (uint256)",
   "function redeemPositions(address collateralToken, bytes32 parentCollectionId, bytes32 conditionId, uint256[] indexSets)",
 ] as const;
 
@@ -55,6 +60,7 @@ interface RawGammaMarket {
   resolvedBy?: string | null;
   conditionId?: string | null;
   negRisk?: boolean;
+  clobTokenIds?: string;
 }
 
 // ──────────────── PolymarketClient ────────────────
@@ -210,14 +216,69 @@ export class PolymarketClient {
    * row; a present-but-unresolved market returns a non-null resolution with
    * `closed=false`.
    *
-   * Win detection is conservative: we require unanimous final prices (one
-   * outcome at 1.0, the other at 0.0). Ambiguous payouts return
-   * `winningOutcomeIndex=null`.
+   * Only finalized CTF binary payouts with verified token mappings can
+   * establish a winner. Metadata prices and event end times are informational.
    */
   public async fetch_resolution(polymarket_market_id: string): Promise<GammaResolution | null> {
     const raw = await this.fetch_raw_gamma_market(polymarket_market_id);
     if (!raw) return null;
-    return this.shape_resolution(raw);
+    const resolution = this.shape_resolution(raw);
+    if (
+      String(raw.id) !== polymarket_market_id ||
+      !raw.closed ||
+      raw.negRisk ||
+      !raw.conditionId ||
+      !/^0x[0-9a-fA-F]{64}$/.test(raw.conditionId)
+    )
+      return resolution;
+    const labels = resolution.outcomes.map((v) => v.toLowerCase());
+    const tokens = parse_string_array(raw.clobTokenIds);
+    if (
+      labels.length !== 2 ||
+      !["yes", "up"].includes(labels[0]!) ||
+      !["no", "down"].includes(labels[1]!) ||
+      tokens.length !== 2
+    )
+      return resolution;
+    try {
+      const provider = this.get_polygon_provider();
+      const block = await provider.getBlock("finalized");
+      if (!block) return resolution;
+      const ctf = new Contract(CONDITIONAL_TOKENS_ADDRESS, CTF_ABI, provider);
+      const opts = { blockTag: block.number };
+      const condition = raw.conditionId;
+      const [slots, denominator, yes, no, collection0, collection1] = await Promise.all([
+        ctf.getOutcomeSlotCount!(condition, opts),
+        ctf.payoutDenominator!(condition, opts),
+        ctf.payoutNumerators!(condition, 0, opts),
+        ctf.payoutNumerators!(condition, 1, opts),
+        ctf.getCollectionId!(PARENT_COLLECTION_ID, condition, 1, opts),
+        ctf.getCollectionId!(PARENT_COLLECTION_ID, condition, 2, opts),
+      ]);
+      if (!BigNumber.from(slots).eq(2) || BigNumber.from(denominator).isZero()) return resolution;
+      const positions = await Promise.all([
+        ctf.getPositionId!(USDC_E_ADDRESS, collection0, opts),
+        ctf.getPositionId!(USDC_E_ADDRESS, collection1, opts),
+      ]);
+      if (
+        !BigNumber.from(positions[0]).eq(tokens[0]!) ||
+        !BigNumber.from(positions[1]).eq(tokens[1]!)
+      )
+        return resolution;
+      const winner = binaryPayoutWinner(denominator.toString(), yes.toString(), no.toString());
+      if (winner === null) return resolution;
+      resolution.winningOutcomeIndex = winner;
+      resolution.finalityEvidence = JSON.stringify({
+        condition,
+        tokens,
+        denominator: denominator.toString(),
+        payouts: [yes.toString(), no.toString()],
+      });
+      resolution.resolvedAt = new Date(); // Observation time, never the event-end timestamp.
+    } catch (err) {
+      this.log.warn({ err }, "final payout evidence unavailable; leaving market pending");
+    }
+    return resolution;
   }
 
   // ──────────────── Polygon CTF redemption ────────────────
@@ -452,36 +513,14 @@ export class PolymarketClient {
     return {
       closed: !!raw.closed,
       archived: !!raw.archived,
-      winningOutcomeIndex: this.derive_winner(outcome_prices, !!raw.closed),
-      resolvedAt: this.derive_resolved_at(raw),
+      winningOutcomeIndex: null,
+      finalityEvidence: null,
+      resolvedAt: null,
       outcomes,
       outcomePrices: outcome_prices,
       conditionId: raw.conditionId ?? null,
       negRisk: !!raw.negRisk,
     };
-  }
-
-  /**
-   * Conservative winner detection. Only declares a winner when one outcome
-   * is unambiguously 1.0 and the other is unambiguously 0.0.
-   */
-  private derive_winner(prices: string[], closed: boolean): 0 | 1 | null {
-    if (!closed) return null;
-    if (prices.length < 2) return null;
-    const yes = parse_price(prices[0]);
-    const no = parse_price(prices[1]);
-    if (yes === null || no === null) return null;
-    if (yes >= 0.999 && no <= 0.001) return 0;
-    if (no >= 0.999 && yes <= 0.001) return 1;
-    return null;
-  }
-
-  private derive_resolved_at(raw: RawGammaMarket): Date | null {
-    if (!raw.closed) return null;
-    const candidate = raw.umaEndDate ?? raw.endDate;
-    if (!candidate) return null;
-    const d = new Date(candidate);
-    return Number.isFinite(d.getTime()) ? d : null;
   }
 
   // ──────────────── Internals: Polygon CTF ────────────────
@@ -537,8 +576,13 @@ function parse_string_array(input: string | undefined | null): string[] {
   }
 }
 
-function parse_price(input: string | undefined): number | null {
-  if (input === undefined) return null;
-  const n = Number(input);
-  return Number.isFinite(n) ? n : null;
+/** Exact binary CTF payouts only; split and unresolved conditions stay pending. */
+export function binaryPayoutWinner(denominator: string, yes: string, no: string): 0 | 1 | null {
+  const d = BigInt(denominator),
+    y = BigInt(yes),
+    n = BigInt(no);
+  if (d <= 0n || y < 0n || n < 0n) return null;
+  if (y === d && n === 0n) return 0;
+  if (n === d && y === 0n) return 1;
+  return null;
 }

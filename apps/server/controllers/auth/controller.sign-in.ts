@@ -1,20 +1,13 @@
 import type { Request, Response } from "express";
+import { verifyGoogleIdentity } from "../../services/service.google-identity";
 import { z } from "zod";
 import { prisma } from "@solmarket/database";
 import ResponseWriter from "../../services/service.response";
+import { enqueueLoginAlert } from "../../services/service.notification-outbox";
 import { signSessionJwt } from "../../services/service.jwt";
 import { ensure_user_has_keypair } from "../../services/service.keypair";
 
-const body_schema = z.object({
-    user: z.object({
-        email: z.email(),
-        name: z.string().nullish(),
-        image: z.string().nullish(),
-    }),
-    account: z.object({
-        provider: z.enum(["google"]),
-    }),
-});
+const body_schema = z.object({ idToken: z.string().min(1).max(16000) });
 
 export default class SignInController {
     static async process(req: Request, res: Response) {
@@ -22,9 +15,14 @@ export default class SignInController {
         if (!parsed.success) {
             return ResponseWriter.invalid_data(res, "Invalid sign-in payload");
         }
-        const { email, name, image } = parsed.data.user;
+        let identity;
+        try {
+            identity = await verifyGoogleIdentity(parsed.data.idToken);
+        } catch {
+            return ResponseWriter.not_authorized(res, "Invalid Google identity token");
+        }
+        const { email, name, image } = identity;
         const normalizedEmail = email.toLowerCase();
-
         try {
             const user = await prisma.user.upsert({
                 where: { email: normalizedEmail },
@@ -45,6 +43,8 @@ export default class SignInController {
             const walletPublicKey = await ensure_user_has_keypair(user.id);
             const token = signSessionJwt({ sub: user.id, email: user.email });
 
+            // Provider outages are handled by the durable outbox and do not block login.
+            await enqueueLoginAlert(user.email);
             return ResponseWriter.success(
                 res,
                 { user: { ...user, walletPublicKey }, token },

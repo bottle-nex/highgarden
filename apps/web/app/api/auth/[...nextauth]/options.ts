@@ -32,8 +32,7 @@ export const authOption: NextAuthOptions = {
             try {
                 if (account?.provider === 'google') {
                     const response = await axios.post(SIGNIN_URL, {
-                        user,
-                        account,
+                        idToken: account.id_token,
                     });
 
                     const result = response.data;

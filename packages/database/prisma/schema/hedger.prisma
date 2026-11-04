@@ -12,6 +12,9 @@ model ResolverState {
     marketId               String         @id
     stage                  ResolverStage  @default(PENDING)
     polymarketResolvedAt   DateTime?
+    finalityEvidence       String?
+    finalityObservedAt     DateTime?
+    submissionClaimedAt    DateTime?
     winningOutcome         Outcome?
     solanaResolveTxSig     String?
     solanaResolvedAt       DateTime?

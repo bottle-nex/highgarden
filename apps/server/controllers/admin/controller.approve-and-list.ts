@@ -29,7 +29,7 @@ export default class ApproveAndListOnSolanaController {
         if (!parsed.success) {
             return ResponseWriter.invalid_data(res, "Invalid approve payload");
         }
-        const approvedBy = parsed.data.approvedBy ?? null;
+        const approvedBy = req.user!.email;
 
         try {
             const result = await ApproveAndListOnSolanaController.service.approve(

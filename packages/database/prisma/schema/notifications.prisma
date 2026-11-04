@@ -1,0 +1,14 @@
+model NotificationOutbox {
+  id String @id @default(cuid())
+  dedupeKey String @unique
+  recipient String
+  subject String
+  text String
+  attempts Int @default(0)
+  availableAt DateTime @default(now())
+  leaseUntil DateTime?
+  acceptedAt DateTime?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([acceptedAt, availableAt, leaseUntil])
+}

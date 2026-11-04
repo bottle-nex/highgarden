@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@solmarket/database";
 import ResponseWriter from "../../services/service.response";
 import OtpService from "../../services/service.otp";
+import { enqueueLoginAlert } from "../../services/service.notification-outbox";
 import { signSessionJwt } from "../../services/service.jwt";
 import { ensure_user_has_keypair } from "../../services/service.keypair";
 
@@ -54,6 +55,8 @@ export default class OtpVerifyController {
             const walletPublicKey = await ensure_user_has_keypair(user.id);
             const token = signSessionJwt({ sub: user.id, email: user.email });
 
+            // Provider outages are handled by the durable outbox and do not block login.
+            await enqueueLoginAlert(user.email);
             return ResponseWriter.success(
                 res,
                 { user: { ...user, walletPublicKey }, token },

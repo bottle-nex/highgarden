@@ -3,6 +3,19 @@ import { z } from "zod";
 const env_schema = z.object({
     SERVER_REDIS_URL: z.string(),
     SERVER_PORT: z.coerce.number(),
+    SERVER_GOOGLE_CLIENT_ID: z.string().min(1),
+    ADMIN_EMAILS: z
+        .string()
+        .default("")
+        .refine(
+            (value) =>
+                value
+                    .split(",")
+                    .map((v) => v.trim())
+                    .filter(Boolean)
+                    .every((v) => z.email().safeParse(v).success),
+            "ADMIN_EMAILS must be comma-separated email addresses",
+        ),
     SERVER_AUTH_SECRET: z.string().min(32),
     SERVER_RESEND_API_KEY: z.string(),
     SERVER_OTP_TTL_SECONDS: z.coerce.number().default(600),
@@ -22,14 +35,7 @@ const env_schema = z.object({
     SERVER_SOLANA_PROGRAM_ID: z.string().default("2LEm66V2Ys8JbVoQfYbZqCy6YGM1wuPUc843xRx76t3P"),
     SERVER_SOLANA_ADMIN_KEYPAIR: z.string().optional(),
     SERVER_QUOTE_SIGNER_KEYPAIR: z.string().optional(),
-    /**
-     * Oracle keypair (matches `Config.oracle_signer` on-chain) used by the
-     * admin "Resolve Market" button to sign `resolve_market`. Only needed
-     * for the manual-resolve flow — the hedger has its own
-     * HEDGER_SOLANA_ORACLE_SIGNER_KEYPAIR for the automatic UMA-based
-     * resolver. Leave unset in environments that don't expose admin
-     * resolve.
-     */
+    /** Optional oracle configuration retained for internal Solana services. */
     SERVER_SOLANA_ORACLE_KEYPAIR: z.string().optional(),
     SERVER_QUOTE_EXPIRY_SECONDS: z.coerce.number().default(5),
     SERVER_QUOTE_SPREAD_CENTS: z.coerce.number().default(2),

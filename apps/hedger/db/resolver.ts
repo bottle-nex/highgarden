@@ -6,6 +6,9 @@ import type { Outcome, ResolverStage } from "@solmarket/database";
  * Lifecycle: PENDING → POLYMARKET_RESOLVED → SOLANA_RESOLVED → REDEEMED.
  */
 export interface ResolverStateRow {
+    finalityEvidence: string | null;
+    finalityObservedAt: Date | null;
+    submissionClaimedAt: Date | null;
     marketId: string;
     stage: ResolverStage;
     polymarketResolvedAt: Date | null;
@@ -61,36 +64,41 @@ export default class Resolver {
         market_id: string,
         winning_outcome: Outcome,
         resolved_at: Date,
+        evidence: string,
     ): Promise<ResolverStateRow> {
-        return prisma.resolverState.upsert({
-            where: { marketId: market_id },
-            create: {
-                marketId: market_id,
-                stage: "POLYMARKET_RESOLVED",
-                polymarketResolvedAt: resolved_at,
-                winningOutcome: winning_outcome,
-            },
-            update: {
-                stage: "POLYMARKET_RESOLVED",
-                polymarketResolvedAt: resolved_at,
-                winningOutcome: winning_outcome,
-            },
+        return prisma.$transaction(async (tx) => {
+            await tx.resolverState.upsert({
+                where: { marketId: market_id },
+                create: { marketId: market_id },
+                update: {},
+            });
+            await tx.$queryRaw`SELECT "marketId" FROM "ResolverState" WHERE "marketId" = ${market_id} FOR UPDATE`;
+            const prior = await tx.resolverState.findUniqueOrThrow({
+                where: { marketId: market_id },
+            });
+            if (
+                prior.solanaResolveTxSig ||
+                prior.submissionClaimedAt ||
+                !["PENDING", "POLYMARKET_RESOLVED"].includes(prior.stage)
+            )
+                return prior;
+            return tx.resolverState.update({
+                where: { marketId: market_id },
+                data: {
+                    stage: "POLYMARKET_RESOLVED",
+                    polymarketResolvedAt: resolved_at,
+                    winningOutcome: winning_outcome,
+                    finalityEvidence: evidence,
+                    finalityObservedAt:
+                        prior.finalityEvidence === evidence && prior.finalityObservedAt
+                            ? prior.finalityObservedAt
+                            : new Date(),
+                },
+            });
         });
     }
 
-    /**
-     * Returns markets ready for on-chain `resolve_market` submission.
-     * Standard markets must have cleared the dispute window
-     * (`polymarketResolvedAt <= max_resolved_at`); FAST_MOVING markets
-     * (sub-hour ladders) bypass the window entirely — there's no UMA
-     * dispute risk on those and the whole point is fast settlement so
-     * the auto-resolver can be tested without 48h waits.
-     *
-     * No Market relation is defined on ResolverState, so the FAST_MOVING
-     * bypass is applied in TS: pull every awaiting row, then look up its
-     * `Market.kind` and keep it if either (a) it's FAST_MOVING or (b)
-     * its `polymarketResolvedAt` is past the cutoff.
-     */
+    /** Every market waits from its first verified final payout observation. */
     static async list_awaiting_solana_submission(
         max_resolved_at: Date,
     ): Promise<ResolverStateRow[]> {
@@ -101,17 +109,12 @@ export default class Resolver {
                 winningOutcome: { not: null },
             },
         });
-        if (rows.length === 0) return rows;
-        const market_ids = rows.map((r) => r.marketId);
-        const markets = await prisma.market.findMany({
-            where: { id: { in: market_ids } },
-            select: { id: true, kind: true },
-        });
-        const kind_by_id = new Map(markets.map((m) => [m.id, m.kind] as const));
-        return rows.filter((r) => {
-            if (kind_by_id.get(r.marketId) === "FAST_MOVING") return true;
-            return r.polymarketResolvedAt !== null && r.polymarketResolvedAt <= max_resolved_at;
-        });
+        return rows.filter(
+            (r) =>
+                r.finalityEvidence !== null &&
+                r.finalityObservedAt !== null &&
+                r.finalityObservedAt <= max_resolved_at,
+        );
     }
 
     /**
@@ -200,9 +203,20 @@ export default class Resolver {
      * so a future tick treats it as fresh.
      */
     static async revert_to_pending(market_id: string): Promise<void> {
-        await prisma.resolverState.update({
-            where: { marketId: market_id },
-            data: { stage: "PENDING", polymarketResolvedAt: null, winningOutcome: null },
+        await prisma.resolverState.updateMany({
+            where: {
+                marketId: market_id,
+                stage: "POLYMARKET_RESOLVED",
+                solanaResolveTxSig: null,
+                submissionClaimedAt: null,
+            },
+            data: {
+                stage: "PENDING",
+                polymarketResolvedAt: null,
+                winningOutcome: null,
+                finalityEvidence: null,
+                finalityObservedAt: null,
+            },
         });
     }
 
@@ -212,9 +226,19 @@ export default class Resolver {
      * submission. Stage stays POLYMARKET_RESOLVED.
      */
     static async update_winning_outcome(market_id: string, outcome: Outcome): Promise<void> {
-        await prisma.resolverState.update({
-            where: { marketId: market_id },
-            data: { winningOutcome: outcome },
+        await prisma.resolverState.updateMany({
+            where: {
+                marketId: market_id,
+                stage: "POLYMARKET_RESOLVED",
+                solanaResolveTxSig: null,
+                submissionClaimedAt: null,
+            },
+            data: {
+                stage: "PENDING",
+                winningOutcome: outcome,
+                finalityEvidence: null,
+                finalityObservedAt: null,
+            },
         });
     }
 }

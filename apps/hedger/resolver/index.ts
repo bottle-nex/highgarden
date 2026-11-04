@@ -1,5 +1,5 @@
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
-import type { Outcome } from "@solmarket/database";
+import { prisma, type Outcome } from "@solmarket/database";
 import { SolmarketClient } from "@solmarket/contract";
 import bs58 from "bs58";
 
@@ -136,14 +136,12 @@ export default class Resolver {
     }
 
     private is_terminal_stage(stage: string | undefined): boolean {
-        return (
-            stage === "POLYMARKET_RESOLVED" || stage === "SOLANA_RESOLVED" || stage === "REDEEMED"
-        );
+        return stage === "SOLANA_RESOLVED" || stage === "REDEEMED";
     }
 
     private async check_one(candidate: MarketCandidate): Promise<void> {
         const resolution = await this.poly.fetch_resolution(candidate.polyMarketId);
-        if (!resolution || !resolution.closed) return;
+        if (!resolution || !resolution.closed || !resolution.finalityEvidence) return;
         if (resolution.winningOutcomeIndex === null) {
             this.log.debug(
                 { marketId: candidate.marketId, polyMarketId: candidate.polyMarketId },
@@ -162,12 +160,18 @@ export default class Resolver {
         const resolved_at = resolution.resolvedAt ?? new Date();
 
         const existing = await ResolverDb.find(candidate.marketId);
-        if (existing?.polymarketResolvedAt) return;
+        if (!resolution.finalityEvidence) return;
+        if (
+            existing?.finalityEvidence === resolution.finalityEvidence &&
+            existing.finalityObservedAt
+        )
+            return;
 
         const row = await ResolverDb.record_polymarket_resolved(
             candidate.marketId,
             winning_outcome,
             resolved_at,
+            resolution.finalityEvidence,
         );
 
         this.log.info(
@@ -232,6 +236,33 @@ export default class Resolver {
             return;
         }
 
+        const live = await this.poly.fetch_resolution(market.polyMarketId);
+        const expected = row.winningOutcome === "YES" ? 0 : 1;
+        if (
+            !live?.finalityEvidence ||
+            live.winningOutcomeIndex !== expected ||
+            live.finalityEvidence !== row.finalityEvidence
+        ) {
+            await ResolverDb.revert_to_pending(row.marketId);
+            return;
+        }
+        // Freeze the verified evidence before any submission. Reconciliation
+        // can no longer rewrite this row while the chain request is in flight.
+        const claim = await prisma.resolverState.updateMany({
+            where: {
+                marketId: row.marketId,
+                stage: "POLYMARKET_RESOLVED",
+                solanaResolveTxSig: null,
+                finalityEvidence: live.finalityEvidence,
+                finalityObservedAt: { lte: this.dispute_window_cutoff() },
+                OR: [
+                    { submissionClaimedAt: null },
+                    { submissionClaimedAt: { lt: new Date(Date.now() - 120000) } },
+                ],
+            },
+            data: { submissionClaimedAt: new Date() },
+        });
+        if (!claim.count) return;
         const signature = await this.send_resolve_to_solana(
             market.solanaMarketPda,
             row.winningOutcome,
