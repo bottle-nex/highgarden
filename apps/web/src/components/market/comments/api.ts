@@ -49,6 +49,10 @@ export async function post_native_comment(market_id: string, body: string): Prom
     return res.data.data;
 }
 
+export async function delete_native_comment(comment_id: string): Promise<void> {
+    await apiClient.delete(`${API_URL}/comments/${comment_id}`);
+}
+
 export async function report_comment(comment_id: string): Promise<{
     already_reported: boolean;
 }> {
