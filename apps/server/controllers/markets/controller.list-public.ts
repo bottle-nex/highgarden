@@ -11,6 +11,7 @@ import ResponseWriter from "../../services/service.response";
 // seconds. A 3-second TTL keeps the dashboard close to real-time while
 // collapsing N concurrent callers onto one DB hit per tag-filter.
 const CACHE_TTL_MS = 3_000;
+const CACHE_MAX_ENTRIES = 1_000;
 const snapshot_cache = new Map<string, { expires_at: number; payload: MarketDTO[] }>();
 
 /**
@@ -128,10 +129,19 @@ export default class ListPublicMarketsController {
                 });
             }
 
+            const set_at = Date.now();
+            for (const [key, entry] of snapshot_cache) {
+                if (entry.expires_at <= set_at) snapshot_cache.delete(key);
+            }
+            snapshot_cache.delete(cache_key);
             snapshot_cache.set(cache_key, {
                 expires_at: now_ms + CACHE_TTL_MS,
                 payload: markets,
             });
+            if (snapshot_cache.size > CACHE_MAX_ENTRIES) {
+                const oldest = snapshot_cache.keys().next().value;
+                if (oldest !== undefined) snapshot_cache.delete(oldest);
+            }
             return ResponseWriter.success(res, markets, "Markets");
         } catch (err) {
             console.error("[markets/list-public]", err);
