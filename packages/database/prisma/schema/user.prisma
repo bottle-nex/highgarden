@@ -13,5 +13,6 @@ model User {
   claims    Claim[]
   deposits  SolDeposit[]
   comments  Comment[]
+  commentReports CommentReport[]
   bookmarks Bookmark[]
 }
