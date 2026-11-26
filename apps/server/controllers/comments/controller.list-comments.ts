@@ -4,6 +4,7 @@ import type { CommentDTO } from "@solmarket/types";
 import ResponseWriter from "../../services/service.response";
 
 const MAX_LIMIT = 50;
+const HIDE_REPORT_THRESHOLD = 5;
 
 function shorten_wallet(addr: string | null | undefined): string | null {
     if (!addr) return null;
@@ -40,7 +41,13 @@ export default class ListCommentsController {
             }
 
             const rows = await prisma.comment.findMany({
-                where: { eventId: event_id },
+                where: {
+                    eventId: event_id,
+                    OR: [
+                        { reportCount: { lt: HIDE_REPORT_THRESHOLD } },
+                        ...(req.user ? [{ userId: req.user.id }] : []),
+                    ],
+                },
                 orderBy: { createdAt: "desc" },
                 take: limit,
                 skip: offset,
