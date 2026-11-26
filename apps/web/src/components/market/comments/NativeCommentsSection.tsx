@@ -1,5 +1,5 @@
 'use client';
-import { JSX, useCallback, useEffect, useState } from 'react';
+import { JSX, useEffect, useRef, useState } from 'react';
 import { PiChatCircleFill, PiFlagBold } from 'react-icons/pi';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CroppedButton } from '@/components/ui/cropped-button';
@@ -26,10 +26,18 @@ const MAX_BODY = 2000;
 export default function NativeCommentsSection({
     market_id,
 }: NativeCommentsSectionProps): JSX.Element {
+    return <NativeDiscussion key={market_id} market_id={market_id} />;
+}
+
+function NativeDiscussion({ market_id }: NativeCommentsSectionProps): JSX.Element {
     const session = useUserSessionStore((state) => state.session);
     const is_signed_in = !!session?.user?.token;
     const [comments, set_comments] = useState<CommentDTO[]>([]);
     const [offset, set_offset] = useState(0);
+    const [total, set_total] = useState<number | null>(null);
+    const [loading_more, set_loading_more] = useState(false);
+    const loading_more_ref = useRef(false);
+    const active = useRef(true);
     const [loading, set_loading] = useState(true);
     const [error, set_error] = useState<string | null>(null);
     const [has_more, set_has_more] = useState(false);
@@ -38,58 +46,81 @@ export default function NativeCommentsSection({
     const [posting, set_posting] = useState(false);
     const [reported_ids, set_reported_ids] = useState<Set<string>>(new Set());
 
-    const load_initial = useCallback(async () => {
-        set_loading(true);
-        set_error(null);
-        try {
-            const result = await fetch_native_comments(market_id, {
-                limit: PAGE_SIZE,
-                offset: 0,
-            });
-            set_comments(result.comments);
-            set_offset(result.comments.length);
-            set_has_more(result.comments.length === PAGE_SIZE);
-            set_available(result.event_id !== null);
-        } catch (err) {
-            console.error('[comments] load_initial', err);
-            set_error('Could not load comments');
-        } finally {
-            set_loading(false);
+    useEffect(() => {
+        let cancelled = false;
+        active.current = true;
+
+        async function load_initial() {
+            try {
+                const result = await fetch_native_comments(market_id, {
+                    limit: PAGE_SIZE,
+                    offset: 0,
+                });
+                if (cancelled) return;
+                set_comments(result.comments);
+                set_offset(result.comments.length);
+                set_has_more(result.has_more);
+                set_total(result.total);
+                set_available(result.event_id !== null);
+            } catch (err) {
+                if (cancelled) return;
+                console.error('[comments] load_initial', err);
+                set_error('Could not load comments');
+            } finally {
+                if (!cancelled) set_loading(false);
+            }
         }
+
+        void load_initial();
+        return () => {
+            cancelled = true;
+            active.current = false;
+        };
     }, [market_id]);
 
-    useEffect(() => {
-        void load_initial();
-    }, [load_initial]);
-
     async function load_more() {
+        if (loading_more_ref.current || posting || !has_more) return;
+        loading_more_ref.current = true;
+        set_loading_more(true);
+        set_error(null);
         try {
             const result = await fetch_native_comments(market_id, {
                 limit: PAGE_SIZE,
                 offset,
             });
+            if (!active.current) return;
             set_comments((prev) => [...prev, ...result.comments]);
             set_offset((prev) => prev + result.comments.length);
-            set_has_more(result.comments.length === PAGE_SIZE);
+            set_has_more(result.has_more);
+            set_total(result.total);
         } catch (err) {
+            if (!active.current) return;
             console.error('[comments] load_more', err);
             set_error('Could not load more comments');
+        } finally {
+            loading_more_ref.current = false;
+            if (active.current) set_loading_more(false);
         }
     }
 
     async function submit() {
-        if (!body.trim() || posting) return;
+        if (!body.trim() || posting || loading_more_ref.current || loading || total === null)
+            return;
         set_posting(true);
+        set_error(null);
         try {
             const created = await post_native_comment(market_id, body.trim());
+            if (!active.current) return;
             set_comments((prev) => [created, ...prev]);
+            set_total((prev) => (prev === null ? null : prev + 1));
             set_offset((prev) => prev + 1);
             set_body('');
         } catch (err) {
+            if (!active.current) return;
             console.error('[comments] submit', err);
             set_error('Could not post comment');
         } finally {
-            set_posting(false);
+            if (active.current) set_posting(false);
         }
     }
 
@@ -110,7 +141,14 @@ export default function NativeCommentsSection({
 
     const trimmed_len = body.trim().length;
     const over_limit = trimmed_len > MAX_BODY;
-    const can_submit = is_signed_in && trimmed_len > 0 && !over_limit && !posting;
+    const can_submit =
+        is_signed_in &&
+        trimmed_len > 0 &&
+        !over_limit &&
+        !posting &&
+        !loading &&
+        !loading_more &&
+        total !== null;
 
     return (
         <section>
@@ -121,9 +159,11 @@ export default function NativeCommentsSection({
                         Solmarket Discussion
                     </span>
                 </div>
-                <span className="text-[10px] tracking-[0.32em] uppercase text-white/35 tabular-nums">
-                    {comments.length} {comments.length === 1 ? 'Post' : 'Posts'}
-                </span>
+                {total !== null && (
+                    <span className="text-[10px] tracking-[0.32em] uppercase text-white/35 tabular-nums">
+                        {total} {total === 1 ? 'Post' : 'Posts'}
+                    </span>
+                )}
             </header>
 
             <div>
@@ -195,17 +235,16 @@ export default function NativeCommentsSection({
                     </div>
                 )}
 
+                {error && (
+                    <div className="py-10 text-center text-[10px] tracking-[0.3em] uppercase text-rose-400/80">
+                        {error}
+                    </div>
+                )}
                 {loading ? (
                     <div className="py-10 text-center text-[10px] tracking-[0.3em] uppercase text-white/30">
                         Loading...
                     </div>
-                ) : error ? (
-                    <div className="py-10 text-center">
-                        <div className="text-[10px] tracking-[0.3em] uppercase text-rose-400/80">
-                            {error}
-                        </div>
-                    </div>
-                ) : comments.length === 0 ? (
+                ) : total === null ? null : comments.length === 0 ? (
                     <div className="py-10 text-center text-[10px] tracking-[0.3em] uppercase text-white/30">
                         {available
                             ? 'Be the first to post'
@@ -228,9 +267,10 @@ export default function NativeCommentsSection({
                                 <button
                                     type="button"
                                     onClick={load_more}
-                                    className="rounded-md border border-white/10 px-5 py-2 text-[10px] tracking-[0.3em] uppercase text-white/55 hover:text-white hover:border-white/25 transition-colors cursor-pointer"
+                                    disabled={loading_more || posting}
+                                    className="rounded-md border border-white/10 px-5 py-2 text-[10px] tracking-[0.3em] uppercase text-white/55 hover:text-white hover:border-white/25 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    Load more
+                                    {loading_more ? 'Loading...' : 'Load more'}
                                 </button>
                             </div>
                         )}
