@@ -15,8 +15,11 @@ export function useSubscribeEventHandlers() {
     useWebSocket();
 
     useEffect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const handlers_map: Record<SERVER_MESSAGE_TYPE, (msg: any) => void> = {
+        const handlers_map: Record<
+            Exclude<SERVER_MESSAGE_TYPE, SERVER_MESSAGE_TYPE.COMMENT_DELETED>,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (msg: any) => void
+        > = {
             [SERVER_MESSAGE_TYPE.MARKET]: SocketEventHandlers.handle_market,
             [SERVER_MESSAGE_TYPE.SUBSCRIBED]: SocketEventHandlers.handle_subscribed,
             [SERVER_MESSAGE_TYPE.UNSUBSCRIBED]: SocketEventHandlers.handle_unsubscribed,

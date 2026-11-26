@@ -1,12 +1,25 @@
 'use client';
-import { JSX, useCallback, useEffect, useState } from 'react';
-import { PiChatCircleFill, PiFlagBold } from 'react-icons/pi';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
+import { PiChatCircleFill, PiFlagBold, PiTrashBold } from 'react-icons/pi';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CroppedButton } from '@/components/ui/cropped-button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
-import type { CommentDTO } from '@solmarket/types';
-import { fetch_native_comments, post_native_comment, report_comment } from './api';
-import { initials_from, relative_time } from './utils';
+import { SERVER_MESSAGE_TYPE, type CommentDTO, type ServerMessage } from '@solmarket/types';
+import SingletonSocket from '@/lib/socket/singleton-socket';
+import { useWebSocket } from '@/lib/socket/useWebSocket';
+import { useStreamStore } from '@/store/stream/useStreamStore';
+import {
+    delete_native_comment,
+    fetch_native_comments,
+    post_native_comment,
+    report_comment,
+} from './api';
+import {
+    initials_from,
+    merge_posted_comments,
+    relative_time,
+    remove_deleted_comment,
+} from './utils';
 import CommentBody from './CommentBody';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +31,9 @@ interface CommentRowProps {
     comment: CommentDTO;
     reported: boolean;
     on_report: () => void;
+    own: boolean;
+    deleting: boolean;
+    on_delete: () => void;
 }
 
 const PAGE_SIZE = 30;
@@ -29,7 +45,6 @@ export default function NativeCommentsSection({
     const session = useUserSessionStore((state) => state.session);
     const is_signed_in = !!session?.user?.token;
     const [comments, set_comments] = useState<CommentDTO[]>([]);
-    const [offset, set_offset] = useState(0);
     const [loading, set_loading] = useState(true);
     const [error, set_error] = useState<string | null>(null);
     const [has_more, set_has_more] = useState(false);
@@ -37,43 +52,116 @@ export default function NativeCommentsSection({
     const [body, set_body] = useState('');
     const [posting, set_posting] = useState(false);
     const [reported_ids, set_reported_ids] = useState<Set<string>>(new Set());
+    const [deleting_ids, set_deleting_ids] = useState<Set<string>>(new Set());
+    const [delete_error, set_delete_error] = useState<string | null>(null);
+    const event_id = useRef<string | null>(null);
+    const generation = useRef(0);
+    const posted_comments = useRef<CommentDTO[]>([]);
+    useWebSocket();
 
-    const load_initial = useCallback(async () => {
-        set_loading(true);
-        set_error(null);
-        try {
-            const result = await fetch_native_comments(market_id, {
-                limit: PAGE_SIZE,
-                offset: 0,
-            });
-            set_comments(result.comments);
-            set_offset(result.comments.length);
-            set_has_more(result.comments.length === PAGE_SIZE);
-            set_available(result.event_id !== null);
-        } catch (err) {
-            console.error('[comments] load_initial', err);
-            set_error('Could not load comments');
-        } finally {
-            set_loading(false);
-        }
-    }, [market_id]);
+    const load_initial = useCallback(
+        async (show_loading = true) => {
+            const request = ++generation.current;
+            const posted_count = posted_comments.current.length;
+            if (show_loading) set_loading(true);
+            set_error(null);
+            try {
+                const result = await fetch_native_comments(market_id, {
+                    limit: PAGE_SIZE,
+                    offset: 0,
+                });
+                if (request !== generation.current) return;
+                event_id.current = result.event_id;
+                const merged = merge_posted_comments(
+                    result.comments,
+                    posted_comments.current.slice(posted_count),
+                );
+                posted_comments.current = [];
+                set_comments(merged);
+                set_has_more(result.comments.length === PAGE_SIZE);
+                set_available(result.event_id !== null);
+            } catch (err) {
+                if (request !== generation.current) return;
+                console.error('[comments] load_initial', err);
+                set_error('Could not load comments');
+            } finally {
+                if (request === generation.current) set_loading(false);
+            }
+        },
+        [market_id],
+    );
 
     useEffect(() => {
         void load_initial();
+        const current_generation = generation;
+        return () => {
+            current_generation.current++;
+            event_id.current = null;
+            posted_comments.current = [];
+        };
+    }, [load_initial]);
+
+    const remove_comment = useCallback((comment_id: string) => {
+        generation.current++;
+        set_loading(false);
+        set_comments((prev) => remove_deleted_comment(prev, comment_id));
+        posted_comments.current = remove_deleted_comment(posted_comments.current, comment_id);
+    }, []);
+
+    useEffect(() => {
+        const on_deleted = (
+            msg: Extract<ServerMessage, { type: SERVER_MESSAGE_TYPE.COMMENT_DELETED }>,
+        ) => {
+            if (event_id.current !== null && msg.payload.eventId !== event_id.current) return;
+            if (event_id.current === null) {
+                void load_initial(false);
+            } else {
+                remove_comment(msg.payload.commentId);
+            }
+        };
+        SingletonSocket.on(SERVER_MESSAGE_TYPE.COMMENT_DELETED, on_deleted);
+        return () => SingletonSocket.off(SERVER_MESSAGE_TYPE.COMMENT_DELETED, on_deleted);
+    }, [load_initial, remove_comment]);
+
+    useEffect(() => {
+        return useStreamStore.subscribe((state, previous) => {
+            if (state.status === 'open' && previous.status !== 'open') void load_initial(false);
+        });
     }, [load_initial]);
 
     async function load_more() {
+        const request = generation.current;
         try {
             const result = await fetch_native_comments(market_id, {
                 limit: PAGE_SIZE,
-                offset,
+                offset: comments.length,
             });
+            if (request !== generation.current) return;
             set_comments((prev) => [...prev, ...result.comments]);
-            set_offset((prev) => prev + result.comments.length);
             set_has_more(result.comments.length === PAGE_SIZE);
         } catch (err) {
+            if (request !== generation.current) return;
             console.error('[comments] load_more', err);
             set_error('Could not load more comments');
+        }
+    }
+
+    async function on_delete(comment_id: string) {
+        if (deleting_ids.has(comment_id)) return;
+        set_delete_error(null);
+        set_deleting_ids((prev) => new Set(prev).add(comment_id));
+        try {
+            await delete_native_comment(comment_id);
+            remove_comment(comment_id);
+        } catch (err) {
+            console.error('[comments] delete', err);
+            set_delete_error('Could not delete comment');
+        } finally {
+            set_deleting_ids((prev) => {
+                const next = new Set(prev);
+                next.delete(comment_id);
+                return next;
+            });
         }
     }
 
@@ -82,8 +170,8 @@ export default function NativeCommentsSection({
         set_posting(true);
         try {
             const created = await post_native_comment(market_id, body.trim());
+            posted_comments.current.push(created);
             set_comments((prev) => [created, ...prev]);
-            set_offset((prev) => prev + 1);
             set_body('');
         } catch (err) {
             console.error('[comments] submit', err);
@@ -195,6 +283,11 @@ export default function NativeCommentsSection({
                     </div>
                 )}
 
+                {delete_error && (
+                    <div role="alert" className="text-[10px] uppercase text-rose-400/80">
+                        {delete_error}
+                    </div>
+                )}
                 {loading ? (
                     <div className="py-10 text-center text-[10px] tracking-[0.3em] uppercase text-white/30">
                         Loading...
@@ -205,7 +298,7 @@ export default function NativeCommentsSection({
                             {error}
                         </div>
                     </div>
-                ) : comments.length === 0 ? (
+                ) : comments.length === 0 && !has_more ? (
                     <div className="py-10 text-center text-[10px] tracking-[0.3em] uppercase text-white/30">
                         {available
                             ? 'Be the first to post'
@@ -220,6 +313,9 @@ export default function NativeCommentsSection({
                                     comment={c}
                                     reported={reported_ids.has(c.id)}
                                     on_report={() => on_report(c.id)}
+                                    own={is_signed_in && session?.user?.id === c.author.userId}
+                                    deleting={deleting_ids.has(c.id)}
+                                    on_delete={() => on_delete(c.id)}
                                 />
                             ))}
                         </div>
@@ -241,7 +337,14 @@ export default function NativeCommentsSection({
     );
 }
 
-function CommentRow({ comment, reported, on_report }: CommentRowProps): JSX.Element {
+function CommentRow({
+    comment,
+    reported,
+    on_report,
+    own,
+    deleting,
+    on_delete,
+}: CommentRowProps): JSX.Element {
     return (
         <div className="grid grid-cols-[36px_1fr] gap-4 py-4">
             <div className="flex size-9 items-center justify-center rounded-full bg-linear-to-br from-white/10 to-white/5 border border-white/10 text-[12px] font-semibold text-white/70 select-none">
@@ -277,6 +380,17 @@ function CommentRow({ comment, reported, on_report }: CommentRowProps): JSX.Elem
                         <PiFlagBold className="size-2.5" />
                         {reported ? 'Reported' : 'Report'}
                     </button>
+                    {own && (
+                        <button
+                            type="button"
+                            onClick={on_delete}
+                            disabled={deleting}
+                            className="inline-flex items-center gap-1.5 text-[10px] tracking-[0.18em] uppercase text-white/30 hover:text-rose-400/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-default"
+                        >
+                            <PiTrashBold className="size-2.5" />
+                            {deleting ? 'Deleting' : 'Delete'}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

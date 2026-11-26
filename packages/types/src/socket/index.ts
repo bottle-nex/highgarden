@@ -23,6 +23,7 @@ export enum SERVER_MESSAGE_TYPE {
    *  RESOLVED. Broadcast to every connected socket — recipients filter
    *  by marketId locally to avoid round-tripping a per-market sub. */
   MARKET_RESOLVED = "market_resolved",
+  COMMENT_DELETED = "comment_deleted",
 }
 
 export enum CLIENT_MESSAGE_TYPE {
@@ -46,7 +47,8 @@ export type ServerMessage =
   | { type: SERVER_MESSAGE_TYPE.SUBSCRIBED; token_id: string }
   | { type: SERVER_MESSAGE_TYPE.UNSUBSCRIBED; token_id: string }
   | { type: SERVER_MESSAGE_TYPE.PONG }
-  | { type: SERVER_MESSAGE_TYPE.MARKET_RESOLVED; payload: MarketResolvedPayload };
+  | { type: SERVER_MESSAGE_TYPE.MARKET_RESOLVED; payload: MarketResolvedPayload }
+  | { type: SERVER_MESSAGE_TYPE.COMMENT_DELETED; payload: { eventId: string; commentId: string } };
 
 export type ClientMessage =
   | { type: CLIENT_MESSAGE_TYPE.SUBSCRIBE; token_id: string }

@@ -26,6 +26,13 @@ export default class MarketLifecyclePublisher {
         await this.pub.publish(REDIS_CHANNELS.market_lifecycle, JSON.stringify(wire));
     }
 
+    public async publish_comment_deleted(eventId: string, commentId: string): Promise<void> {
+        await this.pub.publish(
+            REDIS_CHANNELS.market_lifecycle,
+            JSON.stringify({ kind: "comment_deleted", eventId, commentId }),
+        );
+    }
+
     /** Sugar for the "outcome known, on-chain still pending" broadcast.
      *  Use right after the DB write so the trade panel can show the
      *  winner without waiting for resolve_market to land. */
@@ -50,6 +57,6 @@ export default class MarketLifecyclePublisher {
 /** Wire-format union of every event we publish on the lifecycle channel.
  *  Discriminated by `kind` so the WS subscriber can decode without
  *  guessing. New event types extend this union — keep them small. */
-export type MarketLifecycleEvent = {
-    kind: "resolved";
-} & MarketResolvedPayload;
+export type MarketLifecycleEvent =
+    | ({ kind: "resolved" } & MarketResolvedPayload)
+    | { kind: "comment_deleted"; eventId: string; commentId: string };

@@ -67,14 +67,10 @@ export default class RedisSubscriber {
             console.warn("[ws:server] lifecycle payload not JSON", data);
             return;
         }
-        // Only `resolved` exists today, but route by `kind` so adding more
-        // event types later doesn't need a refactor — unknown kinds are
-        // silently dropped, which is the right behaviour during a rolling
-        // deploy where a newer publisher may emit kinds an older server
-        // doesn't understand yet.
+        // Ignore unknown kinds during rolling deploys.
         if (!parsed || typeof parsed !== "object" || !("kind" in parsed)) return;
         const event = parsed as MarketLifecycleEvent;
-        if (event.kind === "resolved") {
+        if (event.kind === "resolved" || event.kind === "comment_deleted") {
             this.on_lifecycle(event);
         }
     }
