@@ -220,6 +220,15 @@ export default function NativeCommentsSection({
                         <div className="text-[10px] tracking-[0.3em] uppercase text-rose-400/80">
                             {error}
                         </div>
+                        {total === null && (
+                            <button
+                                type="button"
+                                onClick={load_initial}
+                                className="mt-6 rounded-md border border-white/10 px-5 py-2 text-[10px] tracking-[0.3em] uppercase text-white/55 hover:text-white hover:border-white/25 transition-colors cursor-pointer"
+                            >
+                                Retry
+                            </button>
+                        )}
                     </div>
                 ) : comments.length === 0 ? (
                     <div className="py-10 text-center text-[10px] tracking-[0.3em] uppercase text-white/30">
