@@ -14,7 +14,12 @@ import {
     post_native_comment,
     report_comment,
 } from './api';
-import { initials_from, merge_posted_comments, relative_time } from './utils';
+import {
+    initials_from,
+    merge_posted_comments,
+    relative_time,
+    remove_deleted_comment,
+} from './utils';
 import CommentBody from './CommentBody';
 import { cn } from '@/lib/utils';
 
@@ -40,7 +45,6 @@ export default function NativeCommentsSection({
     const session = useUserSessionStore((state) => state.session);
     const is_signed_in = !!session?.user?.token;
     const [comments, set_comments] = useState<CommentDTO[]>([]);
-    const [offset, set_offset] = useState(0);
     const [loading, set_loading] = useState(true);
     const [error, set_error] = useState<string | null>(null);
     const [has_more, set_has_more] = useState(false);
@@ -74,7 +78,6 @@ export default function NativeCommentsSection({
                 );
                 posted_comments.current = [];
                 set_comments(merged);
-                set_offset(merged.length);
                 set_has_more(result.comments.length === PAGE_SIZE);
                 set_available(result.event_id !== null);
             } catch (err) {
@@ -98,17 +101,27 @@ export default function NativeCommentsSection({
         };
     }, [load_initial]);
 
+    const remove_comment = useCallback((comment_id: string) => {
+        generation.current++;
+        set_loading(false);
+        set_comments((prev) => remove_deleted_comment(prev, comment_id));
+        posted_comments.current = remove_deleted_comment(posted_comments.current, comment_id);
+    }, []);
+
     useEffect(() => {
         const on_deleted = (
             msg: Extract<ServerMessage, { type: SERVER_MESSAGE_TYPE.COMMENT_DELETED }>,
         ) => {
             if (event_id.current !== null && msg.payload.eventId !== event_id.current) return;
-            set_comments((prev) => prev.filter((comment) => comment.id !== msg.payload.commentId));
-            void load_initial(false);
+            if (event_id.current === null) {
+                void load_initial(false);
+            } else {
+                remove_comment(msg.payload.commentId);
+            }
         };
         SingletonSocket.on(SERVER_MESSAGE_TYPE.COMMENT_DELETED, on_deleted);
         return () => SingletonSocket.off(SERVER_MESSAGE_TYPE.COMMENT_DELETED, on_deleted);
-    }, [load_initial]);
+    }, [load_initial, remove_comment]);
 
     useEffect(() => {
         return useStreamStore.subscribe((state, previous) => {
@@ -121,11 +134,10 @@ export default function NativeCommentsSection({
         try {
             const result = await fetch_native_comments(market_id, {
                 limit: PAGE_SIZE,
-                offset,
+                offset: comments.length,
             });
             if (request !== generation.current) return;
             set_comments((prev) => [...prev, ...result.comments]);
-            set_offset((prev) => prev + result.comments.length);
             set_has_more(result.comments.length === PAGE_SIZE);
         } catch (err) {
             if (request !== generation.current) return;
@@ -140,8 +152,7 @@ export default function NativeCommentsSection({
         set_deleting_ids((prev) => new Set(prev).add(comment_id));
         try {
             await delete_native_comment(comment_id);
-            set_comments((prev) => prev.filter((comment) => comment.id !== comment_id));
-            void load_initial(false);
+            remove_comment(comment_id);
         } catch (err) {
             console.error('[comments] delete', err);
             set_delete_error('Could not delete comment');
@@ -161,7 +172,6 @@ export default function NativeCommentsSection({
             const created = await post_native_comment(market_id, body.trim());
             posted_comments.current.push(created);
             set_comments((prev) => [created, ...prev]);
-            set_offset((prev) => prev + 1);
             set_body('');
         } catch (err) {
             console.error('[comments] submit', err);
@@ -288,7 +298,7 @@ export default function NativeCommentsSection({
                             {error}
                         </div>
                     </div>
-                ) : comments.length === 0 ? (
+                ) : comments.length === 0 && !has_more ? (
                     <div className="py-10 text-center text-[10px] tracking-[0.3em] uppercase text-white/30">
                         {available
                             ? 'Be the first to post'

@@ -5,6 +5,10 @@ export function merge_posted_comments(comments: CommentDTO[], posted: CommentDTO
     return [...posted.filter((comment) => !ids.has(comment.id)).reverse(), ...comments];
 }
 
+export function remove_deleted_comment(comments: CommentDTO[], comment_id: string): CommentDTO[] {
+    return comments.filter((comment) => comment.id !== comment_id);
+}
+
 export function relative_time(iso: string): string {
     if (!iso) return '';
     const date = new Date(iso);
