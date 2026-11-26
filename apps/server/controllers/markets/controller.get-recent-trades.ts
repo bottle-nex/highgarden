@@ -13,12 +13,23 @@ export default class GetRecentTradesController {
             return ResponseWriter.invalid_data(res, "id required");
         }
 
-        const limit_param = Number(req.query.limit ?? DEFAULT_LIMIT);
+        const raw_limit = req.query.limit;
+        const limit_param = Number(
+            typeof raw_limit === "string" && !raw_limit.trim()
+                ? DEFAULT_LIMIT
+                : (raw_limit ?? DEFAULT_LIMIT),
+        );
         const limit = Number.isFinite(limit_param)
             ? Math.min(MAX_LIMIT, Math.max(1, Math.floor(limit_param)))
             : DEFAULT_LIMIT;
 
         try {
+            const market = await prisma.market.findUnique({
+                where: { id },
+                select: { id: true },
+            });
+            if (!market) return ResponseWriter.not_found(res, "market not found");
+
             const fills = await prisma.fill.findMany({
                 where: { marketId: id },
                 orderBy: { createdAt: "desc" },
