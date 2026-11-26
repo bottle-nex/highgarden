@@ -1,6 +1,7 @@
 import type { PriceHistoryDTO } from "@solmarket/types";
 
 const TTL_MS = 30_000;
+const MAX_ENTRIES = 1_000;
 
 interface Entry {
     at: number;
@@ -21,6 +22,15 @@ export default class PriceHistoryCache {
     }
 
     public set(key: string, data: PriceHistoryDTO): void {
-        this.entries.set(key, { at: Date.now(), data });
+        const now = Date.now();
+        for (const [entry_key, entry] of this.entries) {
+            if (now - entry.at > TTL_MS) this.entries.delete(entry_key);
+        }
+        this.entries.delete(key);
+        this.entries.set(key, { at: now, data });
+        if (this.entries.size > MAX_ENTRIES) {
+            const oldest = this.entries.keys().next().value;
+            if (oldest !== undefined) this.entries.delete(oldest);
+        }
     }
 }
