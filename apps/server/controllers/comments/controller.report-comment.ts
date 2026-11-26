@@ -1,9 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "@solmarket/database";
 import ResponseWriter from "../../services/service.response";
-import { services } from "../..";
-
-const REPORT_DEDUPE_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 export default class ReportCommentController {
     static async process(req: Request, res: Response) {
@@ -16,32 +13,33 @@ export default class ReportCommentController {
         }
 
         try {
-            const dedupe_key = `comment:report:${comment_id}:${user_id}`;
-            const already = await services.redis.get(dedupe_key);
-            if (already) {
-                return ResponseWriter.success(
-                    res,
-                    { reported: true, alreadyReported: true },
-                    "Already reported",
-                );
-            }
+            const result = await prisma.$transaction(async (tx) => {
+                const comment = await tx.comment.findUnique({
+                    where: { id: comment_id },
+                    select: { id: true },
+                });
+                if (!comment) return null;
 
-            const comment = await prisma.comment.findUnique({
-                where: { id: comment_id },
-                select: { id: true },
+                // The compound key decides which concurrent request counts.
+                // Keep the report and increment in the same transaction.
+                const inserted = await tx.commentReport.createMany({
+                    data: { userId: user_id, commentId: comment_id },
+                    skipDuplicates: true,
+                });
+                if (inserted.count === 1) {
+                    await tx.comment.update({
+                        where: { id: comment_id },
+                        data: { reportCount: { increment: 1 } },
+                    });
+                }
+                return { reported: true, alreadyReported: inserted.count === 0 };
             });
-            if (!comment) return ResponseWriter.not_found(res, "comment not found");
-
-            await prisma.comment.update({
-                where: { id: comment_id },
-                data: { reportCount: { increment: 1 } },
-            });
-            await services.redis.set(dedupe_key, "1", "EX", REPORT_DEDUPE_TTL_SECONDS);
+            if (!result) return ResponseWriter.not_found(res, "comment not found");
 
             return ResponseWriter.success(
                 res,
-                { reported: true, alreadyReported: false },
-                "Comment reported",
+                result,
+                result.alreadyReported ? "Already reported" : "Comment reported",
             );
         } catch (err) {
             console.error("[comments/report]", err);
