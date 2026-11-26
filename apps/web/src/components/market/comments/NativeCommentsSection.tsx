@@ -32,7 +32,8 @@ export default function NativeCommentsSection({
     const [offset, set_offset] = useState(0);
     const [loading, set_loading] = useState(true);
     const [error, set_error] = useState<string | null>(null);
-    const [has_more, set_has_more] = useState(false);
+    const [total, set_total] = useState<number | null>(null);
+    const [loading_more, set_loading_more] = useState(false);
     const [available, set_available] = useState(true);
     const [body, set_body] = useState('');
     const [posting, set_posting] = useState(false);
@@ -41,6 +42,7 @@ export default function NativeCommentsSection({
     const load_initial = useCallback(async () => {
         set_loading(true);
         set_error(null);
+        set_total(null);
         try {
             const result = await fetch_native_comments(market_id, {
                 limit: PAGE_SIZE,
@@ -48,7 +50,7 @@ export default function NativeCommentsSection({
             });
             set_comments(result.comments);
             set_offset(result.comments.length);
-            set_has_more(result.comments.length === PAGE_SIZE);
+            set_total(result.total);
             set_available(result.event_id !== null);
         } catch (err) {
             console.error('[comments] load_initial', err);
@@ -63,6 +65,8 @@ export default function NativeCommentsSection({
     }, [load_initial]);
 
     async function load_more() {
+        if (loading_more || posting) return;
+        set_loading_more(true);
         try {
             const result = await fetch_native_comments(market_id, {
                 limit: PAGE_SIZE,
@@ -70,20 +74,23 @@ export default function NativeCommentsSection({
             });
             set_comments((prev) => [...prev, ...result.comments]);
             set_offset((prev) => prev + result.comments.length);
-            set_has_more(result.comments.length === PAGE_SIZE);
+            set_total(result.total);
         } catch (err) {
             console.error('[comments] load_more', err);
             set_error('Could not load more comments');
+        } finally {
+            set_loading_more(false);
         }
     }
 
     async function submit() {
-        if (!body.trim() || posting) return;
+        if (!body.trim() || posting || loading_more || loading || total === null) return;
         set_posting(true);
         try {
             const created = await post_native_comment(market_id, body.trim());
             set_comments((prev) => [created, ...prev]);
             set_offset((prev) => prev + 1);
+            set_total((prev) => (prev === null ? null : prev + 1));
             set_body('');
         } catch (err) {
             console.error('[comments] submit', err);
@@ -110,7 +117,14 @@ export default function NativeCommentsSection({
 
     const trimmed_len = body.trim().length;
     const over_limit = trimmed_len > MAX_BODY;
-    const can_submit = is_signed_in && trimmed_len > 0 && !over_limit && !posting;
+    const can_submit =
+        is_signed_in &&
+        trimmed_len > 0 &&
+        !over_limit &&
+        !posting &&
+        !loading_more &&
+        !loading &&
+        total !== null;
 
     return (
         <section>
@@ -121,9 +135,11 @@ export default function NativeCommentsSection({
                         Solmarket Discussion
                     </span>
                 </div>
-                <span className="text-[10px] tracking-[0.32em] uppercase text-white/35 tabular-nums">
-                    {comments.length} {comments.length === 1 ? 'Post' : 'Posts'}
-                </span>
+                {!loading && total !== null && (
+                    <span className="text-[10px] tracking-[0.32em] uppercase text-white/35 tabular-nums">
+                        {total} {total === 1 ? 'Post' : 'Posts'}
+                    </span>
+                )}
             </header>
 
             <div>
@@ -223,11 +239,12 @@ export default function NativeCommentsSection({
                                 />
                             ))}
                         </div>
-                        {has_more && (
+                        {total !== null && offset < total && (
                             <div className="mt-6 flex justify-center">
                                 <button
                                     type="button"
                                     onClick={load_more}
+                                    disabled={loading_more || posting}
                                     className="rounded-md border border-white/10 px-5 py-2 text-[10px] tracking-[0.3em] uppercase text-white/55 hover:text-white hover:border-white/25 transition-colors cursor-pointer"
                                 >
                                     Load more

@@ -17,14 +17,15 @@ interface ReportResponse {
 export async function fetch_native_comments(
     market_id: string,
     params: { limit: number; offset: number },
-): Promise<{ event_id: string | null; comments: CommentDTO[] }> {
-    const res = await apiClient.get<ListResponse<CommentDTO>>(
+): Promise<{ event_id: string | null; comments: CommentDTO[]; total: number }> {
+    const res = await apiClient.get<ListResponse<CommentDTO> & { data: { total: number } }>(
         `${MARKETS_URL}/${market_id}/comments`,
         { params },
     );
     return {
         event_id: res.data.data.eventId,
         comments: res.data.data.comments,
+        total: res.data.data.total,
     };
 }
 
