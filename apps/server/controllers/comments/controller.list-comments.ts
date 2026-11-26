@@ -49,7 +49,6 @@ export default class ListCommentsController {
                         select: {
                             id: true,
                             name: true,
-                            email: true,
                             walletAddress: true,
                             custodialPublicKey: true,
                         },
@@ -58,7 +57,7 @@ export default class ListCommentsController {
             });
 
             const dto: CommentDTO[] = rows.map((c) => {
-                const username = c.user.name || c.user.email.split("@")[0] || "user";
+                const username = c.user.name || "user";
                 const wallet = c.user.walletAddress || c.user.custodialPublicKey;
                 return {
                     id: c.id,
