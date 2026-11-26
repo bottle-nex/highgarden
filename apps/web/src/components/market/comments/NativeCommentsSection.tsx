@@ -1,5 +1,5 @@
 'use client';
-import { JSX, useCallback, useEffect, useState } from 'react';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { PiChatCircleFill, PiFlagBold } from 'react-icons/pi';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CroppedButton } from '@/components/ui/cropped-button';
@@ -27,7 +27,22 @@ export default function NativeCommentsSection({
     market_id,
 }: NativeCommentsSectionProps): JSX.Element {
     const session = useUserSessionStore((state) => state.session);
-    const is_signed_in = !!session?.user?.token;
+    const token = session?.user?.token;
+
+    return (
+        <NativeCommentsDiscussion
+            key={JSON.stringify([market_id, token])}
+            market_id={market_id}
+            is_signed_in={!!token}
+        />
+    );
+}
+
+// Viewer-specific comments and pending actions must not survive an account change.
+function NativeCommentsDiscussion({
+    market_id,
+    is_signed_in,
+}: NativeCommentsSectionProps & { is_signed_in: boolean }): JSX.Element {
     const [comments, set_comments] = useState<CommentDTO[]>([]);
     const [offset, set_offset] = useState(0);
     const [loading, set_loading] = useState(true);
@@ -37,59 +52,86 @@ export default function NativeCommentsSection({
     const [body, set_body] = useState('');
     const [posting, set_posting] = useState(false);
     const [reported_ids, set_reported_ids] = useState<Set<string>>(new Set());
+    const active = useRef(false);
+    const request_generation = useRef(0);
+    const loading_more = useRef(false);
 
-    const load_initial = useCallback(async () => {
-        set_loading(true);
-        set_error(null);
-        try {
-            const result = await fetch_native_comments(market_id, {
-                limit: PAGE_SIZE,
-                offset: 0,
+    const load_initial = useCallback(() => {
+        const generation = ++request_generation.current;
+        loading_more.current = false;
+        return fetch_native_comments(market_id, {
+            limit: PAGE_SIZE,
+            offset: 0,
+        })
+            .then((result) => {
+                if (!active.current || generation !== request_generation.current) return;
+                set_comments(result.comments);
+                set_offset(result.comments.length);
+                set_has_more(result.comments.length === PAGE_SIZE);
+                set_available(result.event_id !== null);
+            })
+            .catch((err) => {
+                if (!active.current || generation !== request_generation.current) return;
+                console.error('[comments] load_initial', err);
+                set_error('Could not load comments');
+            })
+            .finally(() => {
+                if (active.current && generation === request_generation.current) set_loading(false);
             });
-            set_comments(result.comments);
-            set_offset(result.comments.length);
-            set_has_more(result.comments.length === PAGE_SIZE);
-            set_available(result.event_id !== null);
-        } catch (err) {
-            console.error('[comments] load_initial', err);
-            set_error('Could not load comments');
-        } finally {
-            set_loading(false);
-        }
     }, [market_id]);
 
     useEffect(() => {
+        active.current = true;
         void load_initial();
+        return () => {
+            active.current = false;
+        };
     }, [load_initial]);
 
     async function load_more() {
+        if (loading || loading_more.current) return;
+        const generation = request_generation.current;
+        loading_more.current = true;
         try {
             const result = await fetch_native_comments(market_id, {
                 limit: PAGE_SIZE,
                 offset,
             });
+            if (!active.current || generation !== request_generation.current) return;
             set_comments((prev) => [...prev, ...result.comments]);
             set_offset((prev) => prev + result.comments.length);
             set_has_more(result.comments.length === PAGE_SIZE);
         } catch (err) {
+            if (!active.current || generation !== request_generation.current) return;
             console.error('[comments] load_more', err);
             set_error('Could not load more comments');
+        } finally {
+            if (generation === request_generation.current) loading_more.current = false;
         }
     }
 
     async function submit() {
         if (!body.trim() || posting) return;
+        const generation = request_generation.current;
         set_posting(true);
         try {
             const created = await post_native_comment(market_id, body.trim());
-            set_comments((prev) => [created, ...prev]);
-            set_offset((prev) => prev + 1);
+            if (!active.current) return;
             set_body('');
+            if (loading || generation !== request_generation.current) {
+                set_loading(true);
+                set_error(null);
+                await load_initial();
+            } else {
+                set_comments((prev) => [created, ...prev]);
+                set_offset((prev) => prev + 1);
+            }
         } catch (err) {
+            if (!active.current) return;
             console.error('[comments] submit', err);
             set_error('Could not post comment');
         } finally {
-            set_posting(false);
+            if (active.current) set_posting(false);
         }
     }
 
@@ -98,7 +140,12 @@ export default function NativeCommentsSection({
         set_reported_ids((prev) => new Set(prev).add(comment_id));
         try {
             await report_comment(comment_id);
+            if (!active.current) return;
+            set_loading(true);
+            set_error(null);
+            await load_initial();
         } catch (err) {
+            if (!active.current) return;
             console.error('[comments] report', err);
             set_reported_ids((prev) => {
                 const next = new Set(prev);
