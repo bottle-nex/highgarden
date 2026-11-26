@@ -1,5 +1,5 @@
 'use client';
-import { JSX, useCallback, useEffect, useState } from 'react';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { PiChatCircleFill, PiFlagBold } from 'react-icons/pi';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CroppedButton } from '@/components/ui/cropped-button';
@@ -26,8 +26,21 @@ const MAX_BODY = 2000;
 export default function NativeCommentsSection({
     market_id,
 }: NativeCommentsSectionProps): JSX.Element {
-    const session = useUserSessionStore((state) => state.session);
-    const is_signed_in = !!session?.user?.token;
+    const token = useUserSessionStore((state) => state.session?.user?.token);
+    return (
+        <NativeComments
+            key={`${market_id}:${token ?? ''}`}
+            market_id={market_id}
+            is_signed_in={!!token}
+        />
+    );
+}
+
+function NativeComments({
+    market_id,
+    is_signed_in,
+}: NativeCommentsSectionProps & { is_signed_in: boolean }): JSX.Element {
+    const request_version = useRef(0);
     const [comments, set_comments] = useState<CommentDTO[]>([]);
     const [offset, set_offset] = useState(0);
     const [loading, set_loading] = useState(true);
@@ -38,40 +51,47 @@ export default function NativeCommentsSection({
     const [posting, set_posting] = useState(false);
     const [reported_ids, set_reported_ids] = useState<Set<string>>(new Set());
 
-    const load_initial = useCallback(async () => {
-        set_loading(true);
-        set_error(null);
-        try {
-            const result = await fetch_native_comments(market_id, {
-                limit: PAGE_SIZE,
-                offset: 0,
+    const load_initial = useCallback(() => {
+        const version = ++request_version.current;
+        return fetch_native_comments(market_id, { limit: PAGE_SIZE, offset: 0 })
+            .then((result) => {
+                if (version !== request_version.current) return;
+                set_comments(result.comments);
+                set_offset(result.comments.length);
+                set_has_more(result.comments.length === PAGE_SIZE);
+                set_available(result.event_id !== null);
+            })
+            .catch((err) => {
+                if (version !== request_version.current) return;
+                console.error('[comments] load_initial', err);
+                set_error('Could not load comments');
+            })
+            .finally(() => {
+                if (version === request_version.current) set_loading(false);
             });
-            set_comments(result.comments);
-            set_offset(result.comments.length);
-            set_has_more(result.comments.length === PAGE_SIZE);
-            set_available(result.event_id !== null);
-        } catch (err) {
-            console.error('[comments] load_initial', err);
-            set_error('Could not load comments');
-        } finally {
-            set_loading(false);
-        }
     }, [market_id]);
 
     useEffect(() => {
+        const version_ref = request_version;
         void load_initial();
+        return () => {
+            version_ref.current++;
+        };
     }, [load_initial]);
 
     async function load_more() {
+        const version = request_version.current;
         try {
             const result = await fetch_native_comments(market_id, {
                 limit: PAGE_SIZE,
                 offset,
             });
+            if (version !== request_version.current) return;
             set_comments((prev) => [...prev, ...result.comments]);
             set_offset((prev) => prev + result.comments.length);
             set_has_more(result.comments.length === PAGE_SIZE);
         } catch (err) {
+            if (version !== request_version.current) return;
             console.error('[comments] load_more', err);
             set_error('Could not load more comments');
         }
@@ -98,6 +118,9 @@ export default function NativeCommentsSection({
         set_reported_ids((prev) => new Set(prev).add(comment_id));
         try {
             await report_comment(comment_id);
+            set_loading(true);
+            set_error(null);
+            await load_initial();
         } catch (err) {
             console.error('[comments] report', err);
             set_reported_ids((prev) => {

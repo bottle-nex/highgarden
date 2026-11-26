@@ -21,3 +21,8 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
         return ResponseWriter.not_authorized(res, "Invalid or expired token");
     }
 }
+
+export function optionalAuth(req: Request, res: Response, next: NextFunction) {
+    if (req.headers.authorization === undefined) return next();
+    return requireAuth(req, res, next);
+}
