@@ -14,7 +14,7 @@ import {
     post_native_comment,
     report_comment,
 } from './api';
-import { initials_from, relative_time } from './utils';
+import { initials_from, merge_posted_comments, relative_time } from './utils';
 import CommentBody from './CommentBody';
 import { cn } from '@/lib/utils';
 
@@ -52,11 +52,13 @@ export default function NativeCommentsSection({
     const [delete_error, set_delete_error] = useState<string | null>(null);
     const event_id = useRef<string | null>(null);
     const generation = useRef(0);
+    const posted_comments = useRef<CommentDTO[]>([]);
     useWebSocket();
 
     const load_initial = useCallback(
         async (show_loading = true) => {
             const request = ++generation.current;
+            const posted_count = posted_comments.current.length;
             if (show_loading) set_loading(true);
             set_error(null);
             try {
@@ -66,8 +68,13 @@ export default function NativeCommentsSection({
                 });
                 if (request !== generation.current) return;
                 event_id.current = result.event_id;
-                set_comments(result.comments);
-                set_offset(result.comments.length);
+                const merged = merge_posted_comments(
+                    result.comments,
+                    posted_comments.current.slice(posted_count),
+                );
+                posted_comments.current = [];
+                set_comments(merged);
+                set_offset(merged.length);
                 set_has_more(result.comments.length === PAGE_SIZE);
                 set_available(result.event_id !== null);
             } catch (err) {
@@ -87,6 +94,7 @@ export default function NativeCommentsSection({
         return () => {
             current_generation.current++;
             event_id.current = null;
+            posted_comments.current = [];
         };
     }, [load_initial]);
 
@@ -151,6 +159,7 @@ export default function NativeCommentsSection({
         set_posting(true);
         try {
             const created = await post_native_comment(market_id, body.trim());
+            posted_comments.current.push(created);
             set_comments((prev) => [created, ...prev]);
             set_offset((prev) => prev + 1);
             set_body('');
