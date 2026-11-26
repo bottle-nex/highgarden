@@ -51,7 +51,6 @@ export default class CreateCommentController {
                         select: {
                             id: true,
                             name: true,
-                            email: true,
                             walletAddress: true,
                             custodialPublicKey: true,
                         },
@@ -59,7 +58,7 @@ export default class CreateCommentController {
                 },
             });
 
-            const username = created.user.name || created.user.email.split("@")[0] || "user";
+            const username = created.user.name || "user";
             const wallet = created.user.walletAddress || created.user.custodialPublicKey;
             const dto: CommentDTO = {
                 id: created.id,
