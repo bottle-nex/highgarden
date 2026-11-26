@@ -1,26 +1,17 @@
 import type { PriceHistoryDTO } from "@solmarket/types";
+import BoundedTtlCache from "./service.bounded-ttl-cache";
 
 const TTL_MS = 30_000;
-
-interface Entry {
-    at: number;
-    data: PriceHistoryDTO;
-}
+const MAX_ENTRIES = 1_000;
 
 export default class PriceHistoryCache {
-    private readonly entries = new Map<string, Entry>();
+    private readonly entries = new BoundedTtlCache<PriceHistoryDTO>(TTL_MS, MAX_ENTRIES);
 
     public get(key: string): PriceHistoryDTO | null {
-        const entry = this.entries.get(key);
-        if (!entry) return null;
-        if (Date.now() - entry.at > TTL_MS) {
-            this.entries.delete(key);
-            return null;
-        }
-        return entry.data;
+        return this.entries.get(key);
     }
 
     public set(key: string, data: PriceHistoryDTO): void {
-        this.entries.set(key, { at: Date.now(), data });
+        this.entries.set(key, data);
     }
 }

@@ -2,16 +2,17 @@ import type { Request, Response } from "express";
 import { prisma } from "@solmarket/database";
 import { ListingStatus, type MarketDTO, type MarketStatus, type Outcome } from "@solmarket/types";
 import ResponseWriter from "../../services/service.response";
+import BoundedTtlCache from "../../services/service.bounded-ttl-cache";
 
-// Snapshot cache for the public-list endpoint. Every connected dashboard
-// tab polls this every 8s and several components inside one tab fan out
-// to the same call on mount — without a cache, each request hits Postgres
-// independently and the result set (every approved future market plus
-// resolver-stage lookups) is identical for everyone for the next few
-// seconds. A 3-second TTL keeps the dashboard close to real-time while
-// collapsing N concurrent callers onto one DB hit per tag-filter.
+// Snapshot cache for the public-list endpoint. Dashboard tabs poll every 8s,
+// and multiple components request the same list on mount. Cache approved
+// future markets and resolver-stage lookups for 3 seconds to share recent
+// results per tag-filter while keeping dashboards close to real-time.
+// Bound distinct filters so user-supplied tags cannot grow storage forever.
+// Writes discard expired entries before evicting the oldest snapshots.
 const CACHE_TTL_MS = 3_000;
-const snapshot_cache = new Map<string, { expires_at: number; payload: MarketDTO[] }>();
+const MAX_CACHE_ENTRIES = 100;
+const snapshot_cache = new BoundedTtlCache<MarketDTO[]>(CACHE_TTL_MS, MAX_CACHE_ENTRIES);
 
 /**
  * Parse `?tag=Politics` or `?tag=Politics,Crypto` (also accepts repeated
@@ -53,10 +54,9 @@ export default class ListPublicMarketsController {
                   .sort()
                   .join(",")
             : "";
-        const now_ms = Date.now();
         const cached = snapshot_cache.get(cache_key);
-        if (cached && cached.expires_at > now_ms) {
-            return ResponseWriter.success(res, cached.payload, "Markets");
+        if (cached) {
+            return ResponseWriter.success(res, cached, "Markets");
         }
 
         try {
@@ -128,10 +128,7 @@ export default class ListPublicMarketsController {
                 });
             }
 
-            snapshot_cache.set(cache_key, {
-                expires_at: now_ms + CACHE_TTL_MS,
-                payload: markets,
-            });
+            snapshot_cache.set(cache_key, markets);
             return ResponseWriter.success(res, markets, "Markets");
         } catch (err) {
             console.error("[markets/list-public]", err);
