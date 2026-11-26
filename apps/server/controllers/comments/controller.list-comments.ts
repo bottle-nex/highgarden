@@ -34,30 +34,35 @@ export default class ListCommentsController {
             if (!event_id) {
                 return ResponseWriter.success(
                     res,
-                    { eventId: null, comments: [] as CommentDTO[] },
+                    { eventId: null, comments: [] as CommentDTO[], total: 0, hasMore: false },
                     "Comments unavailable",
                 );
             }
 
-            const rows = await prisma.comment.findMany({
-                where: { eventId: event_id },
-                orderBy: { createdAt: "desc" },
-                take: limit,
-                skip: offset,
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            name: true,
-                            email: true,
-                            walletAddress: true,
-                            custodialPublicKey: true,
+            const [total, rows] = await Promise.all([
+                prisma.comment.count({ where: { eventId: event_id } }),
+                prisma.comment.findMany({
+                    where: { eventId: event_id },
+                    orderBy: { createdAt: "desc" },
+                    take: limit + 1,
+                    skip: offset,
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                                walletAddress: true,
+                                custodialPublicKey: true,
+                            },
                         },
                     },
-                },
-            });
+                }),
+            ]);
+            const has_more = rows.length > limit;
+            const items = has_more ? rows.slice(0, limit) : rows;
 
-            const dto: CommentDTO[] = rows.map((c) => {
+            const dto: CommentDTO[] = items.map((c) => {
                 const username = c.user.name || c.user.email.split("@")[0] || "user";
                 const wallet = c.user.walletAddress || c.user.custodialPublicKey;
                 return {
@@ -74,7 +79,11 @@ export default class ListCommentsController {
                 };
             });
 
-            return ResponseWriter.success(res, { eventId: event_id, comments: dto }, "Comments");
+            return ResponseWriter.success(
+                res,
+                { eventId: event_id, comments: dto, total, hasMore: has_more },
+                "Comments",
+            );
         } catch (err) {
             console.error("[comments/list]", err);
             return ResponseWriter.system_error(res);
