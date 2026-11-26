@@ -1,5 +1,5 @@
 'use client';
-import { JSX, useCallback, useEffect, useState } from 'react';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { PiChatCircleFill, PiFlagBold } from 'react-icons/pi';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CroppedButton } from '@/components/ui/cropped-button';
@@ -32,48 +32,78 @@ export default function NativeCommentsSection({
     const [offset, set_offset] = useState(0);
     const [loading, set_loading] = useState(true);
     const [error, set_error] = useState<string | null>(null);
+    const [loading_more, set_loading_more] = useState(false);
+    const [more_error, set_more_error] = useState<string | null>(null);
+    const request_generation = useRef(0);
+    const loading_more_ref = useRef(false);
     const [has_more, set_has_more] = useState(false);
     const [available, set_available] = useState(true);
     const [body, set_body] = useState('');
     const [posting, set_posting] = useState(false);
     const [reported_ids, set_reported_ids] = useState<Set<string>>(new Set());
 
-    const load_initial = useCallback(async () => {
-        set_loading(true);
-        set_error(null);
-        try {
-            const result = await fetch_native_comments(market_id, {
-                limit: PAGE_SIZE,
-                offset: 0,
-            });
-            set_comments(result.comments);
-            set_offset(result.comments.length);
-            set_has_more(result.comments.length === PAGE_SIZE);
-            set_available(result.event_id !== null);
-        } catch (err) {
-            console.error('[comments] load_initial', err);
-            set_error('Could not load comments');
-        } finally {
-            set_loading(false);
-        }
-    }, [market_id]);
+    const load_initial = useCallback(
+        async (generation: number) => {
+            loading_more_ref.current = false;
+            set_loading_more(false);
+            set_more_error(null);
+
+            set_loading(true);
+            set_error(null);
+            try {
+                const result = await fetch_native_comments(market_id, {
+                    limit: PAGE_SIZE,
+                    offset: 0,
+                });
+                if (request_generation.current !== generation) return;
+                set_comments(result.comments);
+                set_offset(result.comments.length);
+                set_has_more(result.comments.length === PAGE_SIZE);
+                set_available(result.event_id !== null);
+            } catch (err) {
+                if (request_generation.current !== generation) return;
+                console.error('[comments] load_initial', err);
+                set_error('Could not load comments');
+            } finally {
+                if (request_generation.current === generation) set_loading(false);
+            }
+        },
+        [market_id],
+    );
 
     useEffect(() => {
-        void load_initial();
+        const generation_ref = request_generation;
+        const generation = ++generation_ref.current;
+        void load_initial(generation);
+        return () => {
+            generation_ref.current++;
+        };
     }, [load_initial]);
 
     async function load_more() {
+        if (loading_more_ref.current) return;
+        loading_more_ref.current = true;
+        const generation = request_generation.current;
+        set_loading_more(true);
+        set_more_error(null);
         try {
             const result = await fetch_native_comments(market_id, {
                 limit: PAGE_SIZE,
                 offset,
             });
+            if (request_generation.current !== generation) return;
             set_comments((prev) => [...prev, ...result.comments]);
             set_offset((prev) => prev + result.comments.length);
             set_has_more(result.comments.length === PAGE_SIZE);
         } catch (err) {
+            if (request_generation.current !== generation) return;
             console.error('[comments] load_more', err);
-            set_error('Could not load more comments');
+            set_more_error('Could not load more comments');
+        } finally {
+            if (request_generation.current === generation) {
+                loading_more_ref.current = false;
+                set_loading_more(false);
+            }
         }
     }
 
@@ -224,14 +254,23 @@ export default function NativeCommentsSection({
                             ))}
                         </div>
                         {has_more && (
-                            <div className="mt-6 flex justify-center">
+                            <div className="mt-6 flex flex-col items-center gap-2">
                                 <button
                                     type="button"
                                     onClick={load_more}
-                                    className="rounded-md border border-white/10 px-5 py-2 text-[10px] tracking-[0.3em] uppercase text-white/55 hover:text-white hover:border-white/25 transition-colors cursor-pointer"
+                                    disabled={loading_more}
+                                    className="rounded-md border border-white/10 px-5 py-2 text-[10px] tracking-[0.3em] uppercase text-white/55 hover:text-white hover:border-white/25 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
-                                    Load more
+                                    {loading_more ? 'Loading…' : 'Load more'}
                                 </button>
+                                {more_error && (
+                                    <div
+                                        role="alert"
+                                        className="text-[10px] tracking-[0.3em] uppercase text-rose-400/80"
+                                    >
+                                        {more_error}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </>
