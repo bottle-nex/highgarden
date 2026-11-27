@@ -98,9 +98,20 @@ model Comment {
   body        String   @db.VarChar(2000)
   reportCount Int      @default(0)
   createdAt   DateTime @default(now())
+  reports     CommentReport[]
 
   @@index([eventId, createdAt])
   @@index([userId])
+}
+
+model CommentReport {
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commentId String
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId])
+  @@index([commentId])
 }
 
 model Quote {
