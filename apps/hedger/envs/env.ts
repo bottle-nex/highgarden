@@ -41,7 +41,7 @@ const schema = z.object({
     // ingester loop tuning
     HEDGER_POLLER_INTERVAL_MS: z.coerce.number().default(10_000),
     HEDGER_LIVE_LISTENER_RECONNECT_MS: z.coerce.number().default(2_000),
-    HEDGER_MAX_BACKFILL_SIGNATURES: z.coerce.number().default(1_000),
+    HEDGER_MAX_BACKFILL_SIGNATURES: z.coerce.number().int().min(1).max(1_000).default(1_000),
     /**
      * When `true` (default), the live websocket listener is the primary
      * hedge driver. After PR 2/5's hedge-first orchestration in
