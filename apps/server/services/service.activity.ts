@@ -171,18 +171,32 @@ export default class ActivityService {
             const signature = await send(async (info) => {
                 const txSignature = bs58.encode(info.signature);
                 const sourceKey = `${input.kind.toLowerCase()}:${txSignature}`;
-                await prisma.walletActivity.upsert({
-                    where: { sourceKey },
-                    update: {},
-                    create: {
-                        ...input,
-                        sourceKey,
-                        unit: "USDC",
-                        txSignature,
-                        blockhash: info.blockhash,
-                        lastValidBlockHeight: info.lastValidBlockHeight,
-                    },
-                });
+                try {
+                    await prisma.walletActivity.create({
+                        data: {
+                            ...input,
+                            sourceKey,
+                            unit: "USDC",
+                            txSignature,
+                            blockhash: info.blockhash,
+                            lastValidBlockHeight: info.lastValidBlockHeight,
+                        },
+                    });
+                } catch (error) {
+                    if (
+                        error &&
+                        typeof error === "object" &&
+                        "code" in error &&
+                        error.code === "P2002"
+                    ) {
+                        // A second sender must not turn the first sender's success into a
+                        // preflight failure for the same signed transaction.
+                        throw new ActivityConflictError(
+                            "Transaction already recorded; check Activity for its status",
+                        );
+                    }
+                    throw error;
+                }
                 source_key = sourceKey;
             });
             confirmed = true;
