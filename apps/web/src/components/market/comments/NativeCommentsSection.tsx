@@ -51,6 +51,7 @@ function NativeComments({
     const [posting, set_posting] = useState(false);
     const [reported_ids, set_reported_ids] = useState<Set<string>>(new Set());
     const request_generation = useRef(0);
+    const mounted = useRef(false);
 
     const load_initial = useCallback(async () => {
         const generation = ++request_generation.current;
@@ -75,8 +76,11 @@ function NativeComments({
 
     useEffect(() => {
         const generation_ref = request_generation;
+        const mounted_ref = mounted;
+        mounted_ref.current = true;
         void load_initial();
         return () => {
+            mounted_ref.current = false;
             generation_ref.current++;
         };
     }, [load_initial]);
@@ -105,10 +109,16 @@ function NativeComments({
         set_posting(true);
         try {
             const created = await post_native_comment(market_id, body.trim());
-            if (generation !== request_generation.current) return;
+            if (!mounted.current) return;
+            set_body('');
+            if (generation !== request_generation.current) {
+                set_loading(true);
+                set_error(null);
+                await load_initial();
+                return;
+            }
             set_comments((prev) => [created, ...prev]);
             set_offset((prev) => prev + 1);
-            set_body('');
         } catch (err) {
             console.error('[comments] submit', err);
             set_error('Could not post comment');
