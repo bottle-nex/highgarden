@@ -204,6 +204,8 @@ model Exposure {
   unhedgedUsd     Int       @default(0)
   trackerEnabled  Boolean   @default(true)
   paused          Boolean   @default(false)
+  /// Hedge failure that caused the current pause. Null for older pauses.
+  pausedReason    String?
   lastIncrementAt DateTime?
   lastDecrementAt DateTime?
   updatedAt       DateTime  @updatedAt

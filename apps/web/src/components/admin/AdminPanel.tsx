@@ -14,6 +14,7 @@ import AdminListings, { type AdminListingRow, type AdminTab } from './AdminListi
 import RunListerButton from './RunListerButton';
 import FundUserButton from './FundUserButton';
 import BalanceModalButton from './BalanceModalButton';
+import PausedMarketsPanel from './PausedMarketsPanel';
 
 const PAGE_SIZE = 40;
 
@@ -228,6 +229,7 @@ export default function AdminPanel() {
                 onLoadMore={onLoadMore}
                 onChange={onChange}
             />
+            <PausedMarketsPanel />
         </div>
     );
 }

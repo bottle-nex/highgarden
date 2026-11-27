@@ -1,6 +1,7 @@
 import { Queue, Worker, QueueEvents } from "bullmq";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { SolmarketClient } from "@solmarket/contract";
+import { lock_market_for_pause, market_pause_transaction_options, prisma } from "@solmarket/database";
 import bs58 from "bs58";
 
 import { ENV } from "../envs/env";
@@ -255,8 +256,21 @@ export default class Hedger {
         try {
             const ctx = await this.lookup_pause_context(job_id);
             if (!ctx) return;
-            const sig = await this.pause_market_on_chain(ctx.solanaMarketPda);
-            await Exposure.set_paused(ctx.marketId, true);
+            await Exposure.record_pause(ctx.marketId, reason);
+            const sig = await prisma.$transaction(
+                async (tx) => {
+                    await lock_market_for_pause(tx, ctx.marketId);
+                    const exposure = await tx.exposure.findUnique({
+                        where: { marketId: ctx.marketId },
+                        select: { paused: true },
+                    });
+                    // An admin may have resumed this market since the database pause.
+                    if (!exposure?.paused) return null;
+                    return this.pause_market_on_chain(ctx.solanaMarketPda);
+                },
+                market_pause_transaction_options,
+            );
+            if (sig === null) return;
             this.log.warn(
                 {
                     jobId: job_id,
@@ -299,10 +313,12 @@ export default class Hedger {
     private async pause_market_on_chain(market_pda: string): Promise<string> {
         const client = this.get_admin_client();
         const admin = this.get_admin_keypair();
-        return client.adminPauseMarket({
-            admin: admin.publicKey,
-            market: new PublicKey(market_pda),
-        });
+        const market = new PublicKey(market_pda);
+        const signature = await client.adminPauseMarket({ admin: admin.publicKey, market });
+        if (!(await client.fetchMarket(market)).paused) {
+            throw new Error("on-chain market pause was not confirmed");
+        }
+        return signature;
     }
 
     private get_admin_client(): SolmarketClient {
