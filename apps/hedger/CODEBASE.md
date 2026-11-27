@@ -421,9 +421,9 @@ Wrapper that enforces single-flight with the `running` flag. Always updates "las
 
 Fetches all signatures newer than our cursor checkpoint, reverses them to chronological order, and processes each one.
 
-#### `fetch_new_signatures(until)`
+#### `fetch_new_signatures(until, first_poll)`
 
-Pages backwards through Solana signatures with the saved checkpoint as the exclusive `until` bound. Each full page supplies its oldest signature as the next request’s `before` bound. First boot reads one recent page.
+Pages backwards through Solana signatures with the saved checkpoint as the exclusive `until` bound. Each full page supplies its oldest signature as the next request’s `before` bound. Only the first poll reads one recent page. The poller records that attempt before reading history. If a later poll still has no saved signature, it scans all available pages.
 
 #### `finality()`
 

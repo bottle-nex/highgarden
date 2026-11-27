@@ -14,6 +14,7 @@ const SINGLETON_ID = 1;
  */
 export default class Cursor {
     private readonly log = logger_for("cursor");
+    private poller_has_run = false;
     private slot: bigint | null = null;
     private signature: string | null = null;
 
@@ -32,12 +33,17 @@ export default class Cursor {
             update: {},
             create: { id: SINGLETON_ID },
         });
+        this.poller_has_run = row.pollerLastRunAt !== null;
         this.slot = row.lastProcessedSlot;
         this.signature = row.lastProcessedSignature;
         this.log.info(
             { slot: this.slot?.toString() ?? null, sig: this.signature },
             "cursor loaded",
         );
+    }
+
+    public has_poller_run(): boolean {
+        return this.poller_has_run;
     }
 
     /** Last slot we successfully processed, or null if nothing has been processed yet. */
@@ -94,7 +100,7 @@ export default class Cursor {
     }
 
     /**
-     * Records that the catch-up poller just finished a tick. Used as a
+     * Records poller activity at first boot and after each tick. Used as a
      * liveness signal: if `pollerLastRunAt` is older than the configured
      * interval, the poller is stuck and ops should investigate.
      */
@@ -103,5 +109,6 @@ export default class Cursor {
             where: { id: SINGLETON_ID },
             data: { pollerLastRunAt: new Date() },
         });
+        this.poller_has_run = true;
     }
 }

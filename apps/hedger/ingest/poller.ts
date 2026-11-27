@@ -96,7 +96,11 @@ export default class Poller {
      */
     private async run_once(): Promise<void> {
         const since = this.cursor.get_signature();
-        const signatures = await this.fetch_new_signatures(since);
+        const first_poll = since === null && !this.cursor.has_poller_run();
+        // Record the first attempt before reading history. A restart before
+        // the first successful handoff must still scan beyond the newest page.
+        if (first_poll) await this.cursor.mark_poller_run();
+        const signatures = await this.fetch_new_signatures(since, first_poll);
         for (const sig of signatures.reverse()) {
             await this.process_signature(sig);
         }
@@ -106,7 +110,10 @@ export default class Poller {
      * Keep the checkpoint fixed while walking backwards through history.
      * First boot uses one recent page as its initial lookback.
      */
-    private async fetch_new_signatures(until: string | null): Promise<ConfirmedSignatureInfo[]> {
+    private async fetch_new_signatures(
+        until: string | null,
+        first_poll: boolean,
+    ): Promise<ConfirmedSignatureInfo[]> {
         const limit = ENV.HEDGER_MAX_BACKFILL_SIGNATURES;
         const signatures: ConfirmedSignatureInfo[] = [];
         let before: string | undefined;
@@ -117,7 +124,7 @@ export default class Poller {
                 this.finality(),
             );
             signatures.push(...page);
-            if (!until || page.length < limit) break;
+            if (first_poll || page.length < limit) break;
             before = page[page.length - 1]?.signature;
         } while (before);
         return signatures;
