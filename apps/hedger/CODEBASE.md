@@ -421,9 +421,9 @@ Wrapper that enforces single-flight with the `running` flag. Always updates "las
 
 Fetches all signatures newer than our cursor checkpoint, reverses them to chronological order, and processes each one.
 
-#### `fetch_new_signatures(until)`
+#### `fetch_new_signatures(until, first_poll)`
 
-Calls Solana's `getSignaturesForAddress` API to get recent transactions for our program. `until` is the cursor — we only fetch transactions newer than the last one we processed.
+Pages backwards through Solana signatures with the saved checkpoint as the exclusive `until` bound. Each full page supplies its oldest signature as the next request’s `before` bound. Only the first poll reads one recent page. The poller records that attempt before reading history. If a later poll still has no saved signature, it scans all available pages.
 
 #### `finality()`
 
@@ -438,7 +438,7 @@ For a single transaction:
 3. Call `on_fill` for each fill found.
 4. Advance the cursor to this transaction's slot + signature.
 
-The cursor advances **after** dispatching to `on_fill`, not before. This ensures at-least-once delivery — if `on_fill` crashes, the cursor stays back and we'll retry on next boot.
+Missing transaction logs or a failed fill handoff stop replay at that signature. The next tick resumes from the last durable checkpoint. The queue deduplicates redelivered fills by nonce.
 
 ---
 
@@ -460,7 +460,7 @@ Returns the last transaction signature we successfully processed, or `null`.
 
 #### `advance(slot, signature)`
 
-Moves the cursor forward to a new slot + signature. **Monotonic guard**: if the new slot is not strictly greater than the current one, this is a no-op. This makes it safe for both the listener and poller to call `advance` without worrying about one going backwards.
+The poller persists signatures in replay order, including distinct signatures within a slot. It ignores older slots and repeated signatures, and updates the in-memory checkpoint after the database write succeeds.
 
 #### `mark_live_connected()`
 
@@ -904,7 +904,7 @@ All configuration comes from environment variables. Zod validates them all at st
 | Signers          | Admin keypair (for pausing), oracle keypair (for resolving)                              |
 | Polymarket       | REST URL, Gamma URL, API key/secret, private key                                         |
 | Polygon          | RPC URL (for redemptions)                                                                |
-| Ingester         | Poller interval (10s), reconnect delay (2s), max backfill signatures (1000)              |
+| Ingester         | Poller interval (10s), reconnect delay (2s), signatures per backfill page (1000)         |
 | Hedger queue     | Max attempts (5), backoff (500ms), concurrency (5), rate limit (30/s), slippage cap (2¢) |
 | Resolver         | Poll interval (60s), dispute window (48h)                                                |
 | Reconciler       | Poll interval (60s)                                                                      |

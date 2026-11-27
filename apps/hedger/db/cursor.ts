@@ -5,15 +5,8 @@ const SINGLETON_ID = 1;
 
 /**
  * Wraps the singleton `BotCursor` row that records "where the hedger is
- * on the Solana chain." The cursor's job is twofold:
- *
- *   1. Survive restarts — on boot, the listener and poller need to know
- *      the last signature they finished processing so they can resume
- *      without skipping fills or replaying old ones.
- *   2. Coordinate the live listener with the catch-up poller. Both
- *      paths feed `advance(...)` and the monotonic guard ensures the
- *      cursor never moves backwards even if the slow path catches up
- *      after the fast path.
+ * on the Solana chain." The catch-up poller owns the checkpoint. The live
+ * listener records connection status on the same row.
  *
  * The schema row uses `id Int @default(1)` (one row, ever), so every
  * method targets `id = 1`. v1 and v2 share this row; do not run them
@@ -21,6 +14,7 @@ const SINGLETON_ID = 1;
  */
 export default class Cursor {
     private readonly log = logger_for("cursor");
+    private poller_has_run = false;
     private slot: bigint | null = null;
     private signature: string | null = null;
 
@@ -39,12 +33,17 @@ export default class Cursor {
             update: {},
             create: { id: SINGLETON_ID },
         });
+        this.poller_has_run = row.pollerLastRunAt !== null;
         this.slot = row.lastProcessedSlot;
         this.signature = row.lastProcessedSignature;
         this.log.info(
             { slot: this.slot?.toString() ?? null, sig: this.signature },
             "cursor loaded",
         );
+    }
+
+    public has_poller_run(): boolean {
+        return this.poller_has_run;
     }
 
     /** Last slot we successfully processed, or null if nothing has been processed yet. */
@@ -58,25 +57,19 @@ export default class Cursor {
     }
 
     /**
-     * Advances the cursor to a newer slot/signature. The monotonic guard
-     * is the race-safety primitive that lets the live listener and the
-     * catch-up poller call this concurrently without one regressing the
-     * other — if the requested slot is not strictly greater than the
-     * current one, the call is a no-op.
-     *
-     * Persistence: writes to Postgres before returning. The caller should
-     * call this *after* successfully handling a fill, never before — that
-     * way a thrown handler doesn't move the cursor forward and we
-     * re-process on next boot (at-least-once delivery).
+     * The poller calls this sequentially in replay order, including distinct
+     * signatures in the same slot. Keep the cached checkpoint in sync with
+     * the one a restarted process would load.
      */
     public async advance(slot: bigint, signature: string): Promise<void> {
-        if (this.slot !== null && slot <= this.slot) return;
-        this.slot = slot;
-        this.signature = signature;
+        if (this.slot !== null && slot < this.slot) return;
+        if (signature === this.signature) return;
         await prisma.botCursor.update({
             where: { id: SINGLETON_ID },
             data: { lastProcessedSlot: slot, lastProcessedSignature: signature },
         });
+        this.slot = slot;
+        this.signature = signature;
     }
 
     /**
@@ -107,7 +100,7 @@ export default class Cursor {
     }
 
     /**
-     * Records that the catch-up poller just finished a tick. Used as a
+     * Records poller activity at first boot and after each tick. Used as a
      * liveness signal: if `pollerLastRunAt` is older than the configured
      * interval, the poller is stuck and ops should investigate.
      */
@@ -116,5 +109,6 @@ export default class Cursor {
             where: { id: SINGLETON_ID },
             data: { pollerLastRunAt: new Date() },
         });
+        this.poller_has_run = true;
     }
 }

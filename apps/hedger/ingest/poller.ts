@@ -96,31 +96,38 @@ export default class Poller {
      */
     private async run_once(): Promise<void> {
         const since = this.cursor.get_signature();
-        const signatures = await this.fetch_new_signatures(since);
-        if (signatures.length === 0) return;
-
-        const ordered = [...signatures].reverse();
-        for (const sig of ordered) {
+        const first_poll = since === null && !this.cursor.has_poller_run();
+        // Record the first attempt before reading history. A restart before
+        // the first successful handoff must still scan beyond the newest page.
+        if (first_poll) await this.cursor.mark_poller_run();
+        const signatures = await this.fetch_new_signatures(since, first_poll);
+        for (const sig of signatures.reverse()) {
             await this.process_signature(sig);
         }
     }
 
     /**
-     * Calls `getSignaturesForAddress` with the cursor as the lower bound.
-     * `until` means "stop when you reach this signature" — combined with
-     * `limit`, it gives "everything newer than the cursor, up to N most
-     * recent." The first ever boot has `until=null` and pulls the most
-     * recent N regardless.
+     * Keep the checkpoint fixed while walking backwards through history.
+     * First boot uses one recent page as its initial lookback.
      */
-    private async fetch_new_signatures(until: string | null): Promise<ConfirmedSignatureInfo[]> {
-        return this.solana.connection.getSignaturesForAddress(
-            this.solana.program_id,
-            {
-                limit: ENV.HEDGER_MAX_BACKFILL_SIGNATURES,
-                ...(until ? { until } : {}),
-            },
-            this.finality(),
-        );
+    private async fetch_new_signatures(
+        until: string | null,
+        first_poll: boolean,
+    ): Promise<ConfirmedSignatureInfo[]> {
+        const limit = ENV.HEDGER_MAX_BACKFILL_SIGNATURES;
+        const signatures: ConfirmedSignatureInfo[] = [];
+        let before: string | undefined;
+        do {
+            const page = await this.solana.connection.getSignaturesForAddress(
+                this.solana.program_id,
+                { limit, before, ...(until ? { until } : {}) },
+                this.finality(),
+            );
+            signatures.push(...page);
+            if (first_poll || page.length < limit) break;
+            before = page[page.length - 1]?.signature;
+        } while (before);
+        return signatures;
     }
 
     /**
@@ -138,11 +145,9 @@ export default class Poller {
      * Processes a single signature: fetches the full transaction, decodes
      * its logs, and dispatches each decoded fill through the handler.
      *
-     * The cursor is advanced *after* handler dispatch — even if a single
-     * event's handler threw. Rationale: BullMQ is the authority on retry,
-     * not the cursor; refusing to advance would just cause the next tick
-     * to redeliver the same signature and produce a duplicate enqueue
-     * (no-op via nonce dedupe).
+     * Checkpoint only after every fill has reached the queue. If a handoff
+     * fails, replay the signature on the next tick. The queue deduplicates
+     * fills already accepted from this transaction by nonce.
      *
      * Failed transactions (`sig.err !== null`) skip the decode entirely
      * but the cursor still advances past them — there's no fill to hedge
@@ -158,21 +163,18 @@ export default class Poller {
             commitment: this.finality(),
             maxSupportedTransactionVersion: 0,
         });
-        const logs = tx?.meta?.logMessages ?? [];
+        const logs = tx?.meta?.logMessages;
+        if (!logs) throw new Error(`Transaction logs unavailable for ${sig.signature}`);
         const events = this.decoder.decode_logs(logs);
 
         if (events.length > 0) this.health.mark_event();
 
         for (const ev of events) {
-            try {
-                await this.on_fill(ev, {
-                    signature: sig.signature,
-                    slot: BigInt(sig.slot),
-                    source: "poller",
-                });
-            } catch (err) {
-                this.log.error({ err, signature: sig.signature }, "handler threw on poller event");
-            }
+            await this.on_fill(ev, {
+                signature: sig.signature,
+                slot: BigInt(sig.slot),
+                source: "poller",
+            });
         }
 
         await this.cursor.advance(BigInt(sig.slot), sig.signature);
