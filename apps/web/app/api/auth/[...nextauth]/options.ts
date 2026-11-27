@@ -52,6 +52,15 @@ export const authOption: NextAuthOptions = {
                         return false;
                     }
 
+                    // Google can vouch for current mailbox ownership for Gmail and Workspace.
+                    const hostedDomain =
+                        'hd' in profile &&
+                        typeof profile.hd === 'string' &&
+                        profile.hd.trim() !== '';
+                    if (!profile.email.toLowerCase().endsWith('@gmail.com') && !hostedDomain) {
+                        return false;
+                    }
+
                     const response = await axios.post(
                         SIGNIN_URL,
                         {
