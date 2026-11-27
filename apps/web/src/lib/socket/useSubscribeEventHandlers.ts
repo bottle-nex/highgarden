@@ -7,6 +7,8 @@ import { useWebSocket } from './useWebSocket';
 import { SocketEventHandlers } from './socket-event-handlers';
 import SingletonSocket from './singleton-socket';
 
+type GlobalMessageType = Exclude<SERVER_MESSAGE_TYPE, SERVER_MESSAGE_TYPE.COMMENT_DELETED>;
+
 export function useSubscribeEventHandlers() {
     // Keep the socket alive for the lifetime of this consumer. The returned
     // `on/off` here close over a possibly-null React-derived `client`, so we
@@ -16,7 +18,7 @@ export function useSubscribeEventHandlers() {
 
     useEffect(() => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const handlers_map: Record<SERVER_MESSAGE_TYPE, (msg: any) => void> = {
+        const handlers_map: Record<GlobalMessageType, (msg: any) => void> = {
             [SERVER_MESSAGE_TYPE.MARKET]: SocketEventHandlers.handle_market,
             [SERVER_MESSAGE_TYPE.SUBSCRIBED]: SocketEventHandlers.handle_subscribed,
             [SERVER_MESSAGE_TYPE.UNSUBSCRIBED]: SocketEventHandlers.handle_unsubscribed,

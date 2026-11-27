@@ -74,7 +74,7 @@ export default class RedisSubscriber {
         // doesn't understand yet.
         if (!parsed || typeof parsed !== "object" || !("kind" in parsed)) return;
         const event = parsed as MarketLifecycleEvent;
-        if (event.kind === "resolved") {
+        if (event.kind === "resolved" || event.kind === "comment_deleted") {
             this.on_lifecycle(event);
         }
     }

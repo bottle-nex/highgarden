@@ -55,3 +55,10 @@ export async function report_comment(comment_id: string): Promise<{
     const res = await apiClient.post<ReportResponse>(`${API_URL}/comments/${comment_id}/report`);
     return { already_reported: res.data.data.alreadyReported };
 }
+
+export async function delete_native_comment(comment_id: string): Promise<boolean> {
+    const res = await apiClient.delete<{ data: { broadcast: boolean } }>(
+        `${API_URL}/comments/${comment_id}`,
+    );
+    return res.data.data.broadcast;
+}

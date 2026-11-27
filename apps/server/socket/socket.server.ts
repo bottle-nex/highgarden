@@ -448,7 +448,15 @@ export default class SocketServer {
      * "Buy / Sell" to "Claim payout" with no page reload required.
      */
     private handle_lifecycle(event: MarketLifecycleEvent): void {
-        if (event.kind !== "resolved") return;
+        if (event.kind === "comment_deleted") {
+            const message: ServerMessage = {
+                type: SERVER_MESSAGE_TYPE.COMMENT_DELETED,
+                eventId: event.eventId,
+                commentId: event.commentId,
+            };
+            for (const ws of this.socket_mapping.values()) this.send(ws, message);
+            return;
+        }
         const payload = JSON.stringify({
             type: SERVER_MESSAGE_TYPE.MARKET_RESOLVED,
             payload: {

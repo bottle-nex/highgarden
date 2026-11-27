@@ -1,11 +1,18 @@
 'use client';
-import { JSX, useCallback, useEffect, useState } from 'react';
-import { PiChatCircleFill, PiFlagBold } from 'react-icons/pi';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
+import { PiChatCircleFill, PiFlagBold, PiTrashBold } from 'react-icons/pi';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CroppedButton } from '@/components/ui/cropped-button';
 import { useUserSessionStore } from '@/store/user/useUserSessionStore';
-import type { CommentDTO } from '@solmarket/types';
-import { fetch_native_comments, post_native_comment, report_comment } from './api';
+import { SERVER_MESSAGE_TYPE, type CommentDTO, type ServerMessageHandler } from '@solmarket/types';
+import SingletonSocket from '@/lib/socket/singleton-socket';
+import { useStreamStore } from '@/store/stream/useStreamStore';
+import {
+    delete_native_comment,
+    fetch_native_comments,
+    post_native_comment,
+    report_comment,
+} from './api';
 import { initials_from, relative_time } from './utils';
 import CommentBody from './CommentBody';
 import { cn } from '@/lib/utils';
@@ -18,6 +25,9 @@ interface CommentRowProps {
     comment: CommentDTO;
     reported: boolean;
     on_report: () => void;
+    own: boolean;
+    deleting: boolean;
+    on_delete: () => void;
 }
 
 const PAGE_SIZE = 30;
@@ -38,42 +48,102 @@ export default function NativeCommentsSection({
     const [posting, set_posting] = useState(false);
     const [reported_ids, set_reported_ids] = useState<Set<string>>(new Set());
 
-    const load_initial = useCallback(async () => {
-        set_loading(true);
-        set_error(null);
-        try {
-            const result = await fetch_native_comments(market_id, {
-                limit: PAGE_SIZE,
-                offset: 0,
-            });
-            set_comments(result.comments);
-            set_offset(result.comments.length);
-            set_has_more(result.comments.length === PAGE_SIZE);
-            set_available(result.event_id !== null);
-        } catch (err) {
-            console.error('[comments] load_initial', err);
-            set_error('Could not load comments');
-        } finally {
-            set_loading(false);
-        }
-    }, [market_id]);
+    const [deleting_ids, set_deleting_ids] = useState<Set<string>>(new Set());
+    const [delete_error, set_delete_error] = useState<string | null>(null);
+    const [refresh_error, set_refresh_error] = useState(false);
+    const has_loaded = useRef(false);
+    const event_id = useRef<string | null>(null);
+    const loaded_count = useRef(0);
+    const generation = useRef(0);
+    const loading_more = useRef(false);
+
+    const refresh = useCallback(
+        async (count: number) => {
+            const request = ++generation.current;
+            loading_more.current = true;
+            try {
+                const rows: CommentDTO[] = [];
+                let result;
+                do {
+                    result = await fetch_native_comments(market_id, {
+                        limit: PAGE_SIZE,
+                        offset: rows.length,
+                    });
+                    if (request !== generation.current) return;
+                    rows.push(...result.comments);
+                } while (rows.length < count && result.comments.length === PAGE_SIZE);
+                has_loaded.current = true;
+                event_id.current = result.event_id;
+                loaded_count.current = rows.length;
+                set_comments(rows);
+                set_offset(rows.length);
+                set_has_more(result.comments.length === PAGE_SIZE);
+                set_available(result.event_id !== null);
+                set_error(null);
+                set_refresh_error(false);
+            } catch (err) {
+                if (request !== generation.current) return;
+                console.error('[comments] refresh', err);
+                if (has_loaded.current) {
+                    set_refresh_error(true);
+                } else {
+                    set_error('Could not load comments');
+                }
+            } finally {
+                if (request === generation.current) {
+                    loading_more.current = false;
+                    set_loading(false);
+                }
+            }
+        },
+        [market_id],
+    );
 
     useEffect(() => {
-        void load_initial();
-    }, [load_initial]);
+        has_loaded.current = false;
+        event_id.current = null;
+        loaded_count.current = 0;
+        const current_generation = generation;
+        let active = true;
+        void Promise.resolve().then(() => {
+            if (active) void refresh(PAGE_SIZE);
+        });
+        const on_deleted: ServerMessageHandler<SERVER_MESSAGE_TYPE.COMMENT_DELETED> = (msg) => {
+            if (event_id.current !== null && event_id.current !== msg.eventId) return;
+            set_comments((prev) => prev.filter((comment) => comment.id !== msg.commentId));
+            void refresh(Math.max(PAGE_SIZE, loaded_count.current));
+        };
+        SingletonSocket.on(SERVER_MESSAGE_TYPE.COMMENT_DELETED, on_deleted);
+        const unsubscribe = useStreamStore.subscribe((state, previous) => {
+            if (state.status === 'open' && previous.status !== 'open') {
+                void refresh(Math.max(PAGE_SIZE, loaded_count.current));
+            }
+        });
+        return () => {
+            active = false;
+            current_generation.current++;
+            SingletonSocket.off(SERVER_MESSAGE_TYPE.COMMENT_DELETED, on_deleted);
+            unsubscribe();
+        };
+    }, [refresh]);
 
     async function load_more() {
+        if (loading_more.current) return;
+        loading_more.current = true;
+        const request = generation.current;
         try {
-            const result = await fetch_native_comments(market_id, {
-                limit: PAGE_SIZE,
-                offset,
-            });
+            const result = await fetch_native_comments(market_id, { limit: PAGE_SIZE, offset });
+            if (request !== generation.current) return;
             set_comments((prev) => [...prev, ...result.comments]);
-            set_offset((prev) => prev + result.comments.length);
+            loaded_count.current = offset + result.comments.length;
+            set_offset(loaded_count.current);
             set_has_more(result.comments.length === PAGE_SIZE);
         } catch (err) {
+            if (request !== generation.current) return;
             console.error('[comments] load_more', err);
             set_error('Could not load more comments');
+        } finally {
+            if (request === generation.current) loading_more.current = false;
         }
     }
 
@@ -82,14 +152,39 @@ export default function NativeCommentsSection({
         set_posting(true);
         try {
             const created = await post_native_comment(market_id, body.trim());
-            set_comments((prev) => [created, ...prev]);
-            set_offset((prev) => prev + 1);
+            set_comments((prev) => [
+                created,
+                ...prev.filter((comment) => comment.id !== created.id),
+            ]);
+            loaded_count.current++;
             set_body('');
+            void refresh(Math.max(PAGE_SIZE, loaded_count.current));
         } catch (err) {
             console.error('[comments] submit', err);
             set_error('Could not post comment');
         } finally {
             set_posting(false);
+        }
+    }
+
+    async function on_delete(comment_id: string) {
+        if (deleting_ids.has(comment_id)) return;
+        set_deleting_ids((prev) => new Set(prev).add(comment_id));
+        set_delete_error(null);
+        try {
+            const broadcast = await delete_native_comment(comment_id);
+            if (!broadcast) set_delete_error('Comment deleted, but others may need to refresh.');
+            set_comments((prev) => prev.filter((comment) => comment.id !== comment_id));
+            void refresh(Math.max(PAGE_SIZE, loaded_count.current));
+        } catch (err) {
+            console.error('[comments] delete', err);
+            set_delete_error('Could not delete comment. Please try again.');
+        } finally {
+            set_deleting_ids((prev) => {
+                const next = new Set(prev);
+                next.delete(comment_id);
+                return next;
+            });
         }
     }
 
@@ -195,6 +290,29 @@ export default function NativeCommentsSection({
                     </div>
                 )}
 
+                {delete_error && (
+                    <div
+                        role="alert"
+                        className="pb-3 text-[10px] tracking-[0.18em] uppercase text-rose-400/80"
+                    >
+                        {delete_error}
+                    </div>
+                )}
+                {refresh_error && (
+                    <div
+                        role="alert"
+                        className="pb-3 text-[10px] tracking-[0.18em] uppercase text-rose-400/80"
+                    >
+                        Could not refresh comments.{' '}
+                        <button
+                            type="button"
+                            onClick={() => void refresh(Math.max(PAGE_SIZE, loaded_count.current))}
+                            className="underline cursor-pointer"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                )}
                 {loading ? (
                     <div className="py-10 text-center text-[10px] tracking-[0.3em] uppercase text-white/30">
                         Loading...
@@ -220,6 +338,9 @@ export default function NativeCommentsSection({
                                     comment={c}
                                     reported={reported_ids.has(c.id)}
                                     on_report={() => on_report(c.id)}
+                                    own={!!session?.user?.id && session.user.id === c.author.userId}
+                                    deleting={deleting_ids.has(c.id)}
+                                    on_delete={() => on_delete(c.id)}
                                 />
                             ))}
                         </div>
@@ -241,7 +362,14 @@ export default function NativeCommentsSection({
     );
 }
 
-function CommentRow({ comment, reported, on_report }: CommentRowProps): JSX.Element {
+function CommentRow({
+    comment,
+    reported,
+    on_report,
+    own,
+    deleting,
+    on_delete,
+}: CommentRowProps): JSX.Element {
     return (
         <div className="grid grid-cols-[36px_1fr] gap-4 py-4">
             <div className="flex size-9 items-center justify-center rounded-full bg-linear-to-br from-white/10 to-white/5 border border-white/10 text-[12px] font-semibold text-white/70 select-none">
@@ -264,6 +392,17 @@ function CommentRow({ comment, reported, on_report }: CommentRowProps): JSX.Elem
                 </div>
                 <CommentBody body={comment.body} />
                 <div className="flex items-center gap-4 mt-1">
+                    {own && (
+                        <button
+                            type="button"
+                            onClick={on_delete}
+                            disabled={deleting}
+                            className="inline-flex items-center gap-1.5 text-[10px] tracking-[0.18em] uppercase text-white/30 hover:text-rose-400/80 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-default"
+                        >
+                            <PiTrashBold className="size-2.5" />
+                            {deleting ? 'Deleting' : 'Delete'}
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={on_report}
