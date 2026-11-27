@@ -408,9 +408,12 @@ export default class SolDepositPoller {
         });
         if (current.expirySlot === null) return false;
         const start = (current.checkedThroughSlot ?? current.preparedSlot - 1) + 1;
-        const end = Math.min(start + 15, current.expirySlot);
-        if (start > end) return true;
+        const end = start + 15;
         const slots = await conn.getBlocks(start, end, "finalized");
+        const last_slot = slots.at(-1);
+        // getBlocks may cap the range at a lagging backend's finalized root.
+        // Neither an empty response nor the requested end proves coverage.
+        if (last_slot === undefined) return false;
         const blocks = await Promise.all(
             slots.map((slot) => conn.getBlockSignatures(slot, "finalized")),
         );
@@ -419,20 +422,19 @@ export default class SolDepositPoller {
                 "deposit transaction found in finalized history; awaiting execution result",
             );
         }
-        const last_slot = slots.at(-1);
-        let passed_expiry = false;
-        if (last_slot !== undefined) {
-            const last_block = await conn.getParsedBlock(last_slot, block_config);
-            if (!last_block || last_block.blockHeight == null) {
-                throw new Error("deposit expiry block evidence unavailable");
-            }
-            passed_expiry = last_block.blockHeight > attempt.lastValidBlockHeight;
+        const last_block = await conn.getParsedBlock(last_slot, block_config);
+        if (!last_block || last_block.blockHeight == null) {
+            throw new Error("deposit expiry block evidence unavailable");
         }
+        const passed_expiry = last_block.blockHeight > attempt.lastValidBlockHeight;
         await prisma.solDepositAttempt.updateMany({
             where: { id: attempt.id, outcome: "PENDING" },
-            data: { checkedThroughSlot: end, ...(passed_expiry ? { expirySlot: end } : {}) },
+            data: {
+                checkedThroughSlot: last_slot,
+                ...(passed_expiry ? { expirySlot: last_slot } : {}),
+            },
         });
-        return passed_expiry || end === current.expirySlot;
+        return passed_expiry;
     }
 
     private async settle_attempt(
