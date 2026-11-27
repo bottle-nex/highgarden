@@ -1,6 +1,7 @@
 export interface AuthUser {
     id: string;
     email: string;
+    emailOtpVerified?: true;
 }
 
 /* eslint-disable no-unused-vars */

@@ -17,5 +17,14 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
     if (!is_admin_email(req.user.email)) {
         return ResponseWriter.error(res, "ADMIN_REQUIRED", "Admin access required", undefined, 403);
     }
+    if (!req.user.emailOtpVerified) {
+        return ResponseWriter.error(
+            res,
+            "VERIFIED_EMAIL_REQUIRED",
+            "Sign in with an email code to access paused markets.",
+            undefined,
+            403,
+        );
+    }
     next();
 }

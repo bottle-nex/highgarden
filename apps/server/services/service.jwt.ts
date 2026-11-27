@@ -4,6 +4,7 @@ import { ENV } from "../config/config.env";
 export interface SessionClaims {
     sub: string;
     email: string;
+    emailOtpVerified?: true;
 }
 
 export function signSessionJwt(claims: SessionClaims): string {
@@ -22,10 +23,10 @@ export function verifySessionJwt(token: string): SessionClaims {
         throw new Error("invalid token payload");
     }
 
-    const { sub, email } = payload as Record<string, unknown>;
+    const { sub, email, emailOtpVerified } = payload as Record<string, unknown>;
     if (typeof sub !== "string" || typeof email !== "string") {
         throw new Error("missing sub or email claim");
     }
 
-    return { sub, email };
+    return { sub, email, emailOtpVerified: emailOtpVerified === true ? true : undefined };
 }
