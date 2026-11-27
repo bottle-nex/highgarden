@@ -20,6 +20,8 @@ model WalletActivity {
   depositId            String?        @unique
   txSignature          String?        @unique
   sweepTxSig           String?
+  /// False for legacy deposits whose old sender did not persist before broadcast.
+  submissionTracked    Boolean        @default(true)
   blockhash            String?
   lastValidBlockHeight Int?
   error                String?        @db.VarChar(500)

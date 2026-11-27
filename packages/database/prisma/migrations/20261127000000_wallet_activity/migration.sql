@@ -20,6 +20,7 @@ CREATE TABLE "WalletActivity" (
     "depositId" TEXT,
     "txSignature" TEXT,
     "sweepTxSig" TEXT,
+    "submissionTracked" BOOLEAN NOT NULL DEFAULT true,
     "blockhash" TEXT,
     "lastValidBlockHeight" INTEGER,
     "error" VARCHAR(500),
@@ -42,8 +43,8 @@ FROM "Fill" f JOIN "Market" m ON m."id" = f."marketId" ON CONFLICT DO NOTHING;
 INSERT INTO "WalletActivity" ("id", "userId", "sourceKey", "kind", "status", "amountRaw", "unit", "marketId", "marketName", "outcome", "shares", "txSignature", "bookkept", "createdAt", "completedAt")
 SELECT 'claim:' || c."id", c."userId", 'claim:' || c."txSignature", 'CLAIM', 'DONE', c."payoutCents"::bigint * 10000, 'USDC', c."marketId", m."name", c."outcome", c."shares", c."txSignature", true, c."createdAt", c."createdAt"
 FROM "Claim" c JOIN "Market" m ON m."id" = c."marketId" ON CONFLICT DO NOTHING;
-INSERT INTO "WalletActivity" ("id", "userId", "sourceKey", "kind", "status", "amountRaw", "unit", "convertedUsdcRaw", "depositId", "txSignature", "sweepTxSig", "error", "bookkept", "createdAt", "completedAt")
+INSERT INTO "WalletActivity" ("id", "userId", "sourceKey", "kind", "status", "amountRaw", "unit", "convertedUsdcRaw", "depositId", "txSignature", "sweepTxSig", "error", "submissionTracked", "bookkept", "createdAt", "completedAt")
 SELECT 'deposit:' || d."id", d."userId", 'deposit:' || d."id", 'DEPOSIT',
 CASE d."status" WHEN 'COMPLETED' THEN 'DONE'::"ActivityStatus" WHEN 'FAILED' THEN 'FAILED'::"ActivityStatus" ELSE 'PENDING'::"ActivityStatus" END,
-d."solLamports", 'SOL', d."usdcMintedRaw", d."id", COALESCE(d."mintTxSig", d."sweepTxSig"), d."sweepTxSig", LEFT(d."error", 500), true, d."createdAt", d."completedAt"
+d."solLamports", 'SOL', d."usdcMintedRaw", d."id", COALESCE(d."mintTxSig", d."sweepTxSig"), d."sweepTxSig", LEFT(d."error", 500), false, true, d."createdAt", d."completedAt"
 FROM "SolDeposit" d ON CONFLICT DO NOTHING;

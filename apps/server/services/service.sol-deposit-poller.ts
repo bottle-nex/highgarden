@@ -227,6 +227,27 @@ export default class SolDepositPoller {
             let activity = await prisma.walletActivity.findUniqueOrThrow({
                 where: { depositId: row.id },
             });
+            if (!activity.submissionTracked) {
+                // Old senders could crash after broadcasting but before saving the identity.
+                // Reconcile known signatures, but let ops resolve an untracked next stage.
+                const status = await ActivityService.transaction_status(
+                    this.get_connection(),
+                    activity,
+                );
+                if (status === "FAILED") {
+                    await ActivityService.update_deposit(row.id, row.status, {
+                        status: "FAILED",
+                        error: "Recorded transaction failed",
+                    });
+                } else if (status === "DONE" && row.mintTxSig) {
+                    await ActivityService.update_deposit(row.id, row.status, {
+                        status: "COMPLETED",
+                        completedAt: new Date(),
+                        error: null,
+                    });
+                }
+                return;
+            }
             if (row.status === "SWEEPING" || (row.status === "SWEPT" && row.mintTxSig)) {
                 const status = await ActivityService.transaction_status(
                     this.get_connection(),
