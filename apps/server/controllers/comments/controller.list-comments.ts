@@ -34,28 +34,31 @@ export default class ListCommentsController {
             if (!event_id) {
                 return ResponseWriter.success(
                     res,
-                    { eventId: null, comments: [] as CommentDTO[] },
+                    { eventId: null, comments: [] as CommentDTO[], total: 0 },
                     "Comments unavailable",
                 );
             }
 
-            const rows = await prisma.comment.findMany({
-                where: { eventId: event_id },
-                orderBy: { createdAt: "desc" },
-                take: limit,
-                skip: offset,
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            name: true,
-                            email: true,
-                            walletAddress: true,
-                            custodialPublicKey: true,
+            const [rows, total] = await Promise.all([
+                prisma.comment.findMany({
+                    where: { eventId: event_id },
+                    orderBy: { createdAt: "desc" },
+                    take: limit,
+                    skip: offset,
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                                walletAddress: true,
+                                custodialPublicKey: true,
+                            },
                         },
                     },
-                },
-            });
+                }),
+                prisma.comment.count({ where: { eventId: event_id } }),
+            ]);
 
             const dto: CommentDTO[] = rows.map((c) => {
                 const username = c.user.name || c.user.email.split("@")[0] || "user";
@@ -74,7 +77,11 @@ export default class ListCommentsController {
                 };
             });
 
-            return ResponseWriter.success(res, { eventId: event_id, comments: dto }, "Comments");
+            return ResponseWriter.success(
+                res,
+                { eventId: event_id, comments: dto, total },
+                "Comments",
+            );
         } catch (err) {
             console.error("[comments/list]", err);
             return ResponseWriter.system_error(res);

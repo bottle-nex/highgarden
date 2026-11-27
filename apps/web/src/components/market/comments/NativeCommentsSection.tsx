@@ -30,9 +30,9 @@ export default function NativeCommentsSection({
     const is_signed_in = !!session?.user?.token;
     const [comments, set_comments] = useState<CommentDTO[]>([]);
     const [offset, set_offset] = useState(0);
+    const [total, set_total] = useState(0);
     const [loading, set_loading] = useState(true);
     const [error, set_error] = useState<string | null>(null);
-    const [has_more, set_has_more] = useState(false);
     const [available, set_available] = useState(true);
     const [body, set_body] = useState('');
     const [posting, set_posting] = useState(false);
@@ -48,7 +48,7 @@ export default function NativeCommentsSection({
             });
             set_comments(result.comments);
             set_offset(result.comments.length);
-            set_has_more(result.comments.length === PAGE_SIZE);
+            set_total(result.total);
             set_available(result.event_id !== null);
         } catch (err) {
             console.error('[comments] load_initial', err);
@@ -70,7 +70,7 @@ export default function NativeCommentsSection({
             });
             set_comments((prev) => [...prev, ...result.comments]);
             set_offset((prev) => prev + result.comments.length);
-            set_has_more(result.comments.length === PAGE_SIZE);
+            set_total(result.total);
         } catch (err) {
             console.error('[comments] load_more', err);
             set_error('Could not load more comments');
@@ -84,6 +84,7 @@ export default function NativeCommentsSection({
             const created = await post_native_comment(market_id, body.trim());
             set_comments((prev) => [created, ...prev]);
             set_offset((prev) => prev + 1);
+            set_total((prev) => prev + 1);
             set_body('');
         } catch (err) {
             console.error('[comments] submit', err);
@@ -122,7 +123,7 @@ export default function NativeCommentsSection({
                     </span>
                 </div>
                 <span className="text-[10px] tracking-[0.32em] uppercase text-white/35 tabular-nums">
-                    {comments.length} {comments.length === 1 ? 'Post' : 'Posts'}
+                    {total} {total === 1 ? 'Post' : 'Posts'}
                 </span>
             </header>
 
@@ -223,7 +224,7 @@ export default function NativeCommentsSection({
                                 />
                             ))}
                         </div>
-                        {has_more && (
+                        {offset < total && (
                             <div className="mt-6 flex justify-center">
                                 <button
                                     type="button"
