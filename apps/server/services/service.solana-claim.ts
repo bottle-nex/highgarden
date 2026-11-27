@@ -6,6 +6,7 @@ import type { Outcome } from "@solmarket/database";
 import { SolmarketClient } from "@solmarket/contract";
 import { ENV } from "../config/config.env";
 import { decrypt_secret_key } from "./service.crypto";
+import MarketSettlementService from "./service.market-settlement";
 
 interface ResolvedMarketRow {
     solanaMarketPda: string;
@@ -45,32 +46,20 @@ export class ClaimError extends Error {
 
 export default class SolanaClaimService {
     public async claim(input: ClaimInput): Promise<ClaimResult> {
-        const user_keypair = await this.load_custodial_keypair(input.userId);
-        const fee_payer = this.load_fee_payer_keypair();
         const market = await this.load_resolved_market(input.marketDbId);
         const market_pda = new PublicKey(market.solanaMarketPda);
-
-        // The market must have a winning outcome locked in before we
-        // can pick a side to drain. Status === RESOLVED with
-        // winningOutcome === null is the UMA-blocked transitional state;
-        // the load_resolved_market check above catches the pausedReason
-        // path but a freshly-RESOLVED row could in theory get here mid
-        // poller-tick. Guard explicitly.
-        if (!market.winningOutcome) {
-            throw new ClaimError(
-                "MARKET_NOT_RESOLVED",
-                "market hasn't been resolved with a winning outcome yet",
-            );
-        }
-
-        // Already-claimed check: the Claim row is written synchronously
-        // after a successful on-chain claim, so a second click that
-        // reaches the server means the row already exists. Returning a
-        // typed error here is cheaper than letting the chain reject
-        // with NoWinningShares.
-        await this.assert_not_claimed(input.userId, input.marketDbId, market.winningOutcome);
-
+        const fee_payer = this.load_fee_payer_keypair();
         const client = this.build_client(fee_payer);
+        const onchain = await client.fetchMarket(market_pda);
+        if (
+            onchain.status !== "Resolved" ||
+            (onchain.winningOutcome !== 0 && onchain.winningOutcome !== 1)
+        ) {
+            throw new ClaimError("MARKET_NOT_RESOLVED", "market is awaiting on-chain settlement");
+        }
+        const winning_outcome: Outcome = onchain.winningOutcome === 0 ? "YES" : "NO";
+        await this.assert_not_claimed(input.userId, input.marketDbId, winning_outcome);
+        const user_keypair = await this.load_custodial_keypair(input.userId);
         const user_usdc = getAssociatedTokenAddressSync(
             new PublicKey(ENV.SERVER_USDC_MINT),
             user_keypair.publicKey,
@@ -84,7 +73,7 @@ export default class SolanaClaimService {
             client,
             user_keypair.publicKey,
             market_pda,
-            market.winningOutcome,
+            winning_outcome,
         );
         // User is on the losing side, or sold everything before resolution.
         // Either way no on-chain shares to drain — return a typed error
@@ -109,11 +98,11 @@ export default class SolanaClaimService {
         // — a P2002 here means a previous claim was retried after the
         // on-chain tx landed but the DB write failed, which is fine to
         // ignore (the user got their USDC either way).
-        if (market.winningOutcome) {
+        if (winning_outcome) {
             await this.persist_claim({
                 userId: input.userId,
                 marketId: input.marketDbId,
-                outcome: market.winningOutcome,
+                outcome: winning_outcome,
                 shares: winning_shares,
                 txSignature: sig,
             });
@@ -167,27 +156,15 @@ export default class SolanaClaimService {
         }
     }
 
-    /**
-     * Reads the on-chain UserPosition before we send `claim` so the Claim
-     * row records the actual share count (and therefore the actual USDC
-     * payout, since payout = shares × $1). Returns 0 on any RPC / decode
-     * failure — the claim still goes through; we just lose the exact
-     * count for the audit row.
-     */
+    /** Read failures must propagate: an unavailable RPC does not mean zero shares. */
     private async read_winning_shares(
         client: SolmarketClient,
         user: PublicKey,
         market: PublicKey,
-        winning_outcome: Outcome | null,
+        winning_outcome: Outcome,
     ): Promise<number> {
-        if (!winning_outcome) return 0;
-        try {
-            const pos = await client.fetchUserPosition(user, market);
-            const raw = winning_outcome === "YES" ? pos.yesShares : pos.noShares;
-            return Number(raw);
-        } catch {
-            return 0;
-        }
+        const pos = await client.fetchUserPosition(user, market);
+        return Number(winning_outcome === "YES" ? pos.yesShares : pos.noShares);
     }
 
     private async persist_claim(args: {
@@ -281,29 +258,27 @@ export default class SolanaClaimService {
                 status: true,
                 pausedReason: true,
                 winningOutcome: true,
+                resolvedAt: true,
             },
         });
         if (!row) throw new ClaimError("MARKET_NOT_FOUND", "market not found");
         if (!row.solanaMarketPda) {
             throw new ClaimError("MARKET_NOT_LISTED_ON_SOLANA", "market has no on-chain PDA");
         }
-        // When Polymarket has closed the market but the winning outcome is
-        // not yet determinable (UMA dispute in progress), the hedger's
-        // market-status poller flips us to PAUSED with reason="UMA_DISPUTE".
-        // Catch it here so the user sees a meaningful message rather than
-        // the on-chain `MarketNotResolved` code.
-        if (row.status === "PAUSED" && row.pausedReason === "UMA_DISPUTE") {
-            throw new ClaimError(
-                "MARKET_UMA_DISPUTE",
-                "this market is closed due to a Polymarket UMA dispute — claims will resume once it's resolved",
-            );
+        const settlements = await MarketSettlementService.find_many([market_db_id]);
+        const resolution = MarketSettlementService.project(row, settlements.get(market_db_id));
+        if (!resolution.claimable) {
+            if (row.status === "PAUSED" && row.pausedReason === "UMA_DISPUTE") {
+                throw new ClaimError(
+                    "MARKET_UMA_DISPUTE",
+                    "this market is closed due to a Polymarket UMA dispute — claims will resume once it's resolved",
+                );
+            }
+            throw new ClaimError("MARKET_NOT_RESOLVED", "market is awaiting on-chain settlement");
         }
-        // We don't strictly enforce row.status === RESOLVED here — the on-chain
-        // contract will reject with MarketNotResolved if it isn't, and that
-        // error bubbles up cleanly to the client.
         return {
             solanaMarketPda: row.solanaMarketPda,
-            winningOutcome: row.winningOutcome,
+            winningOutcome: resolution.winningOutcome,
         };
     }
 

@@ -28,19 +28,30 @@ export class SolanaResolveOracle {
         return !!ENV.HEDGER_SOLANA_ORACLE_SIGNER_KEYPAIR;
     }
 
-    /** Sends a resolve_market instruction. Caller is responsible for
-     *  passing the on-chain market PDA and the winning outcome. Throws
-     *  on transient RPC failures so the caller can decide whether to
-     *  retry (the periodic Resolver does; the fast-path falls back to
-     *  it on failure). */
-    static async resolve(market_pda: string, winning_outcome: Outcome): Promise<string> {
+    /** Read the immutable on-chain winner; RPC/decode failures propagate. */
+    static async read_resolution(market_pda: string): Promise<Outcome | null> {
+        const market = await this.get_client().fetchMarket(new PublicKey(market_pda));
+        if (market.status !== "Resolved") return null;
+        if (market.winningOutcome === 0) return "YES";
+        if (market.winningOutcome === 1) return "NO";
+        throw new Error("Resolved on-chain market has no valid winning outcome");
+    }
+
+    /** Recover an already-landed resolution before attempting a new submission. */
+    static async resolve(
+        market_pda: string,
+        winning_outcome: Outcome,
+    ): Promise<{ signature: string; winningOutcome: Outcome }> {
         const client = this.get_client();
+        const settled = await this.read_resolution(market_pda);
+        if (settled) return { signature: "recovered", winningOutcome: settled };
         const outcome_int = winning_outcome === "YES" ? 0 : 1;
-        return client.resolveMarket({
+        const signature = await client.resolveMarket({
             oracleSigner: this.get_keypair().publicKey,
             market: new PublicKey(market_pda),
             winningOutcome: outcome_int as 0 | 1,
         });
+        return { signature, winningOutcome: winning_outcome };
     }
 
     private static get_client(): SolmarketClient {

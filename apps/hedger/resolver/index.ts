@@ -1,7 +1,4 @@
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import type { Outcome } from "@solmarket/database";
-import { SolmarketClient } from "@solmarket/contract";
-import bs58 from "bs58";
 
 import { ENV } from "../envs/env";
 import { logger_for } from "../log/log";
@@ -10,6 +7,8 @@ import type PolymarketClient from "../clients/polymarket";
 import type { GammaResolution, RedeemOutcome } from "../clients/polymarket";
 import Market from "../db/market";
 import ResolverDb from "../db/resolver";
+import { SolanaResolveOracle } from "./oracle";
+import type HedgerRedisPublisher from "../redis-publisher";
 import type { ResolverStateRow } from "../db/resolver";
 
 interface MarketCandidate {
@@ -49,15 +48,15 @@ interface MarketCandidate {
 export default class Resolver {
     private readonly log = logger_for("resolver");
     private readonly poly: PolymarketClient;
+    private readonly publisher: HedgerRedisPublisher;
     private interval_handle: ReturnType<typeof setInterval> | null = null;
     private running = false;
     private warned_oracle_unconfigured = false;
     private warned_redeem_unconfigured = false;
-    private oracle_keypair: Keypair | null = null;
-    private oracle_client: SolmarketClient | null = null;
 
-    constructor(_solana: SolanaClient, poly: PolymarketClient) {
+    constructor(_solana: SolanaClient, poly: PolymarketClient, publisher: HedgerRedisPublisher) {
         this.poly = poly;
+        this.publisher = publisher;
     }
 
     // ──────────────── Lifecycle ────────────────
@@ -162,7 +161,7 @@ export default class Resolver {
         const resolved_at = resolution.resolvedAt ?? new Date();
 
         const existing = await ResolverDb.find(candidate.marketId);
-        if (existing?.polymarketResolvedAt) return;
+        if (existing?.stage === "SOLANA_RESOLVED" || existing?.stage === "REDEEMED") return;
 
         const row = await ResolverDb.record_polymarket_resolved(
             candidate.marketId,
@@ -232,35 +231,52 @@ export default class Resolver {
             return;
         }
 
-        const signature = await this.send_resolve_to_solana(
-            market.solanaMarketPda,
-            row.winningOutcome,
+        const onchain = await SolanaResolveOracle.read_resolution(market.solanaMarketPda);
+        if (!onchain) {
+            const resolution = await this.poly.fetch_resolution(market.polyMarketId);
+            if (!resolution) return;
+            if (!resolution.closed || resolution.winningOutcomeIndex === null) {
+                await ResolverDb.revert_to_pending(row.marketId, resolution.closed);
+                return;
+            }
+            const live: Outcome = resolution.winningOutcomeIndex === 0 ? "YES" : "NO";
+            const current = await ResolverDb.record_polymarket_resolved(
+                row.marketId,
+                live,
+                resolution.resolvedAt ?? new Date(),
+            );
+            if (current.stage !== "POLYMARKET_RESOLVED") return;
+            if (live !== row.winningOutcome) return;
+            if (
+                market.kind !== "FAST_MOVING" &&
+                (!current.polymarketResolvedAt ||
+                    current.polymarketResolvedAt > this.dispute_window_cutoff())
+            )
+                return;
+        }
+        const result = onchain
+            ? { signature: "recovered", winningOutcome: onchain }
+            : await SolanaResolveOracle.resolve(market.solanaMarketPda, row.winningOutcome);
+        const settled = await ResolverDb.record_solana_resolved(
+            row.marketId,
+            result.signature,
+            new Date(),
+            result.winningOutcome,
         );
-        await ResolverDb.record_solana_resolved(row.marketId, signature, new Date());
-
+        await this.publisher.publish_resolved(
+            row.marketId,
+            settled.winningOutcome!,
+            settled.solanaResolvedAt!,
+            true,
+        );
         this.log.info(
             {
                 marketId: row.marketId,
-                polyMarketId: market.polyMarketId,
-                marketPda: market.solanaMarketPda,
-                winningOutcome: row.winningOutcome,
-                txSig: signature,
+                winningOutcome: settled.winningOutcome,
+                txSig: result.signature,
             },
-            ">>> RESOLVER: resolve_market submitted to Solana",
+            ">>> RESOLVER: resolve_market confirmed on Solana",
         );
-    }
-
-    private async send_resolve_to_solana(
-        market_pda: string,
-        winning_outcome: Outcome,
-    ): Promise<string> {
-        const client = this.get_oracle_client();
-        const outcome_int = winning_outcome === "YES" ? 0 : 1;
-        return client.resolveMarket({
-            oracleSigner: this.get_oracle_keypair().publicKey,
-            market: new PublicKey(market_pda),
-            winningOutcome: outcome_int as 0 | 1,
-        });
     }
 
     // ──────────────── Stage 3: redeem on Polygon ────────────────
@@ -325,41 +341,5 @@ export default class Resolver {
             return;
         }
         // skipped_not_resolved → silent retry next tick
-    }
-
-    // ──────────────── Oracle client (lazy) ────────────────
-
-    /**
-     * Lazily constructs a `SolmarketClient` whose `defaultSigner` is the
-     * oracle keypair. Separate from the `Hedger`'s admin client because
-     * (a) different keypair, (b) different responsibility (oracle signs
-     * `resolve_market`, admin signs `pause_market`).
-     */
-    private get_oracle_client(): SolmarketClient {
-        if (!this.oracle_client) {
-            const connection = new Connection(ENV.HEDGER_SOLANA_RPC_URL, "confirmed");
-            this.oracle_client = new SolmarketClient({
-                connection,
-                programId: new PublicKey(ENV.HEDGER_SOLANA_PROGRAM_ID),
-                defaultSigner: this.get_oracle_keypair(),
-            });
-        }
-        return this.oracle_client;
-    }
-
-    private get_oracle_keypair(): Keypair {
-        if (!this.oracle_keypair) {
-            this.oracle_keypair = this.load_keypair(ENV.HEDGER_SOLANA_ORACLE_SIGNER_KEYPAIR!);
-        }
-        return this.oracle_keypair;
-    }
-
-    private load_keypair(encoded: string): Keypair {
-        const trimmed = encoded.trim();
-        if (trimmed.startsWith("[")) {
-            const arr = JSON.parse(trimmed) as number[];
-            return Keypair.fromSecretKey(Uint8Array.from(arr));
-        }
-        return Keypair.fromSecretKey(bs58.decode(trimmed));
     }
 }

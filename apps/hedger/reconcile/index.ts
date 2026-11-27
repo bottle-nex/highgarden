@@ -108,7 +108,7 @@ export default class Reconciler {
         if (!resolution) return;
 
         if (!resolution.closed || resolution.winningOutcomeIndex === null) {
-            await this.handle_dispute_reversal(market_id, market.polyMarketId);
+            await this.handle_dispute_reversal(market_id, market.polyMarketId, resolution.closed);
             return;
         }
         const live_outcome: Outcome = resolution.winningOutcomeIndex === 0 ? "YES" : "NO";
@@ -118,6 +118,7 @@ export default class Reconciler {
                 market.polyMarketId,
                 prior_outcome,
                 live_outcome,
+                resolution.resolvedAt ?? new Date(),
             );
         }
     }
@@ -125,12 +126,13 @@ export default class Reconciler {
     private async handle_dispute_reversal(
         market_id: string,
         polymarket_market_id: string,
+        closed: boolean,
     ): Promise<void> {
         this.log.warn(
             { marketId: market_id, polyMarketId: polymarket_market_id },
             ">>> RECONCILE: market is no longer closed on Polymarket — UMA dispute? reverting state",
         );
-        await ResolverDb.revert_to_pending(market_id);
+        await ResolverDb.revert_to_pending(market_id, closed);
     }
 
     private async handle_outcome_flip(
@@ -138,12 +140,13 @@ export default class Reconciler {
         polymarket_market_id: string,
         prior: Outcome,
         live: Outcome,
+        resolved_at: Date,
     ): Promise<void> {
         this.log.warn(
             { marketId: market_id, polyMarketId: polymarket_market_id, prior, live },
             ">>> RECONCILE: winning outcome changed since first detection",
         );
-        await ResolverDb.update_winning_outcome(market_id, live);
+        await ResolverDb.update_winning_outcome(market_id, live, resolved_at);
     }
 
     // ──────────────── Stuck hedges ────────────────

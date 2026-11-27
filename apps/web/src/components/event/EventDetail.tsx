@@ -121,29 +121,34 @@ function Body({ market }: { market: MarketDTO }) {
     const [is_title_stuck, set_is_title_stuck] = useState(false);
     const sticky_title_ref = useRef<HTMLDivElement>(null);
 
-    // Catch-up poller for the "slot ended but the user's WS missed the
-    // MARKET_RESOLVED broadcast" case (tab was backgrounded, brief
-    // disconnect, etc). We poll the REST endpoint every 3 seconds
-    // while:
-    //   • the slot's wall-clock window has passed, AND
-    //   • either status is still OPEN, OR status is RESOLVED but
-    //     claimable hasn't flipped to true yet
-    // ...so we eventually pick up the DB write and then the on-chain
-    // confirmation without depending on the WS. Stops itself the moment
-    // both transitions are reflected in the live store.
+    // REST catches disputes and missed lifecycle messages for every market kind.
     const needs_catchup_poll =
-        live_market.kind === 'FAST_MOVING' &&
-        // eslint-disable-next-line react-hooks/purity
-        new Date(live_market.endAt).getTime() < Date.now() &&
-        (live_market.status !== 'RESOLVED' || !live_market.claimable);
+        !live_market.claimable &&
+        (live_market.status === 'RESOLVED' ||
+            live_market.status === 'PAUSED' ||
+            // eslint-disable-next-line react-hooks/purity
+            new Date(live_market.endAt).getTime() < Date.now());
     useEffect(() => {
         if (!needs_catchup_poll) return;
-        const id = setInterval(() => {
-            void fetch_market_by_id(market.id).then((m) => {
-                if (m) useMarketsStore.getState().upsert_one(m);
-            });
-        }, 3_000);
-        return () => clearInterval(id);
+        let cancelled = false;
+        let running = false;
+        const refresh = async () => {
+            if (running) return;
+            running = true;
+            try {
+                const updated = await fetch_market_by_id(market.id);
+                if (updated && !cancelled) useMarketsStore.getState().upsert_one(updated);
+            } catch (err) {
+                console.error('[market/settlement-refresh]', err);
+            } finally {
+                running = false;
+            }
+        };
+        const id = setInterval(() => void refresh(), 3_000);
+        return () => {
+            cancelled = true;
+            clearInterval(id);
+        };
     }, [needs_catchup_poll, market.id]);
 
     useEffect(() => {

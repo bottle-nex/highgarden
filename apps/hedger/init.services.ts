@@ -76,10 +76,10 @@ export function init_services(): Services {
 
     const hedger = new Hedger(solana, poly);
     const ingester = new FillIngester(solana, (ev, ctx) => hedger.on_fill(ev, ctx), health);
-    const resolver = new Resolver(solana, poly);
+    const publisher = new HedgerRedisPublisher();
+    const resolver = new Resolver(solana, poly, publisher);
     const reconciler = new Reconciler(hedger, poly);
     const liquidator = new PlatformInventoryLiquidator(poly);
-    const publisher = new HedgerRedisPublisher();
     const marketStatusPoller = new MarketStatusPoller(poly, publisher);
 
     return {

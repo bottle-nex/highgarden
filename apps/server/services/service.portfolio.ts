@@ -8,6 +8,7 @@ import {
 } from "@solmarket/types";
 import { services } from "../index";
 import SpreadService from "./service.spread";
+import MarketSettlementService from "./service.market-settlement";
 
 const FILL_HISTORY_LIMIT = 100;
 
@@ -26,6 +27,7 @@ interface FillRow {
         status: "OPEN" | "PAUSED" | "RESOLVED" | "CANCELLED";
         winningOutcome: "YES" | "NO" | null;
         endAt: Date;
+        resolvedAt: Date | null;
         polymarket: {
             yesTokenId: string;
             noTokenId: string;
@@ -43,6 +45,7 @@ export default class PortfolioService {
     public async list_positions(user_id: string): Promise<PositionDTO[]> {
         const fills = await PortfolioService.fetch_user_fills(user_id);
         const grouped = PortfolioService.group_by_market(fills);
+        const settlements = await MarketSettlementService.find_many([...grouped.keys()]);
         // Pre-fetch every (market, outcome) the user has already claimed
         // so we can hide those rows below. One query for the whole
         // portfolio — cheaper than checking on-chain UserPosition per
@@ -53,6 +56,10 @@ export default class PortfolioService {
         const ranked: { dto: PositionDTO; last_fill_at: number }[] = [];
         for (const [, market_fills] of grouped) {
             const first = market_fills[0]!;
+            const resolution = MarketSettlementService.project(
+                first.market,
+                settlements.get(first.marketId),
+            );
             const yes_agg = PortfolioService.aggregate_outcome(market_fills, "YES");
             const no_agg = PortfolioService.aggregate_outcome(market_fills, "NO");
 
@@ -68,13 +75,19 @@ export default class PortfolioService {
 
             if (yes_agg.shares > 0 && !yes_claimed) {
                 ranked.push({
-                    dto: PortfolioService.build_position(first, "YES", yes_agg, yes_price),
+                    dto: PortfolioService.build_position(
+                        first,
+                        "YES",
+                        yes_agg,
+                        yes_price,
+                        resolution,
+                    ),
                     last_fill_at: PortfolioService.last_fill_at(market_fills, "YES"),
                 });
             }
             if (no_agg.shares > 0 && !no_claimed) {
                 ranked.push({
-                    dto: PortfolioService.build_position(first, "NO", no_agg, no_price),
+                    dto: PortfolioService.build_position(first, "NO", no_agg, no_price, resolution),
                     last_fill_at: PortfolioService.last_fill_at(market_fills, "NO"),
                 });
             }
@@ -184,9 +197,14 @@ export default class PortfolioService {
         outcome: "YES" | "NO",
         agg: OutcomeAggregate,
         current_cents: number | null,
+        resolution: ReturnType<typeof MarketSettlementService.project>,
     ): PositionDTO {
         const m = sample.market;
-        const status = PortfolioService.position_status(m.status, m.winningOutcome, outcome);
+        const status = PortfolioService.position_status(
+            resolution.claimable ? resolution.status : "OPEN",
+            resolution.winningOutcome,
+            outcome,
+        );
         const traded_usd = (agg.avgCostCents * agg.shares) / 100;
         const to_win_usd = agg.shares;
         const claimable_usd = status === "WON" ? agg.shares : 0;
@@ -203,8 +221,8 @@ export default class PortfolioService {
             marketId: m.id,
             marketName: m.name,
             marketImage: m.polymarket.imageUrl,
-            marketStatus: m.status as MarketStatus,
-            winningOutcome: m.winningOutcome as Outcome | null,
+            marketStatus: resolution.status as MarketStatus,
+            winningOutcome: resolution.winningOutcome as Outcome | null,
             endAt: m.endAt.toISOString(),
             outcome: outcome as Outcome,
             shares: agg.shares,

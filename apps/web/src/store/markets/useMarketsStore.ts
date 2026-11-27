@@ -108,6 +108,18 @@ interface MarketsState {
     ) => void;
 }
 
+/** Confirmed settlement survives stale list snapshots and provisional messages. */
+function preserve_settlement(previous: MarketEntry | undefined, next: MarketEntry): MarketEntry {
+    if (!previous?.claimable || next.claimable) return next;
+    return {
+        ...next,
+        status: previous.status,
+        winningOutcome: previous.winningOutcome,
+        resolvedAt: previous.resolvedAt,
+        claimable: true,
+    };
+}
+
 export const useMarketsStore = create<MarketsState>()(
     devtools(
         (set) => ({
@@ -123,7 +135,7 @@ export const useMarketsStore = create<MarketsState>()(
                         const seen = new Set(s.ids);
                         const ids = [...s.ids];
                         for (const m of markets) {
-                            byId[m.id] = toMarketEntry(m);
+                            byId[m.id] = preserve_settlement(s.byId[m.id], toMarketEntry(m));
                             if (!seen.has(m.id)) {
                                 ids.push(m.id);
                                 seen.add(m.id);
@@ -138,7 +150,10 @@ export const useMarketsStore = create<MarketsState>()(
             upsert_one: (market) =>
                 set(
                     (s) => {
-                        const entry = dto_to_market_entry(market);
+                        const entry = preserve_settlement(
+                            s.byId[market.id],
+                            dto_to_market_entry(market),
+                        );
                         const byId = { ...s.byId, [entry.id]: entry };
                         const ids = s.ids.includes(entry.id) ? s.ids : [...s.ids, entry.id];
                         return { byId, ids };
@@ -166,12 +181,7 @@ export const useMarketsStore = create<MarketsState>()(
                     (s) => {
                         const prev = s.byId[marketId];
                         if (!prev) return s;
-                        // Never regress claimable=true back to false —
-                        // protects against the rare case where the
-                        // outcome-pending broadcast arrives AFTER the
-                        // claimable=true follow-up (e.g. reordered
-                        // redis delivery).
-                        const next_claimable = prev.claimable || claimable;
+                        if (prev.claimable && !claimable) return s;
                         return {
                             byId: {
                                 ...s.byId,
@@ -180,7 +190,7 @@ export const useMarketsStore = create<MarketsState>()(
                                     status: MarketStatus.RESOLVED,
                                     winningOutcome,
                                     resolvedAt,
-                                    claimable: next_claimable,
+                                    claimable,
                                 },
                             },
                         };

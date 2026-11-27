@@ -14,7 +14,7 @@ type LifecycleEvent = {
     winningOutcome: "YES" | "NO";
     resolvedAt: string;
     /** False on the first broadcast (gamma published a winner, on-chain
-     *  resolve_market still in flight). True on the follow-up after the
+     *  settlement pending, including any dispute window). True after the
      *  Solana tx confirms. Trade panel uses this to gate the Claim
      *  button while still surfacing the outcome immediately. */
     claimable: boolean;
