@@ -5,15 +5,8 @@ const SINGLETON_ID = 1;
 
 /**
  * Wraps the singleton `BotCursor` row that records "where the hedger is
- * on the Solana chain." The cursor's job is twofold:
- *
- *   1. Survive restarts — on boot, the listener and poller need to know
- *      the last signature they finished processing so they can resume
- *      without skipping fills or replaying old ones.
- *   2. Coordinate the live listener with the catch-up poller. Both
- *      paths feed `advance(...)` and the monotonic guard ensures the
- *      cursor never moves backwards even if the slow path catches up
- *      after the fast path.
+ * on the Solana chain." The poller owns the replay checkpoint, and
+ * both ingestion paths record their liveness on the same row.
  *
  * The schema row uses `id Int @default(1)` (one row, ever), so every
  * method targets `id = 1`. v1 and v2 share this row; do not run them
@@ -58,25 +51,19 @@ export default class Cursor {
     }
 
     /**
-     * Advances the cursor to a newer slot/signature. The monotonic guard
-     * is the race-safety primitive that lets the live listener and the
-     * catch-up poller call this concurrently without one regressing the
-     * other — if the requested slot is not strictly greater than the
-     * current one, the call is a no-op.
-     *
-     * Persistence: writes to Postgres before returning. The caller should
-     * call this *after* successfully handling a fill, never before — that
-     * way a thrown handler doesn't move the cursor forward and we
-     * re-process on next boot (at-least-once delivery).
+     * Saves a checkpoint after the poller finishes a transaction. The
+     * poller calls this in signature order, so multiple signatures can
+     * advance the checkpoint within the same slot. The cached checkpoint
+     * changes only after Postgres confirms the write.
      */
     public async advance(slot: bigint, signature: string): Promise<void> {
-        if (this.slot !== null && slot <= this.slot) return;
-        this.slot = slot;
-        this.signature = signature;
+        if (this.slot !== null && slot < this.slot) return;
         await prisma.botCursor.update({
             where: { id: SINGLETON_ID },
             data: { lastProcessedSlot: slot, lastProcessedSignature: signature },
         });
+        this.slot = slot;
+        this.signature = signature;
     }
 
     /**
