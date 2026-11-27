@@ -224,7 +224,7 @@ export default class SolDepositPoller {
     private async resume_deposit(initial: SolDeposit): Promise<void> {
         let row = initial;
         try {
-            let activity = await prisma.walletActivity.findUniqueOrThrow({
+            const activity = await prisma.walletActivity.findUniqueOrThrow({
                 where: { depositId: row.id },
             });
             if (!activity.submissionTracked) {
@@ -300,9 +300,6 @@ export default class SolDepositPoller {
                 row = await prisma.solDeposit.findUniqueOrThrow({ where: { id: row.id } });
             }
             if (row.status === "SWEPT" && !row.mintTxSig) {
-                activity = await prisma.walletActivity.findUniqueOrThrow({
-                    where: { depositId: row.id },
-                });
                 await this.mint_usdc(
                     admin,
                     new PublicKey(row.custodialPubkey),
@@ -317,7 +314,7 @@ export default class SolDepositPoller {
                                 signature,
                                 blockhash: info.blockhash,
                                 lastValidBlockHeight: info.lastValidBlockHeight,
-                                previousSignature: activity.txSignature,
+                                previousSignature: row.sweepTxSig,
                             },
                         );
                     },

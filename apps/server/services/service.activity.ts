@@ -330,7 +330,16 @@ export default class ActivityService {
                 if (!locked.count)
                     throw new ActivityConflictError("Deposit stage already submitted");
             }
-            const changed = await tx.solDeposit.updateMany({ where: { id, status: from }, data });
+            // SWEPT remains unchanged while a mint is confirming. Claim its empty
+            // mint slot atomically so a stale worker cannot replace a pending mint.
+            const changed = await tx.solDeposit.updateMany({
+                where: {
+                    id,
+                    status: from,
+                    ...(signed && from === "SWEPT" ? { mintTxSig: null } : {}),
+                },
+                data,
+            });
             if (!changed.count) throw new ActivityConflictError("Deposit stage already advanced");
             const row = await tx.solDeposit.findUniqueOrThrow({ where: { id } });
             await tx.walletActivity.upsert({
