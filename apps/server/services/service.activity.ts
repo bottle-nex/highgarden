@@ -200,11 +200,18 @@ export default class ActivityService {
                 source_key = sourceKey;
             });
             confirmed = true;
-            if (source_key)
-                await prisma.walletActivity.update({
-                    where: { sourceKey: source_key },
-                    data: { status: "DONE", completedAt: new Date(), error: null },
-                });
+            if (source_key) {
+                try {
+                    await prisma.walletActivity.update({
+                        where: { sourceKey: source_key },
+                        data: { status: "DONE", completedAt: new Date(), error: null },
+                    });
+                } catch (record_error) {
+                    // The transfer is confirmed; the durable pending row permits recovery.
+                    // Return its signature so a bookkeeping outage cannot encourage a retry.
+                    console.error("[activity/record-confirmed]", record_error);
+                }
+            }
             return signature;
         } catch (error) {
             if (source_key && !confirmed) {
