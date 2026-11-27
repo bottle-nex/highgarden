@@ -52,7 +52,11 @@ export default class OtpVerifyController {
             });
 
             const walletPublicKey = await ensure_user_has_keypair(user.id);
-            const token = signSessionJwt({ sub: user.id, email: user.email });
+            const token = signSessionJwt({
+                sub: user.id,
+                email: user.email,
+                emailOtpVerified: true,
+            });
 
             return ResponseWriter.success(
                 res,

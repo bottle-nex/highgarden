@@ -15,7 +15,11 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 
     try {
         const claims = verifySessionJwt(token);
-        req.user = { id: claims.sub, email: claims.email };
+        req.user = {
+            id: claims.sub,
+            email: claims.email,
+            emailOtpVerified: claims.emailOtpVerified,
+        };
         next();
     } catch {
         return ResponseWriter.not_authorized(res, "Invalid or expired token");

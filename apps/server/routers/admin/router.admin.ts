@@ -12,6 +12,8 @@ import TestFundController from "../../controllers/admin/controller.test-fund";
 import FundByEmailController from "../../controllers/admin/controller.fund-by-email";
 import BalancesController from "../../controllers/admin/controller.balances";
 import FastSubscriptionsController from "../../controllers/admin/controller.fast-subscriptions";
+import PausedMarketsController from "../../controllers/admin/controller.paused-markets";
+import { requireAdmin } from "../../middleware/middleware.admin";
 import { requireAuth } from "../../middleware/middleware.auth";
 import { rate_limiters as rl } from "../../middleware/middleware.rate-limit";
 
@@ -38,5 +40,13 @@ admin_router.get("/balances", requireAuth, BalancesController.process);
 admin_router.get("/fast-subscriptions", FastSubscriptionsController.list);
 admin_router.post("/fast-subscriptions", requireAuth, FastSubscriptionsController.create);
 admin_router.delete("/fast-subscriptions/:id", requireAuth, FastSubscriptionsController.remove);
+
+admin_router.get("/paused-markets", requireAuth, requireAdmin, PausedMarketsController.list);
+admin_router.post(
+    "/paused-markets/:marketId/resume",
+    requireAuth,
+    requireAdmin,
+    PausedMarketsController.resume,
+);
 
 export default admin_router;

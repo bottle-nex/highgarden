@@ -53,6 +53,27 @@ export default class SolanaAdminService {
         return !!ENV.SERVER_SOLANA_ORACLE_KEYPAIR;
     }
 
+    /** Returns false when the chain lifecycle prevents reopening the market. */
+    public async resume_market(market_pda: string): Promise<boolean> {
+        const client = this.get_client();
+        const market = new PublicKey(market_pda);
+        const before = await client.fetchMarket(market);
+        if (before.status !== "Open" || before.endTime <= BigInt(Math.floor(Date.now() / 1000))) {
+            return false;
+        }
+        // A previous resume may have confirmed before its database write failed.
+        if (!before.paused) return true;
+
+        const admin = this.get_admin_keypair();
+        await client.adminUnpauseMarket({ admin: admin.publicKey, market });
+        const after = await client.fetchMarket(market);
+        if (after.status !== "Open" || after.endTime <= BigInt(Math.floor(Date.now() / 1000))) {
+            return false;
+        }
+        if (after.paused) throw new Error("on-chain market unpause was not confirmed");
+        return true;
+    }
+
     /**
      * Admin-triggered manual resolution. Signs `resolve_market` with the
      * server's oracle keypair (must equal `Config.oracle_signer` on-chain

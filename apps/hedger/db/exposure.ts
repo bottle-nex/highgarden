@@ -1,4 +1,4 @@
-import { prisma } from "@solmarket/database";
+import { lock_market_for_pause, market_pause_transaction_options, prisma } from "@solmarket/database";
 
 export interface ExposureRow {
     marketId: string;
@@ -67,16 +67,21 @@ export default class Exposure {
     }
 
     /**
-     * Toggles the `paused` flag for a market. Set true by the auto-pause
-     * path on permanent hedge failure; set false manually by ops once the
-     * underlying issue is resolved.
+     * Record the pause before contacting Solana so a chain failure still
+     * leaves the market blocked in the API and visible to admins.
      */
-    static async set_paused(market_id: string, paused: boolean): Promise<void> {
-        await prisma.exposure.upsert({
-            where: { marketId: market_id },
-            create: { marketId: market_id, paused },
-            update: { paused },
-        });
+    static async record_pause(market_id: string, reason: string): Promise<void> {
+        await prisma.$transaction(
+            async (tx) => {
+                await lock_market_for_pause(tx, market_id);
+                await tx.exposure.upsert({
+                    where: { marketId: market_id },
+                    create: { marketId: market_id, paused: true, pausedReason: reason },
+                    update: { paused: true, pausedReason: reason },
+                });
+            },
+            market_pause_transaction_options,
+        );
     }
 
     /**

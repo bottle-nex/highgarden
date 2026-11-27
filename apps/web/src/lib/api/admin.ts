@@ -1,4 +1,5 @@
 import type { ListingStatus } from '@solmarket/types';
+import { isAxiosError } from 'axios';
 import { apiClient } from '../client.axios';
 
 export type AdminMarketKind = 'STANDARD' | 'FAST_MOVING';
@@ -151,6 +152,48 @@ export async function adminResolveMarket(
         throw new Error(data?.message ?? 'resolve failed');
     }
     return data.data as AdminResolveMarketResult;
+}
+
+export interface AdminPausedMarket {
+    marketId: string;
+    name: string;
+    reasons: string[];
+    unhedgedUsd: number;
+    exposureCapReached: boolean;
+    resumeUnavailableReason: string | null;
+}
+
+interface AdminResumeMarketResult {
+    marketId: string;
+    exposureCapReached: boolean;
+}
+
+function pausedMarketError(err: unknown, fallback: string): Error {
+    const message = isAxiosError<{ message?: string }>(err) ? err.response?.data?.message : null;
+    return new Error(message ?? fallback);
+}
+
+export async function fetchPausedMarkets(signal: AbortSignal): Promise<AdminPausedMarket[]> {
+    try {
+        const { data } = await apiClient.get<{ data: AdminPausedMarket[] }>(
+            '/admin/paused-markets',
+            { signal },
+        );
+        return data.data;
+    } catch (err) {
+        throw pausedMarketError(err, 'Could not load paused markets.');
+    }
+}
+
+export async function resumePausedMarket(marketId: string): Promise<AdminResumeMarketResult> {
+    try {
+        const { data } = await apiClient.post<{ data: AdminResumeMarketResult }>(
+            `/admin/paused-markets/${encodeURIComponent(marketId)}/resume`,
+        );
+        return data.data;
+    } catch (err) {
+        throw pausedMarketError(err, 'Could not resume this market.');
+    }
 }
 
 export async function fetchFastSubscriptions(): Promise<FastSubscription[]> {
