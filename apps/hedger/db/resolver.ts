@@ -79,7 +79,7 @@ export default class Resolver {
                     ? null
                     : existing?.winningOutcome === winning_outcome
                       ? (existing.polymarketResolvedAt ?? resolved_at)
-                      : existing?.winningOutcome
+                      : existing
                         ? new Date()
                         : resolved_at;
             const data = {
