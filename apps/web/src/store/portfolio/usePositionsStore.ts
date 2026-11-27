@@ -5,6 +5,7 @@ import { Outcome, Side } from '@solmarket/types';
 
 interface PositionsState {
     positions: PositionDTO[];
+    claimedKeys: Set<string>;
     loading: boolean;
     error: string | null;
 
@@ -28,11 +29,22 @@ export const usePositionsStore = create<PositionsState>()(
     devtools(
         (set) => ({
             positions: [],
+            claimedKeys: new Set(),
             loading: false,
             error: null,
 
             hydrate: (positions) =>
-                set({ positions, loading: false, error: null }, false, 'positions/hydrate'),
+                set(
+                    (s) => ({
+                        positions: positions.filter(
+                            (p) => !s.claimedKeys.has(`${p.marketId}:${p.outcome}`),
+                        ),
+                        loading: false,
+                        error: null,
+                    }),
+                    false,
+                    'positions/hydrate',
+                ),
             setLoading: (loading) => set({ loading }, false, 'positions/setLoading'),
             setError: (error) => set({ error }, false, 'positions/setError'),
 
@@ -90,6 +102,7 @@ export const usePositionsStore = create<PositionsState>()(
             applyClaim: (marketId, outcome) =>
                 set(
                     (s) => ({
+                        claimedKeys: new Set(s.claimedKeys).add(`${marketId}:${outcome}`),
                         positions: s.positions.filter(
                             (p) => !(p.marketId === marketId && p.outcome === outcome),
                         ),
@@ -99,7 +112,11 @@ export const usePositionsStore = create<PositionsState>()(
                 ),
 
             reset: () =>
-                set({ positions: [], loading: false, error: null }, false, 'positions/reset'),
+                set(
+                    { positions: [], claimedKeys: new Set(), loading: false, error: null },
+                    false,
+                    'positions/reset',
+                ),
         }),
         { name: 'PositionsStore' },
     ),

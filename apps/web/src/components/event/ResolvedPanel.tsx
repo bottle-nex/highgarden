@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import type { MarketDTO } from '@solmarket/types';
 import { cn } from '@/lib/utils';
 import trading_api, { TradingError } from '@/lib/api/trading';
+import { usePositionsStore } from '@/store/portfolio/usePositionsStore';
 
 interface Props {
     market: MarketDTO;
@@ -15,12 +16,14 @@ export default function ResolvedPanel({ market }: Props): JSX.Element {
         market.winningOutcome === 'YES' ? 'YES' : market.winningOutcome === 'NO' ? 'NO' : null;
 
     const handle_claim = async () => {
-        if (claiming) return;
+        if (claiming || !market.claimable) return;
         set_claiming(true);
         try {
             const result = await trading_api.claim(market.id);
             const short = `${result.txSignature.slice(0, 8)}…${result.txSignature.slice(-6)}`;
             toast.success('Claim submitted', { description: `Tx ${short}` });
+            if (market.winningOutcome)
+                usePositionsStore.getState().applyClaim(market.id, market.winningOutcome);
         } catch (err: unknown) {
             const msg =
                 err instanceof TradingError
@@ -35,7 +38,9 @@ export default function ResolvedPanel({ market }: Props): JSX.Element {
     return (
         <div className="px-5 py-6 space-y-4">
             <div>
-                <div className="text-[10px] tracking-[0.2em] uppercase text-white/45">Resolved</div>
+                <div className="text-[10px] tracking-[0.2em] uppercase text-white/45">
+                    {market.claimable ? 'Resolved' : 'Pending settlement'}
+                </div>
                 {winner_label ? (
                     <div className="text-[13px] text-white/85 mt-1">
                         <span
@@ -46,17 +51,21 @@ export default function ResolvedPanel({ market }: Props): JSX.Element {
                         >
                             {winner_label}
                         </span>{' '}
-                        won — market settled.
+                        {market.claimable
+                            ? 'won — market settled.'
+                            : 'is the current result — awaiting settlement.'}
                     </div>
                 ) : (
                     <div className="text-[13px] text-white/85 mt-1">
-                        This market has been resolved.
+                        {market.claimable
+                            ? 'This market has been resolved.'
+                            : 'This market is awaiting settlement.'}
                     </div>
                 )}
                 <p className="text-[11px] text-white/45 mt-2">
                     {market.claimable
                         ? 'If you held winning shares, you can claim your USDC payout now.'
-                        : 'On-chain settlement in flight — Claim will enable in a moment.'}
+                        : 'Claim will enable after the result is final and settlement is confirmed on-chain.'}
                 </p>
             </div>
             <button

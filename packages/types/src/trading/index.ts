@@ -95,8 +95,8 @@ export interface MarketDTO {
    *  Solana — i.e. the moment users can actually call the claim
    *  instruction. This is a *separate* state from `status === RESOLVED`:
    *  the DB flips to RESOLVED the second gamma publishes a winner, but
-   *  the on-chain tx lands a few hundred ms later (longer if the hedger
-   *  Resolver has to retry). The trade panel shows the winner the
+   *  on-chain settlement follows the dispute window and successful
+   *  confirmation. The trade panel shows the provisional result the
    *  moment `status === RESOLVED`, but the Claim button only enables
    *  when `claimable === true`. */
   claimable: boolean;
