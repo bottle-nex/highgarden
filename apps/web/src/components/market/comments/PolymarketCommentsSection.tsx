@@ -28,13 +28,14 @@ export default function PolymarketCommentsSection({ market_id }: Props): JSX.Ele
         set_error(null);
         try {
             const result = await fetch_polymarket_comments(market_id, {
-                limit: PAGE_SIZE,
+                limit: PAGE_SIZE + 1,
                 offset: 0,
                 holders_only,
             });
-            set_comments(result.comments);
-            set_offset(result.comments.length);
-            set_has_more(result.comments.length === PAGE_SIZE);
+            const page = result.comments.slice(0, PAGE_SIZE);
+            set_comments(page);
+            set_offset(page.length);
+            set_has_more(result.comments.length > PAGE_SIZE);
             set_available(result.event_id !== null);
         } catch (err) {
             console.error('[polymarket-comments] load_initial', err);
@@ -51,13 +52,14 @@ export default function PolymarketCommentsSection({ market_id }: Props): JSX.Ele
     async function load_more() {
         try {
             const result = await fetch_polymarket_comments(market_id, {
-                limit: PAGE_SIZE,
+                limit: PAGE_SIZE + 1,
                 offset,
                 holders_only,
             });
-            set_comments((prev) => [...prev, ...result.comments]);
-            set_offset((prev) => prev + result.comments.length);
-            set_has_more(result.comments.length === PAGE_SIZE);
+            const page = result.comments.slice(0, PAGE_SIZE);
+            set_comments((prev) => [...prev, ...page]);
+            set_offset((prev) => prev + page.length);
+            set_has_more(result.comments.length > PAGE_SIZE);
         } catch (err) {
             console.error('[polymarket-comments] load_more', err);
             set_error('Could not load more');
