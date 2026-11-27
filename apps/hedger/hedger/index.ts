@@ -256,20 +256,19 @@ export default class Hedger {
         try {
             const ctx = await this.lookup_pause_context(job_id);
             if (!ctx) return;
-            await Exposure.record_pause(ctx.marketId, reason);
-            const sig = await prisma.$transaction(
-                async (tx) => {
-                    await lock_market_for_pause(tx, ctx.marketId);
-                    const exposure = await tx.exposure.findUnique({
-                        where: { marketId: ctx.marketId },
-                        select: { paused: true },
-                    });
-                    // An admin may have resumed this market since the database pause.
-                    if (!exposure?.paused) return null;
-                    return this.pause_market_on_chain(ctx.solanaMarketPda);
-                },
-                market_pause_transaction_options,
-            );
+            let recorded = false;
+            try {
+                await Exposure.record_pause(ctx.marketId, reason);
+                recorded = true;
+            } catch (err) {
+                this.log.error(
+                    { err, jobId: job_id, marketId: ctx.marketId, reason },
+                    "could not record hedge pause; attempting emergency pause on Solana",
+                );
+            }
+            const sig = recorded
+                ? await this.pause_recorded_market_on_chain(ctx.marketId, ctx.solanaMarketPda)
+                : await this.pause_market_on_chain(ctx.solanaMarketPda);
             if (sig === null) return;
             this.log.warn(
                 {
@@ -300,6 +299,22 @@ export default class Hedger {
             return null;
         }
         return ctx;
+    }
+
+    private async pause_recorded_market_on_chain(
+        market_id: string,
+        market_pda: string,
+    ): Promise<string | null> {
+        return prisma.$transaction(async (tx) => {
+            await lock_market_for_pause(tx, market_id);
+            const exposure = await tx.exposure.findUnique({
+                where: { marketId: market_id },
+                select: { paused: true },
+            });
+            // An admin may have resumed this market since the database pause.
+            if (!exposure?.paused) return null;
+            return this.pause_market_on_chain(market_pda);
+        }, market_pause_transaction_options);
     }
 
     /**
