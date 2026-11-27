@@ -1,5 +1,5 @@
 'use client';
-import { JSX, useCallback, useEffect, useState } from 'react';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { PiChatCircleFill, PiFlagBold } from 'react-icons/pi';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { CroppedButton } from '@/components/ui/cropped-button';
@@ -31,6 +31,8 @@ export default function NativeCommentsSection({
     const [comments, set_comments] = useState<CommentDTO[]>([]);
     const [offset, set_offset] = useState(0);
     const [loading, set_loading] = useState(true);
+    const [loading_more, set_loading_more] = useState(false);
+    const loading_more_ref = useRef(false);
     const [error, set_error] = useState<string | null>(null);
     const [has_more, set_has_more] = useState(false);
     const [available, set_available] = useState(true);
@@ -63,6 +65,9 @@ export default function NativeCommentsSection({
     }, [load_initial]);
 
     async function load_more() {
+        if (loading_more_ref.current) return;
+        loading_more_ref.current = true;
+        set_loading_more(true);
         try {
             const result = await fetch_native_comments(market_id, {
                 limit: PAGE_SIZE,
@@ -74,6 +79,9 @@ export default function NativeCommentsSection({
         } catch (err) {
             console.error('[comments] load_more', err);
             set_error('Could not load more comments');
+        } finally {
+            loading_more_ref.current = false;
+            set_loading_more(false);
         }
     }
 
@@ -228,9 +236,10 @@ export default function NativeCommentsSection({
                                 <button
                                     type="button"
                                     onClick={load_more}
-                                    className="rounded-md border border-white/10 px-5 py-2 text-[10px] tracking-[0.3em] uppercase text-white/55 hover:text-white hover:border-white/25 transition-colors cursor-pointer"
+                                    disabled={loading_more}
+                                    className="rounded-md border border-white/10 px-5 py-2 text-[10px] tracking-[0.3em] uppercase text-white/55 hover:text-white hover:border-white/25 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
-                                    Load more
+                                    {loading_more ? 'Loading…' : 'Load more'}
                                 </button>
                             </div>
                         )}
