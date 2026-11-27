@@ -6,6 +6,10 @@ interface ListResponse<T> {
     data: { eventId: string | null; comments: T[] };
 }
 
+interface NativeListResponse {
+    data: { eventId: string | null; comments: CommentDTO[]; total: number };
+}
+
 interface CreateResponse {
     data: CommentDTO;
 }
@@ -17,14 +21,14 @@ interface ReportResponse {
 export async function fetch_native_comments(
     market_id: string,
     params: { limit: number; offset: number },
-): Promise<{ event_id: string | null; comments: CommentDTO[] }> {
-    const res = await apiClient.get<ListResponse<CommentDTO>>(
-        `${MARKETS_URL}/${market_id}/comments`,
-        { params },
-    );
+): Promise<{ event_id: string | null; comments: CommentDTO[]; total: number }> {
+    const res = await apiClient.get<NativeListResponse>(`${MARKETS_URL}/${market_id}/comments`, {
+        params,
+    });
     return {
         event_id: res.data.data.eventId,
         comments: res.data.data.comments,
+        total: res.data.data.total,
     };
 }
 
