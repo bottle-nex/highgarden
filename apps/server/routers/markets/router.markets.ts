@@ -14,7 +14,7 @@ import QuoteController from "../../controllers/markets/controller.quote";
 import PlaceOrderController from "../../controllers/markets/controller.place-order";
 import ClaimController from "../../controllers/markets/controller.claim";
 import TradeController from "../../controllers/markets/controller.trade";
-import { requireAuth } from "../../middleware/middleware.auth";
+import { optionalAuth, requireAuth } from "../../middleware/middleware.auth";
 import { rate_limiters as rl } from "../../middleware/middleware.rate-limit";
 
 const markets_router: Router = Router();
@@ -30,7 +30,7 @@ markets_router.get("/:id/round-anchor", rl.read, GetRoundAnchorController.proces
 markets_router.get("/:id/trades", rl.read, GetRecentTradesController.process);
 markets_router.get("/:id/news", rl.read, GetMarketNewsController.process);
 markets_router.get("/:id/polymarket-comments", rl.read, GetPolymarketCommentsController.process);
-markets_router.get("/:id/comments", rl.read, ListCommentsController.process);
+markets_router.get("/:id/comments", rl.read, optionalAuth, ListCommentsController.process);
 markets_router.post("/:id/comments", rl.mutate, requireAuth, CreateCommentController.process);
 markets_router.post("/:id/quote", rl.trade, requireAuth, QuoteController.process);
 markets_router.post("/:id/place-order", rl.trade, requireAuth, PlaceOrderController.process);

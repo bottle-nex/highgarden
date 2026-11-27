@@ -2,6 +2,11 @@ import type { NextFunction, Request, Response } from "express";
 import ResponseWriter from "../services/service.response";
 import { verifySessionJwt } from "../services/service.jwt";
 
+export function optionalAuth(req: Request, res: Response, next: NextFunction) {
+    if (!req.headers.authorization) return next();
+    return requireAuth(req, res, next);
+}
+
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
     const header = req.headers.authorization;
     if (!header || !header.startsWith("Bearer ")) {
