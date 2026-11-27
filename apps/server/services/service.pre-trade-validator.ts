@@ -9,6 +9,7 @@ import BalanceMonitorService from "./service.balance-monitor";
 import { TradeError, type TradeErrorCode } from "./service.trade-errors";
 
 const STATUS_TTL_MS = 30_000;
+const STATUS_CACHE_MAX_ENTRIES = 256;
 const BALANCE_TTL_MS = 30_000;
 
 /** Worst-case BUY price assumption when book is stale. The on-chain max is 99¢. */
@@ -358,9 +359,18 @@ export default class PreTradeValidator {
         if (slot && slot.expires_at > Date.now()) return slot.value;
         const fresh = await this.gamma.fetch_market_status(polymarket_market_id);
         if (!fresh) return null;
+        const now = Date.now();
+        for (const [key, entry] of this.status_cache) {
+            if (entry.expires_at <= now) this.status_cache.delete(key);
+        }
+        this.status_cache.delete(polymarket_market_id);
+        if (this.status_cache.size >= STATUS_CACHE_MAX_ENTRIES) {
+            const oldest_key = this.status_cache.keys().next().value;
+            if (oldest_key !== undefined) this.status_cache.delete(oldest_key);
+        }
         this.status_cache.set(polymarket_market_id, {
             value: fresh,
-            expires_at: Date.now() + STATUS_TTL_MS,
+            expires_at: now + STATUS_TTL_MS,
         });
         return fresh;
     }
