@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ListingStatus } from '@solmarket/types';
 import {
@@ -10,6 +12,7 @@ import {
     type AdminListingCounts,
     type AdminMarketKind,
 } from '@/lib/api/admin';
+import { useUserSessionStore } from '@/store/user/useUserSessionStore';
 import AdminListings, { type AdminListingRow, type AdminTab } from './AdminListings';
 import RunListerButton from './RunListerButton';
 import FundUserButton from './FundUserButton';
@@ -77,6 +80,25 @@ function toRow(l: AdminListingApi): AdminListingRow {
 }
 
 export default function AdminPanel() {
+    const router = useRouter();
+    const { data: session, status } = useSession();
+    const token = useUserSessionStore((s) => s.session?.user?.token);
+    const sessionToken = session?.user?.token;
+
+    useEffect(() => {
+        if (status !== 'loading' && !sessionToken) {
+            router.replace('/signin?callbackUrl=%2Fadmin');
+        }
+    }, [router, sessionToken, status]);
+
+    if (status !== 'authenticated' || !token || token !== sessionToken) {
+        return <div className="text-xs text-white/40">Loading listings…</div>;
+    }
+
+    return <AdminPanelContent />;
+}
+
+function AdminPanelContent() {
     const [active, setActive] = useState<AdminTab>('PENDING');
     const [counts, setCounts] = useState<AdminListingCounts>(EMPTY_COUNTS);
     const [tabs, setTabs] = useState<Record<AdminTab, TabState>>({

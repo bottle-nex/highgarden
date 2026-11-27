@@ -1,4 +1,4 @@
-import type { NextAuthOptions, Account, ISODateString } from 'next-auth';
+import type { NextAuthOptions, Account, ISODateString, Profile } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
@@ -28,13 +28,50 @@ export const authOption: NextAuthOptions = {
         signIn: '/signin',
     },
     callbacks: {
-        async signIn({ user, account }: { user: UserType; account: Account | null }) {
+        async signIn({
+            user,
+            account,
+            profile,
+        }: {
+            user: UserType;
+            account: Account | null;
+            profile?: Profile;
+        }) {
             try {
                 if (account?.provider === 'google') {
-                    const response = await axios.post(SIGNIN_URL, {
-                        user,
-                        account,
-                    });
+                    const secret = process.env.GOOGLE_SIGN_IN_SHARED_SECRET;
+                    if (!secret) {
+                        console.error('[next-auth signIn] Google sign-in credential is missing');
+                        return false;
+                    }
+                    if (
+                        !profile?.email ||
+                        !('email_verified' in profile) ||
+                        profile.email_verified !== true
+                    ) {
+                        return false;
+                    }
+
+                    // Google can vouch for current mailbox ownership for Gmail and Workspace.
+                    const hostedDomain =
+                        'hd' in profile &&
+                        typeof profile.hd === 'string' &&
+                        profile.hd.trim() !== '';
+                    if (!profile.email.toLowerCase().endsWith('@gmail.com') && !hostedDomain) {
+                        return false;
+                    }
+
+                    const response = await axios.post(
+                        SIGNIN_URL,
+                        {
+                            user: { email: profile.email, name: user.name, image: user.image },
+                            account: { provider: account.provider },
+                        },
+                        {
+                            headers: { Authorization: `Bearer ${secret}` },
+                            maxRedirects: 0,
+                        },
+                    );
 
                     const result = response.data;
 
@@ -53,8 +90,8 @@ export const authOption: NextAuthOptions = {
                 }
 
                 return false;
-            } catch (err) {
-                console.error('[next-auth signIn]', err);
+            } catch {
+                console.error('[next-auth signIn] Google sign-in exchange failed');
                 return false;
             }
         },
