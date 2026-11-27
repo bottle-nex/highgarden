@@ -110,11 +110,13 @@ export default class Poller {
     private async fetch_new_signatures(until: string | null): Promise<ConfirmedSignatureInfo[]> {
         const signatures: ConfirmedSignatureInfo[] = [];
         let before: string | undefined;
+        let min_context_slot: number | undefined;
         for (;;) {
             const page = await this.solana.connection.getSignaturesForAddress(
                 this.solana.program_id,
                 {
                     limit: ENV.HEDGER_MAX_BACKFILL_SIGNATURES,
+                    minContextSlot: min_context_slot,
                     ...(until ? { until } : {}),
                     ...(before ? { before } : {}),
                 },
@@ -126,6 +128,8 @@ export default class Poller {
                 throw new Error(`Signature pagination did not advance past ${before}`);
             }
             signatures.push(...page);
+            // A replica behind the first page can return an empty page for an unknown anchor.
+            min_context_slot ??= page[0]?.slot;
             before = oldest.signature;
         }
     }
