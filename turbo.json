@@ -31,7 +31,8 @@
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": ["GOOGLE_SIGN_IN_SHARED_SECRET"]
     },
     "generate": {
       "dependsOn": ["^generate"],
