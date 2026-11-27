@@ -5,7 +5,7 @@ import {
     getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import bs58 from "bs58";
-import { prisma, type SolDeposit, type SolDepositAttempt } from "@solmarket/database";
+import { prisma, type Prisma, type SolDeposit, type SolDepositAttempt } from "@solmarket/database";
 import { ENV } from "../config/config.env";
 import CoinGeckoPriceFeed from "./service.price-feed";
 
@@ -136,33 +136,20 @@ export default class SolDepositPoller {
             ENV.SERVER_DEPOSIT_SWEEP_RESERVE_LAMPORTS,
             await this.get_rent_exempt_min(),
         );
+        // An empty/reserved wallet needs no quote. In particular, a completed
+        // recovery must not turn into a price-feed error on the manual endpoint.
+        if (
+            (await this.available_lamports(prisma, c, effective_reserve)) <=
+            BigInt(ENV.SERVER_DEPOSIT_MIN_LAMPORTS)
+        )
+            return { detected: false };
         const rate_cents = await this.price_feed.get_sol_usd_rate_cents();
         const created = await prisma.$transaction(async (tx) => {
             // Always lock User before SolDeposit, including stage transitions.
             // Balance observations happen inside this lock to avoid stale reads
             // creating duplicate reservations in another process.
             await tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${c.userId} FOR UPDATE`;
-            const swept = await tx.solDeposit.aggregate({
-                where: { userId: c.userId },
-                _max: { sweepSlot: true },
-            });
-            const balance = await this.get_connection().getBalanceAndContext(
-                new PublicKey(c.custodialPublicKey),
-                { commitment: "finalized", minContextSlot: swept._max.sweepSlot ?? undefined },
-            );
-            if (!Number.isSafeInteger(balance.value)) throw new Error("unsafe SOL balance");
-            const reserved = await tx.solDeposit.aggregate({
-                where: {
-                    userId: c.userId,
-                    recoveryReady: true,
-                    status: { in: ["DETECTED", "SWEEPING"] },
-                },
-                _sum: { solLamports: true },
-            });
-            const available =
-                BigInt(balance.value) -
-                BigInt(effective_reserve) -
-                (reserved._sum.solLamports ?? 0n);
+            const available = await this.available_lamports(tx, c, effective_reserve);
             if (available <= BigInt(ENV.SERVER_DEPOSIT_MIN_LAMPORTS)) return null;
             return tx.solDeposit.create({
                 data: {
@@ -179,6 +166,31 @@ export default class SolDepositPoller {
         });
         if (created) await this.recover_one(created.id);
         return { detected: created !== null };
+    }
+
+    private async available_lamports(
+        db: Prisma.TransactionClient,
+        c: Candidate,
+        reserve: number,
+    ): Promise<bigint> {
+        const swept = await db.solDeposit.aggregate({
+            where: { userId: c.userId },
+            _max: { sweepSlot: true },
+        });
+        const balance = await this.get_connection().getBalanceAndContext(
+            new PublicKey(c.custodialPublicKey),
+            { commitment: "finalized", minContextSlot: swept._max.sweepSlot ?? undefined },
+        );
+        if (!Number.isSafeInteger(balance.value)) throw new Error("unsafe SOL balance");
+        const reserved = await db.solDeposit.aggregate({
+            where: {
+                userId: c.userId,
+                recoveryReady: true,
+                status: { in: ["DETECTED", "SWEEPING"] },
+            },
+            _sum: { solLamports: true },
+        });
+        return BigInt(balance.value) - BigInt(reserve) - (reserved._sum.solLamports ?? 0n);
     }
 
     /**
