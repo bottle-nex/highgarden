@@ -85,3 +85,16 @@ enum SolDepositStatus {
   COMPLETED
   FAILED
 }
+
+enum ActivityKind {
+  DEPOSIT
+  WITHDRAWAL
+  CLAIM
+  TRADE
+}
+
+enum ActivityStatus {
+  PENDING
+  DONE
+  FAILED
+}

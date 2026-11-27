@@ -8,7 +8,7 @@
  * `SolmarketClient` and use its methods.
  */
 
-export { SolmarketClient } from "./client";
+export { SolmarketClient, TransactionConfirmationError } from "./client";
 export type { SolmarketClientOptions } from "./client";
 
 export {
@@ -72,3 +72,5 @@ export type {
   UsedNonceAccount,
   UserPositionAccount,
 } from "./types";
+
+export type { BeforeBroadcast, SignedTransactionInfo } from "./types";

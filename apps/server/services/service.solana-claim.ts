@@ -1,3 +1,4 @@
+import ActivityService from "./service.activity";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import bs58 from "bs58";
@@ -96,13 +97,30 @@ export default class SolanaClaimService {
             );
         }
 
-        const sig = await client.claim({
-            user: user_keypair.publicKey,
-            userKeypair: user_keypair,
-            feePayer: fee_payer,
-            market: market_pda,
-            userUsdc: user_usdc,
+        const market_label = await prisma.market.findUniqueOrThrow({
+            where: { id: input.marketDbId },
+            select: { name: true },
         });
+        const sig = await ActivityService.track(
+            {
+                userId: input.userId,
+                kind: "CLAIM",
+                marketId: input.marketDbId,
+                marketName: market_label.name,
+                outcome: market.winningOutcome,
+                shares: winning_shares,
+                amountRaw: BigInt(winning_shares) * 1_000_000n,
+            },
+            (beforeBroadcast) =>
+                client.claim({
+                    beforeBroadcast,
+                    user: user_keypair.publicKey,
+                    userKeypair: user_keypair,
+                    feePayer: fee_payer,
+                    market: market_pda,
+                    userUsdc: user_usdc,
+                }),
+        );
 
         // Persist the Claim row immediately so a refresh of /portfolio
         // hides this position. Unique-keyed on (userId, marketId, outcome)

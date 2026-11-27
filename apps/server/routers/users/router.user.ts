@@ -1,3 +1,4 @@
+import ActivityService, { ActivityQueryError } from "../../services/service.activity";
 import { Router } from "express";
 import { prisma } from "@solmarket/database";
 import { requireAuth } from "../../middleware/middleware.auth";
@@ -76,6 +77,19 @@ user_router.get("/me/wallet", rl.read, requireAuth, async (req, res) => {
         );
     } catch (err) {
         console.error("[users/me/wallet]", err);
+        return ResponseWriter.system_error(res);
+    }
+});
+
+user_router.get("/me/activity", rl.read, requireAuth, async (req, res) => {
+    try {
+        const query = ActivityService.parse_query(req.query);
+        const page = await ActivityService.list(req.user!.id, query);
+        return ResponseWriter.success(res, page, "Activity");
+    } catch (error) {
+        if (error instanceof ActivityQueryError)
+            return ResponseWriter.invalid_data(res, error.message);
+        console.error("[users/me/activity]", error);
         return ResponseWriter.system_error(res);
     }
 });

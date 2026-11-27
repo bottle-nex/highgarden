@@ -1,3 +1,5 @@
+import ActivityService from "./service.activity";
+import type { BeforeBroadcast } from "@solmarket/contract";
 import { Connection, Ed25519Program, Keypair, PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import bs58 from "bs58";
@@ -43,13 +45,34 @@ export default class SolanaTradeService {
         const ed25519_ix = this.build_ed25519_ix(input.signedQuote);
         const user_usdc = this.derive_user_usdc(user_keypair.publicKey);
         console.log(chalk.yellow("user usdc is : "), user_usdc);
-        const sig = await this.send_place_order(client, {
-            user: user_keypair,
-            fee_payer,
-            user_usdc,
-            quote: input.signedQuote,
-            ed25519_ix,
+        const market = await prisma.market.findUniqueOrThrow({
+            where: { id: input.marketDbId },
+            select: { name: true },
         });
+        const sig = await ActivityService.track(
+            {
+                userId: input.userId,
+                kind: "TRADE",
+                marketId: input.marketDbId,
+                marketName: market.name,
+                amountRaw:
+                    BigInt(input.signedQuote.price) * BigInt(input.signedQuote.size) * 10_000n,
+                side: input.signedQuote.side === 0 ? "BUY" : "SELL",
+                outcome: input.signedQuote.outcome === 0 ? "YES" : "NO",
+                priceCents: input.signedQuote.price,
+                shares: input.signedQuote.size,
+                nonce: input.signedQuote.nonceHex,
+            },
+            (beforeBroadcast) =>
+                this.send_place_order(client, {
+                    user: user_keypair,
+                    fee_payer,
+                    user_usdc,
+                    quote: input.signedQuote,
+                    ed25519_ix,
+                    beforeBroadcast,
+                }),
+        );
 
         // Write the Fill row now so the user's portfolio reflects the trade
         // immediately, independent of hedger liveness. The hedger uses the
@@ -204,10 +227,12 @@ export default class SolanaTradeService {
             fee_payer: Keypair;
             user_usdc: PublicKey;
             quote: SignedQuoteWire;
+            beforeBroadcast: BeforeBroadcast;
             ed25519_ix: Awaited<ReturnType<SolanaTradeService["build_ed25519_ix"]>>;
         },
     ): Promise<string> {
         return client.placeOrder({
+            beforeBroadcast: args.beforeBroadcast,
             user: args.user.publicKey,
             userKeypair: args.user,
             feePayer: args.fee_payer,

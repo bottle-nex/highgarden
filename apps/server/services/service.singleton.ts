@@ -1,3 +1,4 @@
+import ActivityReconciler from "./service.activity-reconciler";
 import Redis from "ioredis";
 import { prisma } from "@solmarket/database";
 import { ENV } from "../config/config.env";
@@ -30,6 +31,7 @@ export default class Services {
     public nonce_sweeper!: NonceSweeperService;
     public trade_idempotency!: TradeIdempotencyService;
     public price_feed!: CoinGeckoPriceFeed;
+    public activity_reconciler!: ActivityReconciler;
     public sol_deposit_poller!: SolDepositPoller;
     public round_anchor!: RoundAnchorRecorder;
     public fast_resolver!: FastResolverService;
@@ -48,11 +50,13 @@ export default class Services {
         this.trade_idempotency = new TradeIdempotencyService(this.redis);
         this.price_feed = new CoinGeckoPriceFeed();
         this.sol_deposit_poller = new SolDepositPoller(this.price_feed);
+        this.activity_reconciler = new ActivityReconciler();
         this.round_anchor = new RoundAnchorRecorder();
         this.fast_resolver = new FastResolverService(this.solana_admin, this.market_lifecycle);
         await this.token_index.start();
         this.nonce_sweeper.start();
         this.sol_deposit_poller.start();
+        this.activity_reconciler.start();
         // Fire-and-forget: load_symbols hits Postgres and is non-critical to
         // boot. If it throws, the recorder logs and the request handler
         // serving /round-anchor will simply return 404 (no row).

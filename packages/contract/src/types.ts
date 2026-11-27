@@ -62,7 +62,16 @@ export interface CreateMarketResult {
   polymarketMarketIdHash: Buffer;
 }
 
+/** Awaited before broadcast so callers can durably record a signed transaction. */
+export interface SignedTransactionInfo {
+  signature: Uint8Array;
+  blockhash: string;
+  lastValidBlockHeight: number;
+}
+export type BeforeBroadcast = (info: SignedTransactionInfo) => Promise<void>;
+
 export interface PlaceOrderParams {
+  beforeBroadcast?: BeforeBroadcast;
   user: PublicKey;
   quote: QuoteInput;
   userUsdc: PublicKey;
@@ -76,6 +85,7 @@ export interface PlaceOrderParams {
 }
 
 export interface ClaimParams {
+  beforeBroadcast?: BeforeBroadcast;
   user: PublicKey;
   market: PublicKey;
   userUsdc: PublicKey;
