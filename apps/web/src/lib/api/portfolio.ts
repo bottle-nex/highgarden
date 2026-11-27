@@ -1,7 +1,18 @@
-import type { FillDTO, PositionDTO } from '@solmarket/types';
+import type { ActivityPageDTO, FillDTO, PositionDTO } from '@solmarket/types';
 import { apiClient } from '../client.axios';
 
 class PortfolioApi {
+    public async fetch_activity(
+        params: { cursor?: string; search?: string },
+        signal?: AbortSignal,
+    ): Promise<ActivityPageDTO> {
+        const { data } = await apiClient.get<{ data: ActivityPageDTO }>('/users/me/activity', {
+            params,
+            signal,
+        });
+        return data.data;
+    }
+
     public async fetch_positions(): Promise<PositionDTO[]> {
         const { data } = await apiClient.get('/users/me/positions');
         return (data?.data as PositionDTO[]) ?? [];
