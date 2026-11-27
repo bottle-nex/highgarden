@@ -50,32 +50,70 @@ export default class Resolver {
         });
     }
 
-    /**
-     * Advances a market into `POLYMARKET_RESOLVED`, recording the winning
-     * outcome and the resolved-at timestamp Polymarket reported. Idempotent:
-     * re-calling for an already-resolved market overwrites the timestamp
-     * and outcome, which is what we want if Polymarket revises (rare, but
-     * the on-chain submission hasn't happened yet so it's safe).
-     */
+    /** Serialize provisional changes with settlement on the Market row. */
+    private static async record_pending_state(
+        market_id: string,
+        winning_outcome: Outcome | null,
+        resolved_at: Date | null,
+        status: "OPEN" | "PAUSED" | "RESOLVED",
+    ): Promise<ResolverStateRow> {
+        return prisma.$transaction(async (tx) => {
+            await tx.$queryRaw`SELECT "id" FROM "Market" WHERE "id" = ${market_id} FOR UPDATE`;
+            const existing = await tx.resolverState.findUnique({ where: { marketId: market_id } });
+            if (existing?.stage === "SOLANA_RESOLVED" || existing?.stage === "REDEEMED") {
+                await tx.market.update({
+                    where: { id: market_id },
+                    data: {
+                        status: "RESOLVED",
+                        winningOutcome: existing.winningOutcome,
+                        resolvedAt: existing.solanaResolvedAt,
+                        pausedReason: null,
+                    },
+                });
+                return existing;
+            }
+            // A revised winner starts a new dispute window. Repeated observations
+            // of the same result must not postpone settlement indefinitely.
+            const timestamp =
+                winning_outcome === null
+                    ? null
+                    : existing?.winningOutcome === winning_outcome
+                      ? (existing.polymarketResolvedAt ?? resolved_at)
+                      : existing?.winningOutcome
+                        ? new Date()
+                        : resolved_at;
+            const data = {
+                stage:
+                    winning_outcome === null
+                        ? ("PENDING" as const)
+                        : ("POLYMARKET_RESOLVED" as const),
+                winningOutcome: winning_outcome,
+                polymarketResolvedAt: timestamp,
+            };
+            const row = await tx.resolverState.upsert({
+                where: { marketId: market_id },
+                create: { marketId: market_id, ...data },
+                update: data,
+            });
+            await tx.market.update({
+                where: { id: market_id },
+                data: {
+                    status,
+                    winningOutcome: winning_outcome,
+                    resolvedAt: timestamp,
+                    pausedReason: status === "PAUSED" ? "UMA_DISPUTE" : null,
+                },
+            });
+            return row;
+        });
+    }
+
     static async record_polymarket_resolved(
         market_id: string,
         winning_outcome: Outcome,
         resolved_at: Date,
     ): Promise<ResolverStateRow> {
-        return prisma.resolverState.upsert({
-            where: { marketId: market_id },
-            create: {
-                marketId: market_id,
-                stage: "POLYMARKET_RESOLVED",
-                polymarketResolvedAt: resolved_at,
-                winningOutcome: winning_outcome,
-            },
-            update: {
-                stage: "POLYMARKET_RESOLVED",
-                polymarketResolvedAt: resolved_at,
-                winningOutcome: winning_outcome,
-            },
-        });
+        return Resolver.record_pending_state(market_id, winning_outcome, resolved_at, "RESOLVED");
     }
 
     /**
@@ -117,22 +155,47 @@ export default class Resolver {
     /**
      * Advances a market into `SOLANA_RESOLVED`. Stores the on-chain
      * resolve tx signature so the row also serves as an audit trail.
-     * Uses plain `update` (not upsert) because the row must already exist
-     * — the resolver loop wouldn't have submitted to Solana for a row it
-     * hadn't first marked POLYMARKET_RESOLVED.
+     * Also repairs Market in the same transaction, including recovery when
+     * the on-chain submission landed before the provisional DB write.
      */
     static async record_solana_resolved(
         market_id: string,
         tx_signature: string,
         resolved_at: Date,
+        winning_outcome: Outcome,
     ): Promise<ResolverStateRow> {
-        return prisma.resolverState.update({
-            where: { marketId: market_id },
-            data: {
-                stage: "SOLANA_RESOLVED",
-                solanaResolveTxSig: tx_signature,
-                solanaResolvedAt: resolved_at,
-            },
+        return prisma.$transaction(async (tx) => {
+            await tx.$queryRaw`SELECT "id" FROM "Market" WHERE "id" = ${market_id} FOR UPDATE`;
+            const existing = await tx.resolverState.findUnique({ where: { marketId: market_id } });
+            const settled = existing?.stage === "SOLANA_RESOLVED" || existing?.stage === "REDEEMED";
+            const row = settled
+                ? existing
+                : await tx.resolverState.upsert({
+                      where: { marketId: market_id },
+                      create: {
+                          marketId: market_id,
+                          stage: "SOLANA_RESOLVED",
+                          winningOutcome: winning_outcome,
+                          solanaResolveTxSig: tx_signature,
+                          solanaResolvedAt: resolved_at,
+                      },
+                      update: {
+                          stage: "SOLANA_RESOLVED",
+                          winningOutcome: winning_outcome,
+                          solanaResolveTxSig: tx_signature,
+                          solanaResolvedAt: resolved_at,
+                      },
+                  });
+            await tx.market.update({
+                where: { id: market_id },
+                data: {
+                    status: "RESOLVED",
+                    winningOutcome: row.winningOutcome,
+                    resolvedAt: row.solanaResolvedAt,
+                    pausedReason: null,
+                },
+            });
+            return row;
         });
     }
 
@@ -193,28 +256,16 @@ export default class Resolver {
         });
     }
 
-    /**
-     * Reverts a market to PENDING after the reconciler detects the
-     * Polymarket resolution was disputed (gamma reports unclosed /
-     * ambiguous). Clears the resolved-at timestamp and winning outcome
-     * so a future tick treats it as fresh.
-     */
-    static async revert_to_pending(market_id: string): Promise<void> {
-        await prisma.resolverState.update({
-            where: { marketId: market_id },
-            data: { stage: "PENDING", polymarketResolvedAt: null, winningOutcome: null },
-        });
+    /** Clear both provisional records when gamma reopens or becomes ambiguous. */
+    static async revert_to_pending(market_id: string, paused = true): Promise<void> {
+        await Resolver.record_pending_state(market_id, null, null, paused ? "PAUSED" : "OPEN");
     }
 
-    /**
-     * Updates only the winning outcome — used when the reconciler detects
-     * gamma flipped the answer between first detection and on-chain
-     * submission. Stage stays POLYMARKET_RESOLVED.
-     */
-    static async update_winning_outcome(market_id: string, outcome: Outcome): Promise<void> {
-        await prisma.resolverState.update({
-            where: { marketId: market_id },
-            data: { winningOutcome: outcome },
-        });
+    static async update_winning_outcome(
+        market_id: string,
+        outcome: Outcome,
+        resolved_at: Date,
+    ): Promise<void> {
+        await Resolver.record_polymarket_resolved(market_id, outcome, resolved_at);
     }
 }

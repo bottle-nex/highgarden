@@ -146,8 +146,7 @@ export default class MarketStatusPoller {
      * Approved markets with a Solana PDA. Same filter as the on-chain
      * Resolver so the two loops agree on the candidate set, but here we
      * also pull in RESOLVED rows for re-open detection — if gamma flips
-     * back from closed, we want to know. RESOLVED rows with a known
-     * winner stay terminal: no further work to do.
+     * back from closed, we want to know. Only confirmed on-chain resolutions are terminal.
      */
     private async list_candidates(): Promise<CandidateMarket[]> {
         const rows = await prisma.market.findMany({
@@ -166,12 +165,15 @@ export default class MarketStatusPoller {
                 solanaMarketPda: true,
             },
         });
-        return rows.filter((r) => !this.is_terminal(r));
-    }
-
-    /** RESOLVED with a known winner — no amount of polling moves this. */
-    private is_terminal(row: CandidateMarket): boolean {
-        return row.status === "RESOLVED" && row.winningOutcome !== null;
+        const settled = await prisma.resolverState.findMany({
+            where: {
+                marketId: { in: rows.map((r) => r.id) },
+                stage: { in: ["SOLANA_RESOLVED", "REDEEMED"] },
+            },
+            select: { marketId: true },
+        });
+        const settled_ids = new Set(settled.map((r) => r.marketId));
+        return rows.filter((r) => r.status !== "CANCELLED" && !settled_ids.has(r.id));
     }
 
     private async check_one(market: CandidateMarket): Promise<void> {
@@ -240,7 +242,10 @@ export default class MarketStatusPoller {
      * that set status = PAUSED for a non-UMA reason) are left alone.
      */
     private target_reopen(current: CandidateMarket): TargetState | null {
-        if (current.status === "PAUSED" && current.pausedReason === REASON_UMA_DISPUTE) {
+        if (
+            current.status === "RESOLVED" ||
+            (current.status === "PAUSED" && current.pausedReason === REASON_UMA_DISPUTE)
+        ) {
             return {
                 status: "OPEN",
                 winningOutcome: null,
@@ -252,15 +257,17 @@ export default class MarketStatusPoller {
     }
 
     private async apply_target(market: CandidateMarket, target: TargetState): Promise<void> {
-        await prisma.market.update({
-            where: { id: market.id },
-            data: {
-                status: target.status,
-                winningOutcome: target.winningOutcome,
-                resolvedAt: target.resolvedAt,
-                pausedReason: target.pausedReason,
-            },
-        });
+        if (target.winningOutcome && target.resolvedAt) {
+            const row = await ResolverDb.record_polymarket_resolved(
+                market.id,
+                target.winningOutcome,
+                target.resolvedAt,
+            );
+            if (row.stage === "SOLANA_RESOLVED" || row.stage === "REDEEMED") return;
+        } else {
+            await ResolverDb.revert_to_pending(market.id, target.status === "PAUSED");
+            return;
+        }
         this.log.info(
             {
                 marketId: market.id,
@@ -331,29 +338,29 @@ export default class MarketStatusPoller {
                         `pda=${market.solanaMarketPda.slice(0, 6)}…${market.solanaMarketPda.slice(-4)}`,
                     ),
                 );
-                const signature = await SolanaResolveOracle.resolve(
+                const result = await SolanaResolveOracle.resolve(
                     market.solanaMarketPda,
                     target.winningOutcome!,
                 );
                 const now = new Date();
-                await ResolverDb.record_polymarket_resolved(
+                const settled = await ResolverDb.record_solana_resolved(
                     market.id,
-                    target.winningOutcome!,
-                    target.resolvedAt!,
+                    result.signature,
+                    now,
+                    result.winningOutcome,
                 );
-                await ResolverDb.record_solana_resolved(market.id, signature, now);
                 console.log(
                     FAST_TAG.confirm,
                     chalk.yellow(market.name),
                     chalk.green(`won=${target.winningOutcome}`),
-                    chalk.gray(`tx=${signature.slice(0, 8)}…${signature.slice(-6)}`),
+                    chalk.gray(`tx=${result.signature.slice(0, 8)}…${result.signature.slice(-6)}`),
                 );
                 // Phase 2b: tell clients the on-chain market is now
                 // resolved → Claim button enables.
                 await this.publisher.publish_resolved(
                     market.id,
-                    target.winningOutcome!,
-                    target.resolvedAt!,
+                    settled.winningOutcome!,
+                    settled.solanaResolvedAt!,
                     true,
                 );
                 console.log(

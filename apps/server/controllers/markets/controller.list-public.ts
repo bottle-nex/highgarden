@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { prisma } from "@solmarket/database";
 import { ListingStatus, type MarketDTO, type MarketStatus, type Outcome } from "@solmarket/types";
 import ResponseWriter from "../../services/service.response";
+import MarketSettlementService from "../../services/service.market-settlement";
 
 // Snapshot cache for the public-list endpoint. Every connected dashboard
 // tab polls this every 8s and several components inside one tab fan out
@@ -78,36 +79,21 @@ export default class ListPublicMarketsController {
                 include: { market: { include: { polymarket: true } } },
             });
 
-            // ResolverState has no Prisma relation to Market (PK-only
-            // marketId, no @relation), so we pull the per-market on-chain
-            // stage with a single batched query and build a lookup map.
-            // Used below to derive `claimable` on the DTO — true once the
-            // hedger has confirmed `resolve_market` on Solana.
             const market_ids = listings.map((l) => l.market?.id).filter((id): id is string => !!id);
-            const resolver_rows =
-                market_ids.length > 0
-                    ? await prisma.resolverState.findMany({
-                          where: { marketId: { in: market_ids } },
-                          select: { marketId: true, stage: true },
-                      })
-                    : [];
-            const stage_by_market = new Map(
-                resolver_rows.map((r) => [r.marketId, r.stage] as const),
-            );
+            const settlements = await MarketSettlementService.find_many(market_ids);
 
             const markets: MarketDTO[] = [];
             for (const l of listings) {
                 const m = l.market;
                 const p = m?.polymarket;
                 if (!m || !p) continue;
-                const stage = stage_by_market.get(m.id);
-                const claimable = stage === "SOLANA_RESOLVED" || stage === "REDEEMED";
+                const resolution = MarketSettlementService.project(m, settlements.get(m.id));
                 markets.push({
                     id: m.id,
                     name: m.name,
                     description: m.description,
                     endAt: m.endAt.toISOString(),
-                    status: m.status as MarketStatus,
+                    status: resolution.status as MarketStatus,
                     polyMarketId: m.polyMarketId,
                     yesTokenId: p.yesTokenId,
                     noTokenId: p.noTokenId,
@@ -121,9 +107,9 @@ export default class ListPublicMarketsController {
                     eventSlug: p.eventSlug,
                     kind: m.kind,
                     fastSeriesKey: m.fastSeriesKey,
-                    winningOutcome: m.winningOutcome as Outcome | null,
-                    resolvedAt: m.resolvedAt?.toISOString() ?? null,
-                    claimable,
+                    winningOutcome: resolution.winningOutcome as Outcome | null,
+                    resolvedAt: resolution.resolvedAt?.toISOString() ?? null,
+                    claimable: resolution.claimable,
                     tags: p.tags,
                 });
             }

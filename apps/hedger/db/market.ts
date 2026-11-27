@@ -32,6 +32,7 @@ export interface MarketSummary {
     name: string;
     polyMarketId: string;
     solanaMarketPda: string | null;
+    kind: "STANDARD" | "FAST_MOVING";
 }
 
 export default class Market {
@@ -108,7 +109,7 @@ export default class Market {
     static async get_summary_by_id(market_id: string): Promise<MarketSummary | null> {
         return prisma.market.findUnique({
             where: { id: market_id },
-            select: { id: true, name: true, polyMarketId: true, solanaMarketPda: true },
+            select: { id: true, name: true, polyMarketId: true, solanaMarketPda: true, kind: true },
         });
     }
 

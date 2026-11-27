@@ -444,10 +444,13 @@ export class SolmarketClient {
     const sig = await this.connection.sendRawTransaction(tx.serialize(), {
       preflightCommitment: this.commitment,
     });
-    await this.connection.confirmTransaction(
+    const confirmation = await this.connection.confirmTransaction(
       { signature: sig, blockhash, lastValidBlockHeight },
       this.commitment,
     );
+    if (confirmation.value.err) {
+      throw new Error(`Transaction ${sig} failed: ${JSON.stringify(confirmation.value.err)}`);
+    }
     return sig;
   }
 }

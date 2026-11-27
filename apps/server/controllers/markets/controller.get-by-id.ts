@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { prisma } from "@solmarket/database";
 import { ListingStatus, type MarketDTO, type MarketStatus, type Outcome } from "@solmarket/types";
 import ResponseWriter from "../../services/service.response";
+import MarketSettlementService from "../../services/service.market-settlement";
 
 export default class GetMarketByIdController {
     static async process(req: Request, res: Response) {
@@ -27,22 +28,14 @@ export default class GetMarketByIdController {
 
             const m = listing.market;
             const p = listing.market.polymarket;
-            // Claimable is true once the hedger has confirmed resolve_market
-            // on Solana. Surfaced separately from status=RESOLVED so the
-            // trade panel can show the outcome the moment gamma publishes
-            // while keeping the Claim button gated on chain confirmation.
-            const resolver_row = await prisma.resolverState.findUnique({
-                where: { marketId: m.id },
-                select: { stage: true },
-            });
-            const claimable =
-                resolver_row?.stage === "SOLANA_RESOLVED" || resolver_row?.stage === "REDEEMED";
+            const settlements = await MarketSettlementService.find_many([m.id]);
+            const resolution = MarketSettlementService.project(m, settlements.get(m.id));
             const dto: MarketDTO = {
                 id: m.id,
                 name: m.name,
                 description: m.description,
                 endAt: m.endAt.toISOString(),
-                status: m.status as MarketStatus,
+                status: resolution.status as MarketStatus,
                 polyMarketId: m.polyMarketId,
                 yesTokenId: p.yesTokenId,
                 noTokenId: p.noTokenId,
@@ -56,9 +49,9 @@ export default class GetMarketByIdController {
                 eventSlug: p.eventSlug,
                 kind: m.kind,
                 fastSeriesKey: m.fastSeriesKey,
-                winningOutcome: m.winningOutcome as Outcome | null,
-                resolvedAt: m.resolvedAt?.toISOString() ?? null,
-                claimable,
+                winningOutcome: resolution.winningOutcome as Outcome | null,
+                resolvedAt: resolution.resolvedAt?.toISOString() ?? null,
+                claimable: resolution.claimable,
                 tags: p.tags,
             };
 
