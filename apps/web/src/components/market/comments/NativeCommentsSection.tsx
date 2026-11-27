@@ -50,6 +50,8 @@ export default function NativeCommentsSection({
 
     const [deleting_ids, set_deleting_ids] = useState<Set<string>>(new Set());
     const [delete_error, set_delete_error] = useState<string | null>(null);
+    const [refresh_error, set_refresh_error] = useState(false);
+    const has_loaded = useRef(false);
     const event_id = useRef<string | null>(null);
     const loaded_count = useRef(0);
     const generation = useRef(0);
@@ -70,6 +72,7 @@ export default function NativeCommentsSection({
                     if (request !== generation.current) return;
                     rows.push(...result.comments);
                 } while (rows.length < count && result.comments.length === PAGE_SIZE);
+                has_loaded.current = true;
                 event_id.current = result.event_id;
                 loaded_count.current = rows.length;
                 set_comments(rows);
@@ -77,10 +80,15 @@ export default function NativeCommentsSection({
                 set_has_more(result.comments.length === PAGE_SIZE);
                 set_available(result.event_id !== null);
                 set_error(null);
+                set_refresh_error(false);
             } catch (err) {
                 if (request !== generation.current) return;
                 console.error('[comments] refresh', err);
-                set_error('Could not load comments');
+                if (has_loaded.current) {
+                    set_refresh_error(true);
+                } else {
+                    set_error('Could not load comments');
+                }
             } finally {
                 if (request === generation.current) {
                     loading_more.current = false;
@@ -92,6 +100,7 @@ export default function NativeCommentsSection({
     );
 
     useEffect(() => {
+        has_loaded.current = false;
         event_id.current = null;
         loaded_count.current = 0;
         const current_generation = generation;
@@ -287,6 +296,21 @@ export default function NativeCommentsSection({
                         className="pb-3 text-[10px] tracking-[0.18em] uppercase text-rose-400/80"
                     >
                         {delete_error}
+                    </div>
+                )}
+                {refresh_error && (
+                    <div
+                        role="alert"
+                        className="pb-3 text-[10px] tracking-[0.18em] uppercase text-rose-400/80"
+                    >
+                        Could not refresh comments.{' '}
+                        <button
+                            type="button"
+                            onClick={() => void refresh(Math.max(PAGE_SIZE, loaded_count.current))}
+                            className="underline cursor-pointer"
+                        >
+                            Retry
+                        </button>
                     </div>
                 )}
                 {loading ? (
