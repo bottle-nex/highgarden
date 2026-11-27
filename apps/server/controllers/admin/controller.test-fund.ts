@@ -8,26 +8,10 @@ const body_schema = z.object({
     usdcAmount: z.coerce.number().nonnegative().optional(),
 });
 
-function is_admin_email(email: string | null | undefined): boolean {
-    if (!email) return false;
-    const raw = process.env.ADMIN_EMAILS ?? "";
-    if (!raw.trim()) return false;
-    const allow = raw
-        .split(",")
-        .map((e) => e.trim().toLowerCase())
-        .filter(Boolean);
-    return allow.includes(email.toLowerCase());
-}
-
 export default class TestFundController {
     private static fund_service = new TestFundService();
 
     static async process(req: Request, res: Response) {
-        if (!req.user) return ResponseWriter.not_authorized(res);
-        if (!is_admin_email(req.user.email)) {
-            return ResponseWriter.not_authorized(res, "admin only");
-        }
-
         const user_id = typeof req.params.userId === "string" ? req.params.userId : "";
         if (!user_id) return ResponseWriter.invalid_data(res, "userId required");
 

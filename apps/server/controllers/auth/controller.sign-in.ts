@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@solmarket/database";
+import { ENV } from "../../config/config.env";
 import ResponseWriter from "../../services/service.response";
 import { signSessionJwt } from "../../services/service.jwt";
 import { ensure_user_has_keypair } from "../../services/service.keypair";
@@ -18,6 +20,19 @@ const body_schema = z.object({
 
 export default class SignInController {
     static async process(req: Request, res: Response) {
+        const secret = ENV.GOOGLE_SIGN_IN_SHARED_SECRET;
+        const authorization = req.headers.authorization;
+        if (
+            !secret ||
+            !authorization ||
+            !timingSafeEqual(
+                createHash("sha256").update(authorization).digest(),
+                createHash("sha256").update(`Bearer ${secret}`).digest(),
+            )
+        ) {
+            return ResponseWriter.not_authorized(res);
+        }
+
         const parsed = body_schema.safeParse(req.body);
         if (!parsed.success) {
             return ResponseWriter.invalid_data(res, "Invalid sign-in payload");

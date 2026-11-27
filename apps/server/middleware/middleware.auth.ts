@@ -21,3 +21,17 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
         return ResponseWriter.not_authorized(res, "Invalid or expired token");
     }
 }
+
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+    if (!req.user) return ResponseWriter.not_authorized(res);
+
+    const allowlist = (process.env.ADMIN_EMAILS ?? "")
+        .split(",")
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean);
+    if (!allowlist.includes(req.user.email.toLowerCase())) {
+        return ResponseWriter.error(res, "FORBIDDEN", "Admin access required", undefined, 403);
+    }
+
+    next();
+}
