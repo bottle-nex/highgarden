@@ -9,9 +9,10 @@ model User {
   custodialPublicKey       String? @unique
   custodialSecretEncrypted String?
 
-  fills     Fill[]
-  claims    Claim[]
-  deposits  SolDeposit[]
-  comments  Comment[]
-  bookmarks Bookmark[]
+  fills      Fill[]
+  claims     Claim[]
+  deposits   SolDeposit[]
+  activities WalletActivity[]
+  comments   Comment[]
+  bookmarks  Bookmark[]
 }

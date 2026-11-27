@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import PositionsTable from './PositionsTable';
 import HistoryTable from './HistoryTable';
+import ActivityTable from './ActivityTable';
 import { UpcomingBadge } from './UpcomingBadge';
 import { PORTFOLIO_TABS, type PortfolioTab } from './types';
 
@@ -29,6 +30,8 @@ export default function PortfolioTabs(): JSX.Element {
                         </p>
                     </div>
                 );
+            case 'Activity':
+                return <ActivityTable search={searchQuery} />;
             case 'History':
                 return <HistoryTable search={searchQuery} />;
         }
@@ -61,22 +64,26 @@ export default function PortfolioTabs(): JSX.Element {
                 <div className="relative w-full sm:flex-1">
                     <LuSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 size-4" />
                     <Input
-                        placeholder="Search markets"
+                        placeholder={
+                            activeTab === 'Activity' ? 'Search activity' : 'Search markets'
+                        }
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
                         className="h-10 pl-9 bg-dark-base border-white/8 rounded-lg w-full text-sm placeholder:text-white/30 focus-visible:border-white/20"
                     />
                 </div>
-                <Button
-                    variant="outline"
-                    onClick={() => {}}
-                    title="Sorting coming soon"
-                    className="h-10 px-3.5 border-white/8 bg-dark-base text-xs text-white/65 hover:bg-dark-base hover:text-white rounded-lg w-full sm:w-auto justify-center gap-x-2 font-medium"
-                >
-                    <LuArrowUpDown className="size-3.5" />
-                    Current value
-                    <UpcomingBadge />
-                </Button>
+                {activeTab !== 'Activity' && (
+                    <Button
+                        variant="outline"
+                        onClick={() => {}}
+                        title="Sorting coming soon"
+                        className="h-10 px-3.5 border-white/8 bg-dark-base text-xs text-white/65 hover:bg-dark-base hover:text-white rounded-lg w-full sm:w-auto justify-center gap-x-2 font-medium"
+                    >
+                        <LuArrowUpDown className="size-3.5" />
+                        Current value
+                        <UpcomingBadge />
+                    </Button>
+                )}
             </div>
 
             {renderTabContent()}

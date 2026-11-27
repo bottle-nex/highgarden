@@ -31,3 +31,30 @@ export interface FillDTO {
   txSig: string;
   createdAt: string;
 }
+
+export type ActivityKindDTO = "DEPOSIT" | "WITHDRAWAL" | "CLAIM" | "TRADE";
+export type ActivityStatusDTO = "PENDING" | "DONE" | "FAILED";
+
+export interface ActivityDTO {
+  id: string;
+  kind: ActivityKindDTO;
+  status: ActivityStatusDTO;
+  /** Exact raw lamports (SOL) or micro-USDC, encoded as decimal strings. */
+  amountRaw: string;
+  unit: "SOL" | "USDC";
+  convertedUsdcRaw: string | null;
+  marketId: string | null;
+  marketName: string | null;
+  side: Side | null;
+  outcome: Outcome | null;
+  destination: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  error: string | null;
+  transactions: { signature: string; url: string | null }[];
+}
+
+export interface ActivityPageDTO {
+  items: ActivityDTO[];
+  nextCursor: string | null;
+}

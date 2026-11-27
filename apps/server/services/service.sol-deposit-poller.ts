@@ -1,3 +1,6 @@
+import ActivityService, { ActivityConflictError } from "./service.activity";
+import { TransactionConfirmationError, type BeforeBroadcast } from "@solmarket/contract";
+import type { SolDeposit } from "@solmarket/database";
 import { Connection, Keypair, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import {
     createAssociatedTokenAccountInstruction,
@@ -31,7 +34,8 @@ const USDC_PER_CENT = BigInt(10_000);
  *   3. Mints USDC of equivalent value to the user's USDC ATA (creating
  *      the ATA if it doesn't exist). Admin keypair is the mint authority.
  *      Updates row to `COMPLETED`.
- *   4. On any failure, flips the row to `FAILED` with the error message
+ *   4. Explicit rejection marks FAILED; uncertain submission stays pending for recovery.
+ *      Records the error message on definitive failure
  *      truncated to 500 chars. Manual cleanup required by ops.
  *
  * Single-flight per tick — if the previous tick is still processing,
@@ -105,6 +109,10 @@ export default class SolDepositPoller {
         if (this.running) return;
         this.running = true;
         try {
+            const pending = await prisma.solDeposit.findMany({
+                where: { status: { in: ["DETECTED", "SWEEPING", "SWEPT"] } },
+            });
+            for (const row of pending) await this.resume_deposit(row);
             const candidates = await this.list_candidates();
             for (const c of candidates) {
                 try {
@@ -201,67 +209,140 @@ export default class SolDepositPoller {
         const rate_cents = await this.price_feed.get_sol_usd_rate_cents();
         const usdc_raw = this.compute_usdc_raw(lamports_to_sweep, rate_cents);
 
-        const row = await prisma.solDeposit.create({
-            data: {
-                userId: c.userId,
-                custodialPubkey: c.custodialPublicKey,
-                solLamports: BigInt(lamports_to_sweep),
-                solUsdRateCents: rate_cents,
-                usdcMintedRaw: usdc_raw,
-                status: "DETECTED",
-            },
-            select: { id: true },
+        const row = await ActivityService.create_deposit({
+            userId: c.userId,
+            custodialPubkey: c.custodialPublicKey,
+            solLamports: BigInt(lamports_to_sweep),
+            solUsdRateCents: rate_cents,
+            usdcMintedRaw: usdc_raw,
+            status: "DETECTED",
         });
+        await this.resume_deposit(row);
+    }
 
+    /** Reconcile an existing identity before advancing to the next stage. */
+    private async resume_deposit(initial: SolDeposit): Promise<void> {
+        let row = initial;
         try {
-            const custodial_keypair = await this.load_custodial_keypair(c.userId);
+            const activity = await prisma.walletActivity.findUniqueOrThrow({
+                where: { depositId: row.id },
+            });
+            if (!activity.submissionTracked) {
+                // Old senders could crash after broadcasting but before saving the identity.
+                // Reconcile known signatures, but let ops resolve an untracked next stage.
+                const status = await ActivityService.transaction_status(
+                    this.get_connection(),
+                    activity,
+                );
+                if (status === "FAILED") {
+                    await ActivityService.update_deposit(row.id, row.status, {
+                        status: "FAILED",
+                        error: "Recorded transaction failed",
+                    });
+                } else if (status === "DONE" && row.mintTxSig) {
+                    await ActivityService.update_deposit(row.id, row.status, {
+                        status: "COMPLETED",
+                        completedAt: new Date(),
+                        error: null,
+                    });
+                }
+                return;
+            }
+            if (row.status === "SWEEPING" || (row.status === "SWEPT" && row.mintTxSig)) {
+                const status = await ActivityService.transaction_status(
+                    this.get_connection(),
+                    activity,
+                );
+                if (status === "PENDING") return;
+                if (status === "FAILED") {
+                    await ActivityService.update_deposit(row.id, row.status, {
+                        status: "FAILED",
+                        error: "Transaction failed or expired without confirmation",
+                    });
+                    return;
+                }
+                if (row.status === "SWEEPING") {
+                    await ActivityService.update_deposit(row.id, "SWEEPING", {
+                        status: "SWEPT",
+                        error: null,
+                    });
+                    row = await prisma.solDeposit.findUniqueOrThrow({ where: { id: row.id } });
+                } else {
+                    await ActivityService.update_deposit(row.id, "SWEPT", {
+                        status: "COMPLETED",
+                        completedAt: new Date(),
+                        error: null,
+                    });
+                    return;
+                }
+            }
             const admin = this.get_admin_keypair();
-
-            const {
-                signature: sweep_sig,
-                blockhash: sweep_blockhash,
-                lastValidBlockHeight: sweep_lvbh,
-            } = await this.sweep_sol(custodial_keypair, admin, lamports_to_sweep);
-            await prisma.solDeposit.update({
-                where: { id: row.id },
-                data: { status: "SWEEPING", sweepTxSig: sweep_sig },
-            });
-            await this.get_connection().confirmTransaction(
-                {
-                    signature: sweep_sig,
-                    blockhash: sweep_blockhash,
-                    lastValidBlockHeight: sweep_lvbh,
-                },
-                "confirmed",
-            );
-            await prisma.solDeposit.update({
-                where: { id: row.id },
-                data: { status: "SWEPT" },
-            });
-
-            const mint_sig = await this.mint_usdc(
-                admin,
-                new PublicKey(c.custodialPublicKey),
-                usdc_raw,
-            );
-            await prisma.solDeposit.update({
-                where: { id: row.id },
-                data: {
+            if (row.status === "DETECTED") {
+                const custodial = await this.load_custodial_keypair(row.userId);
+                await this.sweep_sol(custodial, admin, Number(row.solLamports), async (info) => {
+                    const signature = bs58.encode(info.signature);
+                    await ActivityService.update_deposit(
+                        row.id,
+                        "DETECTED",
+                        { status: "SWEEPING", sweepTxSig: signature },
+                        {
+                            signature,
+                            blockhash: info.blockhash,
+                            lastValidBlockHeight: info.lastValidBlockHeight,
+                            previousSignature: null,
+                        },
+                    );
+                });
+                await ActivityService.update_deposit(row.id, "SWEEPING", {
+                    status: "SWEPT",
+                    error: null,
+                });
+                row = await prisma.solDeposit.findUniqueOrThrow({ where: { id: row.id } });
+            }
+            if (row.status === "SWEPT" && !row.mintTxSig) {
+                await this.mint_usdc(
+                    admin,
+                    new PublicKey(row.custodialPubkey),
+                    row.usdcMintedRaw,
+                    async (info) => {
+                        const signature = bs58.encode(info.signature);
+                        await ActivityService.update_deposit(
+                            row.id,
+                            "SWEPT",
+                            { mintTxSig: signature },
+                            {
+                                signature,
+                                blockhash: info.blockhash,
+                                lastValidBlockHeight: info.lastValidBlockHeight,
+                                previousSignature: row.sweepTxSig,
+                            },
+                        );
+                    },
+                );
+                await ActivityService.update_deposit(row.id, "SWEPT", {
                     status: "COMPLETED",
-                    mintTxSig: mint_sig,
                     completedAt: new Date(),
-                },
-            });
-            console.log(
-                `[sol-deposit-poller] credited user=${c.userId} sol=${lamports_to_sweep} usdc_raw=${usdc_raw} sweep=${sweep_sig.slice(0, 8)} mint=${mint_sig.slice(0, 8)}`,
-            );
-        } catch (err) {
-            const msg = (err as Error)?.message ?? String(err);
-            await prisma.solDeposit.update({
-                where: { id: row.id },
-                data: { status: "FAILED", error: msg.slice(0, 500) },
-            });
-            throw err;
+                    error: null,
+                });
+            }
+        } catch (error) {
+            if (error instanceof ActivityConflictError) return;
+            // A timeout may have landed on chain. Retain its identity for the next tick.
+            if (ActivityService.is_rejection(error)) {
+                const current = await prisma.solDeposit.findUniqueOrThrow({
+                    where: { id: row.id },
+                });
+                if (current.status !== "COMPLETED" && current.status !== "FAILED") {
+                    await ActivityService.update_deposit(row.id, current.status, {
+                        status: "FAILED",
+                        error: (error instanceof Error ? error.message : String(error)).slice(
+                            0,
+                            500,
+                        ),
+                    });
+                }
+            }
+            console.error(`[sol-deposit-poller/recover:${row.id}]`, error);
         }
     }
 
@@ -285,6 +366,7 @@ export default class SolDepositPoller {
         custodial: Keypair,
         admin: Keypair,
         lamports: number,
+        beforeBroadcast: BeforeBroadcast,
     ): Promise<{ signature: string; blockhash: string; lastValidBlockHeight: number }> {
         const conn = this.get_connection();
         const tx = new Transaction().add(
@@ -298,9 +380,17 @@ export default class SolDepositPoller {
         tx.recentBlockhash = blockhash;
         tx.feePayer = admin.publicKey;
         tx.sign(admin, custodial);
+        if (!tx.signature) throw new Error("Signed sweep has no signature");
+        await beforeBroadcast({ signature: tx.signature, blockhash, lastValidBlockHeight });
         const signature = await conn.sendRawTransaction(tx.serialize(), {
             preflightCommitment: "confirmed",
         });
+        const confirmation = await conn.confirmTransaction(
+            { signature, blockhash, lastValidBlockHeight },
+            "confirmed",
+        );
+        if (confirmation.value.err)
+            throw new TransactionConfirmationError(JSON.stringify(confirmation.value.err));
         return { signature, blockhash, lastValidBlockHeight };
     }
 
@@ -314,6 +404,7 @@ export default class SolDepositPoller {
         admin: Keypair,
         recipient: PublicKey,
         usdc_raw: bigint,
+        beforeBroadcast: BeforeBroadcast,
     ): Promise<string> {
         const conn = this.get_connection();
         const mint = new PublicKey(ENV.SERVER_USDC_MINT);
@@ -330,13 +421,17 @@ export default class SolDepositPoller {
         tx.recentBlockhash = blockhash;
         tx.feePayer = admin.publicKey;
         tx.sign(admin);
+        if (!tx.signature) throw new Error("Signed mint has no signature");
+        await beforeBroadcast({ signature: tx.signature, blockhash, lastValidBlockHeight });
         const sig = await conn.sendRawTransaction(tx.serialize(), {
             preflightCommitment: "confirmed",
         });
-        await conn.confirmTransaction(
+        const confirmation = await conn.confirmTransaction(
             { signature: sig, blockhash, lastValidBlockHeight },
             "confirmed",
         );
+        if (confirmation.value.err)
+            throw new TransactionConfirmationError(JSON.stringify(confirmation.value.err));
         return sig;
     }
 

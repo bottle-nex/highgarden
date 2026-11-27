@@ -1,0 +1,35 @@
+/// Durable user-visible transaction history. Signed identities are saved before broadcast.
+model WalletActivity {
+  id                   String         @id @default(cuid())
+  userId               String
+  user                 User           @relation(fields: [userId], references: [id])
+  sourceKey            String         @unique
+  kind                 ActivityKind
+  status               ActivityStatus @default(PENDING)
+  amountRaw            BigInt
+  unit                 String
+  convertedUsdcRaw     BigInt?
+  marketId             String?
+  marketName           String?
+  side                 Side?
+  outcome              Outcome?
+  shares               Int?
+  priceCents           Int?
+  nonce                String?
+  destination          String?
+  depositId            String?        @unique
+  txSignature          String?        @unique
+  sweepTxSig           String?
+  /// False for legacy deposits whose old sender did not persist before broadcast.
+  submissionTracked    Boolean        @default(true)
+  blockhash            String?
+  lastValidBlockHeight Int?
+  error                String?        @db.VarChar(500)
+  /// Successful trade/claim bookkeeping may need recovery after a database outage.
+  bookkept             Boolean        @default(false)
+  createdAt            DateTime       @default(now())
+  completedAt          DateTime?
+
+  @@index([userId, createdAt, id])
+  @@index([status, bookkept])
+}

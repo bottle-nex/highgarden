@@ -1,3 +1,5 @@
+import ActivityService from "./service.activity";
+import { TransactionConfirmationError } from "@solmarket/contract";
 import { Connection, Keypair, PublicKey, Transaction } from "@solana/web3.js";
 import {
     createAssociatedTokenAccountInstruction,
@@ -143,24 +145,30 @@ export default class SolanaWithdrawService {
 
         let signature: string;
         try {
-            signature = await connection.sendRawTransaction(tx.serialize(), {
-                skipPreflight: false,
-                preflightCommitment: "confirmed",
-            });
-            const confirm = await connection.confirmTransaction(
+            signature = await ActivityService.track(
                 {
-                    signature,
-                    blockhash: blockhash.blockhash,
-                    lastValidBlockHeight: blockhash.lastValidBlockHeight,
+                    userId: input.userId,
+                    kind: "WITHDRAWAL",
+                    amountRaw: transfer_raw,
+                    destination: destination_pk.toBase58(),
                 },
-                "confirmed",
+                async (beforeBroadcast) => {
+                    if (!tx.signature) throw new Error("Signed withdrawal has no signature");
+                    await beforeBroadcast({ signature: tx.signature, ...blockhash });
+                    const sig = await connection.sendRawTransaction(tx.serialize(), {
+                        skipPreflight: false,
+                        preflightCommitment: "confirmed",
+                    });
+                    const confirm = await connection.confirmTransaction(
+                        { signature: sig, ...blockhash },
+                        "confirmed",
+                    );
+                    if (confirm.value.err)
+                        throw new TransactionConfirmationError(JSON.stringify(confirm.value.err));
+                    return sig;
+                },
             );
-            if (confirm.value.err) {
-                console.error("[withdraw] confirmation error", confirm.value.err);
-                throw new WithdrawError("RPC_FAILED", "withdrawal couldn't be confirmed on chain");
-            }
         } catch (e) {
-            if (e instanceof WithdrawError) throw e;
             console.error("[withdraw] rpc error", e);
             throw new WithdrawError(
                 "RPC_FAILED",

@@ -40,6 +40,7 @@ import {
 } from "./serialize";
 import type {
   AdminMarketParams,
+  BeforeBroadcast,
   ClaimParams,
   ClosePositionParams,
   CloseUsedNonceParams,
@@ -271,7 +272,12 @@ export class SolmarketClient {
       data: Buffer.concat([ix_disc("place_order"), encode_place_order_args(params.quote)]),
     });
     const tx = new Transaction().add(params.ed25519Ix, ix);
-    return this.send_with_fee_payer(tx, params.feePayer, [params.feePayer, params.userKeypair]);
+    return this.send_with_fee_payer(
+      tx,
+      params.feePayer,
+      [params.feePayer, params.userKeypair],
+      params.beforeBroadcast,
+    );
   }
 
   public async claim(params: ClaimParams): Promise<TransactionSignature> {
@@ -291,7 +297,12 @@ export class SolmarketClient {
       data: Buffer.concat([ix_disc("claim"), encode_empty_args()]),
     });
     const tx = new Transaction().add(ix);
-    return this.send_with_fee_payer(tx, params.feePayer, [params.feePayer, params.userKeypair]);
+    return this.send_with_fee_payer(
+      tx,
+      params.feePayer,
+      [params.feePayer, params.userKeypair],
+      params.beforeBroadcast,
+    );
   }
 
   public async closePosition(params: ClosePositionParams): Promise<TransactionSignature> {
@@ -433,6 +444,7 @@ export class SolmarketClient {
     tx: Transaction,
     fee_payer: Keypair,
     signers: Keypair[],
+    beforeBroadcast?: BeforeBroadcast,
   ): Promise<TransactionSignature> {
     const { blockhash, lastValidBlockHeight } = await this.connection.getLatestBlockhash(
       this.commitment,
@@ -441,13 +453,18 @@ export class SolmarketClient {
     tx.feePayer = fee_payer.publicKey;
     const dedup = dedupe_signers(signers);
     tx.sign(...dedup);
+    if (!tx.signature) throw new Error("Signed transaction has no signature");
+    await beforeBroadcast?.({ signature: tx.signature, blockhash, lastValidBlockHeight });
     const sig = await this.connection.sendRawTransaction(tx.serialize(), {
       preflightCommitment: this.commitment,
     });
-    await this.connection.confirmTransaction(
+    const confirmation = await this.connection.confirmTransaction(
       { signature: sig, blockhash, lastValidBlockHeight },
       this.commitment,
     );
+    if (confirmation.value.err) {
+      throw new TransactionConfirmationError(JSON.stringify(confirmation.value.err));
+    }
     return sig;
   }
 }
@@ -463,4 +480,12 @@ function dedupe_signers(signers: Keypair[]): Keypair[] {
     out.push(s);
   }
   return out;
+}
+
+/** A confirmed on-chain rejection, distinct from an uncertain RPC timeout. */
+export class TransactionConfirmationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TransactionConfirmationError";
+  }
 }
