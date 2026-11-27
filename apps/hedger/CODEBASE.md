@@ -419,11 +419,11 @@ Wrapper that enforces single-flight with the `running` flag. Always updates "las
 
 #### `run_once()`
 
-Fetches all signatures newer than our cursor checkpoint, reverses them to chronological order, and processes each one.
+Fetches all signatures newer than the checkpoint and processes them oldest first.
 
 #### `fetch_new_signatures(until)`
 
-Calls Solana's `getSignaturesForAddress` API to get recent transactions for our program. `until` is the cursor — we only fetch transactions newer than the last one we processed.
+Pages through Solana's `getSignaturesForAddress` results until a page is empty. Each request keeps the same `until` checkpoint and uses the preceding page's oldest signature as `before`. On first boot, the scan covers the program history available from the RPC.
 
 #### `finality()`
 
@@ -438,11 +438,11 @@ For a single transaction:
 3. Call `on_fill` for each fill found.
 4. Advance the cursor to this transaction's slot + signature.
 
-The cursor advances **after** dispatching to `on_fill`, not before. This ensures at-least-once delivery — if `on_fill` crashes, the cursor stays back and we'll retry on next boot.
+Unavailable logs, a failed handoff, or a failed checkpoint write stop the tick. The next tick resumes from the last saved checkpoint, and the nonce-keyed queue deduplicates jobs from a partially handled transaction.
 
 ---
 
-### `ingest/cursor.ts` — `Cursor`
+### `db/cursor.ts` — `Cursor`
 
 The "bookmark" that remembers where we are on the Solana chain. Stored in the database so it survives restarts.
 
@@ -460,7 +460,7 @@ Returns the last transaction signature we successfully processed, or `null`.
 
 #### `advance(slot, signature)`
 
-Moves the cursor forward to a new slot + signature. **Monotonic guard**: if the new slot is not strictly greater than the current one, this is a no-op. This makes it safe for both the listener and poller to call `advance` without worrying about one going backwards.
+The poller checkpoints transactions in signature order, including several signatures in the same slot. The cursor ignores older slots and updates its cache after the database write succeeds.
 
 #### `mark_live_connected()`
 
@@ -904,7 +904,7 @@ All configuration comes from environment variables. Zod validates them all at st
 | Signers          | Admin keypair (for pausing), oracle keypair (for resolving)                              |
 | Polymarket       | REST URL, Gamma URL, API key/secret, private key                                         |
 | Polygon          | RPC URL (for redemptions)                                                                |
-| Ingester         | Poller interval (10s), reconnect delay (2s), max backfill signatures (1000)              |
+| Ingester         | Poller interval (10s), reconnect delay (2s), backfill signatures per RPC request (1000)   |
 | Hedger queue     | Max attempts (5), backoff (500ms), concurrency (5), rate limit (30/s), slippage cap (2¢) |
 | Resolver         | Poll interval (60s), dispute window (48h)                                                |
 | Reconciler       | Poll interval (60s)                                                                      |
