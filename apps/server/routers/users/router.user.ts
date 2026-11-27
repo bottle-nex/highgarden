@@ -103,7 +103,7 @@ user_router.get("/me/fills", rl.read, requireAuth, async (req, res) => {
 /**
  * Lists the user's SOL → USDC deposits, newest first. Used by the
  * frontend deposit dialog to show "Last 10 conversions" and surface
- * any FAILED rows that need ops attention.
+ * conversion progress and any legacy FAILED rows that need an evidence audit.
  */
 user_router.get("/me/deposits", rl.read, requireAuth, async (req, res) => {
     try {
@@ -180,8 +180,8 @@ user_router.post("/me/withdraw", rl.withdraw, requireAuth, async (req, res) => {
 /**
  * Manual trigger for the SolDepositPoller — used by the "I just sent
  * SOL" button so the user doesn't have to wait for the next poll tick.
- * Idempotent: if a deposit is already in flight for this user, the
- * poller's in-flight check makes this a no-op.
+ * Resumes durable attempts and checks for additional unreserved SOL.
+ * Database reservations and signed attempts make concurrent checks safe.
  */
 user_router.post("/me/check-deposits", rl.mutate, requireAuth, async (req, res) => {
     try {

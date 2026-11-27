@@ -74,14 +74,27 @@ enum InventoryReason {
 /// custodial wallet. Polled by SolDepositPoller; one row per detected
 /// balance jump.
 ///   DETECTED   — balance jump observed, no on-chain action yet
-///   SWEEPING   — sweep tx (custodial → admin) submitted, not confirmed
-///   SWEPT      — sweep confirmed; USDC mint still pending
-///   COMPLETED  — USDC mint confirmed; user's ATA credited
-///   FAILED     — unrecoverable error mid-flow; operator cleanup needed
+///   SWEEPING   — signed sweep persisted; submission/finality pending
+///   SWEPT      — sweep finalized; USDC mint still pending
+///   COMPLETED  — USDC mint finalized; user's ATA credited
+///   FAILED     — terminal failure or unresolved legacy evidence
+/// Transient errors retain the last recoverable stage.
 enum SolDepositStatus {
   DETECTED
   SWEEPING
   SWEPT
   COMPLETED
   FAILED
+}
+
+enum SolDepositStage {
+  SWEEP
+  MINT
+}
+
+enum SolDepositAttemptOutcome {
+  PENDING
+  SUCCEEDED
+  FAILED
+  EXPIRED
 }

@@ -1,11 +1,11 @@
 /// One row per inbound SOL deposit detected on a user's custodial wallet.
 /// Written by SolDepositPoller as the deposit moves through DETECTED →
-/// SWEEPING → SWEPT → COMPLETED. The two tx signatures are recorded
-/// independently so a crash mid-flow is recoverable on next boot.
+/// SWEEPING → SWEPT → COMPLETED. Signed attempts are persisted before
+/// broadcast so recovery can safely replay the same transaction.
 model SolDeposit {
-  id              String           @id @default(cuid())
+  id              String @id @default(cuid())
   userId          String
-  user            User             @relation(fields: [userId], references: [id])
+  user            User   @relation(fields: [userId], references: [id])
   /// Custodial pubkey on which the balance jump was observed. Stored
   /// for indexing + ops triage even though it's derivable from userId.
   custodialPubkey String
@@ -19,19 +19,53 @@ model SolDeposit {
 
   /// SystemProgram::transfer that moved SOL custodial → admin. Unique so
   /// a retry can't double-account for the same on-chain tx.
-  sweepTxSig      String?          @unique
+  sweepTxSig String? @unique
   /// SPL Token mintTo that credited the user's USDC ATA. Unique for
   /// the same idempotency reason.
-  mintTxSig       String?          @unique
+  mintTxSig  String? @unique
 
-  status          SolDepositStatus @default(DETECTED)
-  /// Last error message when status == FAILED. Truncated to 500 chars.
-  error           String?
+  status SolDepositStatus @default(DETECTED)
+  /// Last processing error, including transient failures. At most 500 chars.
+  error  String?
 
-  createdAt       DateTime         @default(now())
-  completedAt     DateTime?
+  /// Existing rows require an evidence-based audit before automatic recovery.
+  recoveryReady    Boolean             @default(true)
+  /// Freeze the mint and sweep destination along with the conversion quote.
+  usdcMint         String?
+  sweepDestination String?
+  /// Finalized sweep slot; balance reads must include this slot.
+  sweepSlot        Int?
+  attempts         SolDepositAttempt[]
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
 
   @@index([userId, createdAt])
   @@index([status])
   @@index([custodialPubkey])
+}
+
+/// Immutable signed transaction identity, saved before any network send.
+model SolDepositAttempt {
+  id                   String                   @id @default(cuid())
+  depositId            String
+  deposit              SolDeposit               @relation(fields: [depositId], references: [id])
+  stage                SolDepositStage
+  /// Null only after proven failure/expiry. PostgreSQL permits multiple nulls.
+  activeStage          SolDepositStage?
+  signature            String                   @unique
+  signedTransaction    Bytes
+  blockhash            String
+  lastValidBlockHeight Int
+  preparedSlot         Int
+  outcome              SolDepositAttemptOutcome @default(PENDING)
+  finalizedSlot        Int?
+  /// Finalized window scanned for signatures before an expired retry.
+  expirySlot           Int?
+  checkedThroughSlot   Int?
+  error                String?
+  createdAt            DateTime                 @default(now())
+
+  @@unique([depositId, activeStage])
+  @@index([outcome])
 }
